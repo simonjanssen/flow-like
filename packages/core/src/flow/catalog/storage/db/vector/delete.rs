@@ -1,5 +1,6 @@
 use super::NodeDBConnection;
 use crate::{
+    db::vector::VectorStore,
     flow::{
         execution::context::ExecutionContext,
         node::{Node, NodeLogic},
@@ -7,7 +8,6 @@ use crate::{
         variable::VariableType,
     },
     state::FlowLikeState,
-    vault::vector::VectorStore,
 };
 use async_trait::async_trait;
 use serde_json::json;
@@ -25,8 +25,8 @@ impl DeleteLocalDatabaseNode {
 impl NodeLogic for DeleteLocalDatabaseNode {
     async fn get_node(&self, _app_state: &FlowLikeState) -> Node {
         let mut node = Node::new(
-            "filter_local_db",
-            "(SQL) Filter Database",
+            "filter_delete_local_db",
+            "Delete",
             "Filter Database",
             "Database/Local/Delete",
         );

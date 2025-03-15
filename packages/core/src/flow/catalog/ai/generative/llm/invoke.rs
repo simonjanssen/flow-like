@@ -19,7 +19,9 @@ use crate::{
         pin::PinOptions,
         variable::VariableType,
     },
-    models::{history::History, llm::LLMCallback},
+    models::{
+        history::History, llm::LLMCallback, response::Response, response_chunk::ResponseChunk,
+    },
     state::FlowLikeState,
 };
 use async_trait::async_trait;
@@ -64,7 +66,9 @@ impl NodeLogic for InvokeLLM {
             VariableType::Execution,
         );
 
-        node.add_output_pin("token", "Token", "Token", VariableType::String);
+        node.add_output_pin("chunk", "Chunk", "", VariableType::Struct)
+            .set_schema::<ResponseChunk>()
+            .set_options(PinOptions::new().set_enforce_schema(true).build());
 
         node.add_output_pin("done", "Done", "Done", VariableType::Execution);
 
@@ -72,8 +76,10 @@ impl NodeLogic for InvokeLLM {
             "result",
             "Result",
             "Resulting Model Output",
-            VariableType::String,
-        );
+            VariableType::Struct,
+        )
+        .set_schema::<Response>()
+        .set_options(PinOptions::new().set_enforce_schema(true).build());
 
         node.set_long_running(true);
 
@@ -81,26 +87,19 @@ impl NodeLogic for InvokeLLM {
     }
 
     async fn run(&mut self, context: &mut ExecutionContext) -> anyhow::Result<()> {
+        context.deactivate_exec_pin("done").await?;
         let model = context.evaluate_pin::<Bit>("model").await?;
         let mut model_name = model.id.clone();
         if let Some(meta) = model.meta.get("en") {
             model_name = meta.name.clone();
         }
-        let system_prompt = context.evaluate_pin::<String>("system_prompt").await?;
-        let prompt = context.evaluate_pin::<String>("prompt").await?;
+        let history = context.evaluate_pin::<History>("history").await?;
         let model_factory = context.app_state.lock().await.model_factory.clone();
         let model = model_factory
             .lock()
             .await
             .build(&model, context.app_state.clone())
             .await?;
-
-        let mut history = History::new(model_name.clone(), vec![]);
-        history.set_system_prompt(system_prompt.clone());
-        history.push_message(crate::models::history::HistoryMessage::from_string(
-            crate::models::history::Role::User,
-            &prompt,
-        ));
 
         let on_stream = context.get_pin_by_name("on_stream").await?;
         context.activate_exec_pin_ref(&on_stream).await?;
@@ -130,7 +129,7 @@ impl NodeLogic for InvokeLLM {
                     let mut recursion_guard = HashSet::new();
                     recursion_guard.insert(parent_node_id.clone());
                     let string_token = input.get_streamed_token().unwrap_or("".to_string());
-                    ctx.set_pin_value("token", json!(string_token)).await?;
+                    ctx.set_pin_value("chunk", json!(input)).await?;
                     callback_count.fetch_add(1, Ordering::SeqCst);
                     for entry in connected_nodes.iter() {
                         let (id, context) = entry.pair();
@@ -167,11 +166,6 @@ impl NodeLogic for InvokeLLM {
         );
 
         let res = model.invoke(&history, Some(callback)).await?;
-        let mut response_string = "".to_string();
-
-        if let Some(response) = res.last_message() {
-            response_string = response.content.clone().unwrap_or("".to_string());
-        }
 
         message.end();
         message.put_stats(LogStat::new(
@@ -187,11 +181,9 @@ impl NodeLogic for InvokeLLM {
             context.push_sub_context(sub_context.clone());
         }
 
-        context
-            .set_pin_value("result", json!(response_string))
-            .await?;
+        context.set_pin_value("result", json!(res)).await?;
         context.deactivate_exec_pin("on_stream").await?;
-        context.activate_exec_pin("exec_out").await?;
+        context.activate_exec_pin("done").await?;
 
         return Ok(());
     }

@@ -2,8 +2,14 @@ use std::sync::Arc;
 
 use crate::{
     flow::{
-        board::Board, execution::context::ExecutionContext, node::{Node, NodeLogic}, pin::PinOptions, variable::VariableType
-    }, models::history::{Content, HistoryMessage, Role}, state::FlowLikeState
+        board::Board,
+        execution::context::ExecutionContext,
+        node::{Node, NodeLogic},
+        pin::PinOptions,
+        variable::VariableType,
+    },
+    models::history::{Content, HistoryMessage, Role},
+    state::FlowLikeState,
 };
 use async_trait::async_trait;
 use serde_json::{json, Value};
@@ -28,24 +34,38 @@ impl NodeLogic for MakeHistoryMessageNode {
         );
         node.add_icon("/flow/icons/message.svg");
 
+        node.add_input_pin(
+            "role",
+            "Role",
+            "The Role of the Message Author",
+            VariableType::String,
+        )
+        .set_options(
+            PinOptions::new()
+                .set_valid_values(vec![
+                    "Assistant".to_string(),
+                    "System".to_string(),
+                    "User".to_string(),
+                ])
+                .build(),
+        )
+        .set_default_value(Some(json!("User")));
 
-        node.add_input_pin("role", "Role", "The Role of the Message Author", VariableType::String)
-            .set_options(PinOptions::new().set_valid_values(vec![
-                "Assistant".to_string(),
-                "System".to_string(),
-                "User".to_string(),
-            ]).build())
-            .set_default_value(Some(json!("User")));
-
-            node.add_input_pin("type", "Type", "Message Type", VariableType::String)
-            .set_options(PinOptions::new().set_valid_values(vec![
-                "Text".to_string(),
-                "Image".to_string(),
-            ]).build())
+        node.add_input_pin("type", "Type", "Message Type", VariableType::String)
+            .set_options(
+                PinOptions::new()
+                    .set_valid_values(vec!["Text".to_string(), "Image".to_string()])
+                    .build(),
+            )
             .set_default_value(Some(json!("Text")));
 
-        node.add_output_pin("message", "Message", "Constructed Message", VariableType::Struct)
-            .set_schema::<HistoryMessage>();
+        node.add_output_pin(
+            "message",
+            "Message",
+            "Constructed Message",
+            VariableType::Struct,
+        )
+        .set_schema::<HistoryMessage>();
 
         return node;
     }
@@ -68,17 +88,23 @@ impl NodeLogic for MakeHistoryMessageNode {
 
         message.role = role;
 
-        
         match message_type.as_str() {
             "Text" => {
                 let text_pin: String = context.evaluate_pin("text").await?;
-                message.content = vec![Content::Text { content_type: crate::models::history::ContentType::Text, text: text_pin }];
-            },
+                message.content = vec![Content::Text {
+                    content_type: crate::models::history::ContentType::Text,
+                    text: text_pin,
+                }];
+            }
             "Image" => {
                 let image_pin: String = context.evaluate_pin("image").await?;
                 let mime_pin: String = context.evaluate_pin("mime").await?;
-                message.content = vec![Content::Image { content_type: crate::models::history::ContentType::ImageUrl, data: image_pin, mime_type: mime_pin }];
-            },
+                message.content = vec![Content::Image {
+                    content_type: crate::models::history::ContentType::ImageUrl,
+                    data: image_pin,
+                    mime_type: mime_pin,
+                }];
+            }
             _ => {}
         }
 
@@ -95,15 +121,15 @@ impl NodeLogic for MakeHistoryMessageNode {
             .and_then(|json| json.as_str().map(ToOwned::to_owned))
             .unwrap_or_default();
 
-        let text_pin = node.pins.get("text").clone();
-        let image_pin = node.pins.get("image").clone();
-        let mime_pin = node.pins.get("mime").clone();
+        let text_pin = node.get_pin_by_name("text");
+        let image_pin = node.get_pin_by_name("image");
+        let mime_pin = node.get_pin_by_name("mime");
 
-        if (type_pin == "Text".to_string()) && text_pin.is_some() {
+        if (type_pin == *"Text") && text_pin.is_some() {
             return;
         }
 
-        if (type_pin == "Image".to_string()) && image_pin.is_some() && mime_pin.is_some() {
+        if (type_pin == *"Image") && image_pin.is_some() && mime_pin.is_some() {
             return;
         }
 
