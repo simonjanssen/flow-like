@@ -9,7 +9,6 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::any::Any;
-use std::collections::BTreeMap;
 use std::time::Instant;
 use std::{
     collections::{HashMap, HashSet},
@@ -50,7 +49,7 @@ pub struct Run {
     pub status: RunStatus,
     pub start: SystemTime,
     pub end: SystemTime,
-    pub board: Board,
+    pub board: Arc<Board>,
     pub log_level: LogLevel,
     pub sub: String,
 }
@@ -71,6 +70,47 @@ impl dyn Cacheable {
 }
 
 #[derive(Clone)]
+struct RunStack {
+    stack: Vec<Arc<Mutex<InternalNode>>>,
+    deduplication: HashSet<u64>,
+    hash: u64,
+}
+
+impl RunStack {
+    fn with_capacity(capacity: usize) -> Self {
+        RunStack {
+            stack: Vec::with_capacity(capacity),
+            deduplication: HashSet::with_capacity(capacity),
+            hash: 0u64,
+        }
+    }
+
+    fn push(&mut self, node_id: &str, node: Arc<Mutex<InternalNode>>) {
+        let mut hasher = AHasher::default();
+        node_id.hash(&mut hasher);
+        let hash = hasher.finish();
+
+        if self.deduplication.contains(&hash) {
+            return;
+        }
+
+        self.deduplication.insert(hash);
+        self.hash ^= hash;
+        self.stack.push(node);
+    }
+
+    #[inline]
+    fn hash(&self) -> u64 {
+        self.hash
+    }
+
+    #[inline]
+    fn len(&self) -> usize {
+        self.stack.len()
+    }
+}
+
+#[derive(Clone)]
 pub struct InternalRun {
     pub run: Arc<Mutex<Run>>,
     pub nodes: HashMap<String, Arc<Mutex<InternalNode>>>,
@@ -81,8 +121,7 @@ pub struct InternalRun {
     pub profile: Arc<Profile>,
     pub sender: tokio::sync::mpsc::Sender<FlowLikeEvent>,
 
-    // starting with the leaf nodes, executing these in parallel
-    stack: Arc<Mutex<BTreeMap<String, Arc<Mutex<InternalNode>>>>>,
+    stack: Arc<RunStack>,
     concurrency_limit: u64,
     cpus: usize,
     log_level: LogLevel,
@@ -90,7 +129,7 @@ pub struct InternalRun {
 
 impl InternalRun {
     pub async fn new(
-        board: &Board,
+        board: Board,
         handler: &Arc<Mutex<FlowLikeState>>,
         profile: &Profile,
         start_ids: Vec<String>,
@@ -100,20 +139,23 @@ impl InternalRun {
         let start_ids_set: HashSet<String> = start_ids.into_iter().collect();
         let sender = handler.lock().await.event_sender.lock().await.clone();
         let run_id = cuid2::create_id();
+
+        let board = Arc::new(board);
+
         let run = Run {
             id: run_id.clone(),
             traces: vec![],
             status: RunStatus::Running,
             start: SystemTime::now(),
             end: SystemTime::now(),
-            board: board.clone(),
             log_level: board.log_level.clone(),
+            board: board.clone(),
             sub: sub.unwrap_or_else(|| "local".to_string()),
         };
 
         let run = Arc::new(Mutex::new(run));
 
-        let mut dependencies = HashMap::new();
+        let mut dependencies = HashMap::with_capacity(board.nodes.len());
 
         let variables = Arc::new(Mutex::new({
             let mut map = HashMap::with_capacity(board.variables.len());
@@ -148,11 +190,12 @@ impl InternalRun {
 
         for pin_arc in pins.values() {
             let mut internal_pin = pin_arc.lock().await;
-            let inner_pin = internal_pin.pin.lock().await;
-            let connected_to = inner_pin.connected_to.clone();
-            let depends_on = inner_pin.depends_on.clone();
-
-            drop(inner_pin);
+            let (connected_to, depends_on) = {
+                let inner = internal_pin.pin.lock().await;
+                let connected_to = inner.connected_to.clone();
+                let depends_on = inner.depends_on.clone();
+                (connected_to, depends_on)
+            };
 
             for connected_pin_id in connected_to {
                 if let Some(connected_pin) = pins.get(&connected_pin_id) {
@@ -169,18 +212,22 @@ impl InternalRun {
 
         let mut dependency_map = HashMap::with_capacity(board.nodes.len());
         let mut nodes = HashMap::with_capacity(board.nodes.len());
-        let mut stack = BTreeMap::new();
+        let mut stack = RunStack::with_capacity(start_ids_set.len());
 
-        let handler = handler.lock().await;
-        let mut registry = handler.node_registry.read().await;
-        if !registry.initialized {
-            drop(registry);
-            load_catalog(&handler).await;
-            registry = handler.node_registry.read().await;
+        if !handler.lock().await.node_registry.read().await.initialized {
+            load_catalog(handler.clone()).await;
         }
 
+        let registry = handler
+            .lock()
+            .await
+            .node_registry
+            .read()
+            .await
+            .node_registry
+            .clone();
         for (node_id, node) in &board.nodes {
-            let logic = registry.instantiate(node).await?;
+            let logic = registry.instantiate(node)?;
             let mut node_pins = HashMap::new();
             let mut pin_cache = HashMap::new();
 
@@ -218,7 +265,7 @@ impl InternalRun {
             }
 
             if start_ids_set.contains(&node.id) {
-                stack.insert(node.id.clone(), internal_node.clone());
+                stack.push(&node.id, internal_node.clone());
             }
 
             nodes.insert(node_id.clone(), internal_node);
@@ -251,7 +298,7 @@ impl InternalRun {
             pins,
             variables,
             cache: Arc::new(RwLock::new(HashMap::new())),
-            stack: Arc::new(Mutex::new(stack)),
+            stack: Arc::new(stack),
             concurrency_limit: 128_000,
             cpus: num_cpus::get(),
             sender,
@@ -261,9 +308,38 @@ impl InternalRun {
         })
     }
 
+    // Reuse the same run, but reset the states
+    pub async fn fork(&mut self) -> anyhow::Result<()> {
+        if self.stack.len() != 0 {
+            return Err(anyhow::anyhow!("Cannot fork a run that is not finished"));
+        }
+
+        self.cache.write().await.clear();
+        self.stack = Arc::new(RunStack::with_capacity(self.stack.len()));
+        self.concurrency_limit = 128_000;
+        self.run.lock().await.status = RunStatus::Running;
+        self.run.lock().await.traces.clear();
+        self.run.lock().await.start = SystemTime::now();
+        self.run.lock().await.end = SystemTime::now();
+        for node in self.nodes.values() {
+            let mut guard = node.lock().await;
+            guard.reset().await;
+            for (_, pin) in guard.pins.iter_mut() {
+                pin.lock().await.reset().await;
+            }
+        }
+        for variable in self.variables.lock().await.values_mut() {
+            let default = variable.default_value.as_ref();
+            let value = default.map_or(Value::Null, |v| serde_json::from_slice(v).unwrap());
+            *variable.value.lock().await = value;
+        }
+
+        Ok(())
+    }
+
     async fn step_parallel(
         &mut self,
-        stack: BTreeMap<String, Arc<Mutex<InternalNode>>>,
+        stack: Arc<RunStack>,
         handler: &Arc<Mutex<FlowLikeState>>,
         log_level: LogLevel,
         stage: ExecutionStage,
@@ -276,7 +352,7 @@ impl InternalRun {
         let sender = self.sender.clone();
         let concurrency_limit = self.concurrency_limit;
 
-        let new_stack: BTreeMap<_, _> = futures::stream::iter(stack.into_values())
+        let new_stack = futures::stream::iter(stack.stack.clone())
             .map(|node| {
                 // Clone per iteration as needed
                 let dependencies = dependencies.clone();
@@ -305,22 +381,25 @@ impl InternalRun {
                 }
             })
             .buffer_unordered(self.cpus * 3)
-            .fold(BTreeMap::new(), |mut acc, result| async move {
-                if let Some(inner_iter) = result {
-                    for (key, node) in inner_iter {
-                        acc.insert(key, node);
+            .fold(
+                RunStack::with_capacity(stack.stack.len()),
+                |mut acc, result| async move {
+                    if let Some(inner_iter) = result {
+                        for (key, node) in inner_iter {
+                            acc.push(&key, node);
+                        }
                     }
-                }
-                acc
-            })
+                    acc
+                },
+            )
             .await;
 
-        self.stack = Arc::new(Mutex::new(new_stack));
+        self.stack = Arc::new(new_stack);
     }
 
     async fn step_single(
         &mut self,
-        stack: BTreeMap<String, Arc<Mutex<InternalNode>>>,
+        stack: Arc<RunStack>,
         handler: &Arc<Mutex<FlowLikeState>>,
         log_level: LogLevel,
         stage: ExecutionStage,
@@ -329,7 +408,7 @@ impl InternalRun {
         let cache = &self.cache;
         let concurrency_limit = self.concurrency_limit;
 
-        let node = stack.values().next().unwrap();
+        let node = stack.stack.first().unwrap();
         let connected_nodes = step_core(
             node,
             concurrency_limit,
@@ -345,11 +424,14 @@ impl InternalRun {
         )
         .await;
 
-        let new_stack = connected_nodes
-            .map(|nodes| nodes.into_iter().collect())
-            .unwrap_or_else(BTreeMap::new);
+        let mut new_stack = RunStack::with_capacity(stack.len());
+        if let Some(nodes) = connected_nodes {
+            for (key, node) in nodes {
+                new_stack.push(&key, node);
+            }
+        }
 
-        self.stack = Arc::new(Mutex::new(new_stack));
+        self.stack = Arc::new(new_stack);
     }
 
     async fn step(&mut self, handler: Arc<Mutex<FlowLikeState>>) {
@@ -360,7 +442,7 @@ impl InternalRun {
             (
                 run.board.stage.clone(),
                 run.log_level.clone(),
-                self.stack.lock().await.clone(),
+                self.stack.clone(),
             )
         };
 
@@ -374,36 +456,17 @@ impl InternalRun {
         }
     }
 
-    async fn stack_hash(&self) -> u64 {
-        let start = Instant::now();
-        let stack: Arc<Mutex<BTreeMap<String, Arc<Mutex<InternalNode>>>>> = self.stack.clone();
-        let stack = stack.lock().await;
-        let mut hasher = AHasher::default();
-
-        for key in stack.keys() {
-            key.hash(&mut hasher);
-        }
-
-        let result = hasher.finish();
-
-        if self.log_level <= LogLevel::Debug {
-            println!("InternalRun::stack_hash took {:?}", start.elapsed());
-        }
-
-        result
-    }
-
     pub async fn execute(&mut self, handler: Arc<Mutex<FlowLikeState>>) {
         let start = Instant::now();
         self.run.lock().await.start = SystemTime::now();
-        let mut stack_hash = self.stack_hash().await;
-        let mut current_stack_len = self.stack.lock().await.len();
+        let mut stack_hash = self.stack.hash();
+        let mut current_stack_len = self.stack.len();
 
         let mut errored = false;
         while current_stack_len > 0 {
             self.step(handler.clone()).await;
-            current_stack_len = self.stack.lock().await.len();
-            let new_stack_hash = self.stack_hash().await;
+            current_stack_len = self.stack.len();
+            let new_stack_hash = self.stack.hash();
             if new_stack_hash == stack_hash {
                 errored = true;
                 println!("End Reason: Stack did not change");
@@ -425,8 +488,8 @@ impl InternalRun {
     }
 
     pub async fn debug_step(&mut self, handler: Arc<Mutex<FlowLikeState>>) -> bool {
-        let stack_hash = self.stack_hash().await;
-        if self.stack.lock().await.len() == 0 {
+        let stack_hash = self.stack.hash();
+        if self.stack.len() == 0 {
             let mut run = self.run.lock().await;
             run.end = SystemTime::now();
             run.status = RunStatus::Success;
@@ -435,14 +498,14 @@ impl InternalRun {
 
         self.step(handler.clone()).await;
 
-        if self.stack.lock().await.len() == 0 {
+        if self.stack.len() == 0 {
             let mut run = self.run.lock().await;
             run.end = SystemTime::now();
             run.status = RunStatus::Success;
             return false;
         }
 
-        let new_stack_hash = self.stack_hash().await;
+        let new_stack_hash = self.stack.hash();
         if new_stack_hash == stack_hash {
             let mut run = self.run.lock().await;
             run.end = SystemTime::now();
@@ -577,11 +640,15 @@ async fn step_core(
         let connected = node.lock().await.get_connected_exec(true).await;
         let mut connected_nodes = Vec::with_capacity(connected.len());
         for connected_node in connected {
-            let id = {
-                let connected_node = connected_node.lock().await;
-                let node = connected_node.node.lock().await;
-                node.id.clone()
-            };
+            let id = connected_node
+                .lock()
+                .await
+                .node
+                .clone()
+                .lock()
+                .await
+                .id
+                .clone();
 
             connected_nodes.push((id, connected_node.clone()));
         }
