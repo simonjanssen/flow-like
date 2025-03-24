@@ -10,7 +10,6 @@ use crate::{
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{any::Any, sync::Arc};
-use tokio::sync::Mutex;
 
 #[derive(Serialize, Deserialize, JsonSchema)]
 pub struct CachedEmbeddingModel {
@@ -33,9 +32,8 @@ impl Cacheable for CachedEmbeddingModelObject {
     }
 }
 
-pub async fn register_functions() -> Vec<Arc<Mutex<dyn NodeLogic>>> {
-    let mut nodes: Vec<Arc<Mutex<dyn NodeLogic>>> =
-        vec![Arc::new(Mutex::new(load::LoadModelNode::default()))];
+pub async fn register_functions() -> Vec<Arc<dyn NodeLogic>> {
+    let mut nodes: Vec<Arc<dyn NodeLogic>> = vec![Arc::new(load::LoadModelNode::default())];
     nodes.extend(text::register_functions().await);
     nodes.extend(image::register_functions().await);
     nodes

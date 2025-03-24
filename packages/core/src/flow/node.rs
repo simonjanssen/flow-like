@@ -207,6 +207,7 @@ impl Node {
 
         self.get_pin_mut_by_name(pin_name).unwrap().data_type = VariableType::Generic;
         self.get_pin_mut_by_name(pin_name).unwrap().value_type = default_type;
+        self.get_pin_mut_by_name(pin_name).unwrap().schema = None;
         if let Some(value_type) = &value_type {
             self.get_pin_mut_by_name(pin_name).unwrap().value_type = value_type.clone();
         }
@@ -220,6 +221,7 @@ impl Node {
                     mutable_pin.data_type = pin.data_type.clone();
                     if value_type.is_none() {
                         mutable_pin.value_type = pin.value_type.clone();
+                        mutable_pin.schema = pin.schema.clone();
                         found_type = pin.data_type.clone();
                     }
                 }
@@ -236,7 +238,7 @@ impl Node {
 #[async_trait]
 pub trait NodeLogic: Send + Sync {
     async fn get_node(&self, handler: &FlowLikeState) -> Node;
-    async fn run(&mut self, context: &mut ExecutionContext) -> anyhow::Result<()>;
+    async fn run(&self, context: &mut ExecutionContext) -> anyhow::Result<()>;
 
     async fn get_progress(&self, context: &mut ExecutionContext) -> i32 {
         let state = context.get_state();

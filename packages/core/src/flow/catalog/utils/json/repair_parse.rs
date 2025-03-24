@@ -28,7 +28,7 @@ impl NodeLogic for RepairParseNode {
             "Utils/JSON",
         );
 
-        node.add_icon("/flow/icons/hammer.svg");
+        node.add_icon("/flow/icons/repair.svg");
 
         node.add_input_pin(
             "exec_in",
@@ -68,7 +68,7 @@ impl NodeLogic for RepairParseNode {
         return node;
     }
 
-    async fn run(&mut self, context: &mut ExecutionContext) -> anyhow::Result<()> {
+    async fn run(&self, context: &mut ExecutionContext) -> anyhow::Result<()> {
         context.deactivate_exec_pin("exec_out").await?;
         context.activate_exec_pin("failed").await?;
 

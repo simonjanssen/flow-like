@@ -85,7 +85,7 @@ impl NodeLogic for HybridSearchLocalDatabaseNode {
         return node;
     }
 
-    async fn run(&mut self, context: &mut ExecutionContext) -> anyhow::Result<()> {
+    async fn run(&self, context: &mut ExecutionContext) -> anyhow::Result<()> {
         let database: NodeDBConnection = context.evaluate_pin("database").await?;
         let vector: Vec<f64> = context.evaluate_pin("vector").await?;
         let search: String = context.evaluate_pin("search").await?;
@@ -98,7 +98,12 @@ impl NodeLogic for HybridSearchLocalDatabaseNode {
         let limit: i64 = context.evaluate_pin("limit").await?;
         let offset: i64 = context.evaluate_pin("offset").await?;
         let rerank: bool = context.evaluate_pin("rerank").await?;
-        let database = database.load(context, &database.cache_key).await?;
+        let database = database
+            .load(context, &database.cache_key)
+            .await?
+            .db
+            .clone();
+        let database = database.read().await;
         let results = database
             .hybrid_search(
                 vector,

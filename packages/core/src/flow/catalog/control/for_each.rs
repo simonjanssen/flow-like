@@ -6,7 +6,7 @@ use crate::{
         execution::{
             context::ExecutionContext, internal_node::InternalNode, log::LogMessage, LogLevel,
         },
-        node::{Node, NodeLogic, NodeState},
+        node::{Node, NodeLogic},
         pin::{PinOptions, ValueType},
         variable::VariableType,
     },
@@ -16,14 +16,11 @@ use async_trait::async_trait;
 use serde_json::Value;
 
 #[derive(Default)]
-pub struct LoopNode {
-    i: u64,
-    length: u64,
-}
+pub struct LoopNode {}
 
 impl LoopNode {
     pub fn new() -> Self {
-        LoopNode { i: 0, length: 0 }
+        LoopNode {}
     }
 }
 
@@ -76,7 +73,7 @@ impl NodeLogic for LoopNode {
         return node;
     }
 
-    async fn run(&mut self, context: &mut ExecutionContext) -> anyhow::Result<()> {
+    async fn run(&self, context: &mut ExecutionContext) -> anyhow::Result<()> {
         let array = context.get_pin_by_name("array").await?;
         let value = context.get_pin_by_name("value").await?;
         let exec_item = context.get_pin_by_name("exec_out").await?;
@@ -88,11 +85,8 @@ impl NodeLogic for LoopNode {
             .as_array()
             .ok_or(anyhow::anyhow!("Array value is not an array"))?;
 
-        self.length = array_value.len() as u64;
-
         context.activate_exec_pin_ref(&exec_item).await?;
         for (i, item) in array_value.iter().enumerate() {
-            self.i = i as u64;
             let item = item.clone();
             let item = item.to_owned();
             value.lock().await.set_value(item).await;
@@ -128,17 +122,6 @@ impl NodeLogic for LoopNode {
         return Ok(());
     }
 
-    async fn get_progress(&self, context: &mut ExecutionContext) -> i32 {
-        let state = context.get_state();
-
-        match state {
-            NodeState::Running => return ((self.i as f64 / self.length as f64) * 100.0) as i32,
-            NodeState::Success => return 100,
-            NodeState::Error => return 0,
-            _ => return 0,
-        }
-    }
-
     async fn on_update(&self, node: &mut Node, board: Arc<Board>) {
         let match_type = node.match_type("array", board.clone(), None, Some(ValueType::Array));
 
@@ -162,9 +145,20 @@ impl NodeLogic for LoopNode {
             eprintln!("Error: {:?}", match_type.err());
         }
 
-        let array_pin = node.get_pin_by_name("array").unwrap();
+        let array_pin = node.get_pin_by_name("array").unwrap().clone();
         if array_pin.data_type != VariableType::Generic {
-            node.get_pin_mut_by_name("value").unwrap().data_type = array_pin.data_type.clone();
+            let pin = node.get_pin_mut_by_name("value").unwrap();
+            pin.data_type = array_pin.data_type.clone();
+            pin.schema = array_pin.schema.clone();
+            return;
+        }
+
+        let value_pin = node.get_pin_by_name("value").unwrap().clone();
+        if value_pin.data_type != VariableType::Generic {
+            let pin = node.get_pin_mut_by_name("array").unwrap();
+            pin.data_type = value_pin.data_type.clone();
+            pin.schema = value_pin.schema.clone();
+            return;
         }
     }
 }

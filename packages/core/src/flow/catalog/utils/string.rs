@@ -1,6 +1,5 @@
 use crate::flow::node::NodeLogic;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 
 pub mod contains;
 pub mod ends_with;
@@ -16,22 +15,24 @@ pub mod to_lowercase;
 pub mod to_uppercase;
 pub mod trim;
 pub mod unequal;
+pub mod utf_8_lossy;
 
-pub async fn register_functions() -> Vec<Arc<Mutex<dyn NodeLogic>>> {
-    let mut items: Vec<Arc<Mutex<dyn NodeLogic>>> = vec![
-        Arc::new(Mutex::new(format::FormatStringNode::default())),
-        Arc::new(Mutex::new(join::StringJoinNode::default())),
-        Arc::new(Mutex::new(replace::StringReplaceNode::default())),
-        Arc::new(Mutex::new(split::StringSplitNode::default())),
-        Arc::new(Mutex::new(to_lowercase::StringToLowerNode::default())),
-        Arc::new(Mutex::new(to_uppercase::StringToUpperNode::default())),
-        Arc::new(Mutex::new(length::StringLengthNode::default())),
-        Arc::new(Mutex::new(equal::EqualStringNode::default())),
-        Arc::new(Mutex::new(unequal::UnEqualStringNode::default())),
-        Arc::new(Mutex::new(trim::StringTrimNode::default())),
-        Arc::new(Mutex::new(starts_with::StringStartsWithNode::default())),
-        Arc::new(Mutex::new(ends_with::StringEndsWithNode::default())),
-        Arc::new(Mutex::new(contains::StringContainsNode::default())),
+pub async fn register_functions() -> Vec<Arc<dyn NodeLogic>> {
+    let mut items: Vec<Arc<dyn NodeLogic>> = vec![
+        Arc::new(format::FormatStringNode::default()),
+        Arc::new(join::StringJoinNode::default()),
+        Arc::new(replace::StringReplaceNode::default()),
+        Arc::new(split::StringSplitNode::default()),
+        Arc::new(to_lowercase::StringToLowerNode::default()),
+        Arc::new(to_uppercase::StringToUpperNode::default()),
+        Arc::new(length::StringLengthNode::default()),
+        Arc::new(equal::EqualStringNode::default()),
+        Arc::new(unequal::UnEqualStringNode::default()),
+        Arc::new(trim::StringTrimNode::default()),
+        Arc::new(starts_with::StringStartsWithNode::default()),
+        Arc::new(ends_with::StringEndsWithNode::default()),
+        Arc::new(utf_8_lossy::ParseUtf8LossyNode::default()),
+        Arc::new(contains::StringContainsNode::default()),
     ];
 
     items.append(&mut similarity::register_functions().await);

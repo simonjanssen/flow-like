@@ -45,10 +45,22 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyinstaller docling rtree
 
+      - name: Install UPX
+        run: |
+          if [ "${{ runner.os }}" == "Linux" ]; then
+            sudo apt-get update
+            sudo apt-get install -y upx
+          elif [ "${{ runner.os }}" == "macOS" ]; then
+            brew install upx
+          elif [ "${{ runner.os }}" == "Windows" ]; then
+            choco install upx
+          fi
+        shell: bash
+
       - name: Build binary
         working-directory: apps/docling
         run: |
-          pyinstaller --onefile --name flow-docling --hidden-import=docling --hidden-import=rtree --noconfirm --collect-all docling_parse main.py
+          pyinstaller --onefile --name flow-docling --noconfirm --upx-dir="$(which upx | xargs dirname)" --collect-all docling_parse main.py
 
       - name: Prepare binary for upload
         id: prepare-binary
@@ -63,7 +75,7 @@ jobs:
           echo "binary_path=apps/docling/dist/${{ matrix.artifact_name }}" >> $GITHUB_OUTPUT
 
       - name: Upload binary to artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
           path: ${{ steps.prepare-binary.outputs.binary_path }}
@@ -73,16 +85,26 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    if: github.event_name == 'release'
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Download all artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: artifacts
 
-      - name: Upload binaries to release
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+      - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: release-docling-${{ steps.date.outputs.date }}
+          name: Automated Docling Release ${{ steps.date.outputs.date }}
+          draft: false
+          prerelease: false
           files: |
             artifacts/flow-docling-linux-x64/flow-docling-linux-x64
             artifacts/flow-docling-windows-x64.exe/flow-docling-windows-x64.exe

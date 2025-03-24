@@ -67,11 +67,16 @@ impl NodeLogic for OptimizeLocalDatabaseNode {
         return node;
     }
 
-    async fn run(&mut self, context: &mut ExecutionContext) -> anyhow::Result<()> {
+    async fn run(&self, context: &mut ExecutionContext) -> anyhow::Result<()> {
         context.activate_exec_pin("failed").await?;
         context.deactivate_exec_pin("exec_out").await?;
         let database: NodeDBConnection = context.evaluate_pin("database").await?;
-        let database = database.load(context, &database.cache_key).await?;
+        let database = database
+            .load(context, &database.cache_key)
+            .await?
+            .db
+            .clone();
+        let database = database.read().await;
         let keep_versions: bool = context.evaluate_pin("keep_versions").await?;
         let result = database.optimize(keep_versions).await;
 

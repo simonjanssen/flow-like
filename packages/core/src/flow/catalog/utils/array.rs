@@ -1,6 +1,5 @@
 use crate::flow::node::NodeLogic;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 
 pub mod clear;
 pub mod find_item;
@@ -11,19 +10,21 @@ pub mod make;
 pub mod pop;
 pub mod push;
 pub mod remove_index;
+pub mod extend;
 pub mod set;
 
-pub async fn register_functions() -> Vec<Arc<Mutex<dyn NodeLogic>>> {
+pub async fn register_functions() -> Vec<Arc<dyn NodeLogic>> {
     vec![
-        Arc::new(Mutex::new(len::ArrayLengthNode::default())),
-        Arc::new(Mutex::new(get::GetArrayElementNode::default())),
-        Arc::new(Mutex::new(includes::ArrayIncludesNode::default())),
-        Arc::new(Mutex::new(make::MakeArrayNode::default())),
-        Arc::new(Mutex::new(pop::PopArrayNode::default())),
-        Arc::new(Mutex::new(push::PushArrayNode::default())),
-        Arc::new(Mutex::new(set::SetIndexArrayNode::default())),
-        Arc::new(Mutex::new(remove_index::RemoveArrayIndexNode::default())),
-        Arc::new(Mutex::new(clear::ClearArrayNode::default())),
-        Arc::new(Mutex::new(find_item::FindItemInArrayNode::default())),
+        Arc::new(extend::ExtendArrayNode::default()),
+        Arc::new(len::ArrayLengthNode::default()),
+        Arc::new(get::GetArrayElementNode::default()),
+        Arc::new(includes::ArrayIncludesNode::default()),
+        Arc::new(make::MakeArrayNode::default()),
+        Arc::new(pop::PopArrayNode::default()),
+        Arc::new(push::PushArrayNode::default()),
+        Arc::new(set::SetIndexArrayNode::default()),
+        Arc::new(remove_index::RemoveArrayIndexNode::default()),
+        Arc::new(clear::ClearArrayNode::default()),
+        Arc::new(find_item::FindItemInArrayNode::default()),
     ]
 }

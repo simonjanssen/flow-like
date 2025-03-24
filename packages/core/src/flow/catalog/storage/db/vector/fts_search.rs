@@ -76,7 +76,7 @@ impl NodeLogic for FTSLocalDatabaseNode {
         return node;
     }
 
-    async fn run(&mut self, context: &mut ExecutionContext) -> anyhow::Result<()> {
+    async fn run(&self, context: &mut ExecutionContext) -> anyhow::Result<()> {
         let database: NodeDBConnection = context.evaluate_pin("database").await?;
         let search: String = context.evaluate_pin("search").await?;
         let filter: String = context.evaluate_pin("filter").await?;
@@ -87,7 +87,12 @@ impl NodeLogic for FTSLocalDatabaseNode {
         };
         let limit: i64 = context.evaluate_pin("limit").await?;
         let offset: i64 = context.evaluate_pin("offset").await?;
-        let database = database.load(context, &database.cache_key).await?;
+        let database = database
+            .load(context, &database.cache_key)
+            .await?
+            .db
+            .clone();
+        let database = database.read().await;
         let results = database
             .fts_search(&search, filter, limit as usize, offset as usize)
             .await?;

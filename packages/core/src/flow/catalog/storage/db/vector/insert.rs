@@ -61,11 +61,16 @@ impl NodeLogic for InsertLocalDatabaseNode {
         return node;
     }
 
-    async fn run(&mut self, context: &mut ExecutionContext) -> anyhow::Result<()> {
+    async fn run(&self, context: &mut ExecutionContext) -> anyhow::Result<()> {
         context.activate_exec_pin("failed").await?;
         context.deactivate_exec_pin("exec_out").await?;
         let database: NodeDBConnection = context.evaluate_pin("database").await?;
-        let mut database = database.load(context, &database.cache_key).await?;
+        let database = database
+            .load(context, &database.cache_key)
+            .await?
+            .db
+            .clone();
+        let mut database = database.write().await;
         let value: Value = context.evaluate_pin("value").await?;
         let value = vec![value];
         let results = database.insert(value).await;
@@ -129,11 +134,16 @@ impl NodeLogic for BatchInsertLocalDatabaseNode {
         return node;
     }
 
-    async fn run(&mut self, context: &mut ExecutionContext) -> anyhow::Result<()> {
+    async fn run(&self, context: &mut ExecutionContext) -> anyhow::Result<()> {
         context.activate_exec_pin("failed").await?;
         context.deactivate_exec_pin("exec_out").await?;
         let database: NodeDBConnection = context.evaluate_pin("database").await?;
-        let mut database = database.load(context, &database.cache_key).await?;
+        let database = database
+            .load(context, &database.cache_key)
+            .await?
+            .db
+            .clone();
+        let mut database = database.write().await;
         let value: Vec<Value> = context.evaluate_pin("value").await?;
         let results = database.insert(value).await;
 
