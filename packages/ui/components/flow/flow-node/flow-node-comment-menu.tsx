@@ -1,5 +1,3 @@
-import { useQueryClient } from "@tanstack/react-query";
-import { invoke } from "@tauri-apps/api/core";
 import { useState } from "react";
 import { Button } from "../../../components/ui/button";
 import {
@@ -11,36 +9,44 @@ import {
 	DialogTitle,
 } from "../../../components/ui/dialog";
 import { Textarea } from "../../../components/ui/textarea";
+import { useInvalidateInvoke } from "../../../hooks";
+import { updateNodeCommand } from "../../../lib";
 import type { INode } from "../../../lib/schema/flow/node";
+import { useBackend } from "../../../state/backend-state";
+import { useUndoRedo } from "../flow-history";
 
 export function FlowNodeCommentMenu({
 	node,
 	boardId,
+	appId,
 	open,
 	onOpenChange,
 }: Readonly<{
 	node: INode;
+	appId: string;
 	boardId: string;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 }>) {
-	const queryClient = useQueryClient();
+	const { pushCommand } = useUndoRedo(appId, boardId);
+	const invalidate = useInvalidateInvoke();
+	const backend = useBackend();
 	const [comment, setComment] = useState("");
 
 	async function saveComment() {
-		await invoke("update_node", {
-			boardId: boardId,
+		const command = updateNodeCommand({
 			node: { ...node, comment },
 		});
+
+		const result = await backend.executeCommand(appId, boardId, command);
+		await pushCommand(result);
 		onOpenChange(false);
 		setComment("");
 		refetchBoard();
 	}
 
 	async function refetchBoard() {
-		queryClient.invalidateQueries({
-			queryKey: ["get", "board", boardId],
-		});
+		await invalidate(backend.getBoard, [appId, boardId]);
 	}
 
 	return (

@@ -4,10 +4,14 @@ mod settings;
 mod state;
 mod utils;
 use flow_like::{
+    flow_like_storage::{
+        files::store::{local_store::LocalObjectStore, FlowLikeStore},
+        lancedb, Path,
+    },
+    flow_like_types::sync::DashMap,
     state::{FlowLikeConfig, FlowLikeState},
-    utils::{http::HTTPClient, local_object_store::LocalObjectStore},
+    utils::http::HTTPClient,
 };
-use object_store::path::Path;
 use serde_json::Value;
 use settings::Settings;
 use state::TauriFlowLikeState;
@@ -23,13 +27,13 @@ pub fn run() {
     let project_dir = settings_state.project_dir.clone();
 
     let mut config: FlowLikeConfig = FlowLikeConfig::new();
-    config.register_bits_store(flow_like::state::FlowLikeStore::Local(Arc::new(
+    config.register_bits_store(FlowLikeStore::Local(Arc::new(
         LocalObjectStore::new(settings_state.bit_dir.clone()).unwrap(),
     )));
-    config.register_user_store(flow_like::state::FlowLikeStore::Local(Arc::new(
+    config.register_user_store(FlowLikeStore::Local(Arc::new(
         LocalObjectStore::new(settings_state.user_dir.clone()).unwrap(),
     )));
-    config.register_project_store(flow_like::state::FlowLikeStore::Local(Arc::new(
+    config.register_project_store(FlowLikeStore::Local(Arc::new(
         LocalObjectStore::new(project_dir.clone()).unwrap(),
     )));
     config.register_build_project_database(Arc::new(move |path: Path| {
@@ -42,6 +46,19 @@ pub fn run() {
     let (http_client, refetch_rx) = HTTPClient::new();
     let (state, _) = FlowLikeState::new(config, http_client);
     let state_ref = Arc::new(Mutex::new(state));
+
+    let initialized_state = state_ref.clone();
+    tauri::async_runtime::spawn(async move {
+        let weak_ref = Arc::downgrade(&initialized_state);
+        let catalog = flow_like_catalog::get_catalog().await;
+        let state = initialized_state.lock().await;
+        let registry_guard = state.node_registry.clone();
+        drop(state);
+        let mut registry = registry_guard.write().await;
+        registry.initialize(weak_ref);
+        registry.push_nodes(catalog).await.unwrap();
+        println!("Catalog Initialized");
+    });
 
     let sentry_endpoint = std::option_env!("PUBLIC_SENTRY_ENDPOINT");
     let guard = sentry_endpoint.map(|endpoint| {
@@ -121,8 +138,7 @@ pub fn run() {
 
             tauri::async_runtime::spawn(async move {
                 let handle = relay_handle;
-                let buffer: Arc<dashmap::DashMap<Cow<'static, str>, Vec<Value>>> =
-                    Arc::new(dashmap::DashMap::new());
+                let buffer: Arc<DashMap<Cow<'static, str>, Vec<Value>>> = Arc::new(DashMap::new());
 
                 let mut receiver = {
                     println!("Starting Message Relay");
@@ -207,13 +223,12 @@ pub fn run() {
         .manage(state::TauriSettingsState(settings_state))
         .manage(state::TauriFlowLikeState(state_ref))
         .invoke_handler(tauri::generate_handler![
-            functions::file::get_file_meta,
-            functions::file::get_folder_meta,
+            functions::file::get_path_meta,
             functions::ai::invoke::predict,
             functions::ai::invoke::find_best_model,
             functions::system::get_system_info,
             functions::download::init::init_downloads,
-            functions::download::init::resume_download,
+            functions::download::init::get_downloads,
             functions::settings::profiles::get_profiles,
             functions::settings::profiles::get_default_profiles,
             functions::settings::profiles::get_current_profile,
@@ -253,18 +268,8 @@ pub fn run() {
             functions::flow::board::update_board_meta,
             functions::flow::board::undo_board,
             functions::flow::board::redo_board,
-            functions::flow::board::add_node_to_board,
-            functions::flow::board::remove_node_from_board,
-            functions::flow::board::move_node,
-            functions::flow::board::upsert_comment,
-            functions::flow::board::remove_comment,
-            functions::flow::board::upsert_variable,
-            functions::flow::board::remove_variable,
-            functions::flow::board::connect_pins,
-            functions::flow::board::disconnect_pins,
-            functions::flow::board::upsert_pin,
-            functions::flow::board::paste_nodes_to_board,
-            functions::flow::board::update_node,
+            functions::flow::board::execute_command,
+            functions::flow::board::execute_commands,
             functions::flow::board::save_board,
             functions::flow::run::create_run,
             functions::flow::run::execute_run,

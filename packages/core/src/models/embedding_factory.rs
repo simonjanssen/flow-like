@@ -1,15 +1,14 @@
 use std::{collections::HashMap, sync::Arc, time::SystemTime};
 
-use tokio::sync::Mutex;
-
-use crate::{
-    bit::{Bit, BitProvider},
-    state::FlowLikeState,
+use flow_like_model_provider::{
+    embedding::EmbeddingModelLogic, image_embedding::ImageEmbeddingModelLogic,
 };
+use flow_like_types::sync::Mutex;
+
+use crate::{bit::Bit, state::FlowLikeState};
 
 use super::{
-    embedding::{local::LocalEmbeddingModel, EmbeddingModelLogic},
-    image_embedding::{local::LocalImageEmbeddingModel, ImageEmbeddingModelLogic},
+    embedding::local::LocalEmbeddingModel, image_embedding::local::LocalImageEmbeddingModel,
 };
 
 pub struct EmbeddingFactory {
@@ -37,16 +36,16 @@ impl EmbeddingFactory {
         &mut self,
         bit: &Bit,
         app_state: Arc<Mutex<FlowLikeState>>,
-    ) -> anyhow::Result<Arc<dyn EmbeddingModelLogic>> {
+    ) -> flow_like_types::Result<Arc<dyn EmbeddingModelLogic>> {
         let provider = bit.try_to_embedding_provider();
         if provider.is_none() {
-            return Err(anyhow::anyhow!("Model type not supported"));
+            return Err(flow_like_types::anyhow!("Model type not supported"));
         }
 
-        let provider = provider.ok_or(anyhow::anyhow!("Model type not supported"))?;
+        let provider = provider.ok_or(flow_like_types::anyhow!("Model type not supported"))?;
         let provider = provider.provider_name;
 
-        if provider == BitProvider::Local {
+        if provider == "Local" {
             if let Some(model) = self.cached_text_models.get(&bit.id) {
                 // update last used time
                 self.ttl_list.insert(bit.id.clone(), SystemTime::now());
@@ -60,23 +59,23 @@ impl EmbeddingFactory {
             return Ok(local_model);
         }
 
-        Err(anyhow::anyhow!("Model type not supported"))
+        Err(flow_like_types::anyhow!("Model type not supported"))
     }
 
     pub async fn build_image(
         &mut self,
         bit: &Bit,
         app_state: Arc<Mutex<FlowLikeState>>,
-    ) -> anyhow::Result<Arc<dyn ImageEmbeddingModelLogic>> {
+    ) -> flow_like_types::Result<Arc<dyn ImageEmbeddingModelLogic>> {
         let provider = bit.try_to_provider();
         if provider.is_none() {
-            return Err(anyhow::anyhow!("Model type not supported"));
+            return Err(flow_like_types::anyhow!("Model type not supported"));
         }
 
-        let provider = provider.ok_or(anyhow::anyhow!("Model type not supported"))?;
+        let provider = provider.ok_or(flow_like_types::anyhow!("Model type not supported"))?;
         let provider = provider.provider_name;
 
-        if provider == BitProvider::Local {
+        if provider == "Local" {
             if let Some(model) = self.cached_image_models.get(&bit.id) {
                 self.ttl_list.insert(bit.id.clone(), SystemTime::now());
                 return Ok(model.clone());
@@ -89,7 +88,7 @@ impl EmbeddingFactory {
             return Ok(local_model);
         }
 
-        Err(anyhow::anyhow!("Model type not supported"))
+        Err(flow_like_types::anyhow!("Model type not supported"))
     }
 
     pub fn gc(&mut self) {

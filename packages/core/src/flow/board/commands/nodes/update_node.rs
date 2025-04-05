@@ -1,17 +1,17 @@
-use async_trait::async_trait;
+use flow_like_types::{async_trait, sync::Mutex};
+use schemars::JsonSchema;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 
 use crate::{
     flow::{
-        board::{Board, Command},
+        board::{Board, commands::Command},
         node::Node,
     },
     state::FlowLikeState,
 };
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, JsonSchema)]
 pub struct UpdateNodeCommand {
     pub old_node: Option<Node>,
     pub node: Node,
@@ -32,7 +32,7 @@ impl Command for UpdateNodeCommand {
         &mut self,
         board: &mut Board,
         _state: Arc<Mutex<FlowLikeState>>,
-    ) -> anyhow::Result<()> {
+    ) -> flow_like_types::Result<()> {
         self.old_node = board.nodes.insert(self.node.id.clone(), self.node.clone());
         Ok(())
     }
@@ -41,7 +41,7 @@ impl Command for UpdateNodeCommand {
         &mut self,
         board: &mut Board,
         _state: Arc<Mutex<FlowLikeState>>,
-    ) -> anyhow::Result<()> {
+    ) -> flow_like_types::Result<()> {
         if let Some(old_node) = self.old_node.take() {
             board.nodes.insert(old_node.id.clone(), old_node.clone());
         } else {

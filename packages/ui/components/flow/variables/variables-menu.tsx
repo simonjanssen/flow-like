@@ -40,6 +40,11 @@ import {
 	SheetTrigger,
 } from "../../../components/ui/sheet";
 import { Switch } from "../../../components/ui/switch";
+import {
+	type IGeneric,
+	removeVariableCommand,
+	upsertVariableCommand,
+} from "../../../lib";
 import type { IBoard, IVariable } from "../../../lib/schema/flow/board";
 import { IVariableType } from "../../../lib/schema/flow/node";
 import { IValueType } from "../../../lib/schema/flow/pin";
@@ -52,22 +57,21 @@ export function VariablesMenu({
 	executeCommand,
 }: Readonly<{
 	board: IBoard;
-	executeCommand: (command: string, args: any, append: boolean) => Promise<any>;
+	executeCommand: (command: IGeneric, append: boolean) => Promise<any>;
 }>) {
 	async function upsertVariable(variable: IVariable) {
-		await executeCommand(
-			"upsert_variable",
-			{ boardId: board.id, variable },
-			false,
-		);
+		const command = upsertVariableCommand({
+			variable,
+		});
+
+		await executeCommand(command, false);
 	}
 
 	async function removeVariable(variable: IVariable) {
-		await executeCommand(
-			"remove_variable",
-			{ boardId: board.id, variable },
-			false,
-		);
+		const command = removeVariableCommand({
+			variable,
+		});
+		await executeCommand(command, false);
 	}
 
 	return (

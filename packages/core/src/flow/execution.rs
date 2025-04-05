@@ -1,15 +1,14 @@
 use ahash::AHasher;
 use context::ExecutionContext;
-use cuid2;
-use dashmap::DashMap;
+use flow_like_types::Value;
+use flow_like_types::sync::{DashMap, Mutex, RwLock, mpsc};
+use flow_like_types::{Cacheable, anyhow, create_id};
 use futures::StreamExt;
 use internal_node::InternalNode;
 use internal_pin::InternalPin;
 use num_cpus;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use std::any::Any;
 use std::time::Instant;
 use std::{
     collections::{HashMap, HashSet},
@@ -17,7 +16,6 @@ use std::{
     sync::{Arc, Weak},
     time::SystemTime,
 };
-use tokio::sync::{Mutex, RwLock};
 use trace::Trace;
 pub mod context;
 pub mod internal_node;
@@ -29,7 +27,6 @@ use crate::profile::Profile;
 use crate::state::{FlowLikeEvent, FlowLikeState};
 
 use super::board::ExecutionStage;
-use super::catalog::load_catalog;
 use super::{board::Board, node::NodeState, variable::Variable};
 
 const USE_DEPENDENCY_GRAPH: bool = false;
@@ -53,21 +50,6 @@ pub struct Run {
     pub board: Arc<Board>,
     pub log_level: LogLevel,
     pub sub: String,
-}
-
-pub trait Cacheable: Any + Send + Sync {
-    fn as_any(&self) -> &dyn Any;
-    fn as_any_mut(&mut self) -> &mut dyn Any;
-}
-
-impl dyn Cacheable {
-    pub fn downcast_ref<T: Cacheable>(&self) -> Option<&T> {
-        self.as_any().downcast_ref::<T>()
-    }
-
-    pub fn downcast_mut<T: Cacheable>(&mut self) -> Option<&mut T> {
-        self.as_any_mut().downcast_mut::<T>()
-    }
 }
 
 #[derive(Clone)]
@@ -120,7 +102,7 @@ pub struct InternalRun {
     pub variables: Arc<Mutex<HashMap<String, Variable>>>,
     pub cache: Arc<RwLock<HashMap<String, Arc<dyn Cacheable>>>>,
     pub profile: Arc<Profile>,
-    pub sender: tokio::sync::mpsc::Sender<FlowLikeEvent>,
+    pub sender: mpsc::Sender<FlowLikeEvent>,
 
     stack: Arc<RunStack>,
     concurrency_limit: u64,
@@ -131,18 +113,16 @@ pub struct InternalRun {
 
 impl InternalRun {
     pub async fn new(
-        board: Board,
+        board: Arc<Board>,
         handler: &Arc<Mutex<FlowLikeState>>,
         profile: &Profile,
         start_ids: Vec<String>,
         sub: Option<String>,
-    ) -> anyhow::Result<Self> {
+    ) -> flow_like_types::Result<Self> {
         let before = Instant::now();
         let start_ids_set: HashSet<String> = start_ids.into_iter().collect();
         let sender = handler.lock().await.event_sender.lock().await.clone();
-        let run_id = cuid2::create_id();
-
-        let board = Arc::new(board);
+        let run_id = create_id();
 
         let run = Run {
             id: run_id.clone(),
@@ -162,10 +142,9 @@ impl InternalRun {
         let variables = Arc::new(Mutex::new({
             let mut map = HashMap::with_capacity(board.variables.len());
             for (variable_id, variable) in &board.variables {
-                let value = variable
-                    .default_value
-                    .as_ref()
-                    .map_or(Value::Null, |v| serde_json::from_slice::<Value>(v).unwrap());
+                let value = variable.default_value.as_ref().map_or(Value::Null, |v| {
+                    flow_like_types::json::from_slice::<Value>(v).unwrap()
+                });
                 let mut var = variable.clone();
                 var.value = Arc::new(Mutex::new(value));
                 map.insert(variable_id.clone(), var);
@@ -201,13 +180,15 @@ impl InternalRun {
 
             for connected_pin_id in connected_to {
                 if let Some(connected_pin) = pins.get(&connected_pin_id) {
-                    internal_pin.connected_to.push(connected_pin.clone());
+                    let connected = Arc::downgrade(connected_pin);
+                    internal_pin.connected_to.push(connected);
                 }
             }
 
             for depends_on_pin_id in depends_on {
                 if let Some(depends_on_pin) = pins.get(&depends_on_pin_id) {
-                    internal_pin.depends_on.push(depends_on_pin.clone());
+                    let depends_on = Arc::downgrade(depends_on_pin);
+                    internal_pin.depends_on.push(depends_on);
                 }
             }
         }
@@ -215,10 +196,6 @@ impl InternalRun {
         let mut dependency_map = HashMap::with_capacity(board.nodes.len());
         let mut nodes = HashMap::with_capacity(board.nodes.len());
         let mut stack = RunStack::with_capacity(start_ids_set.len());
-
-        if !handler.lock().await.node_registry.read().await.initialized {
-            load_catalog(handler.clone()).await;
-        }
 
         let registry = handler
             .lock()
@@ -312,9 +289,11 @@ impl InternalRun {
     }
 
     // Reuse the same run, but reset the states
-    pub async fn fork(&mut self) -> anyhow::Result<()> {
+    pub async fn fork(&mut self) -> flow_like_types::Result<()> {
         if self.stack.len() != 0 {
-            return Err(anyhow::anyhow!("Cannot fork a run that is not finished"));
+            return Err(flow_like_types::anyhow!(
+                "Cannot fork a run that is not finished"
+            ));
         }
 
         self.cache.write().await.clear();
@@ -331,7 +310,9 @@ impl InternalRun {
         }
         for variable in self.variables.lock().await.values_mut() {
             let default = variable.default_value.as_ref();
-            let value = default.map_or(Value::Null, |v| serde_json::from_slice(v).unwrap());
+            let value = default.map_or(Value::Null, |v| {
+                flow_like_types::json::from_slice(v).unwrap()
+            });
             *variable.value.lock().await = value;
         }
 
@@ -386,8 +367,8 @@ impl InternalRun {
             .buffer_unordered(self.cpus * 3)
             .fold(
                 RunStack::with_capacity(stack.stack.len()),
-                |mut acc, result| async move {
-                    if let Some(inner_iter) = result {
+                |mut acc: RunStack, result| async move {
+                    if let Ok(inner_iter) = result {
                         for (key, node) in inner_iter {
                             acc.push(&key, node);
                         }
@@ -429,7 +410,7 @@ impl InternalRun {
         .await;
 
         let mut new_stack = RunStack::with_capacity(stack.len());
-        if let Some(nodes) = connected_nodes {
+        if let Ok(nodes) = connected_nodes {
             for (key, node) in nodes {
                 new_stack.push(&key, node);
             }
@@ -591,16 +572,16 @@ async fn step_core(
     stage: ExecutionStage,
     dependencies: &HashMap<String, Vec<Arc<InternalNode>>>,
     profile: &Arc<Profile>,
-    sender: &tokio::sync::mpsc::Sender<FlowLikeEvent>,
+    sender: &mpsc::Sender<FlowLikeEvent>,
     concurrency_map: Arc<DashMap<String, u64>>,
-) -> Option<Vec<(String, Arc<InternalNode>)>> {
+) -> flow_like_types::Result<Vec<(String, Arc<InternalNode>)>> {
     // Check Node State and Validate Execution Count (to stop infinite loops)
     {
         let mut limit = concurrency_map
             .entry(node.node.lock().await.id.clone())
             .or_insert(0);
         if *limit >= concurrency_limit {
-            return None;
+            return Err(anyhow!("Concurrency limit reached"));
         }
 
         *limit += 1;
@@ -641,15 +622,15 @@ async fn step_core(
     drop(context);
 
     if state == NodeState::Success {
-        let connected = node.get_connected_exec(true).await;
+        let connected = node.get_connected_exec(true).await.unwrap();
         let mut connected_nodes = Vec::with_capacity(connected.len());
         for connected_node in connected {
             let id = connected_node.node.clone().lock().await.id.clone();
 
             connected_nodes.push((id, connected_node.clone()));
         }
-        return Some(connected_nodes);
+        return Ok(connected_nodes);
     }
 
-    None
+    Err(anyhow!("Node failed"))
 }

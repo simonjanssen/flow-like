@@ -1,6 +1,5 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import {
 	Button,
@@ -10,29 +9,28 @@ import {
 	Separator,
 	Textarea,
 	VerificationDialog,
+	useBackend,
+	useInvalidateInvoke,
 	useInvoke,
 } from "@tm9657/flow-like-ui";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useTauriInvoke } from "../../../components/useInvoke";
 
 export default function Id() {
+	const backend = useBackend();
+	const invalidate = useInvalidateInvoke();
 	const searchParams = useSearchParams();
-	const queryClient = useQueryClient();
 	const router = useRouter();
 	const id = searchParams.get("id");
-	const app = useInvoke<IApp | undefined>(
-		"get_app",
-		{ appId: id },
-		[id ?? ""],
-		typeof id === "string",
-	);
-	const isReady = useInvoke<boolean>(
+	const app = useInvoke(backend.getApp, [id ?? ""], typeof id === "string");
+	const isReady = useTauriInvoke<boolean>(
 		"app_configured",
 		{ appId: id },
 		[id ?? ""],
 		typeof id === "string",
 	);
-	const appSize = useInvoke<number>(
+	const appSize = useTauriInvoke<number>(
 		"get_app_size",
 		{ appId: id },
 		[id ?? ""],
@@ -72,16 +70,12 @@ export default function Id() {
 		await app.refetch();
 		await isReady.refetch();
 		await appSize.refetch();
-		await queryClient.invalidateQueries({
-			queryKey: "get_apps".split("_"),
-		});
+		await invalidate(backend.getApps, []);
 	}
 
 	async function deleteVault() {
 		await invoke("delete_app", { appId: id });
-		await queryClient.invalidateQueries({
-			queryKey: "get_apps".split("_"),
-		});
+		await invalidate(backend.getApps, []);
 		router.push("/store/yours");
 	}
 

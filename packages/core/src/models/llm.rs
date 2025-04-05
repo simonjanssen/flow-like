@@ -1,33 +1,15 @@
 pub mod local;
-pub mod openai;
 
-use crate::{
-    bit::{Bit, BitProvider},
-    state::FlowLikeState,
-    utils::device::get_vram,
-};
-use anyhow::Result;
-use async_trait::async_trait;
+use crate::{bit::Bit, state::FlowLikeState, utils::device::get_vram};
+use flow_like_model_provider::llm::ModelLogic;
+use flow_like_types::{Result, sync::Mutex, tokio::time::interval};
 use local::LocalModel;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, future::Future, pin::Pin, sync::Arc, time::SystemTime};
-use tokio::sync::Mutex;
-use tokio::time::{interval, Duration};
-
-use super::{history::History, response::Response, response_chunk::ResponseChunk};
-
-pub type LLMCallback = Arc<
-    dyn Fn(ResponseChunk) -> Pin<Box<dyn Future<Output = Result<()>> + Send>>
-        + Send
-        + Sync
-        + 'static,
->;
-
-#[async_trait]
-pub trait ModelLogic: Send + Sync {
-    async fn invoke(&self, history: &History, lambda: Option<LLMCallback>) -> Result<Response>;
-    fn get_bit(&self) -> Bit;
-}
+use std::{
+    collections::HashMap,
+    sync::Arc,
+    time::{Duration, SystemTime},
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Hash, PartialEq, Eq)]
 pub struct ExecutionSettings {
@@ -86,13 +68,13 @@ impl ModelFactory {
         let settings = self.execution_settings.clone();
         let provider = bit.try_to_provider();
         if provider.is_none() {
-            return Err(anyhow::anyhow!("Model type not supported"));
+            return Err(flow_like_types::anyhow!("Model type not supported"));
         }
 
-        let provider = provider.ok_or(anyhow::anyhow!("Model type not supported"))?;
+        let provider = provider.ok_or(flow_like_types::anyhow!("Model type not supported"))?;
         let provider = provider.provider_name;
 
-        if provider == BitProvider::Local {
+        if provider == "Local" {
             if let Some(model) = self.cached_models.get(&bit.id) {
                 // update last used time
                 self.ttl_list.insert(bit.id.clone(), SystemTime::now());
@@ -111,7 +93,7 @@ impl ModelFactory {
             return Ok(local_model);
         }
 
-        Err(anyhow::anyhow!("Model type not supported"))
+        Err(flow_like_types::anyhow!("Model type not supported"))
     }
 
     pub fn gc(&mut self) {

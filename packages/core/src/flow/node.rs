@@ -1,4 +1,4 @@
-use async_trait::async_trait;
+use flow_like_types::{async_trait, create_id};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -33,10 +33,10 @@ pub enum NodeState {
 /// * `governance` - Indicates compliance with policies and regulations
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 pub struct NodeScores {
-    pub privacy: i8,
-    pub security: i8,
-    pub performance: i8,
-    pub governance: i8,
+    pub privacy: u8,
+    pub security: u8,
+    pub performance: u8,
+    pub governance: u8,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
@@ -60,7 +60,7 @@ pub struct Node {
 impl Node {
     pub fn new(name: &str, friendly_name: &str, description: &str, category: &str) -> Self {
         Node {
-            id: cuid2::create_id(),
+            id: create_id(),
             name: name.to_string(),
             friendly_name: friendly_name.to_string(),
             description: description.to_string(),
@@ -96,7 +96,7 @@ impl Node {
         description: &str,
         data_type: VariableType,
     ) -> &mut Pin {
-        let pin_id = cuid2::create_id();
+        let pin_id = create_id();
         let num_outputs = self
             .pins
             .iter()
@@ -132,7 +132,7 @@ impl Node {
         description: &str,
         data_type: VariableType,
     ) -> &mut Pin {
-        let pin_id = cuid2::create_id();
+        let pin_id = create_id();
         let num_outputs = self
             .pins
             .iter()
@@ -193,11 +193,11 @@ impl Node {
         board: Arc<Board>,
         value_type: Option<ValueType>,
         default_type: Option<ValueType>,
-    ) -> anyhow::Result<VariableType> {
+    ) -> flow_like_types::Result<VariableType> {
         let mut found_type = VariableType::Generic;
         let pin = self
             .get_pin_by_name(pin_name)
-            .ok_or(anyhow::anyhow!("Pin not found"))?;
+            .ok_or(flow_like_types::anyhow!("Pin not found"))?;
         let mut nodes = pin.connected_to.clone();
         if pin.pin_type == PinType::Input {
             nodes = pin.depends_on.clone();
@@ -238,7 +238,7 @@ impl Node {
 #[async_trait]
 pub trait NodeLogic: Send + Sync {
     async fn get_node(&self, handler: &FlowLikeState) -> Node;
-    async fn run(&self, context: &mut ExecutionContext) -> anyhow::Result<()>;
+    async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()>;
 
     async fn get_progress(&self, context: &mut ExecutionContext) -> i32 {
         let state = context.get_state();
@@ -257,13 +257,19 @@ pub trait NodeLogic: Send + Sync {
 
 #[cfg(test)]
 mod tests {
+
+    use flow_like_types::{FromProto, ToProto};
+    use flow_like_types::{Message, tokio};
+
     #[tokio::test]
     async fn serialize_node() {
         let node = super::Node::new("Hi", "Test Node", "What a wonderful day", "IDK");
 
-        let ser = bitcode::serialize(&node).unwrap();
-        let deser: super::Node = bitcode::deserialize(&ser).unwrap();
+        let mut buf = Vec::new();
+        node.to_proto().encode(&mut buf).unwrap();
+        let deser_node =
+            super::Node::from_proto(flow_like_types::proto::Node::decode(&buf[..]).unwrap());
 
-        assert_eq!(node.id, deser.id);
+        assert_eq!(node.id, deser_node.id);
     }
 }

@@ -6,28 +6,23 @@ import {
 	AccordionContent,
 	AccordionItem,
 	AccordionTrigger,
-	type IApp,
 	type IBoard,
 	type IVariable,
 	Label,
 	VariablesMenuEdit,
+	useBackend,
 	useInvoke,
 } from "@tm9657/flow-like-ui";
 import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 
 export default function Id() {
+	const backend = useBackend();
 	const searchParams = useSearchParams();
 	const id = searchParams.get("id");
-	const app = useInvoke<IApp | undefined>(
-		"get_app",
-		{ appId: id },
-		[id ?? ""],
-		typeof id === "string",
-	);
-	const boards = useInvoke<IBoard[]>(
-		"get_app_boards",
-		{ appId: id },
+	const app = useInvoke(backend.getApp, [id ?? ""], typeof id === "string");
+	const boards = useInvoke(
+		backend.getBoards,
 		[id ?? ""],
 		typeof id === "string",
 	);

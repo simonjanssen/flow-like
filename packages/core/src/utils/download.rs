@@ -1,15 +1,16 @@
-use crate::state::{FlowLikeEvent, FlowLikeState, FlowLikeStore};
-use anyhow::{anyhow, bail};
+use crate::state::{FlowLikeEvent, FlowLikeState};
+use flow_like_storage::files::store::FlowLikeStore;
+use flow_like_storage::{Path, blake3};
+use flow_like_types::reqwest::Client;
+use flow_like_types::sync::{Mutex, mpsc};
+use flow_like_types::tokio::fs::OpenOptions;
+use flow_like_types::tokio::io::AsyncWriteExt;
+use flow_like_types::{anyhow, bail, reqwest};
 use futures::StreamExt;
-use object_store::path::Path;
-use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::cmp::min;
 use std::fs;
 use std::sync::Arc;
-use tokio::fs::OpenOptions;
-use tokio::io::AsyncWriteExt;
-use tokio::sync::{mpsc, Mutex};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct BitDownloadEvent {
@@ -19,7 +20,7 @@ pub struct BitDownloadEvent {
     pub hash: String,
 }
 
-async fn get_remote_size(client: &Client, url: &str) -> anyhow::Result<u64> {
+async fn get_remote_size(client: &Client, url: &str) -> flow_like_types::Result<u64> {
     let res = client.head(url).send().await?;
     let total_size = res
         .headers()
@@ -38,7 +39,7 @@ async fn publish_progress(
     sender: &mpsc::Sender<FlowLikeEvent>,
     downloaded: u64,
     path: &Path,
-) -> anyhow::Result<()> {
+) -> flow_like_types::Result<()> {
     let event = FlowLikeEvent::new(
         &format!("download:{}", &bit.hash),
         BitDownloadEvent {
@@ -62,7 +63,7 @@ pub async fn download_bit(
     bit: &crate::bit::Bit,
     app_state: Arc<Mutex<FlowLikeState>>,
     retries: usize,
-) -> anyhow::Result<Path> {
+) -> flow_like_types::Result<Path> {
     let file_store = FlowLikeState::bit_store(&app_state).await?;
 
     let file_store = match file_store {

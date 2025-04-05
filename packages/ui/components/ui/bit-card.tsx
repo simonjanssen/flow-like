@@ -1,14 +1,13 @@
 "use client";
 import type { UseQueryResult } from "@tanstack/react-query";
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { DownloadCloudIcon, PackageCheckIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Progress } from "../../components/ui/progress";
 import { useInvoke } from "../../hooks/use-invoke";
 import { Bit, type IDownloadProgress } from "../../lib/bit/bit";
 import type { IBit } from "../../lib/schema/bit/bit";
 import { humanFileSize } from "../../lib/utils";
+import { useBackend } from "../../state/backend-state";
 import type { ISettingsProfile } from "../../types";
 import { Avatar, AvatarFallback, AvatarImage } from "./avatar";
 import { Badge } from "./badge";
@@ -25,6 +24,7 @@ export function BitCard({
 	bit,
 	wide = false,
 }: Readonly<{ bit: IBit; wide: boolean }>) {
+	const backend = useBackend();
 	const [progress, setProgress] = useState<{
 		active: boolean;
 		progress: IDownloadProgress;
@@ -38,36 +38,19 @@ export function BitCard({
 		},
 	});
 	const isInstalled: UseQueryResult<boolean> = useInvoke(
-		"is_bit_installed",
-		{ bit: bit },
-		[bit.id],
+		backend.isBitInstalled,
+		[bit],
 	);
-	const bitSize: UseQueryResult<number> = useInvoke(
-		"get_bit_size",
-		{ bit: bit },
-		[bit.id],
-	);
+	const bitSize: UseQueryResult<number> = useInvoke(backend.getBitSize, [bit]);
 	const currentProfile: UseQueryResult<ISettingsProfile> = useInvoke(
-		"get_current_profile",
-		{},
+		backend.getSettingsProfile,
+		[],
 	);
 
-	async function toggleDownload() {
-		if (isInstalled.data) {
-			console.log("Deleting Bit");
-			await invoke("delete_bit", { bit: bit });
-			await isInstalled.refetch();
-			return;
-		}
-
-		setProgress((prev) => {
-			prev.active = true;
-			return { ...prev };
-		});
-
-		const localBit = Bit.fromObject(bit);
-
-		await localBit.download((event) => {
+	async function download(bit: IBit) {
+		const obj = Bit.fromObject(bit);
+		obj.setBackend(backend);
+		await obj.download((event) => {
 			setProgress((prev) => {
 				const total = event.total();
 				prev.progress = {
@@ -91,26 +74,21 @@ export function BitCard({
 		});
 	}
 
-	useEffect(() => {
-		if (!bit.hash || bit.hash === "") return;
-		const download_model_subscription = listen(
-			`download:${bit.hash}`,
-			(event: { payload: IDownloadProgress[] }) => {
-				if (progress.active) return;
-				setProgress((prev) => {
-					if (prev.active) return prev;
-					prev.progress = event.payload.pop() ?? prev.progress;
-					return { ...prev };
-				});
-			},
-		);
+	async function toggleDownload() {
+		if (isInstalled.data) {
+			console.log("Deleting Bit");
+			await backend.deleteBit(bit);
+			await isInstalled.refetch();
+			return;
+		}
 
-		return () => {
-			(async () => {
-				(await download_model_subscription)();
-			})();
-		};
-	}, []);
+		setProgress((prev) => {
+			prev.active = true;
+			return { ...prev };
+		});
+
+		await download(bit);
+	}
 
 	return (
 		<div
@@ -209,13 +187,13 @@ export function BitCard({
 									([hub, id]) => id === bit.id,
 								);
 								if (bitIndex === -1) {
-									await invoke("download_bit", { bit });
-									await invoke("add_bit", { profile, bit });
+									await download(bit);
+									await backend.addBit(bit, profile);
 									await currentProfile.refetch();
 									return;
 								}
 
-								await invoke("remove_bit", { profile, bit });
+								await backend.removeBit(bit, profile);
 								await currentProfile.refetch();
 							}}
 						>

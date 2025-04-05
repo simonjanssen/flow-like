@@ -1,5 +1,4 @@
 import * as Sentry from "@sentry/nextjs";
-import { useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import {
 	Avatar,
@@ -25,6 +24,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuShortcut,
 	DropdownMenuTrigger,
+	IBitTypes,
 	Input,
 	Label,
 	Sidebar,
@@ -43,7 +43,11 @@ import {
 	SidebarProvider,
 	SidebarRail,
 	Textarea,
+	useBackend,
+	useDownloadManager,
+	useInvalidateInvoke,
 	useInvoke,
+	useQueryClient,
 	useSidebar,
 } from "@tm9657/flow-like-ui";
 import type { ISettingsProfile } from "@tm9657/flow-like-ui/types";
@@ -56,10 +60,10 @@ import {
 	ChevronRight,
 	ChevronsUpDown,
 	CreditCard,
+	DownloadIcon,
 	Edit3Icon,
 	ExternalLinkIcon,
 	LayoutGridIcon,
-	Link2Icon,
 	LogInIcon,
 	LogOut,
 	type LucideIcon,
@@ -70,21 +74,14 @@ import {
 	SidebarOpenIcon,
 	Sparkles,
 	Sun,
-	VaultIcon,
 	WorkflowIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-
-const invalidateList = [
-	"get_current_profile",
-	"get_vaults",
-	"get_adapters",
-	"get_bits_in_current_profile",
-];
+import { useTauriInvoke } from "./useInvoke";
 
 const data = {
 	navMain: [
@@ -204,6 +201,10 @@ export function AppSidebar({
 }
 
 function InnerSidebar() {
+	const intervalRef = useRef<any>(null);
+	const router = useRouter();
+	const { resolvedTheme } = useTheme();
+	const { manager } = useDownloadManager();
 	const [user] = useState<IUser | undefined>();
 	const { open, toggleSidebar } = useSidebar();
 	const { setTheme } = useTheme();
@@ -212,6 +213,23 @@ function InnerSidebar() {
 		email: "",
 		message: "",
 	});
+	const [stats, setStats] = useState({
+		bytesPerSecond: 0,
+		total: 0,
+		progress: 0,
+		max: 0,
+	});
+
+	useEffect(() => {
+		intervalRef.current = setInterval(async () => {
+			const stats = await manager.getSpeed();
+			setStats(stats);
+		}, 1000);
+
+		return () => {
+			clearInterval(intervalRef.current);
+		};
+	}, []);
 
 	return (
 		<Sidebar collapsible="icon" side="left">
@@ -224,6 +242,21 @@ function InnerSidebar() {
 			</SidebarContent>
 			<SidebarFooter>
 				<div className="flex flex-col gap-1">
+					{stats.max > 0 && (
+						<div>
+							<SidebarMenuButton
+								onClick={() => {
+									router.push("/download");
+								}}
+							>
+								<DownloadIcon />
+								<span>
+									Download:{" "}
+									<b className="highlight">{stats.progress.toFixed(2)} %</b>
+								</span>
+							</SidebarMenuButton>
+						</div>
+					)}
 					<Dialog>
 						<DialogTrigger asChild>
 							<SidebarMenuButton>
@@ -352,12 +385,11 @@ function InnerSidebar() {
 
 function Profiles() {
 	const queryClient = useQueryClient();
+	const backend = useBackend();
+	const invalidate = useInvalidateInvoke();
 	const { isMobile } = useSidebar();
-	const profiles = useInvoke<ISettingsProfile[]>("get_profiles", {});
-	const currentProfile = useInvoke<ISettingsProfile | undefined>(
-		"get_current_profile",
-		{},
-	);
+	const profiles = useTauriInvoke<ISettingsProfile[]>("get_profiles", {});
+	const currentProfile = useInvoke(backend.getSettingsProfile, []);
 
 	return (
 		<SidebarMenu>
@@ -413,13 +445,22 @@ function Profiles() {
 											await invoke("set_current_profile", {
 												profileId: profile.hub_profile.id,
 											});
-										await Promise.allSettled(
-											invalidateList.map((key) =>
-												queryClient.invalidateQueries({
-													queryKey: key.split("_"),
-												}),
-											),
-										);
+										await Promise.allSettled([
+											invalidate(backend.getProfile, []),
+											invalidate(backend.getSettingsProfile, []),
+											invalidate(backend.getApps, []),
+											invalidate(backend.getBitsByCategory, [IBitTypes.Llm]),
+											invalidate(backend.getBitsByCategory, [IBitTypes.Vlm]),
+											invalidate(backend.getBitsByCategory, [
+												IBitTypes.Embedding,
+											]),
+											invalidate(backend.getBitsByCategory, [
+												IBitTypes.ImageEmbedding,
+											]),
+											invalidate(backend.getBitsByCategory, [
+												IBitTypes.Template,
+											]),
+										]);
 									}}
 									className="gap-4 p-2"
 								>
@@ -672,10 +713,11 @@ export function NavUser({
 }
 
 function Flows() {
+	const backend = useBackend();
 	const router = useRouter();
 	const pathname = usePathname();
 	const params = useSearchParams();
-	const openBoards = useInvoke<[string, string][]>("get_open_boards", {});
+	const openBoards = useInvoke(backend.getOpenBoards, []);
 
 	if ((openBoards.data?.length ?? 0) <= 0) return null;
 

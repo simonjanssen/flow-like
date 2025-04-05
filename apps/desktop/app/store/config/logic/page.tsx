@@ -1,5 +1,4 @@
 "use client";
-import type { UseQueryResult } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import {
 	Badge,
@@ -21,7 +20,9 @@ import {
 	Label,
 	Separator,
 	Textarea,
+	type UseQueryResult,
 	formatRelativeTime,
+	useBackend,
 	useFlowBoardParentState,
 	useInvoke,
 } from "@tm9657/flow-like-ui";
@@ -30,18 +31,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function Page() {
+	const backend = useBackend();
 	const parentRegister = useFlowBoardParentState();
 	const searchParams = useSearchParams();
 	const id = searchParams.get("id");
-	const app = useInvoke<IApp>(
-		"get_app",
-		{ appId: id },
-		[id ?? ""],
-		typeof id === "string",
-	);
-	const boards = useInvoke<IBoard[]>(
-		"get_app_boards",
-		{ appId: id },
+	const app = useInvoke(backend.getApp, [id ?? ""], typeof id === "string");
+	const boards = useInvoke(
+		backend.getBoards,
 		[id ?? ""],
 		typeof id === "string",
 	);

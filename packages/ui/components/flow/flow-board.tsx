@@ -2,7 +2,6 @@
 import { DragOverlay, useDroppable } from "@dnd-kit/core";
 import { createId } from "@paralleldrive/cuid2";
 import type { UseQueryResult } from "@tanstack/react-query";
-import { invoke } from "@tauri-apps/api/core";
 import {
 	Background,
 	BackgroundVariant,
@@ -57,6 +56,16 @@ import {
 } from "../../components/ui/resizable";
 import { useInvoke } from "../../hooks/use-invoke";
 import {
+	type IGeneric,
+	addNodeCommand,
+	connectPinsCommand,
+	disconnectPinsCommand,
+	moveNodeCommand,
+	removeCommentCommand,
+	removeNodeCommand,
+	upsertCommentCommand,
+} from "../../lib";
+import {
 	handleCopy,
 	handlePaste,
 	isValidConnection,
@@ -64,21 +73,19 @@ import {
 } from "../../lib/flow-board";
 import { toastError, toastSuccess } from "../../lib/messages";
 import {
-	type IBoard,
 	type IComment,
 	ICommentType,
 	IExecutionStage,
 	ILogLevel,
-	IPinType,
 	type IVariable,
 } from "../../lib/schema/flow/board";
 import { type INode, IVariableType } from "../../lib/schema/flow/node";
 import type { IPin } from "../../lib/schema/flow/pin";
 import type { IRun, ITrace } from "../../lib/schema/flow/run";
 import { convertJsonToUint8Array } from "../../lib/uint8";
+import { useBackend } from "../../state/backend-state";
 import { useFlowBoardParentState } from "../../state/flow-board-parent-state";
 import { useRunExecutionStore } from "../../state/run-execution-state";
-import type { ISettingsProfile } from "../../types";
 import {
 	Button,
 	Dialog,
@@ -96,8 +103,14 @@ import {
 	Separator,
 	Textarea,
 } from "../ui";
-export function FlowBoard({ boardId }: Readonly<{ boardId: string }>) {
+import { useUndoRedo } from "./flow-history";
+export function FlowBoard({
+	appId,
+	boardId,
+}: Readonly<{ appId: string; boardId: string }>) {
+	const { pushCommand, pushCommands, redo, undo } = useUndoRedo(appId, boardId);
 	const router = useRouter();
+	const backend = useBackend();
 	const selected = useRef(new Set<string>());
 	const edgeReconnectSuccessful = useRef(true);
 	const { isOver, setNodeRef, active } = useDroppable({ id: "flow" });
@@ -111,17 +124,11 @@ export function FlowBoard({ boardId }: Readonly<{ boardId: string }>) {
 
 	const { resolvedTheme } = useTheme();
 
-	const catalog: UseQueryResult<INode[]> = useInvoke("get_catalog", {});
-	const board: UseQueryResult<IBoard> = useInvoke(
-		"get_board",
-		{ boardId: boardId },
-		[boardId],
-		boardId !== "",
-	);
-	const openBoards = useInvoke<[string, string][]>("get_open_boards", {});
-	const currentProfile: UseQueryResult<ISettingsProfile | undefined> =
-		useInvoke("get_current_profile", {});
-	const { addRun, removeRun } = useRunExecutionStore();
+	const catalog: UseQueryResult<INode[]> = useInvoke(backend.getCatalog, []);
+	const board = useInvoke(backend.getBoard, [appId, boardId], boardId !== "");
+	const openBoards = useInvoke(backend.getOpenBoards, []);
+	const currentProfile = useInvoke(backend.getSettingsProfile, []);
+	const { addRun, removeRun, pushUpdate } = useRunExecutionStore();
 
 	const [traces, setTraces] = useState<
 		{ node?: INode; traces: ITrace[] } | undefined
@@ -150,8 +157,20 @@ export function FlowBoard({ boardId }: Readonly<{ boardId: string }>) {
 	);
 
 	const executeCommand = useCallback(
-		async (command: string, args: any, append = false): Promise<any> => {
-			const result = await invoke(command, { ...args, append: append });
+		async (command: IGeneric, append = false): Promise<any> => {
+			const result = await backend.executeCommand(appId, boardId, command);
+			await pushCommand(result, append);
+			await board.refetch();
+			return result;
+		},
+		[board.refetch],
+	);
+
+	const executeCommands = useCallback(
+		async (commands: IGeneric[]) => {
+			if (commands.length === 0) return;
+			const result = await backend.executeCommands(appId, boardId, commands);
+			await pushCommands(result);
 			await board.refetch();
 			return result;
 		},
@@ -185,10 +204,11 @@ export function FlowBoard({ boardId }: Readonly<{ boardId: string }>) {
 	const executeBoard = useCallback(
 		async (node: INode) => {
 			setCurrentRun(undefined);
-			const runId: string | undefined = await invoke("create_run", {
-				boardId: boardId,
-				startIds: [node.id],
-			});
+			const runId: string | undefined = await backend.createRun(
+				appId,
+				boardId,
+				[node.id],
+			);
 			if (!runId) {
 				toastError(
 					"Failed to execute board",
@@ -197,13 +217,15 @@ export function FlowBoard({ boardId }: Readonly<{ boardId: string }>) {
 				return;
 			}
 			await addRun(runId, boardId, [node.id]);
-			await invoke("execute_run", { id: runId });
+			await backend.executeRun(appId, runId, (update) => {
+				pushUpdate(runId, update);
+			});
 			removeRun(runId);
-			const result: IRun | undefined = await invoke("get_run", { id: runId });
+			const result: IRun | undefined = await backend.getRun(appId, runId);
 			setCurrentRun(result);
-			await invoke("finalize_run", { id: runId });
+			await backend.finalizeRun(appId, runId);
 		},
-		[boardId],
+		[boardId, backend],
 	);
 
 	const openTraces = useCallback(async function openTraces(
@@ -244,7 +266,8 @@ export function FlowBoard({ boardId }: Readonly<{ boardId: string }>) {
 			) {
 				event.preventDefault();
 				event.stopPropagation();
-				await invoke("undo_board", { boardId: boardId });
+				const stack = await undo();
+				if (stack) await backend.undoBoard(appId, boardId, stack);
 				toastSuccess("Undo", <Undo2Icon className="w-4 h-4" />);
 				await board.refetch();
 				return;
@@ -254,12 +277,13 @@ export function FlowBoard({ boardId }: Readonly<{ boardId: string }>) {
 			if ((event.metaKey || event.ctrlKey) && event.key === "y") {
 				event.preventDefault();
 				event.stopPropagation();
-				await invoke("redo_board", { boardId: boardId });
+				const stack = await redo();
+				if (stack) await backend.redoBoard(appId, boardId, stack);
 				toastSuccess("Redo", <Redo2Icon className="w-4 h-4" />);
 				await board.refetch();
 			}
 		},
-		[boardId, board],
+		[boardId, board, backend],
 	);
 
 	const placeNode = useCallback(
@@ -269,10 +293,12 @@ export function FlowBoard({ boardId }: Readonly<{ boardId: string }>) {
 				x: position?.x ?? clickPosition.x,
 				y: position?.y ?? clickPosition.y,
 			});
-			const new_node: INode = await executeCommand("add_node_to_board", {
-				boardId: boardId,
+			const result = addNodeCommand({
 				node: { ...node, coordinates: [location.x, location.y, 0] },
 			});
+
+			await executeCommand(result.command);
+			const new_node = result.node;
 			if (droppedPin) {
 				const pinType = droppedPin.pin_type === "Input" ? "Output" : "Input";
 				const pinValueType = droppedPin.value_type;
@@ -317,15 +343,18 @@ export function FlowBoard({ boardId }: Readonly<{ boardId: string }>) {
 				});
 				const [sourcePin, sourceNode] = pinCache.get(droppedPin.id) || [];
 				if (!sourcePin || !sourceNode) return;
+				if (!pin) return;
 
-				await executeCommand("connect_pins", {
-					boardId: boardId,
-					fromNode:
+				const command = connectPinsCommand({
+					from_node:
 						droppedPin.pin_type === "Output" ? sourceNode.id : new_node.id,
-					fromPin: droppedPin.pin_type === "Output" ? sourcePin.id : pin?.id,
-					toNode: droppedPin.pin_type === "Input" ? sourceNode.id : new_node.id,
-					toPin: droppedPin.pin_type === "Input" ? sourcePin.id : pin?.id,
+					from_pin: droppedPin.pin_type === "Output" ? sourcePin.id : pin?.id,
+					to_node:
+						droppedPin.pin_type === "Input" ? sourceNode.id : new_node.id,
+					to_pin: droppedPin.pin_type === "Input" ? sourcePin.id : pin?.id,
 				});
+
+				await executeCommand(command);
 			}
 		},
 		[clickPosition, boardId, droppedPin, board.data?.refs],
@@ -398,6 +427,7 @@ export function FlowBoard({ boardId }: Readonly<{ boardId: string }>) {
 
 		const parsed = parseBoard(
 			board.data,
+			appId,
 			executeBoard,
 			openTraces,
 			executeCommand,
@@ -458,19 +488,7 @@ export function FlowBoard({ boardId }: Readonly<{ boardId: string }>) {
 		() => ({ flowNode: FlowNode, commentNode: CommentNode, node: FlowNode }),
 		[],
 	);
-	const { screenToFlowPosition, setViewport } = useReactFlow();
-
-	async function executeCommands(commands: { command: string; args: any }[]) {
-		let first = true;
-		for (const { command, args } of commands) {
-			await invoke(command, { ...args, append: !first });
-			first = false;
-		}
-		if (commands.length > 0) {
-			await board.refetch();
-			console.log("Refetched board, execute commands");
-		}
-	}
+	const { screenToFlowPosition } = useReactFlow();
 
 	const onConnect = useCallback(
 		(params: any) =>
@@ -481,13 +499,14 @@ export function FlowBoard({ boardId }: Readonly<{ boardId: string }>) {
 				if (!sourcePin || !targetPin) return eds;
 				if (!sourceNode || !targetNode) return eds;
 
-				executeCommand("connect_pins", {
-					boardId: boardId,
-					fromNode: sourceNode.id,
-					fromPin: sourcePin.id,
-					toNode: targetNode.id,
-					toPin: targetPin.id,
+				const command = connectPinsCommand({
+					from_node: sourceNode.id,
+					from_pin: sourcePin.id,
+					to_node: targetNode.id,
+					to_pin: targetPin.id,
 				});
+
+				executeCommand(command);
 
 				return addEdge(params, eds);
 			}),
@@ -550,19 +569,20 @@ export function FlowBoard({ boardId }: Readonly<{ boardId: string }>) {
 							const foundNode = Object.values(board.data?.nodes || {}).find(
 								(node) => node.id === change.id,
 							);
-							if (foundNode)
-								return {
-									command: "remove_node_from_board",
-									args: { boardId: boardId, node: foundNode },
-								};
+							if (foundNode) {
+								return removeNodeCommand({
+									node: foundNode,
+									connected_nodes: [],
+								});
+							}
 							const foundComment = Object.values(
 								board.data?.comments || {},
 							).find((comment) => comment.id === change.id);
-							if (foundComment)
-								return {
-									command: "remove_comment",
-									args: { boardId: boardId, comment: foundComment },
-								};
+							if (foundComment) {
+								return removeCommentCommand({
+									comment: foundComment,
+								});
+							}
 							return undefined;
 						})
 						.filter((command) => command !== undefined) as any[],
@@ -570,7 +590,7 @@ export function FlowBoard({ boardId }: Readonly<{ boardId: string }>) {
 
 				return applyNodeChanges(changes, nds);
 			}),
-		[setNodes, board.data, boardId],
+		[setNodes, board.data, boardId, executeCommands],
 	);
 
 	const onEdgesChange: OnEdgesChange = useCallback(
@@ -640,24 +660,25 @@ export function FlowBoard({ boardId }: Readonly<{ boardId: string }>) {
 			const new_id = `${newConnection.sourceHandle}-${newConnection.targetHandle}`;
 			if (oldEdge.id === new_id) return;
 
-			await executeCommand("disconnect_pins", {
-				boardId,
-				fromNode: oldEdge.source,
-				fromPin: oldEdge.sourceHandle,
-				toNode: oldEdge.target,
-				toPin: oldEdge.targetHandle,
+			const disconnectCommand = disconnectPinsCommand({
+				from_node: oldEdge.source,
+				from_pin: oldEdge.sourceHandle,
+				to_node: oldEdge.target,
+				to_pin: oldEdge.targetHandle,
 			});
-			await executeCommand(
-				"connect_pins",
-				{
-					boardId,
-					fromNode: newConnection.source,
-					fromPin: newConnection.sourceHandle,
-					toNode: newConnection.target,
-					toPin: newConnection.targetHandle,
-				},
-				true,
-			);
+
+			await executeCommand(disconnectCommand);
+
+			if (!newConnection.targetHandle || !newConnection.sourceHandle) return;
+
+			const connectCommand = connectPinsCommand({
+				from_node: newConnection.source,
+				from_pin: newConnection.sourceHandle,
+				to_node: newConnection.target,
+				to_pin: newConnection.targetHandle,
+			});
+
+			await executeCommand(connectCommand, true);
 
 			edgeReconnectSuccessful.current = true;
 			setEdges((els) => reconnectEdge(oldEdge, newConnection, els));
@@ -669,13 +690,13 @@ export function FlowBoard({ boardId }: Readonly<{ boardId: string }>) {
 		async (event: any, edge: any) => {
 			if (!edgeReconnectSuccessful.current) {
 				const { source, target, sourceHandle, targetHandle } = edge;
-				await executeCommand("disconnect_pins", {
-					boardId,
-					fromNode: source,
-					fromPin: sourceHandle,
-					toNode: target,
-					toPin: targetHandle,
+				const command = disconnectPinsCommand({
+					from_node: source,
+					from_pin: sourceHandle,
+					to_node: target,
+					to_pin: targetHandle,
 				});
+				await executeCommand(command);
 				setEdges((eds) => eds.filter((e) => e.id !== edge.id));
 			}
 
@@ -698,27 +719,30 @@ export function FlowBoard({ boardId }: Readonly<{ boardId: string }>) {
 				const comment = Object.values(board.data?.comments || {}).find(
 					(comment) => comment.id === node.id,
 				);
-				if (comment)
-					await invoke("upsert_comment", {
-						boardId: boardId,
+				if (comment) {
+					const command = upsertCommentCommand({
 						comment: {
 							...comment,
 							coordinates: [node.position.x, node.position.y, 0],
 						},
-						append: !first,
 					});
-				if (!comment)
-					await invoke("move_node", {
-						boardId: boardId,
-						nodeId: node.id,
-						coordinates: [node.position.x, node.position.y, 0],
-						append: !first,
+
+					await executeCommand(command, !first);
+				}
+
+				if (!comment) {
+					const command = moveNodeCommand({
+						node_id: node.id,
+						to_coordinates: [node.position.x, node.position.y, 0],
 					});
+
+					await executeCommand(command, !first);
+				}
 				first = false;
 			}
 			await board.refetch();
 		},
-		[boardId],
+		[boardId, executeCommand],
 	);
 
 	const isValidConnectionCB = useCallback(
@@ -735,13 +759,14 @@ export function FlowBoard({ boardId }: Readonly<{ boardId: string }>) {
 					open={editBoard}
 					onOpenChange={async (open) => {
 						if (open) return;
-						await invoke("update_board_meta", {
-							boardId: boardId,
-							name: boardMeta.name,
-							description: boardMeta.description,
-							logLevel: boardMeta.logLevel,
-							stage: boardMeta.stage,
-						});
+						await backend.updateBoardMeta(
+							appId,
+							boardId,
+							boardMeta.name,
+							boardMeta.description,
+							boardMeta.logLevel as ILogLevel,
+							boardMeta.stage as IExecutionStage,
+						);
 						await openBoards.refetch();
 						setEditBoard(false);
 					}}
@@ -913,10 +938,12 @@ export function FlowBoard({ boardId }: Readonly<{ boardId: string }>) {
 										},
 										author: "anonymous",
 									};
-									await executeCommand("upsert_comment", {
-										boardId: boardId,
+
+									const command = upsertCommentCommand({
 										comment: new_comment,
 									});
+
+									await executeCommand(command);
 								}}
 								refs={board.data?.refs || {}}
 								onClose={() => setDroppedPin(undefined)}
@@ -971,9 +998,7 @@ export function FlowBoard({ boardId }: Readonly<{ boardId: string }>) {
 													onClick={async (e) => {
 														e.preventDefault();
 														e.stopPropagation();
-														await invoke("close_board", {
-															boardId: boardLoadId,
-														});
+														await backend.closeBoard(boardLoadId);
 														if (boardLoadId === boardId) {
 															const nextBoard = openBoards.data?.find(
 																([id]) => id !== boardId,

@@ -8,15 +8,14 @@ use crate::{
     hub::Hub,
     utils::http::HTTPClient,
 };
-use anyhow::Result;
+use flow_like_types::{Result, anyhow, tokio::task};
 use futures::future::join_all;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use tokio::task;
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Profile {
-    #[serde(default = "cuid2::create_id")]
+    #[serde(default = "flow_like_types::create_id")]
     pub id: String,
     pub name: String,
     pub description: String,
@@ -33,7 +32,7 @@ pub struct Profile {
 impl Default for Profile {
     fn default() -> Self {
         Self {
-            id: cuid2::create_id(),
+            id: flow_like_types::create_id(),
             name: "".to_string(),
             description: "".to_string(),
             thumbnail: "".to_string(),
@@ -115,7 +114,7 @@ impl Profile {
 
         match best_bit.1 {
             Some(bit) => Ok(bit),
-            None => Err(anyhow::anyhow!("No Model found")),
+            None => Err(anyhow!("No Model found")),
         }
     }
 
@@ -170,12 +169,24 @@ impl Profile {
 
     pub async fn get_bit(
         &self,
-        bit: (String, String),
+        bit: String,
+        hub: Option<String>,
         http_client: Arc<HTTPClient>,
     ) -> Result<Bit> {
-        let (hub_id, bit_id) = bit;
-        let hub = Hub::new(&hub_id, http_client).await?;
-        hub.get_bit_by_id(&bit_id).await
+        if hub.is_some() {
+            let hub = Hub::new(&format!("https://{}", hub.unwrap()), http_client).await?;
+            let bit = hub.get_bit_by_id(&bit).await?;
+            return Ok(bit);
+        }
+
+        let hubs = self.get_available_hubs(http_client).await?;
+        for hub in hubs {
+            let bit = hub.get_bit_by_id(&bit).await;
+            if let Ok(bit) = bit {
+                return Ok(bit);
+            }
+        }
+        Err(flow_like_types::anyhow!("Bit not found"))
     }
 
     pub async fn find_bit(&self, bit_id: &str, http_client: Arc<HTTPClient>) -> Result<Bit> {
@@ -186,7 +197,7 @@ impl Profile {
                 return Ok(bit);
             }
         }
-        Err(anyhow::anyhow!("Bit not found"))
+        Err(flow_like_types::anyhow!("Bit not found"))
     }
 
     pub async fn get_available_hubs(&self, http_client: Arc<HTTPClient>) -> Result<Vec<Hub>> {

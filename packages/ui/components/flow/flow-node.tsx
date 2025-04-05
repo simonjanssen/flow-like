@@ -1,8 +1,6 @@
 "use client";
 
 import { createId } from "@paralleldrive/cuid2";
-import { useQueryClient } from "@tanstack/react-query";
-import { invoke } from "@tauri-apps/api/core";
 import { useDebounce } from "@uidotdev/usehooks";
 import { type Node, type NodeProps, useReactFlow } from "@xyflow/react";
 import {
@@ -40,12 +38,15 @@ import {
 	ContextMenuSubTrigger,
 	ContextMenuTrigger,
 } from "../../components/ui/context-menu";
-import { handleCopy } from "../../lib";
+import { useInvalidateInvoke } from "../../hooks";
+import { handleCopy, updateNodeCommand } from "../../lib";
 import type { INode } from "../../lib/schema/flow/node";
 import type { IPin } from "../../lib/schema/flow/pin";
 import { ILogLevel, type ITrace } from "../../lib/schema/flow/run";
+import { useBackend } from "../../state/backend-state";
 import { useRunExecutionStore } from "../../state/run-execution-state";
 import { DynamicImage } from "../ui/dynamic-image";
+import { useUndoRedo } from "./flow-history";
 import { FlowNodeCommentMenu } from "./flow-node/flow-node-comment-menu";
 import { FlowPinAction } from "./flow-node/flow-node-pin-action";
 import { FlowNodeRenameMenu } from "./flow-node/flow-node-rename-menu";
@@ -62,6 +63,7 @@ export type FlowNode = Node<
 		hash: string;
 		node: INode;
 		boardId: string;
+		appId: string;
 		traces: ITrace[];
 		onExecute: (node: INode) => Promise<void>;
 		openTrace: (trace: ITrace[]) => Promise<void>;
@@ -76,11 +78,11 @@ const FlowNodeInner = memo(
 	}: {
 		props: NodeProps<FlowNode>;
 		onHover: (hover: boolean) => void;
-		setCommentMenu: (open: boolean) => void;
-		setRenameMenu: (open: boolean) => void;
 	}) => {
+		const { pushCommand } = useUndoRedo(props.data.appId, props.data.boardId);
 		const { resolvedTheme } = useTheme();
-		const queryClient = useQueryClient();
+		const backend = useBackend();
+		const invalidate = useInvalidateInvoke();
 
 		const [executing, setExecuting] = useState(false);
 		const [isExec, setIsExec] = useState(false);
@@ -195,17 +197,26 @@ const FlowNodeInner = memo(
 				pins.forEach(
 					(pin, index) => (node.pins[pin.id] = { ...pin, index: index }),
 				);
-				await invoke("update_node", {
-					boardId: props.data.boardId,
+
+				const command = updateNodeCommand({
 					node: {
 						...node,
 						coordinates: [nodeGuard.position.x, nodeGuard.position.y, 0],
 					},
-					append: false,
 				});
-				queryClient.invalidateQueries({
-					queryKey: ["get", "board", props.data.boardId],
-				});
+
+				const result = await backend.executeCommand(
+					props.data.appId,
+					props.data.boardId,
+					command,
+				);
+
+				await pushCommand(result, false);
+
+				await invalidate(backend.getBoard, [
+					props.data.appId,
+					props.data.boardId,
+				]);
 			},
 			[reactFlow],
 		);
@@ -225,17 +236,25 @@ const FlowNodeInner = memo(
 					(pin, index) =>
 						(props.data.node.pins[pin.id] = { ...pin, index: index }),
 				);
-				await invoke("update_node", {
-					boardId: props.data.boardId,
+				const command = updateNodeCommand({
 					node: {
 						...node,
 						coordinates: [nodeGuard.position.x, nodeGuard.position.y, 0],
 					},
-					append: false,
 				});
-				queryClient.invalidateQueries({
-					queryKey: ["get", "board", props.data.boardId],
-				});
+
+				const result = await backend.executeCommand(
+					props.data.appId,
+					props.data.boardId,
+					command,
+				);
+
+				await pushCommand(result, false);
+
+				await invalidate(backend.getBoard, [
+					props.data.appId,
+					props.data.boardId,
+				]);
 			},
 			[inputPins, outputPins, getNode],
 		);
@@ -381,6 +400,7 @@ const FlowNodeInner = memo(
 									/>
 								) : (
 									<FlowPin
+										appId={props.data.appId}
 										key={pin.id}
 										node={props.data.node}
 										boardId={props.data.boardId}
@@ -393,7 +413,7 @@ const FlowNodeInner = memo(
 					[inputPins, props.data.node, props.data.boardId, pinRemoveCallback],
 				)}
 				<div
-					className={`header absolute top-0 left-0 right-0 h-4 gap-1 flex flex-row items-center border-b-1 border-b-foreground p-1 justify-between rounded-md rounded-b-none bg-card ${!isExec && "bg-gradient-to-r  from-card via-emerald-300/50 to-emerald-300 dark:via-tertiary/50 dark:to-tertiary"} ${props.data.node.start && "bg-gradient-to-r  from-card via-rose-300/50 to-rose-300 dark:via-primary/50 dark:to-primary"}`}
+					className={`header absolute top-0 left-0 right-0 h-4 gap-1 flex flex-row items-center border-b-1 border-b-foreground p-1 justify-between rounded-md rounded-b-none bg-card ${!isExec && "bg-gradient-to-r  from-card via-tertiary/50 to-tertiary"} ${props.data.node.start && "bg-gradient-to-r  from-card via-primary/50 to-primary"}`}
 				>
 					<div className={"flex flex-row items-center gap-1"}>
 						{useMemo(
@@ -472,6 +492,7 @@ const FlowNodeInner = memo(
 								/>
 							) : (
 								<FlowPin
+									appId={props.data.appId}
 									node={props.data.node}
 									boardId={props.data.boardId}
 									index={index}
@@ -520,12 +541,7 @@ function FlowNode(props: NodeProps<FlowNode>) {
 				key={props.id}
 			>
 				<ContextMenuTrigger>
-					<FlowNodeInner
-						props={props}
-						onHover={setIsHovered}
-						setCommentMenu={setCommentMenu}
-						setRenameMenu={setRenameMenu}
-					/>
+					<FlowNodeInner props={props} onHover={setIsHovered} />
 				</ContextMenuTrigger>
 				<ContextMenuContent className="max-w-20">
 					<ContextMenuLabel>Node Actions</ContextMenuLabel>
@@ -635,6 +651,7 @@ function FlowNode(props: NodeProps<FlowNode>) {
 		<>
 			{commentMenu && (
 				<FlowNodeCommentMenu
+					appId={props.data.appId}
 					boardId={props.data.boardId}
 					node={props.data.node}
 					open={commentMenu}
@@ -643,18 +660,14 @@ function FlowNode(props: NodeProps<FlowNode>) {
 			)}
 			{renameMenu && (
 				<FlowNodeRenameMenu
+					appId={props.data.appId}
 					boardId={props.data.boardId}
 					node={props.data.node}
 					open={renameMenu}
 					onOpenChange={(open) => setRenameMenu(open)}
 				/>
 			)}
-			<FlowNodeInner
-				props={props}
-				onHover={(hover) => setIsHovered(hover)}
-				setCommentMenu={setCommentMenu}
-				setRenameMenu={setRenameMenu}
-			/>
+			<FlowNodeInner props={props} onHover={(hover) => setIsHovered(hover)} />
 		</>
 	);
 }

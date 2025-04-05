@@ -1,12 +1,20 @@
 use crate::{
     bit::{Bit, BitTypes},
-    models::{
-        history::History, llm::ModelLogic, response::Response, response_chunk::ResponseChunk,
-    },
-    state::{FlowLikeState, FlowLikeStore},
+    models::ModelMeta,
+    state::FlowLikeState,
 };
-use anyhow::Result;
-use async_trait::async_trait;
+use flow_like_model_provider::{
+    history::History,
+    llm::{LLMCallback, ModelLogic},
+    response::Response,
+    response_chunk::ResponseChunk,
+};
+use flow_like_storage::files::store::FlowLikeStore;
+use flow_like_types::async_trait;
+use flow_like_types::{
+    Result, reqwest,
+    tokio::{self, sync::Mutex as TokioMutex, task::JoinHandle, time::sleep},
+};
 use futures::StreamExt;
 use portpicker::pick_unused_port;
 use std::{
@@ -17,27 +25,26 @@ use std::{
     time::Duration,
 };
 
-use tokio::sync::Mutex as TokioMutex;
-use tokio::time::sleep;
-
-use super::{ExecutionSettings, LLMCallback};
+use super::ExecutionSettings;
 
 mod local_history;
 
 pub struct LocalModel {
     bit: Bit,
     handle: Arc<Mutex<Option<Child>>>,
-    thread_handle: tokio::task::JoinHandle<()>,
+    thread_handle: JoinHandle<()>,
     client: reqwest::Client,
     pub port: u16,
 }
 
-#[async_trait]
-impl ModelLogic for LocalModel {
+impl ModelMeta for LocalModel {
     fn get_bit(&self) -> Bit {
         self.bit.clone()
     }
+}
 
+#[async_trait]
+impl ModelLogic for LocalModel {
     async fn invoke(&self, history: &History, callback: Option<LLMCallback>) -> Result<Response> {
         let local_history = local_history::LocalModelHistory::from_history(history).await;
         let stream = history.stream.unwrap_or(false);
@@ -64,7 +71,7 @@ impl ModelLogic for LocalModel {
             match chunk_result {
                 Ok(chunk) => {
                     let chunk = &chunk[6..];
-                    match serde_json::from_slice::<ResponseChunk>(chunk) {
+                    match flow_like_types::json::from_slice::<ResponseChunk>(chunk) {
                         Ok(parsed_chunk) => {
                             if let Some(callback) = &callback {
                                 callback(parsed_chunk.clone()).await?;
@@ -87,17 +94,17 @@ impl LocalModel {
         bit: &Bit,
         app_state: Arc<TokioMutex<FlowLikeState>>,
         execution_settings: &ExecutionSettings,
-    ) -> anyhow::Result<LocalModel> {
+    ) -> flow_like_types::Result<LocalModel> {
         let bit_store = FlowLikeState::bit_store(&app_state).await?;
 
         let bit_store = match bit_store {
             FlowLikeStore::Local(store) => store,
-            _ => return Err(anyhow::anyhow!("Only local store supported")),
+            _ => return Err(flow_like_types::anyhow!("Only local store supported")),
         };
 
         let gguf_path = bit
             .to_path(&bit_store)
-            .ok_or(anyhow::anyhow!("No model path"))?;
+            .ok_or(flow_like_types::anyhow!("No model path"))?;
         let pack = bit.pack(app_state.clone()).await?;
         pack.download(app_state).await?;
 

@@ -1,3 +1,9 @@
+use super::{
+    execution::LogLevel,
+    node::{Node, NodeLogic},
+    pin::Pin,
+    variable::Variable,
+};
 use crate::{
     app::App,
     state::FlowLikeState,
@@ -6,22 +12,15 @@ use crate::{
         hash::hash_string_non_cryptographic,
     },
 };
-use async_trait::async_trait;
-use object_store::{path::Path, ObjectStore};
+use commands::GenericCommand;
+use flow_like_storage::object_store::{ObjectStore, path::Path};
+use flow_like_types::{FromProto, ToProto, create_id, sync::Mutex};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
     sync::{Arc, Weak},
     time::SystemTime,
-};
-use tokio::sync::Mutex;
-
-use super::{
-    execution::LogLevel,
-    node::{Node, NodeLogic},
-    pin::Pin,
-    variable::Variable,
 };
 
 pub mod commands;
@@ -61,11 +60,6 @@ pub struct Board {
     pub parent: Option<BoardParent>,
 
     #[serde(skip)]
-    pub undo_stack: Vec<Vec<Arc<Mutex<dyn Command>>>>,
-    #[serde(skip)]
-    pub redo_stack: Vec<Vec<Arc<Mutex<dyn Command>>>>,
-
-    #[serde(skip)]
     pub board_dir: Path,
 
     #[serde(skip)]
@@ -84,8 +78,8 @@ pub struct BoardUndoRedoStack {
 impl Board {
     /// Create a new board with a unique ID
     /// The board is created in the base directory appended with the ID
-    pub fn new(base_dir: Path, app_state: Arc<Mutex<FlowLikeState>>) -> Self {
-        let id = cuid2::create_id();
+    pub fn new(id: Option<String>, base_dir: Path, app_state: Arc<Mutex<FlowLikeState>>) -> Self {
+        let id = id.unwrap_or(create_id());
         let board_dir = base_dir;
 
         Board {
@@ -103,8 +97,6 @@ impl Board {
             updated_at: SystemTime::now(),
             refs: HashMap::new(),
             parent: None,
-            undo_stack: Vec::new(),
-            redo_stack: Vec::new(),
             board_dir,
             logic_nodes: HashMap::new(),
             app_state: Some(app_state.clone()),
@@ -124,7 +116,6 @@ impl Board {
                         .read()
                         .await
                         .instantiate(node)
-                        .await
                     {
                         Ok(new_logic) => {
                             self.logic_nodes
@@ -141,49 +132,55 @@ impl Board {
 
     pub async fn execute_command(
         &mut self,
-        command: Arc<Mutex<dyn Command>>,
+        command: GenericCommand,
         state: Arc<Mutex<FlowLikeState>>,
-        append: bool,
-    ) -> anyhow::Result<()> {
-        command.lock().await.execute(self, state.clone()).await?;
-
-        match (append, self.undo_stack.last_mut()) {
-            (true, Some(last_commands)) => last_commands.push(command),
-            _ => self.undo_stack.push(vec![command]),
-        }
-
-        self.redo_stack.clear();
+    ) -> flow_like_types::Result<GenericCommand> {
+        let mut command = command;
+        command.execute(self, state.clone()).await?;
         self.fixate_node_update(state).await;
         self.updated_at = SystemTime::now();
+        Ok(command)
+    }
+
+    pub async fn execute_commands(
+        &mut self,
+        commands: Vec<GenericCommand>,
+        state: Arc<Mutex<FlowLikeState>>,
+    ) -> flow_like_types::Result<Vec<GenericCommand>> {
+        let mut commands = commands;
+        for command in commands.iter_mut() {
+            let res = command.execute(self, state.clone()).await;
+            if let Err(e) = res {
+                println!("Error executing command: {:?}", e);
+            }
+        }
+        self.fixate_node_update(state).await;
+        self.updated_at = SystemTime::now();
+        Ok(commands)
+    }
+
+    pub async fn undo(
+        &mut self,
+        commands: Vec<GenericCommand>,
+        state: Arc<Mutex<FlowLikeState>>,
+    ) -> flow_like_types::Result<()> {
+        let mut commands = commands;
+        for command in commands.iter_mut().rev() {
+            command.undo(self, state.clone()).await?;
+        }
         Ok(())
     }
 
-    pub async fn undo(&mut self, state: Arc<Mutex<FlowLikeState>>) -> anyhow::Result<()> {
-        if let Some(commands) = self.undo_stack.pop() {
-            let mut redo_commands = vec![];
-            for command in commands.iter().rev() {
-                command.lock().await.undo(self, state.clone()).await?;
-                redo_commands.push(command.clone());
-            }
-            self.redo_stack.push(redo_commands);
-            Ok(())
-        } else {
-            Err(anyhow::anyhow!("No actions to undo"))
+    pub async fn redo(
+        &mut self,
+        commands: Vec<GenericCommand>,
+        state: Arc<Mutex<FlowLikeState>>,
+    ) -> flow_like_types::Result<()> {
+        let mut commands = commands;
+        for command in commands.iter_mut().rev() {
+            command.execute(self, state.clone()).await?;
         }
-    }
-
-    pub async fn redo(&mut self, state: Arc<Mutex<FlowLikeState>>) -> anyhow::Result<()> {
-        if let Some(commands) = self.redo_stack.pop() {
-            let mut undo_commands = vec![];
-            for command in commands.iter().rev() {
-                command.lock().await.execute(self, state.clone()).await?;
-                undo_commands.push(command.clone());
-            }
-            self.undo_stack.push(undo_commands);
-            Ok(())
-        } else {
-            Err(anyhow::anyhow!("No actions to redo"))
-        }
+        Ok(())
     }
 
     pub fn cleanup(&mut self) {
@@ -360,7 +357,7 @@ impl Board {
         self.variables.get(variable_id)
     }
 
-    pub async fn save(&self, store: Option<Arc<dyn ObjectStore>>) -> anyhow::Result<()> {
+    pub async fn save(&self, store: Option<Arc<dyn ObjectStore>>) -> flow_like_types::Result<()> {
         let to = self.board_dir.child(format!("{}.board", self.id));
         let store = match store {
             Some(store) => store,
@@ -376,11 +373,12 @@ impl Board {
                 .stores
                 .project_store
                 .clone()
-                .ok_or(anyhow::anyhow!("Project store not found"))?
+                .ok_or(flow_like_types::anyhow!("Project store not found"))?
                 .as_generic(),
         };
 
-        compress_to_file(store, to, self).await?;
+        let board = self.to_proto();
+        compress_to_file(store, to, &board).await?;
         Ok(())
     }
 
@@ -388,7 +386,7 @@ impl Board {
         path: Path,
         id: &str,
         app_state: Arc<Mutex<FlowLikeState>>,
-    ) -> anyhow::Result<Self> {
+    ) -> flow_like_types::Result<Self> {
         let store = app_state
             .lock()
             .await
@@ -398,14 +396,14 @@ impl Board {
             .stores
             .project_store
             .clone()
-            .ok_or(anyhow::anyhow!("Project store not found"))?
+            .ok_or(flow_like_types::anyhow!("Project store not found"))?
             .as_generic();
 
-        let mut board: Board = from_compressed(store, path.child(format!("{}.board", id))).await?;
+        let board: flow_like_types::proto::Board =
+            from_compressed(store, path.child(format!("{}.board", id))).await?;
+        let mut board = Board::from_proto(board);
         board.board_dir = path;
         board.app_state = Some(app_state.clone());
-        board.redo_stack = Vec::new();
-        board.undo_stack = Vec::new();
         board.logic_nodes = HashMap::new();
         board.fix_pins();
         Ok(board)
@@ -421,53 +419,28 @@ pub enum CommentType {
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 pub struct Comment {
-    id: String,
-    author: Option<String>,
-    content: String,
-    comment_type: CommentType,
-    timestamp: SystemTime,
-    coordinates: (f32, f32, f32),
-}
-
-#[async_trait]
-pub trait Command: Send + Sync {
-    async fn execute(
-        &mut self,
-        board: &mut Board,
-        state: Arc<Mutex<FlowLikeState>>,
-    ) -> anyhow::Result<()>;
-    async fn undo(
-        &mut self,
-        board: &mut Board,
-        state: Arc<Mutex<FlowLikeState>>,
-    ) -> anyhow::Result<()>;
-
-    async fn node_to_logic(
-        &self,
-        node: &Node,
-        state: Arc<Mutex<FlowLikeState>>,
-    ) -> anyhow::Result<Arc<dyn NodeLogic>> {
-        let node_registry = {
-            let state_guard = state.lock().await;
-            state_guard.node_registry().clone()
-        };
-
-        let registry_guard = node_registry.read().await;
-
-        registry_guard.instantiate(node).await
-    }
+    pub id: String,
+    pub author: Option<String>,
+    pub content: String,
+    pub comment_type: CommentType,
+    pub timestamp: SystemTime,
+    pub coordinates: (f32, f32, f32),
 }
 
 #[cfg(test)]
 mod tests {
     use crate::{state::FlowLikeConfig, utils::http::HTTPClient};
-    use object_store::path::Path;
+    use flow_like_storage::{
+        files::store::FlowLikeStore,
+        object_store::{self, path::Path},
+    };
+    use flow_like_types::{FromProto, ToProto};
+    use flow_like_types::{Message, sync::Mutex, tokio};
     use std::sync::Arc;
-    use tokio::sync::Mutex;
 
     async fn flow_state() -> Arc<Mutex<crate::state::FlowLikeState>> {
         let mut config: FlowLikeConfig = FlowLikeConfig::new();
-        config.register_project_store(crate::state::FlowLikeStore::Other(Arc::new(
+        config.register_project_store(FlowLikeStore::Other(Arc::new(
             object_store::memory::InMemory::new(),
         )));
         let (http_client, _refetch_rx) = HTTPClient::new();
@@ -479,11 +452,13 @@ mod tests {
     async fn serialize_board() {
         let state = flow_state().await;
         let base_dir = Path::from("boards");
-        let board = super::Board::new(base_dir, state);
+        let board = super::Board::new(None, base_dir, state);
 
-        let ser = bitcode::serialize(&board).unwrap();
-        let deser: super::Board = bitcode::deserialize(&ser).unwrap();
+        let mut buf = Vec::new();
+        board.to_proto().encode(&mut buf).unwrap();
+        let deser_board =
+            super::Board::from_proto(flow_like_types::proto::Board::decode(&buf[..]).unwrap());
 
-        assert_eq!(board.id, deser.id);
+        assert_eq!(board.id, deser_board.id);
     }
 }

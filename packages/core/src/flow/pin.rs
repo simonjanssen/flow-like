@@ -1,9 +1,8 @@
 use super::variable::VariableType;
-use schemars::{schema_for, JsonSchema};
+use flow_like_types::{Value, json::to_string_pretty, sync::Mutex};
+use schemars::{JsonSchema, schema_for};
 use serde::{Deserialize, Serialize};
-use serde_json::{to_string_pretty, Value};
 use std::{collections::HashSet, sync::Arc};
-use tokio::sync::Mutex;
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
 pub enum PinType {
@@ -94,7 +93,7 @@ pub struct Pin {
 
 impl Pin {
     pub fn set_default_value(&mut self, default_value: Option<Value>) -> &mut Self {
-        self.default_value = default_value.map(|v| serde_json::to_vec(&v).unwrap());
+        self.default_value = default_value.map(|v| flow_like_types::json::to_vec(&v).unwrap());
         self
     }
 
@@ -138,11 +137,11 @@ impl Pin {}
 
 #[cfg(test)]
 mod tests {
+
+    use flow_like_types::sync::Mutex;
+    use flow_like_types::{FromProto, ToProto};
+    use flow_like_types::{Message, Value, tokio};
     use std::{collections::HashSet, sync::Arc};
-
-    use tokio::sync::Mutex;
-
-    use crate::flow::pin::Pin;
 
     #[tokio::test]
     async fn serialize_pin() {
@@ -161,12 +160,13 @@ mod tests {
             default_value: None,
             index: 0,
             options: None,
-            value: Some(Arc::new(Mutex::new(serde_json::Value::Null))),
+            value: Some(Arc::new(Mutex::new(Value::Null))),
         };
         // let pin = super::SerializablePin::from(pin);
 
-        let ser = bitcode::serialize(&pin).unwrap();
-        let deser: Pin = bitcode::deserialize(&ser).unwrap();
+        let mut buf = Vec::new();
+        pin.to_proto().encode(&mut buf).unwrap();
+        let deser = super::Pin::from_proto(flow_like_types::proto::Pin::decode(&buf[..]).unwrap());
 
         assert_eq!(pin.id, deser.id);
     }

@@ -1,8 +1,7 @@
+use flow_like_types::{Value, create_id, sync::Mutex};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 
 use super::pin::ValueType;
 
@@ -26,7 +25,7 @@ pub struct Variable {
 impl Variable {
     pub fn new(name: &str, data_type: VariableType, value_type: ValueType) -> Self {
         Self {
-            id: cuid2::create_id(),
+            id: create_id(),
             name: name.to_string(),
             category: None,
             description: None,
@@ -42,7 +41,7 @@ impl Variable {
 
     pub fn duplicate(&self) -> Self {
         Self {
-            id: cuid2::create_id(),
+            id: create_id(),
             name: self.name.clone(),
             category: self.category.clone(),
             description: self.description.clone(),
@@ -82,7 +81,7 @@ impl Variable {
     }
 
     pub fn set_default_value(&mut self, default_value: Value) -> &mut Self {
-        self.default_value = Some(serde_json::to_vec(&default_value).unwrap());
+        self.default_value = Some(flow_like_types::json::to_vec(&default_value).unwrap());
         self
     }
 
@@ -107,6 +106,9 @@ pub enum VariableType {
 
 #[cfg(test)]
 mod tests {
+    use flow_like_types::{FromProto, ToProto};
+    use flow_like_types::{Message, tokio};
+
     #[tokio::test]
     async fn serialize_variable() {
         let variable = super::Variable::new(
@@ -115,8 +117,11 @@ mod tests {
             super::ValueType::Normal,
         );
 
-        let ser = bitcode::serialize(&variable).unwrap();
-        let deser: super::Variable = bitcode::deserialize(&ser).unwrap();
+        let mut buf = Vec::new();
+        variable.to_proto().encode(&mut buf).unwrap();
+        let deser = super::Variable::from_proto(
+            flow_like_types::proto::Variable::decode(&buf[..]).unwrap(),
+        );
 
         assert_eq!(variable.id, deser.id);
     }
