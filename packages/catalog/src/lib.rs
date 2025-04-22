@@ -7,6 +7,7 @@ pub mod bit;
 pub mod control;
 pub mod events;
 pub mod http;
+pub mod image;
 pub mod logging;
 pub mod math;
 pub mod storage;
@@ -27,6 +28,7 @@ pub async fn get_catalog() -> Vec<Arc<dyn NodeLogic>> {
         storage::register_functions().await,
         bit::register_functions().await,
         web::register_functions().await,
+        image::register_functions().await,
     ]
     .into_iter()
     .flatten()

@@ -8,11 +8,99 @@ import {
 	upsertCommentCommand,
 } from "./command/generic-command";
 import { toastSuccess } from "./messages";
-import type { IGeneric } from "./schema";
+import type { IGenericCommand, IValueType } from "./schema";
 import { type IBoard, type IComment, ICommentType } from "./schema/flow/board";
+import { IVariableType } from "./schema/flow/node";
 import type { INode } from "./schema/flow/node";
-import type { IPin } from "./schema/flow/pin";
+import type { IPin, IPinType } from "./schema/flow/pin";
 import type { IRun, ITrace } from "./schema/flow/run";
+
+interface ISerializedPin {
+	id: string;
+	name: string;
+	friendly_name: string;
+	pin_type: IPinType;
+	data_type: IVariableType;
+	value_type: IValueType;
+	depends_on: string[];
+	connected_to: string[];
+	default_value?: number[];
+	index: number;
+}
+interface ISerializedNode {
+	id: string;
+	name: string;
+	friendly_name: string;
+	comment?: string;
+	coordinates?: number[];
+	pins: {
+		[key: string]: ISerializedPin;
+	};
+}
+
+function serializeNode(node: INode): ISerializedNode {
+	const pins: {
+		[key: string]: ISerializedPin;
+	} = {};
+
+	for (const pin of Object.values(node.pins)) {
+		pins[pin.id] = {
+			id: pin.id,
+			name: pin.name,
+			friendly_name: pin.friendly_name,
+			pin_type: pin.pin_type,
+			data_type: pin.data_type,
+			value_type: pin.value_type,
+			depends_on: pin.depends_on,
+			connected_to: pin.connected_to,
+			default_value: pin.default_value ?? undefined,
+			index: pin.index,
+		};
+	}
+
+	return {
+		id: node.id,
+		name: node.name,
+		friendly_name: node.friendly_name,
+		comment: node.comment ?? undefined,
+		coordinates: node.coordinates ?? undefined,
+		pins: pins,
+	};
+}
+
+function deserializeNode(node: ISerializedNode): INode {
+	const pins: {
+		[key: string]: IPin;
+	} = {};
+
+	for (const pin of Object.values(node.pins)) {
+		pins[pin.id] = {
+			id: pin.id,
+			name: pin.name,
+			friendly_name: pin.friendly_name,
+			pin_type: pin.pin_type,
+			data_type: pin.data_type,
+			value_type: pin.value_type,
+			depends_on: pin.depends_on,
+			connected_to: pin.connected_to,
+			default_value: pin.default_value ?? undefined,
+			index: pin.index,
+			description: "",
+			schema: "",
+		};
+	}
+
+	return {
+		id: node.id,
+		category: "",
+		name: node.name,
+		description: "",
+		friendly_name: node.friendly_name,
+		coordinates: node.coordinates ?? [0, 0, 0],
+		comment: node.comment ?? "",
+		pins: pins,
+	};
+}
 
 export function isValidConnection(
 	connection: any,
@@ -35,6 +123,21 @@ export function doPinsMatch(
 	targetPin: IPin,
 	refs: { [key: string]: string },
 ) {
+	if (
+		(sourcePin.name === "route_in" &&
+			sourcePin.data_type === IVariableType.Generic) ||
+		(targetPin.name === "route_in" &&
+			targetPin.data_type === IVariableType.Generic)
+	)
+		return true;
+	if (
+		(targetPin.name === "route_out" &&
+			targetPin.data_type === IVariableType.Generic) ||
+		(sourcePin.name === "route_out" &&
+			sourcePin.data_type === IVariableType.Generic)
+	)
+		return true;
+
 	if (sourcePin.pin_type === targetPin.pin_type) return false;
 
 	let schemaSource = sourcePin.schema;
@@ -90,9 +193,9 @@ function hashNode(node: INode | IComment, traces?: ITrace[]) {
 export function parseBoard(
 	board: IBoard,
 	appId: string,
-	executeBoard: (node: INode) => Promise<void>,
+	executeBoard: (node: INode, payload?: object) => Promise<void>,
 	openTraces: (node: INode, traces: ITrace[]) => Promise<void>,
-	executeCommand: (command: IGeneric, append: boolean) => Promise<any>,
+	executeCommand: (command: IGenericCommand, append: boolean) => Promise<any>,
 	selected: Set<string>,
 	run?: IRun,
 	connectionMode?: string,
@@ -142,8 +245,8 @@ export function parseBoard(
 					hash: hash,
 					boardId: board.id,
 					appId: appId,
-					onExecute: async (node: INode) => {
-						await executeBoard(node);
+					onExecute: async (node: INode, payload?: object) => {
+						await executeBoard(node, payload);
 					},
 					openTrace: async (traces: ITrace[]) => {
 						await openTraces(node, traces);
@@ -220,13 +323,7 @@ export function parseBoard(
 	return { nodes, edges, cache, traces };
 }
 
-export function handleCopy(
-	nodes: any[],
-	event?: ClipboardEvent,
-	refs?: {
-		[key: string]: string;
-	},
-) {
+export function handleCopy(nodes: any[], event?: ClipboardEvent) {
 	const activeElement = document.activeElement;
 	if (
 		activeElement instanceof HTMLInputElement ||
@@ -238,16 +335,18 @@ export function handleCopy(
 
 	event?.preventDefault();
 	event?.stopPropagation();
-	const selectedNodes: INode[] = nodes
+
+	const selectedNodes = nodes
 		.filter((node: any) => node.selected && node.type === "node")
-		.map((node: any) => node.data.node);
+		.map((node: any) => serializeNode(node.data.node));
+
 	const selectedComments: IComment[] = nodes
 		.filter((node: any) => node.selected && node.type === "commentNode")
 		.map((node: any) => node.data.comment);
 	try {
 		navigator.clipboard.writeText(
 			JSON.stringify(
-				{ nodes: selectedNodes, comments: selectedComments, refs },
+				{ nodes: selectedNodes, comments: selectedComments },
 				null,
 				2,
 			),
@@ -263,7 +362,7 @@ export async function handlePaste(
 	event: ClipboardEvent,
 	cursorPosition: { x: number; y: number },
 	boardId: string,
-	executeCommand: (command: IGeneric, append?: boolean) => Promise<any>,
+	executeCommand: (command: IGenericCommand, append?: boolean) => Promise<any>,
 ) {
 	const activeElement = document.activeElement;
 	if (
@@ -281,7 +380,9 @@ export async function handlePaste(
 		const data = JSON.parse(clipboard);
 		if (!data) return;
 		if (!data.nodes && !data.comments) return;
-		const nodes: any[] = data.nodes;
+		const nodes: any[] = data.nodes.map((node: ISerializedNode) =>
+			deserializeNode(node),
+		);
 		const comments: any[] = data.comments;
 
 		const command = copyPasteCommand({

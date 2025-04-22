@@ -56,7 +56,7 @@ import {
 } from "../../components/ui/resizable";
 import { useInvoke } from "../../hooks/use-invoke";
 import {
-	type IGeneric,
+	type IGenericCommand,
 	addNodeCommand,
 	connectPinsCommand,
 	disconnectPinsCommand,
@@ -157,7 +157,7 @@ export function FlowBoard({
 	);
 
 	const executeCommand = useCallback(
-		async (command: IGeneric, append = false): Promise<any> => {
+		async (command: IGenericCommand, append = false): Promise<any> => {
 			const result = await backend.executeCommand(appId, boardId, command);
 			await pushCommand(result, append);
 			await board.refetch();
@@ -167,7 +167,7 @@ export function FlowBoard({
 	);
 
 	const executeCommands = useCallback(
-		async (commands: IGeneric[]) => {
+		async (commands: IGenericCommand[]) => {
 			if (commands.length === 0) return;
 			const result = await backend.executeCommands(appId, boardId, commands);
 			await pushCommands(result);
@@ -202,12 +202,31 @@ export function FlowBoard({
 	}
 
 	const executeBoard = useCallback(
-		async (node: INode) => {
+		async (node: INode, payload?: object) => {
 			setCurrentRun(undefined);
-			const runId: string | undefined = await backend.createRun(
+			let added = false;
+			const runId: string | undefined = await backend.executeBoard(
 				appId,
 				boardId,
-				[node.id],
+				[
+					{
+						id: node.id,
+						payload: payload,
+					},
+				],
+				(update) => {
+					const runUpdates = update
+						.filter((item) => item.event_type.startsWith("run:"))
+						.map((item) => item.payload);
+					if (runUpdates.length === 0) return;
+					const firstItem = runUpdates[0];
+					if (!added) {
+						addRun(firstItem.run_id, boardId, [node.id]);
+						added = true;
+					}
+
+					pushUpdate(firstItem.run_id, runUpdates);
+				},
 			);
 			if (!runId) {
 				toastError(
@@ -216,10 +235,6 @@ export function FlowBoard({
 				);
 				return;
 			}
-			await addRun(runId, boardId, [node.id]);
-			await backend.executeRun(appId, runId, (update) => {
-				pushUpdate(runId, update);
-			});
 			removeRun(runId);
 			const result: IRun | undefined = await backend.getRun(appId, runId);
 			setCurrentRun(result);
@@ -251,9 +266,19 @@ export function FlowBoard({
 
 	const handleCopyCB = useCallback(
 		(event: ClipboardEvent) => {
-			handleCopy(nodes, event, board.data?.refs);
+			handleCopy(nodes, event);
 		},
-		[nodes, board.data?.refs],
+		[nodes],
+	);
+
+	const placeNodeShortcut = useCallback(
+		async (node: INode) => {
+			await placeNode(node, {
+				x: mousePosition.x,
+				y: mousePosition.y,
+			});
+		},
+		[mousePosition],
 	);
 
 	const shortcutHandler = useCallback(
@@ -281,6 +306,68 @@ export function FlowBoard({
 				if (stack) await backend.redoBoard(appId, boardId, stack);
 				toastSuccess("Redo", <Redo2Icon className="w-4 h-4" />);
 				await board.refetch();
+			}
+
+			// Place Branch
+			if (
+				(event.metaKey || event.ctrlKey) &&
+				event.key === "b" &&
+				!event.shiftKey
+			) {
+				event.preventDefault();
+				event.stopPropagation();
+				const node = catalog.data?.find(
+					(node) => node.name === "control_branch",
+				);
+				if (!node) return;
+				await placeNodeShortcut(node);
+				await board.refetch();
+				return;
+			}
+
+			// Place For Each
+			if (
+				(event.metaKey || event.ctrlKey) &&
+				event.key === "f" &&
+				!event.shiftKey
+			) {
+				event.preventDefault();
+				event.stopPropagation();
+				const node = catalog.data?.find(
+					(node) => node.name === "control_for_each",
+				);
+				if (!node) return;
+				await placeNodeShortcut(node);
+				await board.refetch();
+				return;
+			}
+
+			if (
+				(event.metaKey || event.ctrlKey) &&
+				event.key === "p" &&
+				!event.shiftKey
+			) {
+				event.preventDefault();
+				event.stopPropagation();
+				const node = catalog.data?.find((node) => node.name === "log_info");
+				if (!node) return;
+				await placeNodeShortcut(node);
+				await board.refetch();
+				return;
+			}
+
+			if (
+				(event.metaKey || event.ctrlKey) &&
+				event.key === "s" &&
+				!event.shiftKey
+			) {
+				event.preventDefault();
+				event.stopPropagation();
+				const node = catalog.data?.find((node) => node.name === "reroute");
+				if (!node) return;
+				await placeNodeShortcut(node);
+				await board.refetch();
+				return;
 			}
 		},
 		[boardId, board, backend],
@@ -711,7 +798,7 @@ export function FlowBoard({
 
 	const onNodeDragStop = useCallback(
 		async (event: any, node: any, nodes: any) => {
-			let first = true;
+			const commands: IGenericCommand[] = [];
 			for await (const node of nodes) {
 				console.log(
 					`Moving node ${node.id} to ${node.position.x}, ${node.position.y}`,
@@ -726,8 +813,7 @@ export function FlowBoard({
 							coordinates: [node.position.x, node.position.y, 0],
 						},
 					});
-
-					await executeCommand(command, !first);
+					commands.push(command);
 				}
 
 				if (!comment) {
@@ -736,13 +822,12 @@ export function FlowBoard({
 						to_coordinates: [node.position.x, node.position.y, 0],
 					});
 
-					await executeCommand(command, !first);
+					commands.push(command);
 				}
-				first = false;
 			}
-			await board.refetch();
+			await executeCommands(commands);
 		},
-		[boardId, executeCommand],
+		[boardId, executeCommands],
 	);
 
 	const isValidConnectionCB = useCallback(
@@ -1033,6 +1118,9 @@ export function FlowBoard({
 										onConnect={onConnect}
 										onReconnect={onReconnect}
 										onReconnectStart={onReconnectStart}
+										// onEdgeDoubleClick={(e, edge) => {
+										// 	console.dir({e, edge})
+										// }}
 										onReconnectEnd={onReconnectEnd}
 										onConnectEnd={onConnectEnd}
 										fitView

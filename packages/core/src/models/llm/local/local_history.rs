@@ -1,5 +1,7 @@
-use crate::utils::data_url::optimize_data_url;
-use flow_like_model_provider::history::{Content, History, ResponseFormat, Role};
+use flow_like_model_provider::history::{
+    Content, ContentType, History, MessageContent, ResponseFormat, Role,
+};
+use flow_like_types::utils::data_url::optimize_data_url;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -48,12 +50,22 @@ async fn parse_messages(history: &History) -> Vec<LocalModelHistoryMessage> {
             Role::Assistant => "assistant",
             Role::User => "user",
             Role::System => "system",
+            Role::Function => "function",
+            Role::Tool => "tool",
         };
 
         let mut message_string = String::new();
         let mut img_counter = 0;
 
-        for content in &message.content {
+        let content: Vec<Content> = match message.content {
+            MessageContent::String(ref text) => vec![Content::Text {
+                content_type: ContentType::Text,
+                text: text.clone(),
+            }],
+            MessageContent::Contents(ref contents) => contents.clone(),
+        };
+
+        for content in &content {
             match content {
                 Content::Text { text, .. } => {
                     message_string.push_str(text);

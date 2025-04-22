@@ -1,23 +1,89 @@
 // Implementation according to
 // https://modelcontextprotocol.io/docs/concepts/sampling/
 
+use std::collections::HashMap;
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+use crate::response::Response;
+
+#[derive(Debug, Deserialize, Serialize, JsonSchema, Clone)]
+pub struct ToolCall {
+    pub id: String,
+    pub r#type: String,
+    pub function: ToolCallFunction,
+}
+
+#[derive(Debug, Deserialize, Serialize, JsonSchema, Clone)]
+pub struct ToolCallFunction {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub arguments: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
+#[serde(untagged)]
+pub enum MessageContent {
+    String(String),
+    Contents(Vec<Content>),
+}
+
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 #[serde(rename_all = "lowercase")]
 pub struct HistoryMessage {
     pub role: Role,
-    pub content: Vec<Content>,
+    pub content: MessageContent,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tool_calls: Option<Vec<ToolCall>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tool_call_id: Option<String>,
 }
 
 impl HistoryMessage {
     pub fn from_string(role: Role, content: &str) -> Self {
         Self {
             role,
-            content: vec![Content::Text {
+            content: MessageContent::Contents(vec![Content::Text {
                 content_type: ContentType::Text,
                 text: content.to_string(),
-            }],
+            }]),
+            name: None,
+            tool_call_id: None,
+            tool_calls: None,
+        }
+    }
+
+    pub fn from_response(response: Response) -> Self {
+        let first_choice = response.choices.first();
+
+        let content = match first_choice {
+            Some(choice) => choice.message.content.clone(),
+            None => None,
+        };
+
+        let role: Role = match first_choice {
+            Some(choice) => match choice.message.role.as_str() {
+                "user" => Role::User,
+                "assistant" => Role::Assistant,
+                "system" => Role::System,
+                _ => Role::Assistant,
+            },
+            None => Role::Assistant,
+        };
+
+        Self {
+            role,
+            content: MessageContent::Contents(vec![Content::Text {
+                content_type: ContentType::Text,
+                text: content.unwrap_or_default(),
+            }]),
+            name: None,
+            tool_call_id: None,
+            tool_calls: None,
         }
     }
 }
@@ -28,6 +94,8 @@ pub enum Role {
     System,
     User,
     Assistant,
+    Function,
+    Tool,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
@@ -148,10 +216,10 @@ impl History {
             .position(|message| message.role == Role::System);
 
         if let Some(index) = system_prompt_index {
-            self.messages[index].content = vec![Content::Text {
+            self.messages[index].content = MessageContent::Contents(vec![Content::Text {
                 content_type: ContentType::Text,
                 text: prompt,
-            }];
+            }]);
             return;
         }
 
@@ -159,10 +227,13 @@ impl History {
             0,
             HistoryMessage {
                 role: Role::System,
-                content: vec![Content::Text {
+                content: MessageContent::Contents(vec![Content::Text {
                     content_type: ContentType::Text,
                     text: prompt,
-                }],
+                }]),
+                name: None,
+                tool_call_id: None,
+                tool_calls: None,
             },
         );
     }
@@ -190,9 +261,44 @@ pub struct HistoryFunction {
     pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    pub parameters: HistoryFunctionParameters,
+}
+
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
+pub struct HistoryFunctionParameters {
+    #[serde(rename = "type")]
+    pub schema_type: HistoryJSONSchemaType,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub parameters: Option<flow_like_types::Value>,
-    pub strict: Option<bool>,
+    pub properties: Option<HashMap<String, Box<HistoryJSONSchemaDefine>>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub required: Option<Vec<String>>,
+}
+
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
+#[serde(rename_all = "lowercase")]
+pub enum HistoryJSONSchemaType {
+    Object,
+    Number,
+    String,
+    Array,
+    Null,
+    Boolean,
+}
+
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
+pub struct HistoryJSONSchemaDefine {
+    #[serde(rename = "type")]
+    pub schema_type: Option<HistoryJSONSchemaType>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub enum_values: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub properties: Option<HashMap<String, Box<HistoryJSONSchemaDefine>>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub required: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub items: Option<Box<HistoryJSONSchemaDefine>>,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]

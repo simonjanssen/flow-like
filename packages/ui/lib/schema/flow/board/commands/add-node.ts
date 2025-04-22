@@ -10,9 +10,11 @@ export interface INode {
 	description: string;
 	docs?: null | string;
 	error?: null | string;
+	event_callback?: boolean | null;
 	friendly_name: string;
 	icon?: null | string;
 	id: string;
+	layer?: null | string;
 	long_running?: boolean | null;
 	name: string;
 	pins: { [key: string]: IPin };
@@ -34,7 +36,6 @@ export interface IPin {
 	options?: null | IPinOptions;
 	pin_type: IPinType;
 	schema?: null | string;
-	valid_values?: string[] | null;
 	value_type: IValueType;
 	[property: string]: any;
 }

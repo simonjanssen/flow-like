@@ -1,19 +1,6 @@
-use flow_like_storage::object_store::path::Path;
-use flow_like_types::Value;
-use flow_like_types::{
-    Cacheable,
-    json::from_value,
-    sync::{Mutex, RwLock, mpsc},
-};
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
-use std::{
-    collections::HashMap,
-    fs::File,
-    sync::{Arc, Weak},
-};
-
 use super::{
-    InternalNode, LogLevel, Run, internal_pin::InternalPin, log::LogMessage, trace::Trace,
+    EventTrigger, InternalNode, LogLevel, Run, RunPayload, internal_pin::InternalPin,
+    log::LogMessage, trace::Trace,
 };
 use crate::{
     flow::{
@@ -24,7 +11,22 @@ use crate::{
         variable::{Variable, VariableType},
     },
     profile::Profile,
-    state::{FlowLikeEvent, FlowLikeState, FlowLikeStores, ToastEvent, ToastLevel},
+    state::{FlowLikeState, FlowLikeStores, ToastEvent, ToastLevel},
+};
+use flow_like_model_provider::provider::ModelProviderConfiguration;
+use flow_like_storage::object_store::path::Path;
+use flow_like_types::Value;
+use flow_like_types::intercom::{InterComCallback, InterComEvent};
+use flow_like_types::{
+    Cacheable,
+    json::from_value,
+    sync::{Mutex, RwLock},
+};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use std::{
+    collections::HashMap,
+    fs::File,
+    sync::{Arc, Weak},
 };
 
 #[derive(Clone)]
@@ -140,9 +142,10 @@ pub struct ExecutionContext {
     pub log_level: LogLevel,
     pub trace: Trace,
     pub execution_cache: Option<ExecutionContextCache>,
+    pub completion_callbacks: Arc<RwLock<Vec<EventTrigger>>>,
     run_id: String,
     state: NodeState,
-    sender: mpsc::Sender<FlowLikeEvent>,
+    callback: InterComCallback,
 }
 
 impl ExecutionContext {
@@ -155,7 +158,8 @@ impl ExecutionContext {
         log_level: LogLevel,
         stage: ExecutionStage,
         profile: Arc<Profile>,
-        sender: mpsc::Sender<FlowLikeEvent>,
+        callback: InterComCallback,
+        completion_callbacks: Arc<RwLock<Vec<EventTrigger>>>,
     ) -> Self {
         let (id, execution_cache) = {
             let node_id = node.node.lock().await.id.clone();
@@ -189,9 +193,10 @@ impl ExecutionContext {
             sub_traces: vec![],
             trace,
             profile,
-            sender,
+            callback,
             execution_cache,
             state: NodeState::Idle,
+            completion_callbacks,
         }
     }
 
@@ -205,7 +210,8 @@ impl ExecutionContext {
             self.log_level.clone(),
             self.stage.clone(),
             self.profile.clone(),
-            self.sender.clone(),
+            self.callback.clone(),
+            self.completion_callbacks.clone(),
         )
         .await
     }
@@ -216,6 +222,28 @@ impl ExecutionContext {
         }
 
         Err(flow_like_types::anyhow!("Variable not found"))
+    }
+
+    pub async fn get_payload(&self) -> flow_like_types::Result<RunPayload> {
+        let payload = self
+            .run
+            .upgrade()
+            .ok_or_else(|| flow_like_types::anyhow!("Run not found"))?
+            .lock()
+            .await
+            .payload
+            .get(&self.id)
+            .cloned();
+
+        if let Some(payload) = payload {
+            return Ok(payload);
+        }
+        Err(flow_like_types::anyhow!("Payload not found"))
+    }
+
+    pub async fn hook_completion_event(&mut self, cb: EventTrigger) {
+        let mut callbacks = self.completion_callbacks.write().await;
+        callbacks.push(cb);
     }
 
     pub async fn set_variable(&self, variable: Variable) {
@@ -286,11 +314,13 @@ impl ExecutionContext {
             method,
         };
 
-        let event = FlowLikeEvent::new(&format!("run:{}", self.run_id), update_event);
-        let res = self.sender.send(event).await;
+        let event = InterComEvent::with_type(format!("run:{}", self.run_id), update_event);
 
-        if let Err(e) = res {
-            println!("Failed to send run update event: {:?}", e);
+        if let Err(err) = event.call(&self.callback).await {
+            self.log_message(
+                &format!("Failed to send run update event: {}", err),
+                LogLevel::Error,
+            );
         }
     }
 
@@ -304,6 +334,13 @@ impl ExecutionContext {
     ) -> flow_like_types::Result<Arc<Mutex<InternalPin>>> {
         let pin = self.node.get_pin_by_name(name).await?;
         Ok(pin)
+    }
+
+    pub async fn get_model_config(
+        &self,
+    ) -> flow_like_types::Result<Arc<ModelProviderConfiguration>> {
+        let config = self.app_state.lock().await.model_provider_config.clone();
+        Ok(config)
     }
 
     pub async fn evaluate_pin<T: DeserializeOwned>(
@@ -445,22 +482,28 @@ impl ExecutionContext {
         message: &str,
         level: ToastLevel,
     ) -> flow_like_types::Result<()> {
-        let event = FlowLikeEvent::new("toast", ToastEvent::new(message, level));
-        let toast_result = self
-            .app_state
-            .lock()
-            .await
-            .event_sender
-            .lock()
-            .await
-            .send(event)
-            .await;
-
-        if toast_result.is_err() {
-            let error_msg = format!("Failed to send toast event: {:?}", toast_result.err());
-            self.log_message(&error_msg, LogLevel::Error);
+        let event = InterComEvent::with_type("toast", ToastEvent::new(message, level));
+        if let Err(err) = event.call(&self.callback).await {
+            self.log_message(
+                &format!("Failed to send toast event: {}", err),
+                LogLevel::Error,
+            );
         }
+        Ok(())
+    }
 
+    pub async fn stream_response<T>(
+        &mut self,
+        event_type: &str,
+        event: T,
+    ) -> flow_like_types::Result<()>
+    where
+        T: Serialize + DeserializeOwned,
+    {
+        let event = InterComEvent::with_type(event_type, event);
+        if let Err(err) = event.call(&self.callback).await {
+            self.log_message(&format!("Failed to send event: {}", err), LogLevel::Error);
+        }
         Ok(())
     }
 }

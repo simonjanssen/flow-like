@@ -55,6 +55,8 @@ pub struct Node {
     pub long_running: Option<bool>,
     pub error: Option<String>,
     pub docs: Option<String>,
+    pub event_callback: Option<bool>,
+    pub layer: Option<String>,
 }
 
 impl Node {
@@ -74,6 +76,8 @@ impl Node {
             long_running: None,
             error: None,
             docs: None,
+            event_callback: None,
+            layer: None,
         }
     }
 
@@ -87,6 +91,10 @@ impl Node {
 
     pub fn set_start(&mut self, start: bool) {
         self.start = Some(start);
+    }
+
+    pub fn set_event_callback(&mut self, callback: bool) {
+        self.event_callback = Some(callback);
     }
 
     pub fn add_input_pin(
@@ -111,7 +119,6 @@ impl Node {
                 description: description.to_string(),
                 schema: None,
                 pin_type: PinType::Input,
-                valid_values: None,
                 data_type,
                 value_type: super::pin::ValueType::Normal,
                 depends_on: HashSet::new(),
@@ -148,7 +155,6 @@ impl Node {
                 schema: None,
                 options: None,
                 pin_type: PinType::Output,
-                valid_values: None,
                 data_type,
                 value_type: super::pin::ValueType::Normal,
                 depends_on: HashSet::new(),

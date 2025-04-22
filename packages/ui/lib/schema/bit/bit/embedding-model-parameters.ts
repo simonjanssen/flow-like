@@ -3,7 +3,7 @@ export interface IEmbeddingModelParameters {
 	languages: string[];
 	pooling: IPooling;
 	prefix: IPrefix;
-	provider: IBitProviderModel;
+	provider: IModelProvider;
 	vector_length: number;
 	[property: string]: any;
 }
@@ -20,17 +20,9 @@ export interface IPrefix {
 	[property: string]: any;
 }
 
-export interface IBitProviderModel {
+export interface IModelProvider {
 	model_id?: null | string;
-	provider_name: IBitProvider;
+	provider_name: string;
 	version?: null | string;
 	[property: string]: any;
-}
-
-export enum IBitProvider {
-	Anthropic = "Anthropic",
-	AzureOpenAI = "AzureOpenAI",
-	Bedrock = "Bedrock",
-	Local = "Local",
-	OpenAI = "OpenAI",
 }

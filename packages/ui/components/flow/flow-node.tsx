@@ -27,6 +27,7 @@ import {
 import { useTheme } from "next-themes";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PuffLoader from "react-spinners/PuffLoader";
+import { toast } from "sonner";
 import {
 	ContextMenu,
 	ContextMenuContent,
@@ -39,18 +40,41 @@ import {
 	ContextMenuTrigger,
 } from "../../components/ui/context-menu";
 import { useInvalidateInvoke } from "../../hooks";
-import { handleCopy, updateNodeCommand } from "../../lib";
+import {
+	IPinType,
+	IValueType,
+	handleCopy,
+	updateNodeCommand,
+	upsertPinCommand,
+} from "../../lib";
 import type { INode } from "../../lib/schema/flow/node";
-import type { IPin } from "../../lib/schema/flow/pin";
+import { type IPin, IVariableType } from "../../lib/schema/flow/pin";
 import { ILogLevel, type ITrace } from "../../lib/schema/flow/run";
+import {
+	convertJsonToUint8Array,
+	parseUint8ArrayToJson,
+} from "../../lib/uint8";
 import { useBackend } from "../../state/backend-state";
 import { useRunExecutionStore } from "../../state/run-execution-state";
+import {
+	Button,
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+	Input,
+	Label,
+	Textarea,
+} from "../ui";
 import { DynamicImage } from "../ui/dynamic-image";
 import { useUndoRedo } from "./flow-history";
 import { FlowNodeCommentMenu } from "./flow-node/flow-node-comment-menu";
 import { FlowPinAction } from "./flow-node/flow-node-pin-action";
 import { FlowNodeRenameMenu } from "./flow-node/flow-node-rename-menu";
 import { FlowPin } from "./flow-pin";
+import { typeToColor } from "./utils";
 
 export interface IPinAction {
 	action: "create";
@@ -65,7 +89,7 @@ export type FlowNode = Node<
 		boardId: string;
 		appId: string;
 		traces: ITrace[];
-		onExecute: (node: INode) => Promise<void>;
+		onExecute: (node: INode, payload?: object) => Promise<void>;
 		openTrace: (trace: ITrace[]) => Promise<void>;
 	},
 	"node"
@@ -83,9 +107,13 @@ const FlowNodeInner = memo(
 		const { resolvedTheme } = useTheme();
 		const backend = useBackend();
 		const invalidate = useInvalidateInvoke();
-
+		const [payload, setPayload] = useState({
+			open: false,
+			payload: "",
+		});
 		const [executing, setExecuting] = useState(false);
 		const [isExec, setIsExec] = useState(false);
+		const [eventId, setEventId] = useState("");
 		const [inputPins, setInputPins] = useState<(IPin | IPinAction)[]>([]);
 		const [outputPins, setOutputPins] = useState<(IPin | IPinAction)[]>([]);
 		const { runs } = useRunExecutionStore();
@@ -123,6 +151,89 @@ const FlowNodeInner = memo(
 			return severity;
 		}, [props.data.traces]);
 
+		const eventRegistration = useMemo(() => {
+			if (!props.data.node.start) return undefined;
+			const typeNode = Object.values(props.data.node.pins).find(
+				(pin) => pin.name === "type" && pin.pin_type === IPinType.Input,
+			);
+			if (!typeNode) return undefined;
+			const otherPin = Object.values(props.data.node.pins).find(
+				(pin) => pin.name !== "type" && pin.pin_type === IPinType.Input,
+			);
+			if (!otherPin) return undefined;
+			const defaultValue = parseUint8ArrayToJson(otherPin.default_value);
+			if (typeof defaultValue !== "undefined" && defaultValue !== null)
+				return undefined;
+			return {
+				type: parseUint8ArrayToJson(typeNode.default_value),
+				pin: otherPin,
+			};
+		}, [props.data.node]);
+
+		const registerEvent = useCallback(async () => {
+			if (!eventId) return;
+			if (!eventRegistration) return;
+			try {
+				const node = props.data.node;
+				const pin = eventRegistration.pin;
+				const appId = props.data.appId;
+				const boardId = props.data.boardId;
+				const nodeId = props.data.node.id;
+				const eventType = eventRegistration.type;
+
+				await backend.registerEvent(appId, boardId, nodeId, eventType, eventId);
+
+				const command = updateNodeCommand({
+					node: {
+						...node,
+						pins: {
+							...node.pins,
+							[pin.id]: {
+								...pin,
+								default_value: convertJsonToUint8Array(eventId),
+							},
+						},
+					},
+				});
+
+				const result = await backend.executeCommand(appId, boardId, command);
+				await pushCommand(result, false);
+				await invalidate(backend.getBoard, [appId, boardId]);
+			} catch (e) {
+				console.warn(e);
+				toast.error(
+					`Failed to register event. Try a different ${eventRegistration.pin.friendly_name}`,
+				);
+			}
+		}, [
+			backend,
+			eventId,
+			eventRegistration,
+			props.data.appId,
+			props.data.boardId,
+			props.data.node,
+			pushCommand,
+			invalidate,
+		]);
+
+		const isReroute = useMemo(() => {
+			return props.data.node.name === "reroute";
+		}, [props.data.node.name]);
+
+		const nodeStyle = useMemo(
+			() => ({
+				backgroundColor: props.selected
+					? typeToColor(Object.values(props.data.node.pins)[0].data_type)
+					: undefined,
+				borderColor: typeToColor(
+					Object.values(props.data.node.pins)[0].data_type,
+				),
+				borderWidth: "1px",
+				borderStyle: "solid",
+			}),
+			[isReroute, props.selected],
+		);
+
 		const sortPins = useCallback((a: IPin, b: IPin) => {
 			// Step 1: Compare by type - Input comes before Output
 			if (a.pin_type === "Input" && b.pin_type === "Output") return -1;
@@ -134,9 +245,12 @@ const FlowNodeInner = memo(
 
 		useEffect(() => {
 			const height = Math.max(inputPins.length, outputPins.length);
+			if (isReroute) {
+				return;
+			}
 			if (div.current)
 				div.current.style.height = `calc(${height * 15}px + 1.25rem + 0.5rem)`;
-		}, [inputPins, outputPins]);
+		}, [isReroute, inputPins, outputPins]);
 
 		useEffect(() => {
 			parsePins(Object.values(props.data.node?.pins || []));
@@ -345,10 +459,38 @@ const FlowNodeInner = memo(
 			<div
 				key={`${props.id}__node`}
 				ref={div}
-				className={`bg-card p-2 react-flow__node-default selectable focus:ring-2 relative rounded-md group ${props.selected && "!border-primary border-2"} ${isExec ? "" : "bg-emerald-900"} ${executionState === "done" ? "opacity-60" : "opacity-100"}`}
+				className={`bg-card p-2 react-flow__node-default selectable focus:ring-2 relative rounded-md group ${props.selected && "!border-primary border-2"} ${executionState === "done" ? "opacity-60" : "opacity-100"} ${isReroute && "w-4 max-w-4 !max-h-3 overflow-y !rounded-lg !p-[0.4rem]"}`}
+				style={isReroute ? nodeStyle : {}}
 				onMouseEnter={() => onHover(true)}
 				onMouseLeave={() => onHover(false)}
 			>
+				{eventRegistration && (
+					<Dialog open={typeof eventRegistration !== "undefined"}>
+						<DialogContent>
+							<DialogHeader>
+								<DialogTitle>Event Registration</DialogTitle>
+								<DialogDescription>
+									The Node you placed requires an Event Configuration. Please
+									provide a unique {eventRegistration.pin.friendly_name}.
+									{eventRegistration.pin.description}
+								</DialogDescription>
+							</DialogHeader>
+							<div className="grid w-full items-center gap-1.5">
+								<Label htmlFor="eventid">
+									{eventRegistration.pin.friendly_name}
+								</Label>
+								<Input
+									id="eventid"
+									value={eventId}
+									onChange={(e) => setEventId(e.target.value)}
+								/>
+							</div>
+							<Button onClick={async () => await registerEvent()}>
+								Register Event
+							</Button>
+						</DialogContent>
+					</Dialog>
+				)}
 				{props.data.node.long_running && (
 					<div className="absolute top-0 z-10 translate-y-[calc(-50%)] translate-x-[calc(-50%)] left-0 text-center bg-background rounded-full">
 						{useMemo(
@@ -388,6 +530,7 @@ const FlowNodeInner = memo(
 				)}
 				{useMemo(
 					() =>
+						!(props.data.node.start ?? false) &&
 						inputPins
 							.filter((pin) => isPinAction(pin) || pin.name !== "var_ref")
 							.map((pin, index) =>
@@ -412,74 +555,125 @@ const FlowNodeInner = memo(
 							),
 					[inputPins, props.data.node, props.data.boardId, pinRemoveCallback],
 				)}
-				<div
-					className={`header absolute top-0 left-0 right-0 h-4 gap-1 flex flex-row items-center border-b-1 border-b-foreground p-1 justify-between rounded-md rounded-b-none bg-card ${!isExec && "bg-gradient-to-r  from-card via-tertiary/50 to-tertiary"} ${props.data.node.start && "bg-gradient-to-r  from-card via-primary/50 to-primary"}`}
-				>
-					<div className={"flex flex-row items-center gap-1"}>
-						{useMemo(
-							() =>
-								props.data.node?.icon ? (
-									<DynamicImage
-										className="w-2 h-2 bg-foreground"
-										url={props.data.node.icon}
+				{!isReroute && (
+					<div
+						className={`header absolute top-0 left-0 right-0 h-4 gap-1 flex flex-row items-center border-b-1 border-b-foreground p-1 justify-between rounded-md rounded-b-none bg-card ${props.data.node.event_callback && "bg-gradient-to-l  from-card via-primary/50 to-primary"} ${!isExec && "bg-gradient-to-r  from-card via-tertiary/50 to-tertiary"} ${props.data.node.start && "bg-gradient-to-r  from-card via-primary/50 to-primary"} ${isReroute && "w-6"}`}
+					>
+						<div className={"flex flex-row items-center gap-1"}>
+							{useMemo(
+								() =>
+									props.data.node?.icon ? (
+										<DynamicImage
+											className="w-2 h-2 bg-foreground"
+											url={props.data.node.icon}
+										/>
+									) : (
+										<WorkflowIcon className="w-2 h-2" />
+									),
+								[props.data.node?.icon],
+							)}
+							<small className="font-medium leading-none text-start line-clamp-1">
+								{props.data.node?.friendly_name}
+							</small>
+						</div>
+						<div className="flex flex-row items-center gap-1">
+							{useMemo(() => {
+								return props.data.traces.length > 0 ? (
+									<ScrollTextIcon
+										onClick={() => props.data.openTrace(props.data.traces)}
+										className="w-2 h-2 cursor-pointer hover:text-primary"
 									/>
-								) : (
-									<WorkflowIcon className="w-2 h-2" />
-								),
-							[props.data.node?.icon],
-						)}
-						<small className="font-medium leading-none text-start line-clamp-1">
-							{props.data.node?.friendly_name}
-						</small>
+								) : null;
+							}, [props.data.traces.length, props.data.openTrace])}
+
+							{useMemo(() => {
+								if (!props.data.node.start || executing) return null;
+								if (Object.keys(props.data.node.pins).length <= 1)
+									return (
+										<PlayCircleIcon
+											className="w-2 h-2 cursor-pointer hover:text-primary"
+											onClick={async (e) => {
+												if (executing) return;
+												setExecuting(true);
+												await props.data.onExecute(props.data.node);
+												setExecuting(false);
+											}}
+										/>
+									);
+
+								return (
+									<Dialog
+										open={payload.open}
+										onOpenChange={(open) =>
+											setPayload((old) => ({ ...old, open }))
+										}
+									>
+										<DialogTrigger asChild>
+											<PlayCircleIcon className="w-2 h-2 cursor-pointer hover:text-primary" />
+										</DialogTrigger>
+										<DialogContent>
+											<DialogHeader>
+												<DialogTitle>Execution Payload</DialogTitle>
+												<DialogDescription>
+													JSON Payload for the Event. Please have a look at the
+													documentation for example Payloads.
+												</DialogDescription>
+											</DialogHeader>
+											<Textarea
+												rows={10}
+												placeholder="JSON payload"
+												value={payload.payload}
+												onChange={(e) =>
+													setPayload((old) => ({
+														...old,
+														payload: e.target.value,
+													}))
+												}
+											/>
+											<Button
+												onClick={async () => {
+													if (executing) return;
+													setExecuting(true);
+													await props.data.onExecute(
+														props.data.node,
+														JSON.parse(payload.payload),
+													);
+													setExecuting(false);
+													setPayload((old) => ({ ...old, open: false }));
+												}}
+											>
+												Send
+											</Button>
+										</DialogContent>
+									</Dialog>
+								);
+							}, [
+								props.data.node.start,
+								payload,
+								executing,
+								props.data.onExecute,
+								props.data.node,
+							])}
+
+							{useMemo(() => {
+								if (debouncedExecutionState !== "running") return null;
+								return (
+									<PuffLoader
+										color={resolvedTheme === "dark" ? "white" : "black"}
+										size={10}
+										speedMultiplier={1}
+									/>
+								);
+							}, [debouncedExecutionState, resolvedTheme])}
+
+							{useMemo(() => {
+								return debouncedExecutionState === "done" ? (
+									<SquareCheckIcon className="w-2 h-2 text-primary" />
+								) : null;
+							}, [debouncedExecutionState])}
+						</div>
 					</div>
-					<div className="flex flex-row items-center gap-1">
-						{useMemo(() => {
-							return props.data.traces.length > 0 ? (
-								<ScrollTextIcon
-									onClick={() => props.data.openTrace(props.data.traces)}
-									className="w-2 h-2 cursor-pointer hover:text-primary"
-								/>
-							) : null;
-						}, [props.data.traces.length, props.data.openTrace])}
-
-						{useMemo(() => {
-							if (!props.data.node.start || executing) return null;
-							return (
-								<PlayCircleIcon
-									className="w-2 h-2 cursor-pointer hover:text-primary"
-									onClick={async (e) => {
-										if (executing) return;
-										setExecuting(true);
-										await props.data.onExecute(props.data.node);
-										setExecuting(false);
-									}}
-								/>
-							);
-						}, [
-							props.data.node.start,
-							executing,
-							props.data.onExecute,
-							props.data.node,
-						])}
-
-						{useMemo(() => {
-							if (debouncedExecutionState !== "running") return null;
-							return (
-								<PuffLoader
-									color={resolvedTheme === "dark" ? "white" : "black"}
-									size={10}
-									speedMultiplier={1}
-								/>
-							);
-						}, [debouncedExecutionState, resolvedTheme])}
-
-						{useMemo(() => {
-							return debouncedExecutionState === "done" ? (
-								<SquareCheckIcon className="w-2 h-2 text-primary" />
-							) : null;
-						}, [debouncedExecutionState])}
-					</div>
-				</div>
+				)}
 				{useMemo(
 					() =>
 						outputPins.map((pin, index) =>
@@ -510,27 +704,119 @@ const FlowNodeInner = memo(
 );
 
 function FlowNode(props: NodeProps<FlowNode>) {
+	const backend = useBackend();
 	const [isHovered, setIsHovered] = useState(false);
 	const [isOpen, setIsOpen] = useState(false);
 	const [commentMenu, setCommentMenu] = useState(false);
 	const [renameMenu, setRenameMenu] = useState(false);
 	const flow = useReactFlow();
-	const scope = useMemo(() => {
-		const selected = flow.getNodes().filter((node) => node.selected);
-		const self = selected.find((node) => node.id === props.id);
-		if (!self) {
-			return [
-				...selected,
-				flow.getNodes().filter((node) => node.id === props.id)[0],
-			];
-		}
+	const { pushCommand } = useUndoRedo(props.data.appId, props.data.boardId);
+	const invalidate = useInvalidateInvoke();
+	const errorHandled = useMemo(() => {
+		return Object.values(props.data.node.pins).some(
+			(pin) =>
+				pin.name === "auto_handle_error" && pin.pin_type === IPinType.Output,
+		);
+	}, [props.data.node.pins]);
 
-		return selected;
-	}, [flow]);
+	const isExec = useMemo(() => {
+		return Object.values(props.data.node.pins).some(
+			(pin) => pin.data_type === IVariableType.Execution,
+		);
+	}, [props.data.node.pins]);
 
 	const copy = useCallback(async () => {
 		handleCopy(flow.getNodes());
 	}, [flow]);
+
+	const handleError = useCallback(async () => {
+		const node = flow.getNodes().find((node) => node.id === props.id);
+		if (!node) return;
+
+		const innerNode = node.data.node as INode;
+
+		const handleErrorPin = Object.values(innerNode.pins).find(
+			(pin) =>
+				pin.name === "auto_handle_error" && pin.pin_type === IPinType.Output,
+		);
+
+		if (handleErrorPin) {
+			const filteredPins = Object.values(innerNode.pins).filter(
+				(pin) =>
+					pin.name !== "auto_handle_error" &&
+					pin.name !== "auto_handle_error_string",
+			);
+			innerNode.pins = {};
+			filteredPins
+				.toSorted((a, b) => a.index - b.index)
+				.forEach(
+					(pin, index) => (innerNode.pins[pin.id] = { ...pin, index: index }),
+				);
+			const updateNode = updateNodeCommand({
+				node: {
+					...innerNode,
+				},
+			});
+
+			await backend.executeCommand(
+				props.data.appId,
+				props.data.boardId,
+				updateNode,
+			);
+			await pushCommand(updateNode, false);
+			invalidate(backend.getBoard, [props.data.appId, props.data.boardId]);
+			return;
+		}
+
+		const newPin: IPin = {
+			name: "auto_handle_error",
+			description: "Handles Node Errors for you.",
+			pin_type: IPinType.Output,
+			value_type: IValueType.Normal,
+			data_type: IVariableType.Execution,
+			id: createId(),
+			index: 0,
+			connected_to: [],
+			depends_on: [],
+			friendly_name: "On Error",
+			default_value: convertJsonToUint8Array(false),
+		};
+
+		const stringPin: IPin = {
+			name: "auto_handle_error_string",
+			description: "Handles Node Errors for you.",
+			pin_type: IPinType.Output,
+			value_type: IValueType.Normal,
+			data_type: IVariableType.String,
+			id: createId(),
+			index: 0,
+			connected_to: [],
+			depends_on: [],
+			friendly_name: "Error",
+			default_value: convertJsonToUint8Array(""),
+		};
+
+		const command = upsertPinCommand({
+			node_id: innerNode.id,
+			pin: newPin,
+		});
+
+		const stringCommand = upsertPinCommand({
+			node_id: innerNode.id,
+			pin: stringPin,
+		});
+
+		await backend.executeCommand(props.data.appId, props.data.boardId, command);
+		await backend.executeCommand(
+			props.data.appId,
+			props.data.boardId,
+			stringCommand,
+		);
+		await pushCommand(command, false);
+		await pushCommand(stringCommand, true);
+
+		invalidate(backend.getBoard, [props.data.appId, props.data.boardId]);
+	}, [backend, props.data.node, props.data.appId, props.data.boardId, flow]);
 
 	if (isOpen || isHovered) {
 		return (
@@ -543,17 +829,18 @@ function FlowNode(props: NodeProps<FlowNode>) {
 				<ContextMenuTrigger>
 					<FlowNodeInner props={props} onHover={setIsHovered} />
 				</ContextMenuTrigger>
-				<ContextMenuContent className="max-w-20">
+				<ContextMenuContent className="">
 					<ContextMenuLabel>Node Actions</ContextMenuLabel>
-					{scope.length <= 1 && props.data.node.start && (
-						<ContextMenuItem onClick={() => setRenameMenu(true)}>
-							<div className="flex flex-row items-center gap-2 text-nowrap">
-								<SquarePenIcon className="w-4 h-4" />
-								Rename
-							</div>
-						</ContextMenuItem>
-					)}
-					{scope.length <= 1 && (
+					{flow.getNodes().filter((node) => node.selected).length <= 1 &&
+						props.data.node.start && (
+							<ContextMenuItem onClick={() => setRenameMenu(true)}>
+								<div className="flex flex-row items-center gap-2 text-nowrap">
+									<SquarePenIcon className="w-4 h-4" />
+									Rename
+								</div>
+							</ContextMenuItem>
+						)}
+					{flow.getNodes().filter((node) => node.selected).length <= 1 && (
 						<ContextMenuItem onClick={() => setCommentMenu(true)}>
 							<div className="flex flex-row items-center gap-2 text-nowrap">
 								<MessageSquareIcon className="w-4 h-4" />
@@ -561,13 +848,22 @@ function FlowNode(props: NodeProps<FlowNode>) {
 							</div>
 						</ContextMenuItem>
 					)}
+					{isExec &&
+						flow.getNodes().filter((node) => node.selected).length <= 1 && (
+							<ContextMenuItem onClick={() => handleError()}>
+								<div className="flex flex-row items-center gap-2 text-nowrap">
+									<CircleXIcon className="w-4 h-4" />
+									{errorHandled ? "Remove Handling" : "Handle Errors"}
+								</div>
+							</ContextMenuItem>
+						)}
 					<ContextMenuItem onClick={async () => await copy()}>
 						<div className="flex flex-row items-center gap-2 text-nowrap">
 							<CopyIcon className="w-4 h-4" />
 							Copy
 						</div>
 					</ContextMenuItem>
-					{scope.length > 1 && (
+					{flow.getNodes().filter((node) => node.selected).length > 1 && (
 						<>
 							<ContextMenuSeparator />
 							<ContextMenuSub>

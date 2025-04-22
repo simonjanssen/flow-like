@@ -1,6 +1,9 @@
 use criterion::{Criterion, criterion_group, criterion_main};
 use flow_like::{
-    flow::{board::Board, execution::InternalRun},
+    flow::{
+        board::Board,
+        execution::{InternalRun, RunPayload},
+    },
     profile::Profile,
     state::{FlowLikeConfig, FlowLikeState},
     utils::http::HTTPClient,
@@ -25,7 +28,7 @@ async fn default_state() -> Arc<Mutex<FlowLikeState>> {
     config.register_user_store(store.clone());
     config.register_project_store(store);
     let (http_client, _refetch_rx) = HTTPClient::new();
-    let (state, _receiver) = FlowLikeState::new(config, http_client);
+    let state = FlowLikeState::new(config, http_client);
     Arc::new(Mutex::new(state))
 }
 
@@ -44,7 +47,15 @@ async fn run_board(id: &str, start_ids: Vec<String>) {
     let state = default_state().await;
     let board = Arc::new(open_board(id, state.clone()).await);
     let profile = construct_profile();
-    let mut run = InternalRun::new(board, &state, &profile, start_ids, None)
+    let payload: Vec<RunPayload> = start_ids
+        .iter()
+        .map(|start_id| RunPayload {
+            id: start_id.clone(),
+            payload: None,
+        })
+        .collect();
+
+    let mut run = InternalRun::new(board, &state, &profile, payload, None, None)
         .await
         .unwrap();
     run.execute(state.clone()).await;
@@ -56,7 +67,14 @@ async fn run_shared_board(
     profile: Profile,
     start_ids: Vec<String>,
 ) {
-    let mut run = InternalRun::new(board, &state, &profile, start_ids, None)
+    let payload: Vec<RunPayload> = start_ids
+        .iter()
+        .map(|start_id| RunPayload {
+            id: start_id.clone(),
+            payload: None,
+        })
+        .collect();
+    let mut run = InternalRun::new(board, &state, &profile, payload, None, None)
         .await
         .unwrap();
     run.execute(state.clone()).await;
@@ -80,10 +98,13 @@ fn criterion_benchmark(c: &mut Criterion) {
     let rt = tokio::runtime::Runtime::new().unwrap();
 
     let memory_start = get_memory_usage();
+    #[allow(unused_assignments)]
     let mut memory_mid = 0.0;
+    #[allow(unused_assignments)]
     let mut memory_end = 0.0;
-    let shared_memory_start = 0.0;
+    #[allow(unused_assignments)]
     let mut shared_memory_mid = 0.0;
+    #[allow(unused_assignments)]
     let mut shared_memory_end = 0.0;
 
     {

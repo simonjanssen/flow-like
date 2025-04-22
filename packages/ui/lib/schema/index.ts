@@ -1,3 +1,5 @@
+export type { IIntercomEvent } from "./events/intercom-event";
+export type { IRunPayload } from "./flow/run-payload";
 export * from "./bit/bit";
 export type {
 	IBitPack,
@@ -13,8 +15,8 @@ export type { IProvider } from "./bit/bit/provider";
 
 export * from "./files/file-metadata";
 export * from "./flow/node";
+export { IValueType } from "./flow/variable";
 export type {
-	IValueType,
 	IVariable,
 	IVariableType,
 } from "./flow/variable";
@@ -42,7 +44,7 @@ export type { IAddNode } from "./flow/board/commands/add-node";
 export type { IConnectPins } from "./flow/board/commands/connect-pins";
 export type { ICopyPaste } from "./flow/board/commands/copy-paste";
 export type { IDisconnectPins } from "./flow/board/commands/disconnect-pins";
-export type { IGeneric } from "./flow/board/commands/generic";
+export type { IGenericCommand } from "./flow/board/commands/generic-command";
 export type { IMoveNode } from "./flow/board/commands/move-node";
 export type { IRemoveComment } from "./flow/board/commands/remove-comment";
 export type { IRemoveNode } from "./flow/board/commands/remove-node";

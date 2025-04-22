@@ -4,7 +4,7 @@ use crate::{
     state::FlowLikeState,
 };
 use flow_like_model_provider::{
-    embedding::EmbeddingModelLogic,
+    embedding::{EmbeddingModelLogic, GeneralTextSplitter},
     fastembed::{
         self, ImageEmbedding, ImageInitOptionsUserDefined, UserDefinedImageEmbeddingModel,
     },
@@ -46,7 +46,7 @@ impl LocalImageEmbeddingModel {
         };
 
         let pack = bit.pack(app_state.clone()).await?;
-        pack.download(app_state.clone()).await?;
+        pack.download(app_state.clone(), None).await?;
         let embedding_model = pack
             .bits
             .iter()
@@ -96,14 +96,7 @@ impl ImageEmbeddingModelLogic for LocalImageEmbeddingModel {
         &self,
         capacity: Option<usize>,
         overlap: Option<usize>,
-    ) -> flow_like_types::Result<(
-        flow_like_model_provider::text_splitter::TextSplitter<
-            flow_like_model_provider::tokenizers::Tokenizer,
-        >,
-        flow_like_model_provider::text_splitter::MarkdownSplitter<
-            flow_like_model_provider::tokenizers::Tokenizer,
-        >,
-    )> {
+    ) -> flow_like_types::Result<(GeneralTextSplitter, GeneralTextSplitter)> {
         return self.text_model.get_splitter(capacity, overlap).await;
     }
 

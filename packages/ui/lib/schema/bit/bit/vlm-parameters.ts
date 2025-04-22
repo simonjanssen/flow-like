@@ -1,7 +1,7 @@
 export interface IVlmParameters {
 	context_length: number;
 	model_classification: IBitModelClassification;
-	provider: IBitProviderModel;
+	provider: IModelProvider;
 	[property: string]: any;
 }
 
@@ -19,17 +19,9 @@ export interface IBitModelClassification {
 	[property: string]: any;
 }
 
-export interface IBitProviderModel {
+export interface IModelProvider {
 	model_id?: null | string;
-	provider_name: IBitProvider;
+	provider_name: string;
 	version?: null | string;
 	[property: string]: any;
-}
-
-export enum IBitProvider {
-	Anthropic = "Anthropic",
-	AzureOpenAI = "AzureOpenAI",
-	Bedrock = "Bedrock",
-	Local = "Local",
-	OpenAI = "OpenAI",
 }

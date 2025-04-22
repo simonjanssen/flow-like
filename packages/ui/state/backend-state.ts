@@ -8,14 +8,15 @@ import type {
 	IDownloadProgress,
 	IExecutionStage,
 	IFileMetadata,
-	IGeneric,
+	IGenericCommand,
+	IIntercomEvent,
 	ILogLevel,
 	INode,
 	IProfile,
 	IRun,
 } from "../lib";
+import type { IRunPayload } from "../lib/schema/flow/run";
 import type { ISettingsProfile } from "../types";
-import type { IRunUpdateEvent } from "./run-execution-state";
 
 export interface IBackendState {
 	getApps(): Promise<IApp[]>;
@@ -27,27 +28,24 @@ export interface IBackendState {
 	getOpenBoards(): Promise<[string, string][]>;
 	getBoardSettings(): Promise<"straight" | "step" | "simpleBezier">;
 
-	createRun(
+	executeBoard(
 		appId: string,
 		boardId: string,
-		startIds: string[],
+		payload: IRunPayload[],
+		cb?: (event: IIntercomEvent[]) => void,
 	): Promise<string>;
-	executeRun(
-		appId: string,
-		runId: string,
-		cb?: (event: IRunUpdateEvent[]) => void,
-	): Promise<void>;
+
 	getRun(appId: string, runId: string): Promise<IRun>;
 	finalizeRun(appId: string, runId: string): Promise<void>;
 	undoBoard(
 		appId: string,
 		boardId: string,
-		commands: IGeneric[],
+		commands: IGenericCommand[],
 	): Promise<void>;
 	redoBoard(
 		appId: string,
 		boardId: string,
-		commands: IGeneric[],
+		commands: IGenericCommand[],
 	): Promise<void>;
 
 	updateBoardMeta(
@@ -69,14 +67,25 @@ export interface IBackendState {
 	executeCommand(
 		appId: string,
 		boardId: string,
-		command: IGeneric,
-	): Promise<IGeneric>;
+		command: IGenericCommand,
+	): Promise<IGenericCommand>;
 
 	executeCommands(
 		appId: string,
 		boardId: string,
-		commands: IGeneric[],
-	): Promise<IGeneric[]>;
+		commands: IGenericCommand[],
+	): Promise<IGenericCommand[]>;
+
+	registerEvent(
+		appId: string,
+		boardId: string,
+		nodeId: string,
+		eventType: string,
+		eventId: string,
+		ttl?: number,
+	): Promise<void>;
+
+	removeEvent(eventId: string, eventType: string): Promise<void>;
 
 	// Additional Functionality
 	getPathMeta(folderPath: string): Promise<IFileMetadata[]>;

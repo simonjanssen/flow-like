@@ -51,6 +51,8 @@ impl ToProto<flow_like_types::proto::Node> for Node {
             long_running: self.long_running.unwrap_or(false),
             error: self.error.clone().unwrap_or_default(),
             docs: self.docs.clone().unwrap_or_default(),
+            layer: self.layer.clone(),
+            event_callback: self.event_callback.unwrap_or(false),
         }
     }
 }
@@ -92,6 +94,12 @@ impl FromProto<flow_like_types::proto::Node> for Node {
             } else {
                 Some(proto.docs)
             },
+            event_callback: if proto.event_callback {
+                Some(true)
+            } else {
+                None
+            },
+            layer: proto.layer,
         }
     }
 }

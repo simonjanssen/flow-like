@@ -2,6 +2,8 @@ import { createId } from "@paralleldrive/cuid2";
 import {
 	BombIcon,
 	CircleXIcon,
+	CopyIcon,
+	CornerRightUpIcon,
 	FilterIcon,
 	FilterXIcon,
 	InfoIcon,
@@ -9,7 +11,7 @@ import {
 	TriangleAlertIcon,
 } from "lucide-react";
 import MiniSearch from "minisearch";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { AutoSizer } from "react-virtualized";
 import { parseTimespan } from "../../lib/date";
 import type { INode } from "../../lib/schema/flow/node";
@@ -20,11 +22,23 @@ import {
 	type ITrace,
 } from "../../lib/schema/flow/run";
 import "react-virtualized/styles.css";
+import { useReactFlow } from "@xyflow/react";
 import { VariableSizeList as List, type VariableSizeList } from "react-window";
+import { toast } from "sonner";
+import {
+	ContextMenu,
+	ContextMenuContent,
+	ContextMenuItem,
+	ContextMenuTrigger,
+} from "../ui";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Separator } from "../ui/separator";
+
+interface IEnrichedLogMessage extends ILogMessage {
+	node_id: string;
+}
 
 export function Traces({
 	traces,
@@ -37,6 +51,7 @@ export function Traces({
 	result: IRun;
 	onOpenChange: (open: boolean) => void;
 }>) {
+	const { fitView, updateNode, getNodes } = useReactFlow();
 	const [traceFilter, setTraceFilter] = useState<ITrace | null>(null);
 	const [logFilter, setLogFilter] = useState<Set<ILogLevel>>(
 		new Set([
@@ -47,8 +62,8 @@ export function Traces({
 			ILogLevel.Fatal,
 		]),
 	);
-	const [items, setItems] = useState<ILogMessage[]>([]);
-	const [logs, setLogs] = useState<ILogMessage[]>([]);
+	const [items, setItems] = useState<IEnrichedLogMessage[]>([]);
+	const [logs, setLogs] = useState<IEnrichedLogMessage[]>([]);
 	const [search, setSearch] = useState<string>("");
 	const rowHeights = useRef(new Map());
 	const listRef = useRef<VariableSizeList>(null);
@@ -56,11 +71,20 @@ export function Traces({
 	const miniSearch = useMemo(
 		() =>
 			new MiniSearch({
-				fields: ["message", "operation_id", "log_level", "start", "end", "id"],
+				fields: [
+					"message",
+					"operation_id",
+					"log_level",
+					"start",
+					"end",
+					"id",
+					"node_id",
+				],
 				storeFields: [
 					"message",
 					"operation_id",
 					"log_level",
+					"node_id",
 					"start",
 					"end",
 					"id",
@@ -78,7 +102,9 @@ export function Traces({
 			? result.traces.filter((trace) => traceFilter.id === trace.id)
 			: result.traces;
 		const logMessages = filteredTraces
-			.flatMap((trace) => trace.logs)
+			.flatMap((trace) =>
+				trace.logs.map((log) => ({ ...log, node_id: trace.node_id })),
+			)
 			.filter((log) => logFilter.has(log.log_level))
 			.sort((a, b) => a.start.nanos_since_epoch - b.start.nanos_since_epoch);
 
@@ -115,10 +141,35 @@ export function Traces({
 		const log = items[index];
 		return (
 			<LogMessage
+				key={index}
 				log={log}
 				index={index}
 				style={style}
 				onSetHeight={(index, height) => setRowHeight(index, height)}
+				onSelectNode={(nodeId) => {
+					console.log("select node", nodeId);
+					const nodes = getNodes();
+
+					nodes
+						.filter((node) => node.selected && node.id !== nodeId)
+						.forEach((node) => {
+							updateNode(node.id, {
+								selected: false,
+							});
+						});
+
+					updateNode(nodeId, {
+						selected: true,
+					});
+
+					fitView({
+						nodes: [
+							{
+								id: nodeId,
+							},
+						],
+					});
+				}}
 			/>
 		);
 	}
@@ -302,16 +353,18 @@ export function Traces({
 	);
 }
 
-function LogMessage({
+const LogMessage = memo(function LogMessage({
 	log,
 	style,
 	index,
 	onSetHeight,
+	onSelectNode,
 }: Readonly<{
-	log: ILogMessage;
+	log: IEnrichedLogMessage;
 	style: any;
 	index: number;
 	onSetHeight: (index: number, height: number) => void;
+	onSelectNode: (nodeId: string) => void;
 }>) {
 	const rowRef = useRef<HTMLDivElement>(null);
 
@@ -322,34 +375,65 @@ function LogMessage({
 	}, [rowRef]);
 
 	return (
-		<div style={style} className="scrollbar-gutter-stable">
+		<button
+			style={style}
+			className="scrollbar-gutter-stable"
+			onClick={(e) => e.preventDefault()}
+		>
 			<div
 				ref={rowRef}
 				className={`flex flex-col items-center border rounded-md ${logLevelToColor(log.log_level)}`}
 			>
 				<div className="flex p-1 px-2  flex-row items-center gap-2 w-full">
 					<LogIndicator logLevel={log.log_level} />
-					<p>{log.message}</p>
+					<p className="text-start text-wrap break-all">{log.message}</p>
 				</div>
-				{log.start.nanos_since_epoch !== log.end.nanos_since_epoch && (
-					<div className="border-t w-full px-2 p-1 flex flex-row gap-1 items-center">
-						<small className="text-xs">
-							{parseTimespan(log.start, log.end)}
-						</small>
-						{log?.stats?.token_out && (
+				<div className="flex flex-row items-center gap-1 w-full px-2 py-1 border-t justify-between">
+					{log.start.nanos_since_epoch !== log.end.nanos_since_epoch ? (
+						<div className="flex flex-row items-center">
 							<small className="text-xs">
-								Token Out: {log.stats?.token_out}
+								{parseTimespan(log.start, log.end)}
 							</small>
-						)}
-						{log?.stats?.token_in && (
-							<small className="text-xs">Token In: {log.stats?.token_in}</small>
-						)}
+							{log?.stats?.token_out && (
+								<small className="text-xs">
+									Token Out: {log.stats?.token_out}
+								</small>
+							)}
+							{log?.stats?.token_in && (
+								<small className="text-xs">
+									Token In: {log.stats?.token_in}
+								</small>
+							)}
+						</div>
+					) : (
+						<div />
+					)}
+					<div className="flex flex-row items-center gap-1">
+						<Button
+							variant={"outline"}
+							size={"icon"}
+							className="!p-1 h-6 w-6"
+							onClick={() => {
+								navigator.clipboard.writeText(log.message);
+								toast.success("Log message copied to clipboard");
+							}}
+						>
+							<CopyIcon className="w-4 h-4" />
+						</Button>
+						<Button
+							variant={"outline"}
+							size={"icon"}
+							className="!p-1 h-6 w-6"
+							onClick={() => onSelectNode(log.node_id)}
+						>
+							<CornerRightUpIcon className="w-4 h-4" />
+						</Button>
 					</div>
-				)}
+				</div>
 			</div>
-		</div>
+		</button>
 	);
-}
+});
 
 function logLevelToColor(logLevel: ILogLevel) {
 	switch (logLevel) {

@@ -1,12 +1,13 @@
 use crate::{
-    bit::{Bit, BitPack, BitTypes, Pooling},
+    bit::{Bit, BitPack, BitTypes},
     state::FlowLikeState,
 };
 use flow_like_model_provider::{
-    embedding::EmbeddingModelLogic,
+    embedding::{EmbeddingModelLogic, GeneralTextSplitter},
     fastembed::{
         self, InitOptionsUserDefined, TextEmbedding, TokenizerFiles, UserDefinedEmbeddingModel,
     },
+    provider::Pooling,
     text_splitter::{ChunkConfig, MarkdownSplitter, TextSplitter},
     tokenizer::load_tokenizer_from_file,
 };
@@ -42,7 +43,7 @@ impl LocalEmbeddingModel {
         };
 
         let pack = bit.pack(app_state.clone()).await?;
-        pack.download(app_state.clone()).await?;
+        pack.download(app_state.clone(), None).await?;
 
         let model_path = bit.to_path(&bit_store).ok_or(anyhow!("No model path"))?;
         let loaded_model = std::fs::read(model_path)?;
@@ -85,14 +86,7 @@ impl EmbeddingModelLogic for LocalEmbeddingModel {
         &self,
         capacity: Option<usize>,
         overlap: Option<usize>,
-    ) -> Result<(
-        flow_like_model_provider::text_splitter::TextSplitter<
-            flow_like_model_provider::tokenizers::Tokenizer,
-        >,
-        flow_like_model_provider::text_splitter::MarkdownSplitter<
-            flow_like_model_provider::tokenizers::Tokenizer,
-        >,
-    )> {
+    ) -> flow_like_types::Result<(GeneralTextSplitter, GeneralTextSplitter)> {
         let params = self
             .bit
             .try_to_embedding()
@@ -110,7 +104,11 @@ impl EmbeddingModelLogic for LocalEmbeddingModel {
             .with_sizer(tokenizer)
             .with_overlap(overlap)?;
 
-        return Ok((TextSplitter::new(config), MarkdownSplitter::new(config_md)));
+        let text_splitter = GeneralTextSplitter::TextTokenizer(Arc::new(TextSplitter::new(config)));
+        let markdown_splitter =
+            GeneralTextSplitter::MarkdownTokenizer(Arc::new(MarkdownSplitter::new(config_md)));
+
+        return Ok((text_splitter, markdown_splitter));
     }
 
     async fn text_embed_query(&self, texts: &Vec<String>) -> Result<Vec<Vec<f32>>> {
@@ -232,7 +230,7 @@ mod tests {
         config.register_project_store(FlowLikeStore::Local(store.clone()));
         config.register_bits_store(FlowLikeStore::Local(store));
         let (http_client, _refetch_rx) = HTTPClient::new();
-        let (flow_like_state, _) = crate::state::FlowLikeState::new(config, http_client);
+        let flow_like_state = crate::state::FlowLikeState::new(config, http_client);
         Arc::new(Mutex::new(flow_like_state))
     }
 

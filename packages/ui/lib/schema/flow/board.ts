@@ -3,6 +3,7 @@ export interface IBoard {
 	created_at: ISystemTime;
 	description: string;
 	id: string;
+	layers: { [key: string]: ILayer };
 	log_level: ILogLevel;
 	name: string;
 	nodes: { [key: string]: INode };
@@ -37,12 +38,17 @@ export interface ISystemTime {
 	[property: string]: any;
 }
 
-export enum ILogLevel {
-	Debug = "Debug",
-	Error = "Error",
-	Fatal = "Fatal",
-	Info = "Info",
-	Warn = "Warn",
+export interface ILayer {
+	comments: { [key: string]: IComment };
+	coordinates: number[];
+	id: string;
+	name: string;
+	nodes: { [key: string]: INode };
+	parent_id?: null | string;
+	pins: { [key: string]: IPin };
+	type: ILayerType;
+	variables: { [key: string]: IVariable };
+	[property: string]: any;
 }
 
 export interface INode {
@@ -52,9 +58,11 @@ export interface INode {
 	description: string;
 	docs?: null | string;
 	error?: null | string;
+	event_callback?: boolean | null;
 	friendly_name: string;
 	icon?: null | string;
 	id: string;
+	layer?: null | string;
 	long_running?: boolean | null;
 	name: string;
 	pins: { [key: string]: IPin };
@@ -76,7 +84,6 @@ export interface IPin {
 	options?: null | IPinOptions;
 	pin_type: IPinType;
 	schema?: null | string;
-	valid_values?: string[] | null;
 	value_type: IValueType;
 	[property: string]: any;
 }
@@ -132,12 +139,10 @@ export interface INodeScores {
 	[property: string]: any;
 }
 
-export enum IExecutionStage {
-	Dev = "Dev",
-	Int = "Int",
-	PreProd = "PreProd",
-	Prod = "Prod",
-	QA = "QA",
+export enum ILayerType {
+	Collapsed = "Collapsed",
+	Function = "Function",
+	Macro = "Macro",
 }
 
 export interface IVariable {
@@ -152,4 +157,20 @@ export interface IVariable {
 	secret: boolean;
 	value_type: IValueType;
 	[property: string]: any;
+}
+
+export enum ILogLevel {
+	Debug = "Debug",
+	Error = "Error",
+	Fatal = "Fatal",
+	Info = "Info",
+	Warn = "Warn",
+}
+
+export enum IExecutionStage {
+	Dev = "Dev",
+	Int = "Int",
+	PreProd = "PreProd",
+	Prod = "Prod",
+	QA = "QA",
 }

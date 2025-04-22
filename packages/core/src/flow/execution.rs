@@ -1,9 +1,15 @@
+use super::board::ExecutionStage;
+use super::{board::Board, node::NodeState, variable::Variable};
+use crate::profile::Profile;
+use crate::state::FlowLikeState;
 use ahash::AHasher;
 use context::ExecutionContext;
 use flow_like_types::Value;
-use flow_like_types::sync::{DashMap, Mutex, RwLock, mpsc};
+use flow_like_types::intercom::InterComCallback;
+use flow_like_types::sync::{DashMap, Mutex, RwLock};
 use flow_like_types::{Cacheable, anyhow, create_id};
 use futures::StreamExt;
+use futures::future::BoxFuture;
 use internal_node::InternalNode;
 use internal_pin::InternalPin;
 use num_cpus;
@@ -17,17 +23,12 @@ use std::{
     time::SystemTime,
 };
 use trace::Trace;
+
 pub mod context;
 pub mod internal_node;
 pub mod internal_pin;
 pub mod log;
 pub mod trace;
-
-use crate::profile::Profile;
-use crate::state::{FlowLikeEvent, FlowLikeState};
-
-use super::board::ExecutionStage;
-use super::{board::Board, node::NodeState, variable::Variable};
 
 const USE_DEPENDENCY_GRAPH: bool = false;
 
@@ -49,6 +50,7 @@ pub struct Run {
     pub end: SystemTime,
     pub board: Arc<Board>,
     pub log_level: LogLevel,
+    pub payload: Arc<HashMap<String, RunPayload>>,
     pub sub: String,
 }
 
@@ -93,6 +95,9 @@ impl RunStack {
     }
 }
 
+pub type EventTrigger =
+    Arc<dyn Fn(&InternalRun) -> BoxFuture<'_, flow_like_types::Result<()>> + Send + Sync>;
+
 #[derive(Clone)]
 pub struct InternalRun {
     pub run: Arc<Mutex<Run>>,
@@ -102,13 +107,20 @@ pub struct InternalRun {
     pub variables: Arc<Mutex<HashMap<String, Variable>>>,
     pub cache: Arc<RwLock<HashMap<String, Arc<dyn Cacheable>>>>,
     pub profile: Arc<Profile>,
-    pub sender: mpsc::Sender<FlowLikeEvent>,
+    pub callback: InterComCallback,
 
     stack: Arc<RunStack>,
     concurrency_limit: u64,
     concurrency_map: Arc<DashMap<String, u64>>,
     cpus: usize,
     log_level: LogLevel,
+    completion_callbacks: Arc<RwLock<Vec<EventTrigger>>>,
+}
+
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
+pub struct RunPayload {
+    pub id: String,
+    pub payload: Option<Value>,
 }
 
 impl InternalRun {
@@ -116,12 +128,17 @@ impl InternalRun {
         board: Arc<Board>,
         handler: &Arc<Mutex<FlowLikeState>>,
         profile: &Profile,
-        start_ids: Vec<String>,
+        payload: Vec<RunPayload>,
         sub: Option<String>,
+        callback: InterComCallback,
     ) -> flow_like_types::Result<Self> {
         let before = Instant::now();
-        let start_ids_set: HashSet<String> = start_ids.into_iter().collect();
-        let sender = handler.lock().await.event_sender.lock().await.clone();
+        let mut payloads = HashMap::with_capacity(payload.len());
+        for payload in payload {
+            payloads.insert(payload.id.clone(), payload);
+        }
+        let payload = Arc::new(payloads);
+
         let run_id = create_id();
 
         let run = Run {
@@ -132,6 +149,7 @@ impl InternalRun {
             end: SystemTime::now(),
             log_level: board.log_level.clone(),
             board: board.clone(),
+            payload: payload.clone(),
             sub: sub.unwrap_or_else(|| "local".to_string()),
         };
 
@@ -195,7 +213,7 @@ impl InternalRun {
 
         let mut dependency_map = HashMap::with_capacity(board.nodes.len());
         let mut nodes = HashMap::with_capacity(board.nodes.len());
-        let mut stack = RunStack::with_capacity(start_ids_set.len());
+        let mut stack = RunStack::with_capacity(payload.len());
 
         let registry = handler
             .lock()
@@ -243,7 +261,7 @@ impl InternalRun {
                 pin_guard.node = Arc::downgrade(&internal_node);
             }
 
-            if start_ids_set.contains(&node.id) {
+            if payload.contains_key(&node.id) {
                 stack.push(&node.id, internal_node.clone());
             }
 
@@ -278,13 +296,14 @@ impl InternalRun {
             variables,
             cache: Arc::new(RwLock::new(HashMap::new())),
             stack: Arc::new(stack),
-            concurrency_limit: 2_000_000,
+            concurrency_limit: 10,
             concurrency_map: Arc::new(DashMap::with_capacity(board.nodes.len())),
             cpus: num_cpus::get(),
-            sender,
+            callback,
             dependencies,
             log_level: board.log_level.clone(),
             profile: Arc::new(profile.clone()),
+            completion_callbacks: Arc::new(RwLock::new(vec![])),
         })
     }
 
@@ -331,8 +350,8 @@ impl InternalRun {
         let dependencies = self.dependencies.clone();
         let run = self.run.clone();
         let profile = self.profile.clone();
-        let sender = self.sender.clone();
         let concurrency_limit = self.concurrency_limit;
+        let callback = self.callback.clone();
 
         let new_stack = futures::stream::iter(stack.stack.clone())
             .map(|node| {
@@ -341,10 +360,11 @@ impl InternalRun {
                 let handler = handler.clone();
                 let run = run.clone();
                 let profile = profile.clone();
-                let sender = sender.clone();
+                let callback = callback.clone();
                 let stage = stage.clone();
                 let log_level = log_level.clone();
                 let concurrency_map = self.concurrency_map.clone();
+                let completion_callbacks = self.completion_callbacks.clone();
 
                 async move {
                     step_core(
@@ -358,8 +378,9 @@ impl InternalRun {
                         stage,
                         &dependencies,
                         &profile,
-                        &sender,
+                        &callback,
                         concurrency_map,
+                        &completion_callbacks,
                     )
                     .await
                 }
@@ -404,8 +425,9 @@ impl InternalRun {
             stage.clone(),
             &self.dependencies,
             &self.profile,
-            &self.sender,
+            &self.callback,
             self.concurrency_map.clone(),
+            &self.completion_callbacks,
         )
         .await;
 
@@ -460,6 +482,7 @@ impl InternalRun {
             stack_hash = new_stack_hash;
         }
 
+        self.trigger_completion_callbacks().await;
         self.run.lock().await.end = SystemTime::now();
         self.run.lock().await.status = if errored {
             RunStatus::Failed
@@ -511,6 +534,15 @@ impl InternalRun {
 
     pub async fn get_status(&self) -> RunStatus {
         self.run.lock().await.status.clone()
+    }
+
+    async fn trigger_completion_callbacks(&self) {
+        let callbacks = self.completion_callbacks.read().await;
+        for callback in callbacks.iter() {
+            if let Err(err) = callback(self).await {
+                eprintln!("[Error] executing completion callback: {:?}", err);
+            }
+        }
     }
 }
 
@@ -572,8 +604,9 @@ async fn step_core(
     stage: ExecutionStage,
     dependencies: &HashMap<String, Vec<Arc<InternalNode>>>,
     profile: &Arc<Profile>,
-    sender: &mpsc::Sender<FlowLikeEvent>,
+    callback: &InterComCallback,
     concurrency_map: Arc<DashMap<String, u64>>,
+    completion_callbacks: &Arc<RwLock<Vec<EventTrigger>>>,
 ) -> flow_like_types::Result<Vec<(String, Arc<InternalNode>)>> {
     // Check Node State and Validate Execution Count (to stop infinite loops)
     {
@@ -597,7 +630,8 @@ async fn step_core(
         log_level.clone(),
         stage.clone(),
         profile.clone(),
-        sender.clone(),
+        callback.clone(),
+        completion_callbacks.clone(),
     )
     .await;
 

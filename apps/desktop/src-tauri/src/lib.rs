@@ -5,20 +5,19 @@ mod state;
 mod utils;
 use flow_like::{
     flow_like_storage::{
-        files::store::{local_store::LocalObjectStore, FlowLikeStore},
-        lancedb, Path,
+        Path,
+        files::store::{FlowLikeStore, local_store::LocalObjectStore},
+        lancedb,
     },
-    flow_like_types::sync::DashMap,
     state::{FlowLikeConfig, FlowLikeState},
     utils::http::HTTPClient,
 };
-use serde_json::Value;
+use flow_like_types::{sync::Mutex, tokio::time::interval};
 use settings::Settings;
 use state::TauriFlowLikeState;
-use std::{borrow::Cow, sync::Arc, time::Duration};
-use tauri::{AppHandle, Emitter, Manager};
+use std::{sync::Arc, time::Duration};
+use tauri::{AppHandle, Manager};
 use tauri_plugin_deep_link::{DeepLinkExt, OpenUrlEvent};
-use tokio::{sync::Mutex, time::interval};
 use tracing_subscriber::prelude::*;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -44,7 +43,7 @@ pub fn run() {
     settings_state.set_config(&config);
     let settings_state = Arc::new(Mutex::new(settings_state));
     let (http_client, refetch_rx) = HTTPClient::new();
-    let (state, _) = FlowLikeState::new(config, http_client);
+    let state = FlowLikeState::new(config, http_client);
     let state_ref = Arc::new(Mutex::new(state));
 
     let initialized_state = state_ref.clone();
@@ -93,6 +92,7 @@ pub fn run() {
 
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_deep_link::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .setup(|app| {
             let relay_handle = app.app_handle().clone();
             let gc_handle = relay_handle.clone();
@@ -133,43 +133,6 @@ pub fn run() {
                             state.gc();
                         }
                     }
-                }
-            });
-
-            tauri::async_runtime::spawn(async move {
-                let handle = relay_handle;
-                let buffer: Arc<DashMap<Cow<'static, str>, Vec<Value>>> = Arc::new(DashMap::new());
-
-                let mut receiver = {
-                    println!("Starting Message Relay");
-                    let flow_like_state = TauriFlowLikeState::construct(&handle).await.unwrap();
-                    let mut flow_like_state = flow_like_state.lock().await;
-                    flow_like_state.re_subscribe()
-                };
-                println!("Message Relay Started");
-
-                let buffer_clone = Arc::clone(&buffer);
-                tauri::async_runtime::spawn(async move {
-                    loop {
-                        if !buffer_clone.is_empty() {
-                            buffer_clone.retain(|id, events: &mut Vec<Value>| {
-                                if let Err(e) = handle.emit(id, &events) {
-                                    eprintln!("Error sending event: {:?}", e);
-                                    true
-                                } else {
-                                    false
-                                }
-                            });
-                        }
-                        tokio::time::sleep(Duration::from_millis(20)).await;
-                    }
-                });
-
-                while let Some(event) = receiver.recv().await {
-                    buffer
-                        .entry(Cow::Owned(event.event_id.clone()))
-                        .or_insert_with(|| Vec::with_capacity(10))
-                        .push(event.payload);
                 }
             });
 
@@ -260,6 +223,12 @@ pub fn run() {
             functions::bit::download_bit,
             functions::bit::delete_bit,
             functions::bit::get_installed_bit,
+            functions::flow::storage::storage_list,
+            functions::flow::storage::storage_add,
+            functions::flow::storage::storage_remove,
+            functions::flow::storage::storage_rename,
+            functions::flow::storage::storage_get,
+            functions::flow::storage::storage_to_fullpath,
             functions::flow::catalog::get_catalog,
             functions::flow::board::create_board,
             functions::flow::board::close_board,
@@ -271,8 +240,7 @@ pub fn run() {
             functions::flow::board::execute_command,
             functions::flow::board::execute_commands,
             functions::flow::board::save_board,
-            functions::flow::run::create_run,
-            functions::flow::run::execute_run,
+            functions::flow::run::execute_board,
             functions::flow::run::debug_step_run,
             functions::flow::run::get_run_status,
             functions::flow::run::get_run,

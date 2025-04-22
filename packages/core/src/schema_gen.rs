@@ -1,9 +1,6 @@
 use crate::{
     app::App,
-    bit::{
-        Bit, BitModelPreference, BitPack, EmbeddingModelParameters, ImageEmbeddingModelParameters,
-        LLMParameters, VLMParameters,
-    },
+    bit::{Bit, BitModelPreference, BitPack, LLMParameters, VLMParameters},
     flow::{
         board::{
             Board,
@@ -26,7 +23,7 @@ use crate::{
                 },
             },
         },
-        execution::Run,
+        execution::{Run, RunPayload},
         node::Node,
         pin::Pin,
         variable::Variable,
@@ -36,9 +33,12 @@ use crate::{
     utils::file::FileMetadata,
 };
 use flow_like_model_provider::{
-    history::History, response::Response, response_chunk::ResponseChunk,
+    history::History,
+    provider::{EmbeddingModelProvider, ImageEmbeddingModelProvider},
+    response::Response,
+    response_chunk::ResponseChunk,
 };
-use flow_like_types::{Result, json::to_string_pretty};
+use flow_like_types::{Result, intercom::InterComEvent, json::to_string_pretty};
 use schemars::{JsonSchema, schema_for};
 use serde::Serialize;
 use std::{
@@ -63,15 +63,17 @@ fn generate_and_save_schema<T: Serialize + JsonSchema>(base_path: &Path, path: &
     save_schema(&schema, &full_path)
 }
 pub fn generate_schema(base_path: PathBuf) -> flow_like_types::Result<()> {
+    generate_and_save_schema::<InterComEvent>(&base_path, "events/intercom-event.json")?;
+
     generate_and_save_schema::<History>(&base_path, "llm/history.json")?;
     generate_and_save_schema::<Response>(&base_path, "llm/response.json")?;
     generate_and_save_schema::<ResponseChunk>(&base_path, "llm/response-chunk.json")?;
 
-    generate_and_save_schema::<EmbeddingModelParameters>(
+    generate_and_save_schema::<EmbeddingModelProvider>(
         &base_path,
         "bit/bit/embedding-model-parameters.json",
     )?;
-    generate_and_save_schema::<ImageEmbeddingModelParameters>(
+    generate_and_save_schema::<ImageEmbeddingModelProvider>(
         &base_path,
         "bit/bit/image-embedding-model-parameters.json",
     )?;
@@ -82,8 +84,12 @@ pub fn generate_schema(base_path: PathBuf) -> flow_like_types::Result<()> {
     generate_and_save_schema::<BitModelPreference>(&base_path, "bit/preferences.json")?;
     generate_and_save_schema::<BitPack>(&base_path, "bit/bit-pack.json")?;
 
+    generate_and_save_schema::<RunPayload>(&base_path, "flow/run-payload.json")?;
     generate_and_save_schema::<Board>(&base_path, "flow/board.json")?;
-    generate_and_save_schema::<GenericCommand>(&base_path, "flow/board/commands/generic.json")?;
+    generate_and_save_schema::<GenericCommand>(
+        &base_path,
+        "flow/board/commands/generic-command.json",
+    )?;
     generate_and_save_schema::<RemoveCommentCommand>(
         &base_path,
         "flow/board/commands/remove-comment.json",

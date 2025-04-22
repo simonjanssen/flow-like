@@ -3,7 +3,6 @@ import { createId } from "@paralleldrive/cuid2";
 import { useDebounce } from "@uidotdev/usehooks";
 import {
 	CirclePlusIcon,
-	DeleteIcon,
 	EllipsisVerticalIcon,
 	EyeIcon,
 	EyeOffIcon,
@@ -11,7 +10,7 @@ import {
 	ListIcon,
 	Trash2Icon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "../../../components/ui/button";
 import {
 	DropdownMenu,
@@ -41,7 +40,7 @@ import {
 } from "../../../components/ui/sheet";
 import { Switch } from "../../../components/ui/switch";
 import {
-	type IGeneric,
+	type IGenericCommand,
 	removeVariableCommand,
 	upsertVariableCommand,
 } from "../../../lib";
@@ -57,22 +56,30 @@ export function VariablesMenu({
 	executeCommand,
 }: Readonly<{
 	board: IBoard;
-	executeCommand: (command: IGeneric, append: boolean) => Promise<any>;
+	executeCommand: (command: IGenericCommand, append: boolean) => Promise<any>;
 }>) {
-	async function upsertVariable(variable: IVariable) {
-		const command = upsertVariableCommand({
-			variable,
-		});
+	const upsertVariable = useCallback(
+		async (variable: IVariable) => {
+			const oldVariable = board.variables[variable.id];
+			if (oldVariable === variable) return;
+			const command = upsertVariableCommand({
+				variable,
+			});
 
-		await executeCommand(command, false);
-	}
+			await executeCommand(command, false);
+		},
+		[board],
+	);
 
-	async function removeVariable(variable: IVariable) {
-		const command = removeVariableCommand({
-			variable,
-		});
-		await executeCommand(command, false);
-	}
+	const removeVariable = useCallback(
+		async (variable: IVariable) => {
+			const command = removeVariableCommand({
+				variable,
+			});
+			await executeCommand(command, false);
+		},
+		[board],
+	);
 
 	return (
 		<div className="flex flex-col gap-2 p-4">
@@ -272,7 +279,9 @@ export function Variable({
 		>
 			<div className="flex flex-row gap-2 items-center" data-no-dnd>
 				{isArrayDropdown}
-				<p className={`${!variable.editable ? "text-muted-foreground" : ""}`}>
+				<p
+					className={`text-start line-clamp-2 ${!variable.editable ? "text-muted-foreground" : ""}`}
+				>
 					{localVariable.name}
 				</p>
 			</div>

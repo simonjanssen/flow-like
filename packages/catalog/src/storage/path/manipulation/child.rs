@@ -31,13 +31,6 @@ impl NodeLogic for ChildNode {
         node.add_icon("/flow/icons/path.svg");
 
         node.add_input_pin(
-            "exec_in",
-            "Input",
-            "Initiate Execution",
-            VariableType::Execution,
-        );
-
-        node.add_input_pin(
             "parent_path",
             "Path",
             "Parent FlowPath",
@@ -53,13 +46,6 @@ impl NodeLogic for ChildNode {
             VariableType::String,
         );
 
-        node.add_output_pin(
-            "exec_out",
-            "Output",
-            "Done with the Execution",
-            VariableType::Execution,
-        );
-
         node.add_output_pin("path", "Path", "Child Path", VariableType::Struct)
             .set_schema::<FlowPath>();
 
@@ -69,13 +55,19 @@ impl NodeLogic for ChildNode {
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
         let parent_path: FlowPath = context.evaluate_pin("parent_path").await?;
         let child_name: String = context.evaluate_pin("child_name").await?;
+        let child_segments = child_name
+            .split('/')
+            .filter(|segment| !segment.is_empty())
+            .collect::<Vec<_>>();
 
         let mut path = parent_path.to_runtime(context).await?;
-        path.path = path.path.child(child_name);
+        for child_segment in child_segments {
+            path.path = path.path.child(child_segment);
+        }
         let path = path.serialize().await;
 
         context.set_pin_value("path", json!(path)).await?;
-        context.activate_exec_pin("exec_out").await?;
+        let _ = context.activate_exec_pin("exec_out").await;
         Ok(())
     }
 }

@@ -1,0 +1,688 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "GenericCommand",
+	"oneOf": [
+		{
+			"type": "object",
+			"required": ["command_type", "comment"],
+			"properties": {
+				"command_type": {
+					"type": "string",
+					"enum": ["RemoveComment"]
+				},
+				"comment": {
+					"$ref": "#/definitions/Comment"
+				}
+			}
+		},
+		{
+			"type": "object",
+			"required": ["command_type", "comment"],
+			"properties": {
+				"command_type": {
+					"type": "string",
+					"enum": ["UpsertComment"]
+				},
+				"comment": {
+					"$ref": "#/definitions/Comment"
+				},
+				"old_comment": {
+					"anyOf": [
+						{
+							"$ref": "#/definitions/Comment"
+						},
+						{
+							"type": "null"
+						}
+					]
+				}
+			}
+		},
+		{
+			"type": "object",
+			"required": ["command_type", "node"],
+			"properties": {
+				"command_type": {
+					"type": "string",
+					"enum": ["AddNode"]
+				},
+				"node": {
+					"$ref": "#/definitions/Node"
+				}
+			}
+		},
+		{
+			"type": "object",
+			"required": [
+				"command_type",
+				"new_comments",
+				"new_nodes",
+				"offset",
+				"original_comments",
+				"original_nodes"
+			],
+			"properties": {
+				"command_type": {
+					"type": "string",
+					"enum": ["CopyPaste"]
+				},
+				"original_nodes": {
+					"type": "array",
+					"items": {
+						"$ref": "#/definitions/Node"
+					}
+				},
+				"original_comments": {
+					"type": "array",
+					"items": {
+						"$ref": "#/definitions/Comment"
+					}
+				},
+				"new_comments": {
+					"type": "array",
+					"items": {
+						"$ref": "#/definitions/Comment"
+					}
+				},
+				"new_nodes": {
+					"type": "array",
+					"items": {
+						"$ref": "#/definitions/Node"
+					}
+				},
+				"offset": {
+					"type": "array",
+					"items": [
+						{
+							"type": "number",
+							"format": "float"
+						},
+						{
+							"type": "number",
+							"format": "float"
+						},
+						{
+							"type": "number",
+							"format": "float"
+						}
+					],
+					"maxItems": 3,
+					"minItems": 3
+				}
+			}
+		},
+		{
+			"type": "object",
+			"required": ["command_type", "node_id", "to_coordinates"],
+			"properties": {
+				"command_type": {
+					"type": "string",
+					"enum": ["MoveNode"]
+				},
+				"node_id": {
+					"type": "string"
+				},
+				"from_coordinates": {
+					"type": ["array", "null"],
+					"items": [
+						{
+							"type": "number",
+							"format": "float"
+						},
+						{
+							"type": "number",
+							"format": "float"
+						},
+						{
+							"type": "number",
+							"format": "float"
+						}
+					],
+					"maxItems": 3,
+					"minItems": 3
+				},
+				"to_coordinates": {
+					"type": "array",
+					"items": [
+						{
+							"type": "number",
+							"format": "float"
+						},
+						{
+							"type": "number",
+							"format": "float"
+						},
+						{
+							"type": "number",
+							"format": "float"
+						}
+					],
+					"maxItems": 3,
+					"minItems": 3
+				}
+			}
+		},
+		{
+			"type": "object",
+			"required": ["command_type", "connected_nodes", "node"],
+			"properties": {
+				"command_type": {
+					"type": "string",
+					"enum": ["RemoveNode"]
+				},
+				"node": {
+					"$ref": "#/definitions/Node"
+				},
+				"connected_nodes": {
+					"type": "array",
+					"items": {
+						"$ref": "#/definitions/Node"
+					}
+				}
+			}
+		},
+		{
+			"type": "object",
+			"required": ["command_type", "node"],
+			"properties": {
+				"command_type": {
+					"type": "string",
+					"enum": ["UpdateNode"]
+				},
+				"old_node": {
+					"anyOf": [
+						{
+							"$ref": "#/definitions/Node"
+						},
+						{
+							"type": "null"
+						}
+					]
+				},
+				"node": {
+					"$ref": "#/definitions/Node"
+				}
+			}
+		},
+		{
+			"type": "object",
+			"required": [
+				"command_type",
+				"from_node",
+				"from_pin",
+				"to_node",
+				"to_pin"
+			],
+			"properties": {
+				"command_type": {
+					"type": "string",
+					"enum": ["DisconnectPin"]
+				},
+				"from_pin": {
+					"type": "string"
+				},
+				"to_pin": {
+					"type": "string"
+				},
+				"from_node": {
+					"type": "string"
+				},
+				"to_node": {
+					"type": "string"
+				}
+			}
+		},
+		{
+			"type": "object",
+			"required": [
+				"command_type",
+				"from_node",
+				"from_pin",
+				"to_node",
+				"to_pin"
+			],
+			"properties": {
+				"command_type": {
+					"type": "string",
+					"enum": ["ConnectPin"]
+				},
+				"from_pin": {
+					"type": "string"
+				},
+				"to_pin": {
+					"type": "string"
+				},
+				"from_node": {
+					"type": "string"
+				},
+				"to_node": {
+					"type": "string"
+				}
+			}
+		},
+		{
+			"type": "object",
+			"required": ["command_type", "node_id", "pin"],
+			"properties": {
+				"command_type": {
+					"type": "string",
+					"enum": ["UpsertPin"]
+				},
+				"node_id": {
+					"type": "string"
+				},
+				"pin": {
+					"$ref": "#/definitions/Pin"
+				},
+				"old_pin": {
+					"anyOf": [
+						{
+							"$ref": "#/definitions/Pin"
+						},
+						{
+							"type": "null"
+						}
+					]
+				}
+			}
+		},
+		{
+			"type": "object",
+			"required": ["command_type", "variable"],
+			"properties": {
+				"command_type": {
+					"type": "string",
+					"enum": ["RemoveVariable"]
+				},
+				"variable": {
+					"$ref": "#/definitions/Variable"
+				}
+			}
+		},
+		{
+			"type": "object",
+			"required": ["command_type", "variable"],
+			"properties": {
+				"command_type": {
+					"type": "string",
+					"enum": ["UpsertVariable"]
+				},
+				"variable": {
+					"$ref": "#/definitions/Variable"
+				},
+				"old_variable": {
+					"anyOf": [
+						{
+							"$ref": "#/definitions/Variable"
+						},
+						{
+							"type": "null"
+						}
+					]
+				}
+			}
+		}
+	],
+	"definitions": {
+		"Comment": {
+			"type": "object",
+			"required": ["comment_type", "content", "coordinates", "id", "timestamp"],
+			"properties": {
+				"id": {
+					"type": "string"
+				},
+				"author": {
+					"type": ["string", "null"]
+				},
+				"content": {
+					"type": "string"
+				},
+				"comment_type": {
+					"$ref": "#/definitions/CommentType"
+				},
+				"timestamp": {
+					"$ref": "#/definitions/SystemTime"
+				},
+				"coordinates": {
+					"type": "array",
+					"items": [
+						{
+							"type": "number",
+							"format": "float"
+						},
+						{
+							"type": "number",
+							"format": "float"
+						},
+						{
+							"type": "number",
+							"format": "float"
+						}
+					],
+					"maxItems": 3,
+					"minItems": 3
+				}
+			}
+		},
+		"CommentType": {
+			"type": "string",
+			"enum": ["Text", "Image", "Video"]
+		},
+		"SystemTime": {
+			"type": "object",
+			"required": ["nanos_since_epoch", "secs_since_epoch"],
+			"properties": {
+				"secs_since_epoch": {
+					"type": "integer",
+					"format": "uint64",
+					"minimum": 0.0
+				},
+				"nanos_since_epoch": {
+					"type": "integer",
+					"format": "uint32",
+					"minimum": 0.0
+				}
+			}
+		},
+		"Node": {
+			"type": "object",
+			"required": [
+				"category",
+				"description",
+				"friendly_name",
+				"id",
+				"name",
+				"pins"
+			],
+			"properties": {
+				"id": {
+					"type": "string"
+				},
+				"name": {
+					"type": "string"
+				},
+				"friendly_name": {
+					"type": "string"
+				},
+				"description": {
+					"type": "string"
+				},
+				"coordinates": {
+					"type": ["array", "null"],
+					"items": [
+						{
+							"type": "number",
+							"format": "float"
+						},
+						{
+							"type": "number",
+							"format": "float"
+						},
+						{
+							"type": "number",
+							"format": "float"
+						}
+					],
+					"maxItems": 3,
+					"minItems": 3
+				},
+				"category": {
+					"type": "string"
+				},
+				"scores": {
+					"anyOf": [
+						{
+							"$ref": "#/definitions/NodeScores"
+						},
+						{
+							"type": "null"
+						}
+					]
+				},
+				"pins": {
+					"type": "object",
+					"additionalProperties": {
+						"$ref": "#/definitions/Pin"
+					}
+				},
+				"start": {
+					"type": ["boolean", "null"]
+				},
+				"icon": {
+					"type": ["string", "null"]
+				},
+				"comment": {
+					"type": ["string", "null"]
+				},
+				"long_running": {
+					"type": ["boolean", "null"]
+				},
+				"error": {
+					"type": ["string", "null"]
+				},
+				"docs": {
+					"type": ["string", "null"]
+				},
+				"event_callback": {
+					"type": ["boolean", "null"]
+				},
+				"layer": {
+					"type": ["string", "null"]
+				}
+			}
+		},
+		"NodeScores": {
+			"description": "Represents quality metrics for a node, with scores ranging from 0 to 10. Higher scores indicate worse performance in each category.\n\n# Score Categories * `privacy` - Measures data protection and confidentiality level * `security` - Assesses resistance against potential attacks * `performance` - Evaluates computational efficiency and speed * `governance` - Indicates compliance with policies and regulations",
+			"type": "object",
+			"required": ["governance", "performance", "privacy", "security"],
+			"properties": {
+				"privacy": {
+					"type": "integer",
+					"format": "uint8",
+					"minimum": 0.0
+				},
+				"security": {
+					"type": "integer",
+					"format": "uint8",
+					"minimum": 0.0
+				},
+				"performance": {
+					"type": "integer",
+					"format": "uint8",
+					"minimum": 0.0
+				},
+				"governance": {
+					"type": "integer",
+					"format": "uint8",
+					"minimum": 0.0
+				}
+			}
+		},
+		"Pin": {
+			"type": "object",
+			"required": [
+				"connected_to",
+				"data_type",
+				"depends_on",
+				"description",
+				"friendly_name",
+				"id",
+				"index",
+				"name",
+				"pin_type",
+				"value_type"
+			],
+			"properties": {
+				"id": {
+					"type": "string"
+				},
+				"name": {
+					"type": "string"
+				},
+				"friendly_name": {
+					"type": "string"
+				},
+				"description": {
+					"type": "string"
+				},
+				"pin_type": {
+					"$ref": "#/definitions/PinType"
+				},
+				"data_type": {
+					"$ref": "#/definitions/VariableType"
+				},
+				"schema": {
+					"type": ["string", "null"]
+				},
+				"value_type": {
+					"$ref": "#/definitions/ValueType"
+				},
+				"depends_on": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"uniqueItems": true
+				},
+				"connected_to": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"uniqueItems": true
+				},
+				"default_value": {
+					"type": ["array", "null"],
+					"items": {
+						"type": "integer",
+						"format": "uint8",
+						"minimum": 0.0
+					}
+				},
+				"index": {
+					"type": "integer",
+					"format": "uint16",
+					"minimum": 0.0
+				},
+				"options": {
+					"anyOf": [
+						{
+							"$ref": "#/definitions/PinOptions"
+						},
+						{
+							"type": "null"
+						}
+					]
+				}
+			}
+		},
+		"PinType": {
+			"type": "string",
+			"enum": ["Input", "Output"]
+		},
+		"VariableType": {
+			"type": "string",
+			"enum": [
+				"Execution",
+				"String",
+				"Integer",
+				"Float",
+				"Boolean",
+				"Date",
+				"PathBuf",
+				"Generic",
+				"Struct",
+				"Byte"
+			]
+		},
+		"ValueType": {
+			"type": "string",
+			"enum": ["Array", "Normal", "HashMap", "HashSet"]
+		},
+		"PinOptions": {
+			"type": "object",
+			"properties": {
+				"valid_values": {
+					"type": ["array", "null"],
+					"items": {
+						"type": "string"
+					}
+				},
+				"range": {
+					"type": ["array", "null"],
+					"items": [
+						{
+							"type": "number",
+							"format": "double"
+						},
+						{
+							"type": "number",
+							"format": "double"
+						}
+					],
+					"maxItems": 2,
+					"minItems": 2
+				},
+				"step": {
+					"type": ["number", "null"],
+					"format": "double"
+				},
+				"enforce_schema": {
+					"type": ["boolean", "null"]
+				},
+				"enforce_generic_value_type": {
+					"type": ["boolean", "null"]
+				}
+			}
+		},
+		"Variable": {
+			"type": "object",
+			"required": [
+				"data_type",
+				"editable",
+				"exposed",
+				"id",
+				"name",
+				"secret",
+				"value_type"
+			],
+			"properties": {
+				"id": {
+					"type": "string"
+				},
+				"name": {
+					"type": "string"
+				},
+				"category": {
+					"type": ["string", "null"]
+				},
+				"description": {
+					"type": ["string", "null"]
+				},
+				"default_value": {
+					"type": ["array", "null"],
+					"items": {
+						"type": "integer",
+						"format": "uint8",
+						"minimum": 0.0
+					}
+				},
+				"data_type": {
+					"$ref": "#/definitions/VariableType"
+				},
+				"value_type": {
+					"$ref": "#/definitions/ValueType"
+				},
+				"exposed": {
+					"type": "boolean"
+				},
+				"secret": {
+					"type": "boolean"
+				},
+				"editable": {
+					"type": "boolean"
+				}
+			}
+		}
+	}
+}
