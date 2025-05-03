@@ -67,6 +67,8 @@ export function FlowPreview({ nodes }: Readonly<{ nodes: INode[] }>) {
 			"",
 			async () => {},
 			async () => {},
+			async () => {},
+			async () => {},
 			new Set(),
 		);
 
