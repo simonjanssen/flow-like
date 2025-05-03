@@ -38,13 +38,13 @@ pub enum ExecutionStage {
     PreProd,
     Prod,
 }
-#[derive(Serialize, Deserialize, JsonSchema, Clone)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 pub enum LayerType {
     Function,
     Macro,
     Collapsed,
 }
-#[derive(Serialize, Deserialize, JsonSchema, Clone)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 pub struct Layer {
     pub id: String,
     pub parent_id: Option<String>,

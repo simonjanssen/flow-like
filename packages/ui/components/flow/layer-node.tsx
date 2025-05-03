@@ -2,10 +2,7 @@
 
 import {
 	type Node,
-	type NodeProps,
-	NodeResizer,
-	type ResizeDragEvent,
-	type ResizeParams,
+	type NodeProps
 } from "@xyflow/react";
 import {
 	FoldHorizontalIcon,
@@ -13,7 +10,7 @@ import {
 	SquarePenIcon,
 	Trash2Icon,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import {
 	ContextMenu,
 	ContextMenuContent,
@@ -24,22 +21,10 @@ import {
 } from "../../components/ui/context-menu";
 import type { INode } from "../../lib";
 import {
-	type IComment,
 	type ILayer,
-	IPinType,
+	IPinType
 } from "../../lib/schema/flow/board";
-import { Button } from "../ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-} from "../ui/dialog";
-import { MarkdownComponent } from "../ui/markdown";
-import { Textarea } from "../ui/textarea";
 import { FlowPin } from "./flow-pin";
-import { typeToColor } from "./utils";
 
 export type LayerNode = Node<
 	{

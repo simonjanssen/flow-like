@@ -260,10 +260,8 @@ export function parseBoard(
 
 	const activeLayer = new Set();
 	for (const layer of Object.values(board.layers)) {
-		const parentId = layer.parent_id ?? "";
-		const currentLayerId = currentLayer ?? "";
-
-		if (parentId !== currentLayerId) continue;
+		const parentLayer = (layer.parent_id ?? "") === "" ? undefined : layer.parent_id;
+		if (parentLayer !== currentLayer) continue;
 
 		const lookup: Record<string, INode> = {};
 		for (const pin of Object.values(layer.pins)) {
@@ -284,7 +282,7 @@ export function parseBoard(
 				layer: layer,
 				pinLookup: lookup,
 				pushLayer: async (layer: ILayer) => {
-					await pushLayer(layer);
+					pushLayer(layer);
 				},
 			},
 			selected: selected.has(layer.id),
@@ -329,6 +327,8 @@ export function parseBoard(
 	}
 
 	for (const comment of Object.values(board.comments)) {
+		const commentLayer = (comment.layer ?? "") === "" ? undefined : comment.layer;
+		if (commentLayer !== currentLayer) continue;
 		const hash = hashNode(comment);
 		const oldNode = oldNodesMap.get(hash);
 		if (oldNode) {
@@ -351,6 +351,7 @@ export function parseBoard(
 				onUpsert: (comment: IComment) => {
 					const command = upsertCommentCommand({
 						comment: comment,
+						current_layer: currentLayer,
 					});
 					executeCommand(command, false);
 				},
@@ -367,6 +368,7 @@ export function handleCopy(
 	board: IBoard,
 	cursorPosition?: { x: number; y: number },
 	event?: ClipboardEvent,
+	currentLayer?: string,
 ) {
 	const activeElement = document.activeElement;
 	if (
@@ -385,16 +387,6 @@ export function handleCopy(
 	const startLayer: ILayer[] = nodes
 		.filter((node) => node.selected && node.type === "layerNode")
 		.map((node) => node.data.layer);
-	const undefinedLayers = new Set(startLayer.map((layer) => layer.id));
-
-	if (startLayer.length !== 0) {
-		const parentLayer = allLayer.find(
-			(layer) => layer.id === startLayer[0].parent_id,
-		);
-		if (parentLayer) {
-			undefinedLayers.add(parentLayer.id);
-		}
-	}
 
 	const foundLayer = new Map<string, ILayer>(
 		startLayer.map((layer) => [layer.id, { ...layer, parent_id: undefined }]),
@@ -413,35 +405,17 @@ export function handleCopy(
 		}
 	}
 
-	const selectedNodes = nodes
-		.filter(
-			(node: any) =>
-				(node.selected ||
-					foundLayer.has((node.data.node as INode).layer ?? "")) &&
-				node.type === "node",
-		)
-		.map((node: { data: { node: INode } }) =>
-			serializeNode({
-				...node.data.node,
-				layer: undefinedLayers.has(node.data.node.layer ?? "")
-					? undefined
-					: node.data.node.layer,
-			}),
-		);
+	const selected = new Set(nodes.filter(node => node.selected).map(node => node.id))
+	const selectedNodes = Object.values(board.nodes).filter(node => selected.has(node.id) || foundLayer.has(node.layer ?? "")).map(node => serializeNode({
+		...node,
+		layer: ((node.layer?? "") === (currentLayer ?? "")) ? undefined : node.layer,
+	}))
 
-	const selectedComments: IComment[] = nodes
-		.filter(
-			(node: any) =>
-				(node.selected ||
-					foundLayer.has((node.data.comment as IComment).layer ?? "")) &&
-				node.type === "commentNode",
-		)
-		.map((node: { data: { comment: IComment } }) => ({
-			...node.data.comment,
-			layer: undefinedLayers.has(node.data.comment.layer ?? "")
-				? undefined
-				: node.data.comment.layer,
-		}));
+	const selectedComments = Object.values(board.comments).filter(comment => selected.has(comment.id) || foundLayer.has(comment.layer ?? "")).map(comment => ({
+		...comment,
+		layer: ((comment.layer?? "") === (currentLayer ?? "")) ? undefined : comment.layer,
+	}))
+
 	try {
 		navigator.clipboard.writeText(
 			JSON.stringify(

@@ -81,6 +81,7 @@ import { FlowPinAction } from "./flow-node/flow-node-pin-action";
 import { FlowNodeRenameMenu } from "./flow-node/flow-node-rename-menu";
 import { FlowPin } from "./flow-pin";
 import { typeToColor } from "./utils";
+import type { IComment, ILayer } from "../../lib/schema/flow/board";
 
 export interface IPinAction {
 	action: "create";
@@ -835,20 +836,29 @@ function FlowNode(props: NodeProps<FlowNode>) {
 			});
 			if (selectedNodes.length <= 1) return;
 
-			const nodeIds = selectedNodes.map((node) => (node.data.node as INode).id);
+			const nodeIds = selectedNodes.map((node) => {
+				const isNode = node.data.node as INode;
+				if (isNode) return isNode.id;
+				const isLayer = node.data.layer as ILayer;
+				if (isLayer) return isLayer.id;
+				const isComment = node.data.comment as IComment;
+				if (isComment) return isComment.id;
+				return ""
+			});
 			const command = upsertLayerCommand({
 				layer: {
 					id: createId(),
 					comments: {},
 					nodes: {},
 					pins: {},
-					parent_id: props.data.node.layer,
+					parent_id: (selectedNodes[0].data.node as INode).layer,
 					coordinates: [flowCords.x, flowCords.y, 0],
 					name: "Collapsed",
 					type: ILayerType.Collapsed,
 					variables: {},
 				},
 				node_ids: nodeIds,
+				current_layer: (selectedNodes[0].data.node as INode).layer,
 			});
 
 			const result = await backend.executeCommand(

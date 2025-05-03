@@ -317,9 +317,9 @@ export function FlowBoard({
 				x: mousePosition.x,
 				y: mousePosition.y,
 			});
-			handleCopy(nodes, board.data, currentCursorPosition, event);
+			handleCopy(nodes, board.data, currentCursorPosition, event, currentLayer);
 		},
-		[nodes, mousePosition, board.data],
+		[nodes, mousePosition, board.data, currentLayer],
 	);
 
 	const placeNodeShortcut = useCallback(
@@ -917,6 +917,31 @@ export function FlowBoard({
 		[pushLayer],
 	);
 
+	const onCommentPlace = useCallback(async () => {
+		const location = screenToFlowPosition({
+			x: clickPosition.x,
+			y: clickPosition.y,
+		});
+		const new_comment: IComment = {
+			comment_type: ICommentType.Text,
+			content: "New Comment",
+			coordinates: [location.x, location.y, 0],
+			id: createId(),
+			timestamp: {
+				nanos_since_epoch: 0,
+				secs_since_epoch: 0,
+			},
+			author: "anonymous",
+		};
+
+		const command = upsertCommentCommand({
+			comment: new_comment,
+			current_layer: currentLayer,
+		});
+
+		await executeCommand(command);
+	}, [currentLayer, clickPosition, executeCommand])
+
 	return (
 		<div className="min-h-dvh h-dvh max-h-dvh w-full flex-1 flex-grow">
 			<div className="absolute top-0 left-0 z-50 mt-2 px-2">
@@ -1101,30 +1126,7 @@ export function FlowBoard({
 						<ResizablePanel autoSave="flow-main" ref={flowPanelRef}>
 							<FlowContextMenu
 								droppedPin={droppedPin}
-								onCommentPlace={async () => {
-									const location = screenToFlowPosition({
-										x: clickPosition.x,
-										y: clickPosition.y,
-									});
-									const new_comment: IComment = {
-										comment_type: ICommentType.Text,
-										content: "New Comment",
-										coordinates: [location.x, location.y, 0],
-										id: createId(),
-										timestamp: {
-											nanos_since_epoch: 0,
-											secs_since_epoch: 0,
-										},
-										author: "anonymous",
-									};
-
-									const command = upsertCommentCommand({
-										comment: new_comment,
-										current_layer: currentLayer,
-									});
-
-									await executeCommand(command);
-								}}
+								onCommentPlace={onCommentPlace}
 								refs={board.data?.refs || {}}
 								onClose={() => setDroppedPin(undefined)}
 								nodes={filteredNodes.toSorted((a, b) =>
@@ -1164,7 +1166,7 @@ export function FlowBoard({
 									className={`w-full h-full relative ${isOver && "border-green-400 border-2 z-10"}`}
 									ref={setNodeRef}
 								>
-									<div className="absolute top-0 left-0 right-0 p-1 z-40 flex flex-row items-center gap-1 mt-10">
+									<div className="absolute top-0 left-0 p-1 z-40 flex flex-row items-center gap-1 mt-10">
 										{openBoards.data?.map(([appId, boardLoadId, boardName]) => (
 											<Link
 												key={boardLoadId}

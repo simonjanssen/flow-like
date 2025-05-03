@@ -38,6 +38,7 @@ impl Command for UpsertLayerCommand {
         _state: Arc<Mutex<FlowLikeState>>,
     ) -> flow_like_types::Result<()> {
         let nodes_set: HashSet<String> = HashSet::from_iter(self.node_ids.iter().cloned());
+        println!("Layer: {:?}", &self.layer);
         self.layer.parent_id = self.current_layer.clone();
         self.old_layer = board
             .layers

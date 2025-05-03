@@ -95,30 +95,13 @@ impl Command for CopyPasteCommand {
             );
         }
 
-        for comment in self.original_comments.iter() {
-            let mut new_comment = comment.clone();
-            new_comment.id = create_id();
-            new_comment.coordinates = (
-                new_comment.coordinates.0 + offset.0,
-                new_comment.coordinates.1 + offset.1,
-                new_comment.coordinates.2 + offset.2,
-            );
-
-            if new_comment.layer.is_none() || new_comment.layer == Some("".to_string()) {
-                new_comment.layer = self.current_layer.clone();
-            }
-
-            board
-                .comments
-                .insert(new_comment.id.clone(), new_comment.clone());
-            self.new_comments.push(new_comment);
-        }
+        let mut layer_translation = HashMap::with_capacity(self.original_layers.len());
 
         for layer in self.original_layers.iter() {
-            if board.layers.contains_key(&layer.id) {
-                continue;
-            }
+            let layer_id = create_id();
+            layer_translation.insert(layer.id.clone(), layer_id.clone());
             let mut new_layer = layer.clone();
+            new_layer.id = layer_id.clone();
             new_layer.coordinates = (
                 new_layer.coordinates.0 + offset.0,
                 new_layer.coordinates.1 + offset.1,
@@ -131,6 +114,31 @@ impl Command for CopyPasteCommand {
 
             board.layers.insert(new_layer.id.clone(), new_layer.clone());
             self.new_layers.push(new_layer);
+        }
+
+        for comment in self.original_comments.iter() {
+            let mut new_comment = comment.clone();
+            new_comment.id = create_id();
+            new_comment.coordinates = (
+                new_comment.coordinates.0 + offset.0,
+                new_comment.coordinates.1 + offset.1,
+                new_comment.coordinates.2 + offset.2,
+            );
+
+            if new_comment.layer.is_none() || new_comment.layer == Some("".to_string()) {
+                new_comment.layer = self.current_layer.clone();
+            } else {
+                if let Some(layer_id) = new_comment.layer.clone() {
+                    if let Some(new_layer_id) = layer_translation.get(&layer_id) {
+                        new_comment.layer = Some(new_layer_id.clone());
+                    }
+                }
+            }
+
+            board
+                .comments
+                .insert(new_comment.id.clone(), new_comment.clone());
+            self.new_comments.push(new_comment);
         }
 
         for node in self.original_nodes.iter() {
@@ -158,6 +166,12 @@ impl Command for CopyPasteCommand {
 
             if new_node.layer.is_none() || new_node.layer == Some("".to_string()) {
                 new_node.layer = self.current_layer.clone();
+            } else {
+                if let Some(layer_id) = new_node.layer.clone() {
+                    if let Some(new_layer_id) = layer_translation.get(&layer_id) {
+                        new_node.layer = Some(new_layer_id.clone());
+                    }
+                }
             }
 
             new_node.pins = new_node
