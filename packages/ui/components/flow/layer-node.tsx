@@ -34,6 +34,8 @@ export type LayerNode = Node<
 		hash: string;
 		appId: string;
 		pushLayer(layer: ILayer): Promise<void>;
+		onLayerUpdate(layer: ILayer): Promise<void>;
+		onLayerRemove(layer: ILayer, preserve_nodes: boolean): Promise<void>;
 	},
 	"layerNode"
 >;
@@ -126,8 +128,8 @@ export function LayerNode(props: NodeProps<LayerNode>) {
 				<ContextMenuSeparator />
 				<ContextMenuItem
 					className="flex flex-row items-center gap-2"
-					onClick={() => {
-						// setEdit((old) => ({ ...old, open: true }));
+					onClick={async () => {
+						await props.data.onLayerRemove(props.data.layer, true);
 					}}
 				>
 					<FoldHorizontalIcon className="w-4 h-4" />
@@ -136,8 +138,8 @@ export function LayerNode(props: NodeProps<LayerNode>) {
 				<ContextMenuSeparator />
 				<ContextMenuItem
 					className="flex flex-row items-center gap-2"
-					onClick={() => {
-						// setEdit((old) => ({ ...old, open: true }));
+					onClick={async () => {
+						await props.data.onLayerRemove(props.data.layer, false);
 					}}
 				>
 					<Trash2Icon className="w-4 h-4" />

@@ -5,7 +5,9 @@ import { toast } from "sonner";
 import { typeToColor } from "../components/flow/utils";
 import {
 	copyPasteCommand,
+	removeLayerCommand,
 	upsertCommentCommand,
+	upsertLayerCommand,
 } from "./command/generic-command";
 import { toastSuccess } from "./messages";
 import type { IGenericCommand, IValueType } from "./schema";
@@ -283,6 +285,25 @@ export function parseBoard(
 				pinLookup: lookup,
 				pushLayer: async (layer: ILayer) => {
 					pushLayer(layer);
+				},
+				onLayerUpdate: async (layer: ILayer) => {
+					const command = upsertLayerCommand({
+						current_layer: currentLayer,
+						layer: layer,
+						node_ids: [],
+					});
+					await executeCommand(command, false);
+				},
+				onLayerRemove: async (layer: ILayer, preserve_nodes: boolean) => {
+					const command = removeLayerCommand({
+						layer,
+						child_layers: [],
+						layer_nodes: [],
+						layers: [],
+						nodes: [],
+						preserve_nodes
+					});
+					await executeCommand(command, false);
 				},
 			},
 			selected: selected.has(layer.id),
