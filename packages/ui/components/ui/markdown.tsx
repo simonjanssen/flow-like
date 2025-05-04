@@ -25,6 +25,7 @@ export function MarkdownComponent({ content }: Readonly<{ content: string }>) {
 						dark: "min-dark",
 					},
 					wrap: true,
+					langs: ["javascript", "typescript", "rust", "python", "java", "csharp", "json", "html", "css", "cpp", "jinja", "shellscript", "yaml", "xml"],
 					transformers: [
 						transformerRenderWhitespace(),
 						transformerNotationHighlight(),
