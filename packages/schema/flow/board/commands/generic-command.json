@@ -499,6 +499,10 @@
 				},
 				"color": {
 					"type": ["string", "null"]
+				},
+				"z_index": {
+					"type": ["integer", "null"],
+					"format": "int32"
 				}
 			}
 		},

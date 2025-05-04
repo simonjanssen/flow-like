@@ -64,6 +64,7 @@ export interface IComment {
 	layer?: null | string;
 	timestamp: ISystemTime;
 	width?: number | null;
+	z_index?: number | null;
 	[property: string]: any;
 }
 

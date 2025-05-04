@@ -11,12 +11,12 @@ pub mod replace;
 pub mod similarity;
 pub mod split;
 pub mod starts_with;
+pub mod template;
 pub mod to_lowercase;
 pub mod to_uppercase;
 pub mod trim;
 pub mod unequal;
 pub mod utf_8_lossy;
-pub mod template;
 
 pub async fn register_functions() -> Vec<Arc<dyn NodeLogic>> {
     let mut items: Vec<Arc<dyn NodeLogic>> = vec![

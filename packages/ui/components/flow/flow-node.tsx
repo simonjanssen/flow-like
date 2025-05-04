@@ -590,6 +590,18 @@ const FlowNodeInner = memo(
 						<small className="font-normal text-extra-small leading-extra-small">
 							{props.data.node.comment}
 						</small>
+						<div
+							className="
+											absolute
+											-bottom-1
+											left-1/2
+											transform -translate-x-1/2
+											w-0 h-0
+											border-l-4 border-l-transparent
+											border-r-4 border-r-transparent
+											border-t-4 border-t-foreground/70
+										"
+						/>
 					</div>
 				)}
 				{props.data.node.error && (

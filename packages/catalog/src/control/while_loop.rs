@@ -1,4 +1,3 @@
-
 use flow_like::{
     flow::{
         execution::{LogLevel, context::ExecutionContext, internal_node::InternalNode},
@@ -74,7 +73,6 @@ impl NodeLogic for WhileLoopNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-
         let exec_item = context.get_pin_by_name("exec_out").await?;
         let iter = context.get_pin_by_name("iter").await?;
         let done = context.get_pin_by_name("done").await?;
@@ -85,12 +83,13 @@ impl NodeLogic for WhileLoopNode {
         let flow = exec_item.lock().await.get_connected_nodes().await;
 
         for i in 0..max_iter {
-            let condition = context.evaluate_pin_ref::<bool>(condition_pin.clone()).await?;
+            let condition = context
+                .evaluate_pin_ref::<bool>(condition_pin.clone())
+                .await?;
             if !condition {
                 break;
             }
-            iter
-                .lock()
+            iter.lock()
                 .await
                 .set_value(flow_like_types::json::json!(i))
                 .await;

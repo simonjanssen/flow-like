@@ -1,7 +1,7 @@
 "use client";
 
 import { forwardRef, useMemo, useState } from "react";
-import { HexColorPicker } from "react-colorful";
+import { HexAlphaColorPicker, HexColorPicker } from "react-colorful";
 import { useForwardedRef } from "../../lib/use-forwarded-ref";
 import { cn } from "../../lib/utils";
 import type { ButtonProps } from "./button";
@@ -27,7 +27,7 @@ const ColorPicker = forwardRef<
 	) => {
 		const ref = useForwardedRef(forwardedRef);
 		const parsedValue = useMemo(() => {
-			return value || "#FFFFFF";
+			return value || "#FFFFFFFF";
 		}, [value]);
 
 		return (
@@ -50,10 +50,10 @@ const ColorPicker = forwardRef<
 					</Button>
 				</PopoverTrigger>
 				<PopoverContent className="w-full gap-4 flex flex-col">
-					<HexColorPicker color={parsedValue} onChange={onChange} />
+					<HexAlphaColorPicker color={parsedValue} onChange={onChange} />
 					<Input
 						className="w-full max-w-[200px]"
-						maxLength={7}
+						maxLength={9}
 						onChange={(e) => {
 							onChange(e?.currentTarget?.value);
 						}}

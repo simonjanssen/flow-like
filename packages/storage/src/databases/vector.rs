@@ -148,5 +148,4 @@ pub trait VectorStore: Send + Sync {
     async fn count(&self, filter: Option<String>) -> Result<usize>;
 
     async fn schema(&self) -> Result<arrow_schema::Schema>;
-
 }

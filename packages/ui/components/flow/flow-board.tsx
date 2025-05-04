@@ -907,6 +907,10 @@ export function FlowBoard({
 
 	const onNodeDoubleClick = useCallback(
 		(event: any, node: any) => {
+			const tgt = event.target as HTMLElement;
+			if (tgt.closest("input, textarea")) {
+				return;
+			}
 			const type = node?.type ?? "";
 			if (type === "layerNode") {
 				const layer: ILayer = node.data.layer;

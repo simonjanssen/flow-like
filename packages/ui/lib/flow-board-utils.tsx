@@ -237,7 +237,7 @@ export function parseBoard(
 			nodes.push({
 				id: node.id,
 				type: "node",
-				zIndex: 1,
+				zIndex: 20,
 				position: {
 					x: node.coordinates?.[0] ?? 0,
 					y: node.coordinates?.[1] ?? 0,
@@ -277,7 +277,7 @@ export function parseBoard(
 			id: layer.id,
 			type: "layerNode",
 			position: { x: layer.coordinates[0], y: layer.coordinates[1] },
-			zIndex: 1,
+			zIndex: 19,
 			data: {
 				label: layer.id,
 				boardId: board.id,
@@ -335,7 +335,7 @@ export function parseBoard(
 				id: `${pin.id}-${connectedTo}`,
 				source: sourceNode,
 				sourceHandle: pin.id,
-				zIndex: 1,
+				zIndex: 18,
 				animated: pin.data_type !== "Execution",
 				reconnectable: true,
 				target: connectedNodeId,
@@ -365,7 +365,7 @@ export function parseBoard(
 			position: { x: comment.coordinates[0], y: comment.coordinates[1] },
 			width: comment.width ?? 200,
 			height: comment.height ?? 80,
-			zIndex: 0,
+			zIndex: comment.z_index ?? 1,
 			data: {
 				label: comment.id,
 				boardId: board.id,

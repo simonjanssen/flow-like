@@ -1,4 +1,3 @@
-
 use flow_like::{
     flow::{
         execution::context::ExecutionContext,
@@ -36,13 +35,8 @@ impl NodeLogic for GetSchemaLocalDatabaseNode {
         node.add_icon("/flow/icons/database.svg");
 
         // inputs
-        node.add_input_pin(
-            "exec_in", 
-            "Input", 
-            "", 
-            VariableType::Execution
-        );
-        
+        node.add_input_pin("exec_in", "Input", "", VariableType::Execution);
+
         node.add_input_pin(
             "database",
             "Database",
@@ -50,11 +44,7 @@ impl NodeLogic for GetSchemaLocalDatabaseNode {
             VariableType::Struct,
         )
         .set_schema::<NodeDBConnection>()
-        .set_options(
-            PinOptions::new()
-            .set_enforce_schema(true)
-            .build()
-        );
+        .set_options(PinOptions::new().set_enforce_schema(true).build());
 
         // outputs
         node.add_output_pin(
@@ -65,10 +55,10 @@ impl NodeLogic for GetSchemaLocalDatabaseNode {
         );
 
         node.add_output_pin(
-            "schema", 
-            "Schema", 
-            "Local Database Schema", 
-            VariableType::Struct
+            "schema",
+            "Schema",
+            "Local Database Schema",
+            VariableType::Struct,
         );
         node
     }
@@ -83,10 +73,10 @@ impl NodeLogic for GetSchemaLocalDatabaseNode {
             .db
             .clone();
         let database = database.read().await;
-        
+
         // get schema
         let schema = database.schema().await?;
-        
+
         // set outputs
         context.set_pin_value("schema", json!(schema)).await?;
         context.activate_exec_pin("exec_out").await?;

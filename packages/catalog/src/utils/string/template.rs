@@ -1,4 +1,3 @@
-
 use flow_like::{
     flow::{
         board::Board,
@@ -15,7 +14,6 @@ use std::{
     sync::Arc,
 };
 
-
 #[derive(Default)]
 #[doc = "Render jinja templates based on a template string and dynamic placeholder inputs."]
 pub struct TemplateStringNode {}
@@ -25,7 +23,6 @@ impl TemplateStringNode {
         TemplateStringNode {}
     }
 }
-
 
 #[async_trait]
 impl NodeLogic for TemplateStringNode {
@@ -58,16 +55,20 @@ impl NodeLogic for TemplateStringNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-
         // load inputs & templates
         let template_string: String = context.evaluate_pin("template").await?;
         let mut jinja_env = minijinja::Environment::new();
 
         // collect placeholders & values
-        jinja_env.add_template("template", &template_string).unwrap();
+        jinja_env
+            .add_template("template", &template_string)
+            .unwrap();
         let template = jinja_env.get_template("template").unwrap();
         let placeholders = template.undeclared_variables(false);
-        context.log_message(&format!("extracted placholders: {:?}", placeholders), LogLevel::Debug);
+        context.log_message(
+            &format!("extracted placholders: {:?}", placeholders),
+            LogLevel::Debug,
+        );
 
         let mut template_context = HashMap::new();
         for placeholder in placeholders {
@@ -79,9 +80,7 @@ impl NodeLogic for TemplateStringNode {
         let rendered = template.render(template_context).unwrap();
 
         // set outputs
-        context
-            .set_pin_value("rendered", json!(rendered))
-            .await?;
+        context.set_pin_value("rendered", json!(rendered)).await?;
         Ok(())
     }
 
@@ -105,7 +104,9 @@ impl NodeLogic for TemplateStringNode {
             .collect::<HashMap<_, _>>();
 
         let mut jinja_env = minijinja::Environment::new();
-        jinja_env.add_template("template", &template_string).unwrap();
+        jinja_env
+            .add_template("template", &template_string)
+            .unwrap();
         let template = jinja_env.get_template("template").unwrap();
         let template_placeholders = template.undeclared_variables(false);
         let mut all_placeholders = HashSet::new();
@@ -133,6 +134,5 @@ impl NodeLogic for TemplateStringNode {
         all_placeholders.iter().for_each(|placeholder| {
             let _ = node.match_type(placeholder, board.clone(), None, None);
         })
-
     }
 }

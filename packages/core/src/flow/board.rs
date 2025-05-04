@@ -503,6 +503,7 @@ pub struct Comment {
     pub height: Option<f32>,
     pub layer: Option<String>,
     pub color: Option<String>,
+    pub z_index: Option<i32>,
 }
 
 #[cfg(test)]

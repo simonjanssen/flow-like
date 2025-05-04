@@ -8,12 +8,17 @@ import {
 	type ResizeParams,
 	useReactFlow,
 } from "@xyflow/react";
-import { SquarePenIcon } from "lucide-react";
+import {
+	SquareChevronDownIcon,
+	SquareChevronUpIcon,
+	SquarePenIcon,
+} from "lucide-react";
 import { useCallback, useState } from "react";
 import {
 	ContextMenu,
 	ContextMenuContent,
 	ContextMenuItem,
+	ContextMenuSeparator,
 	ContextMenuTrigger,
 } from "../../components/ui/context-menu";
 import type { IComment } from "../../lib/schema/flow/board";
@@ -28,6 +33,7 @@ import {
 } from "../ui/dialog";
 import { MarkdownComponent } from "../ui/markdown";
 import { Textarea } from "../ui/textarea";
+import { CommentDialog } from "./comment-dialog";
 
 export type CommentNode = Node<
 	{
@@ -82,6 +88,25 @@ export function CommentNode(props: NodeProps<CommentNode>) {
 		currentColor,
 	]);
 
+	const onMoveLayer = useCallback(
+		async (by: number) => {
+			const node = getNodes().find((n) => n.id === props.id);
+			if (!node) return;
+			const comment = node.data.comment as IComment;
+			props.data.onUpsert({
+				...comment,
+				z_index: (props.data.comment.z_index ?? 1) + by,
+			});
+		},
+		[
+			props.data.comment,
+			props.data.onUpsert,
+			props.width,
+			props.height,
+			currentColor,
+		],
+	);
+
 	return (
 		<>
 			<NodeResizer
@@ -89,7 +114,7 @@ export function CommentNode(props: NodeProps<CommentNode>) {
 				handleStyle={{
 					width: 10,
 					height: 10,
-					zIndex: 1,
+					zIndex: (props.data.comment.z_index ?? 1) + 1,
 				}}
 				isVisible={props.selected}
 				onResizeEnd={onResizeEnd}
@@ -100,7 +125,7 @@ export function CommentNode(props: NodeProps<CommentNode>) {
 				<ContextMenuTrigger>
 					<div
 						key={`${props.id}__node`}
-						className={`bg-card p-1 react-flow__node-default selectable !w-full !h-full focus:ring-2 relative rounded-md group opacity-80 ${props.selected && "!border-primary border-2"}`}
+						className={`bg-card p-1 react-flow__node-default selectable !w-full !h-full focus:ring-2 relative rounded-md !border-0 group opacity-80 ${props.selected && ""}`}
 						style={{
 							backgroundColor: currentColor,
 						}}
@@ -173,6 +198,25 @@ export function CommentNode(props: NodeProps<CommentNode>) {
 					>
 						<SquarePenIcon className="w-4 h-4" />
 						Edit
+					</ContextMenuItem>
+					<ContextMenuSeparator />
+					<ContextMenuItem
+						className="flex flex-row items-center gap-2"
+						onClick={() => {
+							onMoveLayer(1);
+						}}
+					>
+						<SquareChevronUpIcon className="w-4 h-4" />
+						Move Up
+					</ContextMenuItem>
+					<ContextMenuItem
+						className="flex flex-row items-center gap-2"
+						onClick={() => {
+							onMoveLayer(-1);
+						}}
+					>
+						<SquareChevronDownIcon className="w-4 h-4" />
+						Move Down
 					</ContextMenuItem>
 				</ContextMenuContent>
 			</ContextMenu>

@@ -23,4 +23,5 @@ message Comment {
   optional float width = 10;
   optional float height = 11;
   optional string color = 12;
+  optional int32 z_index = 13;
 }
