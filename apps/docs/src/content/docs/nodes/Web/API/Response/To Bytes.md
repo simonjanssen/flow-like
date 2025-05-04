@@ -7,7 +7,7 @@ description: Converts an HTTP response to bytes.
 This node extracts the body of an HTTP response and converts it to bytes. It is useful for processing the response data in binary form.
 
 ## Pins
-The node has three input pins and two output pins. The `exec_in` pin triggers the node's execution, while the `response` pin accepts an HTTP response. The node outputs either `exec_out` upon successful execution or `failed` if an error occurs.
+The node has three input pins and two output pins. The `Start` pin triggers the node's execution, while the `response` pin accepts an HTTP response. The node outputs either `Start` upon successful execution or `failed` if an error occurs.
 
 | Pin Name | Pin Description | Pin Type | Value Type |
 |:----------:|:-------------:|:------:|:------:|

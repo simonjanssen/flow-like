@@ -10,6 +10,6 @@ The Gather node is designed to wait for all input execution states to be in sync
 
 | Pin Name | Pin Description | Pin Type | Value Type |
 |:----------:|:-------------:|:------:|:------:|
-| exec_in | Input Pin | Execution | Boolean |
-| exec_in | Input Pin | Execution | Boolean |
+| Start | Input Pin | Execution | Boolean |
+| Start | Input Pin | Execution | Boolean |
 | exec_done | In Sync | Execution | Boolean |
