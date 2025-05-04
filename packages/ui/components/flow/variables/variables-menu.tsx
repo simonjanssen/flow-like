@@ -150,10 +150,11 @@ export function Variable({
 
 	const [localVariable, setLocalVariable] = useState(variable);
 	const [openEdit, setOpenEdit] = useState(false);
-	const debouncedVariable = useDebounce(localVariable, 500);
-	useEffect(() => {
-		onVariableChange(debouncedVariable);
-	}, [debouncedVariable]);
+
+	const saveVariable = useCallback(() => {
+		if (localVariable === variable) return;
+		onVariableChange(localVariable);
+	}, [localVariable, variable]);
 
 	function defaultValueFromType(variableType: IVariableType) {
 		if (variable.value_type === IValueType.Array) {
@@ -314,6 +315,9 @@ export function Variable({
 			onOpenChange={(open) => {
 				if (!localVariable.editable) return;
 				setOpenEdit(open);
+				if (!open) {
+					saveVariable();
+				}
 			}}
 		>
 			<SheetTrigger>{element}</SheetTrigger>
@@ -412,7 +416,12 @@ export function Variable({
 					{!localVariable.exposed && (
 						<VariablesMenuEdit
 							variable={localVariable}
-							updateVariable={async (variable) => setLocalVariable(variable)}
+							updateVariable={async (variable) =>
+								setLocalVariable((old) => ({
+									...old,
+									default_value: variable.default_value,
+								}))
+							}
 						/>
 					)}
 				</div>

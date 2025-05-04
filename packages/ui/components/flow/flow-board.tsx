@@ -60,6 +60,7 @@ import { useInvalidateInvoke, useInvoke } from "../../hooks/use-invoke";
 import {
 	type IGenericCommand,
 	type ILogMetadata,
+	IValueType,
 	addNodeCommand,
 	connectPinsCommand,
 	disconnectPinsCommand,
@@ -418,7 +419,6 @@ export function FlowBoard({
 				if (!node) return;
 				await placeNodeShortcut(node);
 				await board.refetch();
-				return;
 			}
 		},
 		[boardId, board, backend],
@@ -451,7 +451,8 @@ export function FlowBoard({
 						if (
 							(pin.options?.enforce_schema || options?.enforce_schema) &&
 							schema !== pinSchema &&
-							pin.data_type !== IVariableType.Generic
+							pin.data_type !== IVariableType.Generic &&
+							droppedPin.data_type !== IVariableType.Generic
 						)
 							return false;
 					}
@@ -463,8 +464,8 @@ export function FlowBoard({
 						)
 							return false;
 						if (
-							options?.enforce_generic_value_type ||
-							pin.options?.enforce_generic_value_type
+							(options?.enforce_generic_value_type ?? false) ||
+							(pin.options?.enforce_generic_value_type ?? false)
 						)
 							return false;
 					}

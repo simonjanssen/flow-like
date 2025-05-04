@@ -164,17 +164,9 @@ export function doPinsMatch(
 	}
 
 	if (
-		(targetPin.options?.enforce_schema || sourcePin.options?.enforce_schema) &&
-		sourcePin.name !== "value_ref" &&
-		targetPin.name !== "value_ref" &&
-		sourcePin.name !== "value_in" &&
-		targetPin.name !== "value_in"
+		targetPin.options?.enforce_generic_value_type ||
+		sourcePin.options?.enforce_generic_value_type
 	) {
-		if (!sourcePin.schema || !targetPin.schema) return false;
-		if (schemaSource !== schemaTarget) return false;
-	}
-
-	if (targetPin.options?.valid_values || sourcePin.options?.valid_values) {
 		if (targetPin.value_type !== sourcePin.value_type) return false;
 	}
 
@@ -184,6 +176,20 @@ export function doPinsMatch(
 		targetPin.data_type !== "Execution"
 	)
 		return true;
+
+	if (
+		(targetPin.options?.enforce_schema || sourcePin.options?.enforce_schema) &&
+		sourcePin.name !== "value_ref" &&
+		targetPin.name !== "value_ref" &&
+		sourcePin.name !== "value_in" &&
+		targetPin.name !== "value_in" &&
+		sourcePin.data_type !== "Generic" &&
+		targetPin.data_type !== "Generic"
+	) {
+		if (!sourcePin.schema || !targetPin.schema) return false;
+		if (schemaSource !== schemaTarget) return false;
+	}
+
 	if (sourcePin.value_type !== targetPin.value_type) return false;
 	if (sourcePin.data_type !== targetPin.data_type) return false;
 

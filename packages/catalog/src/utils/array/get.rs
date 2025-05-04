@@ -77,26 +77,8 @@ impl NodeLogic for GetArrayElementNode {
     }
 
     async fn on_update(&self, node: &mut Node, board: Arc<Board>) {
-        let mut found_type = VariableType::Generic;
-        let match_type = node
-            .match_type("array_in", board.clone(), Some(ValueType::Array), None)
-            .unwrap_or(VariableType::Generic);
-
-        if match_type != VariableType::Generic {
-            found_type = match_type;
-        }
-
-        let match_type = node
-            .match_type("element", board, Some(ValueType::Normal), None)
-            .unwrap_or(VariableType::Generic);
-
-        if match_type != VariableType::Generic {
-            found_type = match_type;
-        }
-
-        if found_type != VariableType::Generic {
-            node.get_pin_mut_by_name("array_in").unwrap().data_type = found_type.clone();
-            node.get_pin_mut_by_name("element").unwrap().data_type = found_type;
-        }
+        let _ = node.match_type("array_in", board.clone(), Some(ValueType::Array), None);
+        let _ = node.match_type("element", board, Some(ValueType::Normal), None);
+        node.harmonize_type(vec!["element", "array_in"], true);
     }
 }
