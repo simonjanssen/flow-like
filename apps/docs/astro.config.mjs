@@ -48,12 +48,12 @@ export default defineConfig({
 					autogenerate: { directory: "guides" },
 				},
 				{
-					label: "Nodes",
-					autogenerate: { directory: "nodes" },
-				},
-				{
 					label: "Contributing",
 					autogenerate: { directory: "contributing" },
+				},
+				{
+					label: "Nodes",
+					autogenerate: { directory: "nodes" },
 				},
 				{
 					label: "Reference",
