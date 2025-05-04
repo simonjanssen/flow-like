@@ -44,6 +44,7 @@ message Layer {
   map<string, Pin> pins = 11;
   optional string comment = 12;
   optional string error = 13;
+  optional string color = 14;
 }
 
 message Board {

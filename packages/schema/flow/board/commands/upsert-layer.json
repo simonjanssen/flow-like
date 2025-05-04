@@ -101,6 +101,9 @@
 				},
 				"error": {
 					"type": ["string", "null"]
+				},
+				"color": {
+					"type": ["string", "null"]
 				}
 			}
 		},
@@ -455,6 +458,9 @@
 					"format": "float"
 				},
 				"layer": {
+					"type": ["string", "null"]
+				},
+				"color": {
 					"type": ["string", "null"]
 				}
 			}

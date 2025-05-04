@@ -57,6 +57,7 @@ pub struct Layer {
     pub pins: HashMap<String, Pin>,
     pub comment: Option<String>,
     pub error: Option<String>,
+    pub color: Option<String>,
 }
 
 impl Layer {
@@ -73,6 +74,7 @@ impl Layer {
             pins: HashMap::new(),
             comment: None,
             error: None,
+            color: None,
         }
     }
 }
@@ -500,6 +502,7 @@ pub struct Comment {
     pub width: Option<f32>,
     pub height: Option<f32>,
     pub layer: Option<String>,
+    pub color: Option<String>,
 }
 
 #[cfg(test)]

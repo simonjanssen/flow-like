@@ -1,6 +1,16 @@
-import { useCallback, useEffect, useState, useTransition } from "react";
+import {
+	useCallback,
+	useEffect,
+	useMemo,
+	useState,
+	useTransition,
+} from "react";
 import * as jsxRuntime from "react/jsx-runtime";
+import rehypeKatex from "rehype-katex";
 import rehypeReact, { type Options as RehypeReactOptions } from "rehype-react";
+import remarkBreaks from "remark-breaks";
+import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
 import remarkParse, { type Options as RemarkParseOptions } from "remark-parse";
 import remarkRehype, {
 	type Options as RemarkRehypeOptions,
@@ -30,22 +40,37 @@ export default function useMarkdown(
 	const [content, setContent] = useState<React.ReactElement | null>(null);
 	const [isPending, startTransition] = useTransition();
 
-	const setMarkdown = useCallback((source: string) => {
-		unified()
-			.use(remarkParse, remarkParseOptions)
-			.use(remarkPlugins)
-			.use(remarkRehype, remarkRehypeOptions)
-			.use(rehypePlugins)
-			.use(rehypeReact, {
-				...rehypeReactOptions,
-				Fragment: jsxRuntime.Fragment,
-				jsx: jsxRuntime.jsx as any,
-				jsxs: jsxRuntime.jsxs as any,
-			} satisfies RehypeReactOptions)
-			.process(source)
-			.then((vfile: { result: React.ReactElement }) => setContent(vfile.result))
-			.catch(onError);
-	}, []);
+	const processor = useMemo(
+		() =>
+			unified()
+				.use(remarkParse, remarkParseOptions)
+				.use(remarkBreaks)
+				.use(remarkGfm)
+				.use(remarkMath)
+				.use(rehypeKatex)
+				.use(remarkPlugins)
+				.use(remarkRehype, remarkRehypeOptions)
+				.use(rehypePlugins)
+				.use(rehypeReact, {
+					...rehypeReactOptions,
+					Fragment: jsxRuntime.Fragment,
+					jsx: jsxRuntime.jsx as any,
+					jsxs: jsxRuntime.jsxs as any,
+				} satisfies RehypeReactOptions),
+		[],
+	);
+
+	const setMarkdown = useCallback(
+		(source: string) => {
+			processor
+				.process(source)
+				.then((vfile: { result: React.ReactElement }) =>
+					setContent(vfile.result),
+				)
+				.catch(onError);
+		},
+		[processor],
+	);
 
 	useEffect(() => {
 		startTransition(() => {

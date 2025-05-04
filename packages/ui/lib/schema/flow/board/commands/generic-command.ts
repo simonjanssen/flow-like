@@ -55,6 +55,7 @@ export enum ICommandType {
 
 export interface IComment {
 	author?: null | string;
+	color?: null | string;
 	comment_type: ICommentType;
 	content: string;
 	coordinates: number[];
@@ -167,6 +168,7 @@ export interface INodeScores {
 }
 
 export interface ILayer {
+	color?: null | string;
 	comment?: null | string;
 	comments: { [key: string]: IComment };
 	coordinates: number[];

@@ -18,6 +18,7 @@ import {
 } from "../../components/ui/context-menu";
 import type { IComment } from "../../lib/schema/flow/board";
 import { Button } from "../ui/button";
+import { ColorPicker } from "../ui/color-picker";
 import {
 	Dialog,
 	DialogContent,
@@ -45,6 +46,10 @@ export function CommentNode(props: NodeProps<CommentNode>) {
 		open: false,
 		content: props.data.comment.content,
 	});
+	const [colorPickerOpen, setColorPickerOpen] = useState(false);
+	const [currentColor, setCurrentColor] = useState<string | undefined>(
+		props.data.comment.color ?? undefined,
+	);
 
 	const onResizeEnd = useCallback(
 		async (event: ResizeDragEvent, params: ResizeParams) => {
@@ -60,6 +65,22 @@ export function CommentNode(props: NodeProps<CommentNode>) {
 		},
 		[props.data.comment, props.data.onUpsert, props.width, props.height],
 	);
+
+	const onColorChosen = useCallback(async () => {
+		const node = getNodes().find((n) => n.id === props.id);
+		if (!node) return;
+		const comment = node.data.comment as IComment;
+		props.data.onUpsert({
+			...comment,
+			color: currentColor,
+		});
+	}, [
+		props.data.comment,
+		props.data.onUpsert,
+		props.width,
+		props.height,
+		currentColor,
+	]);
 
 	return (
 		<>
@@ -80,7 +101,24 @@ export function CommentNode(props: NodeProps<CommentNode>) {
 					<div
 						key={`${props.id}__node`}
 						className={`bg-card p-1 react-flow__node-default selectable !w-full !h-full focus:ring-2 relative rounded-md group opacity-80 ${props.selected && "!border-primary border-2"}`}
+						style={{
+							backgroundColor: currentColor,
+						}}
 					>
+						{props.selected && (
+							<ColorPicker
+								className="z-50 absolute top-0 left-0 border translate-x-[-120%] "
+								value={currentColor ?? "#ffffff"}
+								onChange={(value) => setCurrentColor(value)}
+								open={colorPickerOpen}
+								onOpenChange={(open) => {
+									setColorPickerOpen(open);
+									if (!open) {
+										onColorChosen();
+									}
+								}}
+							/>
+						)}
 						<Dialog
 							open={edit.open}
 							onOpenChange={(open) => {
@@ -116,7 +154,13 @@ export function CommentNode(props: NodeProps<CommentNode>) {
 							</DialogContent>
 						</Dialog>
 						<div className="text-start">
-							<MarkdownComponent content={props.data.comment.content} />
+							<MarkdownComponent
+								content={
+									props.data.comment.content === ""
+										? "Empty Comment"
+										: props.data.comment.content
+								}
+							/>
 						</div>
 					</div>
 				</ContextMenuTrigger>

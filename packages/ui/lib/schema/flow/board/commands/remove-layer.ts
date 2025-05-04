@@ -9,6 +9,7 @@ export interface IRemoveLayer {
 }
 
 export interface ILayer {
+	color?: null | string;
 	comment?: null | string;
 	comments: { [key: string]: IComment };
 	coordinates: number[];
@@ -25,6 +26,7 @@ export interface ILayer {
 
 export interface IComment {
 	author?: null | string;
+	color?: null | string;
 	comment_type: ICommentType;
 	content: string;
 	coordinates: number[];

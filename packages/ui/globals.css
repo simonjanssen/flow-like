@@ -257,4 +257,52 @@
 			text-shadow: 0 0 15px hsl(var(--primary, 0.1));
 		}
 	}
+
+	table {
+		margin-top: 0.5rem;
+		width: 100%;
+		border-collapse: collapse;
+		margin-bottom: 1.5rem;
+	}
+
+	thead th {
+		/* muted header row */
+		background-color: hsl(var(--card));
+		color: hsl(var(--card-foreground));
+		padding: 0.35rem 0.65rem;
+		text-align: left;
+		font-weight: 600;
+	}
+
+	tbody tr:nth-child(even) td {
+		/* zebra stripe */
+		background-color: hsl(var(--muted) / 0.3);
+	}
+
+	th,
+	td {
+		padding: 0.35rem 0.65rem;
+		border: 1px solid hsl(var(--border));
+		background-color: hsl(var(--background) / 0.3);
+	}
+
+	td.bg-primary {
+		background-color: hsl(var(--primary) / 0.1);
+		color: hsl(var(--primary-foreground));
+	}
+
+	td.bg-secondary {
+		background-color: hsl(var(--secondary) / 0.1);
+		color: hsl(var(--secondary-foreground));
+	}
+
+	td.bg-tertiary {
+		background-color: hsl(var(--tertiary) / 0.1);
+		color: hsl(var(--tertiary-foreground));
+	}
+
+	td.bg-destructive {
+		background-color: hsl(var(--destructive) / 0.1);
+		color: hsl(var(--destructive-foreground));
+	}
 }

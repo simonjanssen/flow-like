@@ -53,6 +53,7 @@ import {
 	upsertPinCommand,
 } from "../../lib";
 import { logLevelFromNumber } from "../../lib/log-level";
+import type { IComment, ILayer } from "../../lib/schema/flow/board";
 import { ILayerType } from "../../lib/schema/flow/board/commands/upsert-layer";
 import type { INode } from "../../lib/schema/flow/node";
 import { type IPin, IVariableType } from "../../lib/schema/flow/pin";
@@ -81,7 +82,6 @@ import { FlowPinAction } from "./flow-node/flow-node-pin-action";
 import { FlowNodeRenameMenu } from "./flow-node/flow-node-rename-menu";
 import { FlowPin } from "./flow-pin";
 import { typeToColor } from "./utils";
-import type { IComment, ILayer } from "../../lib/schema/flow/board";
 
 export interface IPinAction {
 	action: "create";
@@ -843,7 +843,7 @@ function FlowNode(props: NodeProps<FlowNode>) {
 				if (isLayer) return isLayer.id;
 				const isComment = node.data.comment as IComment;
 				if (isComment) return isComment.id;
-				return ""
+				return "";
 			});
 			const command = upsertLayerCommand({
 				layer: {

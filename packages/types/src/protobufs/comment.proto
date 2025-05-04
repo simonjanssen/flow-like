@@ -22,4 +22,5 @@ message Comment {
   optional string layer = 9;
   optional float width = 10;
   optional float height = 11;
+  optional string color = 12;
 }

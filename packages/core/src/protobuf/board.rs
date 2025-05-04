@@ -198,6 +198,7 @@ impl ToProto<flow_like_types::proto::Layer> for Layer {
                 .collect(),
             comment: self.comment.clone(),
             error: self.error.clone(),
+            color: self.color.clone(),
         }
     }
 }
@@ -232,6 +233,7 @@ impl FromProto<flow_like_types::proto::Layer> for Layer {
                 .collect(),
             comment: proto.comment,
             error: proto.error,
+            color: proto.color,
         }
     }
 }

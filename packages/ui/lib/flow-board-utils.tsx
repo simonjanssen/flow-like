@@ -262,7 +262,8 @@ export function parseBoard(
 
 	const activeLayer = new Set();
 	for (const layer of Object.values(board.layers)) {
-		const parentLayer = (layer.parent_id ?? "") === "" ? undefined : layer.parent_id;
+		const parentLayer =
+			(layer.parent_id ?? "") === "" ? undefined : layer.parent_id;
 		if (parentLayer !== currentLayer) continue;
 
 		const lookup: Record<string, INode> = {};
@@ -301,7 +302,7 @@ export function parseBoard(
 						layer_nodes: [],
 						layers: [],
 						nodes: [],
-						preserve_nodes
+						preserve_nodes,
 					});
 					await executeCommand(command, false);
 				},
@@ -348,7 +349,8 @@ export function parseBoard(
 	}
 
 	for (const comment of Object.values(board.comments)) {
-		const commentLayer = (comment.layer ?? "") === "" ? undefined : comment.layer;
+		const commentLayer =
+			(comment.layer ?? "") === "" ? undefined : comment.layer;
 		if (commentLayer !== currentLayer) continue;
 		const hash = hashNode(comment);
 		const oldNode = oldNodesMap.get(hash);
@@ -426,16 +428,31 @@ export function handleCopy(
 		}
 	}
 
-	const selected = new Set(nodes.filter(node => node.selected).map(node => node.id))
-	const selectedNodes = Object.values(board.nodes).filter(node => selected.has(node.id) || foundLayer.has(node.layer ?? "")).map(node => serializeNode({
-		...node,
-		layer: ((node.layer?? "") === (currentLayer ?? "")) ? undefined : node.layer,
-	}))
+	const selected = new Set(
+		nodes.filter((node) => node.selected).map((node) => node.id),
+	);
+	const selectedNodes = Object.values(board.nodes)
+		.filter((node) => selected.has(node.id) || foundLayer.has(node.layer ?? ""))
+		.map((node) =>
+			serializeNode({
+				...node,
+				layer:
+					(node.layer ?? "") === (currentLayer ?? "") ? undefined : node.layer,
+			}),
+		);
 
-	const selectedComments = Object.values(board.comments).filter(comment => selected.has(comment.id) || foundLayer.has(comment.layer ?? "")).map(comment => ({
-		...comment,
-		layer: ((comment.layer?? "") === (currentLayer ?? "")) ? undefined : comment.layer,
-	}))
+	const selectedComments = Object.values(board.comments)
+		.filter(
+			(comment) =>
+				selected.has(comment.id) || foundLayer.has(comment.layer ?? ""),
+		)
+		.map((comment) => ({
+			...comment,
+			layer:
+				(comment.layer ?? "") === (currentLayer ?? "")
+					? undefined
+					: comment.layer,
+		}));
 
 	try {
 		navigator.clipboard.writeText(

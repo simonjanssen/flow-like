@@ -35,6 +35,7 @@ impl ToProto<flow_like_types::proto::Comment> for Comment {
             layer: self.layer.clone(),
             width: self.width,
             height: self.height,
+            color: self.color.clone(),
         }
     }
 }
@@ -58,6 +59,7 @@ impl FromProto<flow_like_types::proto::Comment> for Comment {
             layer: proto.layer,
             width: proto.width,
             height: proto.height,
+            color: proto.color,
         }
     }
 }

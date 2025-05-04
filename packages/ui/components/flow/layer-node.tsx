@@ -1,9 +1,6 @@
 "use client";
 
-import {
-	type Node,
-	type NodeProps
-} from "@xyflow/react";
+import type { Node, NodeProps } from "@xyflow/react";
 import {
 	FoldHorizontalIcon,
 	MessageSquareIcon,
@@ -20,10 +17,7 @@ import {
 	ContextMenuTrigger,
 } from "../../components/ui/context-menu";
 import type { INode } from "../../lib";
-import {
-	type ILayer,
-	IPinType
-} from "../../lib/schema/flow/board";
+import { type ILayer, IPinType } from "../../lib/schema/flow/board";
 import { FlowPin } from "./flow-pin";
 
 export type LayerNode = Node<

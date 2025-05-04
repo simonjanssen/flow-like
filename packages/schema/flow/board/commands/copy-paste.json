@@ -390,6 +390,9 @@
 				},
 				"layer": {
 					"type": ["string", "null"]
+				},
+				"color": {
+					"type": ["string", "null"]
 				}
 			}
 		},
@@ -485,6 +488,9 @@
 					"type": ["string", "null"]
 				},
 				"error": {
+					"type": ["string", "null"]
+				},
+				"color": {
 					"type": ["string", "null"]
 				}
 			}

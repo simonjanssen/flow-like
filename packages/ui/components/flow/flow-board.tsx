@@ -924,7 +924,7 @@ export function FlowBoard({
 		});
 		const new_comment: IComment = {
 			comment_type: ICommentType.Text,
-			content: "New Comment",
+			content: "",
 			coordinates: [location.x, location.y, 0],
 			id: createId(),
 			timestamp: {
@@ -940,7 +940,7 @@ export function FlowBoard({
 		});
 
 		await executeCommand(command);
-	}, [currentLayer, clickPosition, executeCommand])
+	}, [currentLayer, clickPosition, executeCommand]);
 
 	return (
 		<div className="min-h-dvh h-dvh max-h-dvh w-full flex-1 flex-grow">

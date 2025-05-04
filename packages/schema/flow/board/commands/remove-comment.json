@@ -57,6 +57,9 @@
 				},
 				"layer": {
 					"type": ["string", "null"]
+				},
+				"color": {
+					"type": ["string", "null"]
 				}
 			}
 		},
