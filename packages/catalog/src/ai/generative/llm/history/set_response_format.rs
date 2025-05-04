@@ -93,14 +93,9 @@ impl NodeLogic for SetHistoryResponseFormatNode {
     }
 
     async fn on_update(&self, node: &mut Node, board: Arc<Board>) {
-        let match_type = node.match_type("response_format", board.clone(), None, None);
-
-        if let Err(err) = match_type {
-            eprintln!("Error: {:?}", err);
-            return;
-        }
-
-        let match_type = match_type.unwrap();
+        let match_type = node
+            .match_type("response_format", board.clone(), None, None)
+            .unwrap_or(VariableType::Generic);
         if match_type != VariableType::String && match_type != VariableType::Struct {
             if let Some(pin) = node.get_pin_mut_by_name("response_format") {
                 pin.depends_on.clear();

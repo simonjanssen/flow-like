@@ -115,42 +115,18 @@ impl NodeLogic for LoopNode {
     }
 
     async fn on_update(&self, node: &mut Node, board: Arc<Board>) {
-        let match_type = node.match_type("array", board.clone(), None, Some(ValueType::Array));
-
-        if match_type.is_err() {
-            eprintln!("Error: {:?}", match_type.err());
-        }
-        let pin = node.get_pin_by_name("array").unwrap();
-        let pin_var = pin.value_type.clone();
-        if pin_var != ValueType::Array && pin_var != ValueType::HashSet {
-            if let Some(node) = node.get_pin_mut_by_name("array") {
-                node.value_type = ValueType::Array;
-                node.depends_on.clear();
-            }
-
-            let _res = node.match_type("array", board.clone(), None, Some(ValueType::Array));
-        }
-
-        let match_type = node.match_type("value", board, Some(ValueType::Normal), None);
-
-        if match_type.is_err() {
-            eprintln!("Error: {:?}", match_type.err());
-        }
-
-        let array_pin = node.get_pin_by_name("array").unwrap().clone();
-        if array_pin.data_type != VariableType::Generic {
-            let pin = node.get_pin_mut_by_name("value").unwrap();
-            pin.data_type = array_pin.data_type.clone();
-            pin.schema = array_pin.schema.clone();
-            return;
-        }
-
-        let value_pin = node.get_pin_by_name("value").unwrap().clone();
-        if value_pin.data_type != VariableType::Generic {
-            let pin = node.get_pin_mut_by_name("array").unwrap();
-            pin.data_type = value_pin.data_type.clone();
-            pin.schema = value_pin.schema.clone();
-            return;
-        }
+        let _ = node.match_type(
+            "array",
+            board.clone(),
+            Some(ValueType::Array),
+            Some(ValueType::Array),
+        );
+        let _ = node.match_type(
+            "value",
+            board,
+            Some(ValueType::Normal),
+            Some(ValueType::Normal),
+        );
+        node.harmonize_type(vec!["array", "value"], true);
     }
 }

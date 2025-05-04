@@ -193,6 +193,51 @@ impl Node {
         self.scores.as_mut().unwrap()
     }
 
+    pub fn harmonize_schema(&mut self, pins: Vec<&str>) -> Option<String> {
+        let schema = match self
+            .pins
+            .iter()
+            .find(|(_, pin)| pins.contains(&pin.name.as_str()) && pin.schema.is_some())
+        {
+            Some((_, pin)) => pin.schema.clone(),
+            None => return None,
+        };
+
+        for pin in self.pins.values_mut() {
+            if pins.contains(&pin.name.as_str()) {
+                pin.schema = schema.clone();
+            }
+        }
+
+        schema
+    }
+
+    pub fn harmonize_type(&mut self, pins: Vec<&str>, schema: bool) -> Option<VariableType> {
+        let mut found_schema = None;
+        let variable_type = match self.pins.iter().find(|(_, pin)| {
+            pins.contains(&pin.name.as_str()) && pin.data_type != VariableType::Generic
+        }) {
+            Some((_, pin)) => {
+                if schema {
+                    found_schema = pin.schema.clone();
+                }
+                pin.data_type.clone()
+            }
+            None => return None,
+        };
+
+        for pin in self.pins.values_mut() {
+            if pins.contains(&pin.name.as_str()) {
+                pin.data_type = variable_type.clone();
+                if let Some(schema) = &found_schema {
+                    pin.schema = Some(schema.clone());
+                }
+            }
+        }
+
+        Some(variable_type)
+    }
+
     pub fn match_type(
         &mut self,
         pin_name: &str,
@@ -225,10 +270,11 @@ impl Node {
             match pin {
                 Some(pin) => {
                     mutable_pin.data_type = pin.data_type.clone();
+                    mutable_pin.schema = pin.schema.clone();
+                    found_type = pin.data_type.clone();
+
                     if value_type.is_none() {
                         mutable_pin.value_type = pin.value_type.clone();
-                        mutable_pin.schema = pin.schema.clone();
-                        found_type = pin.data_type.clone();
                     }
                 }
                 None => {

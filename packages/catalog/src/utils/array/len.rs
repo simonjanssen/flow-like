@@ -52,6 +52,6 @@ impl NodeLogic for ArrayLengthNode {
     }
 
     async fn on_update(&self, node: &mut Node, board: Arc<Board>) {
-        let _match_type = node.match_type("array", board, Some(ValueType::Array), None);
+        let _ = node.match_type("array", board, Some(ValueType::Array), None);
     }
 }

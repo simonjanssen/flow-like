@@ -32,6 +32,11 @@ impl ToProto<flow_like_types::proto::Comment> for Comment {
             coord_x: self.coordinates.0,
             coord_y: self.coordinates.1,
             coord_z: self.coordinates.2,
+            layer: self.layer.clone(),
+            width: self.width,
+            height: self.height,
+            color: self.color.clone(),
+            z_index: self.z_index,
         }
     }
 }
@@ -52,6 +57,11 @@ impl FromProto<flow_like_types::proto::Comment> for Comment {
                 .map(|t| SystemTime::try_from(t).unwrap_or(SystemTime::UNIX_EPOCH))
                 .unwrap_or(SystemTime::UNIX_EPOCH),
             coordinates: (proto.coord_x, proto.coord_y, proto.coord_z),
+            layer: proto.layer,
+            width: proto.width,
+            height: proto.height,
+            color: proto.color,
+            z_index: proto.z_index,
         }
     }
 }

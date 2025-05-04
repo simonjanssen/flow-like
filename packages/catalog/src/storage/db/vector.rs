@@ -24,6 +24,7 @@ pub mod insert;
 pub mod list;
 pub mod optimize;
 pub mod purge;
+pub mod schema;
 pub mod upsert;
 pub mod vector_search;
 

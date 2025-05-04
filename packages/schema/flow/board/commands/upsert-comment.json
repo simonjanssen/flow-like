@@ -16,6 +16,9 @@
 					"type": "null"
 				}
 			]
+		},
+		"current_layer": {
+			"type": ["string", "null"]
 		}
 	},
 	"definitions": {
@@ -56,6 +59,24 @@
 					],
 					"maxItems": 3,
 					"minItems": 3
+				},
+				"width": {
+					"type": ["number", "null"],
+					"format": "float"
+				},
+				"height": {
+					"type": ["number", "null"],
+					"format": "float"
+				},
+				"layer": {
+					"type": ["string", "null"]
+				},
+				"color": {
+					"type": ["string", "null"]
+				},
+				"z_index": {
+					"type": ["integer", "null"],
+					"format": "int32"
 				}
 			}
 		},

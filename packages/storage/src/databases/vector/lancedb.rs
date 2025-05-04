@@ -353,6 +353,13 @@ impl VectorStore for LanceDBVectorStore {
         let table = self.table.clone().ok_or(anyhow!("Table not initialized"))?;
         Ok(table.count_rows(filter).await?)
     }
+
+    async fn schema(&self) -> Result<arrow_schema::Schema> {
+        let table = self.table.clone().ok_or(anyhow!("Table not initialized"))?;
+        let schema = table.schema().await?;
+        let schema = schema.as_ref().clone();
+        Ok(schema)
+    }
 }
 
 #[cfg(test)]

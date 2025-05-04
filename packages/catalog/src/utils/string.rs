@@ -11,6 +11,7 @@ pub mod replace;
 pub mod similarity;
 pub mod split;
 pub mod starts_with;
+pub mod template;
 pub mod to_lowercase;
 pub mod to_uppercase;
 pub mod trim;
@@ -33,6 +34,7 @@ pub async fn register_functions() -> Vec<Arc<dyn NodeLogic>> {
         Arc::new(ends_with::StringEndsWithNode::default()),
         Arc::new(utf_8_lossy::ParseUtf8LossyNode::default()),
         Arc::new(contains::StringContainsNode::default()),
+        Arc::new(template::TemplateStringNode::default()),
     ];
 
     items.append(&mut similarity::register_functions().await);

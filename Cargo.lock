@@ -1244,6 +1244,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
+ "bytemuck",
  "dotenv",
  "flow-like",
  "hyper 1.6.0",
@@ -1675,9 +1676,9 @@ checksum = "5ce89b21cab1437276d2650d57e971f9d548a2d9037cc231abdc0562b97498ce"
 
 [[package]]
 name = "bytemuck"
-version = "1.18.0"
+version = "1.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94bbb0ad554ad961ddc5da507a12a29b14e4ae5bda06b19f575a3e6079d2e2ae"
+checksum = "9134a6ef01ce4b366b50689c94f82c14bc72bc5d0386829828a2e2752ef7958c"
 dependencies = [
  "bytemuck_derive",
 ]
@@ -2441,9 +2442,9 @@ dependencies = [
 
 [[package]]
 name = "crossbeam-channel"
-version = "0.5.14"
+version = "0.5.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06ba6d68e24814cb8de6bb986db8222d3a027d15872cabc0d18817bc3c0e4471"
+checksum = "82b8f8f868b36967f9606790d1903570de9ceaf870a7bf9fbbd3016d636a2cb2"
 dependencies = [
  "crossbeam-utils",
 ]
@@ -3845,6 +3846,7 @@ dependencies = [
  "mime_guess",
  "mp4ameta",
  "num_cpus",
+ "once_cell",
  "pdf",
  "portpicker",
  "rayon",
@@ -3948,8 +3950,11 @@ dependencies = [
  "arrow-array",
  "arrow-schema",
  "blake3",
+ "crossbeam-channel",
  "flow-like-types",
  "futures",
+ "futures-channel",
+ "futures-util",
  "lancedb",
  "object_store",
  "serde",
@@ -3969,6 +3974,7 @@ dependencies = [
  "futures",
  "image",
  "mime_guess",
+ "minijinja",
  "prost",
  "prost-build",
  "prost-types",
@@ -6807,6 +6813,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "minijinja"
+version = "2.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "98642a6dfca91122779a307b77cd07a4aa951fbe32232aaf5bad9febc66be754"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "minimal-lexical"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7680,9 +7695,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.20.3"
+version = "1.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "945462a4b81e43c4e3ba96bd7b49d834c6f61198356aa858733bc4acf3cbe62e"
+checksum = "42f5e15c9953c5e4ccceeb2e7382a716482c34515315f7b03532b8b4e8393d2d"
 
 [[package]]
 name = "oneshot"

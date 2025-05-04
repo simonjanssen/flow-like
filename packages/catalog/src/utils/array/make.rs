@@ -50,12 +50,6 @@ impl NodeLogic for MakeArrayNode {
     }
 
     async fn on_update(&self, node: &mut Node, board: Arc<Board>) {
-        let match_type = node
-            .match_type("array_out", board, Some(ValueType::Array), None)
-            .unwrap_or(VariableType::Generic);
-
-        if match_type != VariableType::Generic {
-            node.get_pin_mut_by_name("array_out").unwrap().data_type = match_type;
-        }
+        let _ = node.match_type("array_out", board, Some(ValueType::Array), None);
     }
 }

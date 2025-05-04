@@ -6,6 +6,7 @@ pub mod float;
 pub mod int;
 pub mod json;
 pub mod math;
+pub mod set;
 pub mod string;
 pub mod types;
 pub mod vector;
@@ -22,6 +23,7 @@ pub async fn register_functions() -> Vec<Arc<dyn NodeLogic>> {
     registry.append(&mut env::register_functions().await);
     registry.append(&mut string::register_functions().await);
     registry.append(&mut array::register_functions().await);
+    registry.append(&mut set::register_functions().await);
     registry.append(&mut vector::register_functions().await);
     registry.append(&mut float::register_functions().await);
     registry.append(&mut int::register_functions().await);

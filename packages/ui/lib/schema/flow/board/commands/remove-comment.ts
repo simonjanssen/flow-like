@@ -5,11 +5,16 @@ export interface IRemoveComment {
 
 export interface IComment {
 	author?: null | string;
+	color?: null | string;
 	comment_type: ICommentType;
 	content: string;
 	coordinates: number[];
+	height?: number | null;
 	id: string;
+	layer?: null | string;
 	timestamp: ISystemTime;
+	width?: number | null;
+	z_index?: number | null;
 	[property: string]: any;
 }
 
