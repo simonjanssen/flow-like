@@ -127,11 +127,9 @@ impl Command for CopyPasteCommand {
 
             if new_comment.layer.is_none() || new_comment.layer == Some("".to_string()) {
                 new_comment.layer = self.current_layer.clone();
-            } else {
-                if let Some(layer_id) = new_comment.layer.clone() {
-                    if let Some(new_layer_id) = layer_translation.get(&layer_id) {
-                        new_comment.layer = Some(new_layer_id.clone());
-                    }
+            } else if let Some(layer_id) = new_comment.layer.clone() {
+                if let Some(new_layer_id) = layer_translation.get(&layer_id) {
+                    new_comment.layer = Some(new_layer_id.clone());
                 }
             }
 
@@ -166,11 +164,9 @@ impl Command for CopyPasteCommand {
 
             if new_node.layer.is_none() || new_node.layer == Some("".to_string()) {
                 new_node.layer = self.current_layer.clone();
-            } else {
-                if let Some(layer_id) = new_node.layer.clone() {
-                    if let Some(new_layer_id) = layer_translation.get(&layer_id) {
-                        new_node.layer = Some(new_layer_id.clone());
-                    }
+            } else if let Some(layer_id) = new_node.layer.clone() {
+                if let Some(new_layer_id) = layer_translation.get(&layer_id) {
+                    new_node.layer = Some(new_layer_id.clone());
                 }
             }
 
