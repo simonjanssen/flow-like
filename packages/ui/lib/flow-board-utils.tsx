@@ -267,13 +267,13 @@ export function parseBoard(
 	}
 
 	const activeLayer = new Set();
-	for (const layer of Object.values(board.layers)) {
+	if(board.layers) for (const layer of Object.values(board.layers)) {
 		const parentLayer =
 			(layer.parent_id ?? "") === "" ? undefined : layer.parent_id;
 		if (parentLayer !== currentLayer) continue;
 
 		const lookup: Record<string, INode> = {};
-		for (const pin of Object.values(layer.pins)) {
+		if(layer.pins) for (const pin of Object.values(layer.pins)) {
 			const [_, node] = cache.get(pin.id) || [];
 			if (node) lookup[pin.id] = node;
 		}

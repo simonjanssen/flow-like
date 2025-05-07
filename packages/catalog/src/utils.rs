@@ -10,6 +10,7 @@ pub mod set;
 pub mod string;
 pub mod types;
 pub mod vector;
+pub mod csv;
 
 use flow_like::flow::node::NodeLogic;
 use std::sync::Arc;
@@ -27,6 +28,7 @@ pub async fn register_functions() -> Vec<Arc<dyn NodeLogic>> {
     registry.append(&mut vector::register_functions().await);
     registry.append(&mut float::register_functions().await);
     registry.append(&mut int::register_functions().await);
+    registry.append(&mut csv::register_functions().await);
     registry.push(Arc::new(math::eval::EvalNode::default()));
     registry
 }

@@ -64,9 +64,8 @@ impl NodeLogic for PushArrayNode {
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
         let array_in: Vec<Value> = context.evaluate_pin("array_in").await?;
         let value: Value = context.evaluate_pin("value").await?;
-        let mut array_out = array_in.clone();
-        array_out.push(value);
-        context.set_pin_value("array_out", json!(array_out)).await?;
+        array_in.push(value);
+        context.set_pin_value("array_out", json!(array_in)).await?;
         context.activate_exec_pin("exec_out").await?;
         Ok(())
     }

@@ -1215,7 +1215,8 @@ export function FlowBoard({
 										nodes={nodes}
 										nodeTypes={nodeTypes}
 										edges={edges}
-										maxZoom={5}
+										maxZoom={3}
+										minZoom={0.1}
 										onNodeDoubleClick={onNodeDoubleClick}
 										onNodesChange={onNodesChangeIntercept}
 										onEdgesChange={onEdgesChange}
