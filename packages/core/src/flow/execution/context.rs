@@ -7,7 +7,7 @@ use crate::{
         board::ExecutionStage,
         node::{Node, NodeState},
         pin::PinType,
-        utils::evaluate_pin_value,
+        utils::{evaluate_pin_value, evaluate_pin_value_reference},
         variable::{Variable, VariableType},
     },
     profile::Profile,
@@ -344,6 +344,15 @@ impl ExecutionContext {
         let pin = self.get_pin_by_name(name).await?;
         let value = evaluate_pin_value(pin).await?;
         let value = from_value(value)?;
+        Ok(value)
+    }
+
+    pub async fn evaluate_pin_to_ref(
+        &self,
+        name: &str,
+    ) -> flow_like_types::Result<Arc<Mutex<Value>>> {
+        let pin = self.get_pin_by_name(name).await?;
+        let value = evaluate_pin_value_reference(&Some(pin)).await?;
         Ok(value)
     }
 

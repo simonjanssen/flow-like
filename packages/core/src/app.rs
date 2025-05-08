@@ -171,12 +171,7 @@ impl App {
     }
 
     pub async fn delete_board(&mut self, board_id: &str) -> flow_like_types::Result<()> {
-        let board_index = self
-            .boards
-            .iter()
-            .position(|x| x == board_id)
-            .ok_or(flow_like_types::anyhow!("Board not found"))?;
-        let board_id = self.boards.remove(board_index);
+        self.boards.retain(|b| b != board_id);
         let board_dir = Path::from("apps")
             .child(self.id.clone())
             .child(format!("{}.board", board_id.clone()));
