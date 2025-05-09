@@ -887,7 +887,7 @@ function FlowNode(props: NodeProps<FlowNode>) {
 				props.data.boardId,
 			]);
 		},
-		[backend, flow],
+		[props.data.node, invalidate, pushCommands, flow, backend],
 	);
 
 	const deleteNodes = useCallback(async () => {
@@ -909,7 +909,7 @@ function FlowNode(props: NodeProps<FlowNode>) {
 		setIsOpen(false);
 		await pushCommands(result);
 		await invalidate(backend.getBoard, [props.data.appId, props.data.boardId]);
-	}, [backend, invalidate, props.data.node]);
+	}, [props.data.node, invalidate, pushCommands, flow, backend]);
 
 	const orderNodes = useCallback(
 		async (type: "align" | "justify", dir: "start" | "end" | "center") => {
@@ -974,7 +974,7 @@ function FlowNode(props: NodeProps<FlowNode>) {
 				props.data.boardId,
 			]);
 		},
-		[props.data.node],
+		[props.data.node, invalidate, pushCommands, flow, backend],
 	);
 
 	if (isOpen || isHovered) {

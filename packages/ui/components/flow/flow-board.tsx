@@ -8,6 +8,7 @@ import {
 	type Connection,
 	Controls,
 	type Edge,
+	type Node,
 	type FinalConnectionState,
 	type InternalNode,
 	type IsValidConnection,
@@ -15,11 +16,13 @@ import {
 	type OnEdgesChange,
 	type OnNodesChange,
 	ReactFlow,
+	type ReactFlowProps,
 	addEdge,
 	applyEdgeChanges,
 	applyNodeChanges,
 	reconnectEdge,
 	useEdgesState,
+	useKeyPress,
 	useNodesState,
 	useReactFlow,
 } from "@xyflow/react";
@@ -131,6 +134,8 @@ export function FlowBoard({
 	const logPanelRef = useRef<ImperativePanelHandle>(null);
 	const varPanelRef = useRef<ImperativePanelHandle>(null);
 	const runsPanelRef = useRef<ImperativePanelHandle>(null);
+
+	const shiftPressed = useKeyPress('Shift');
 
 	const { resolvedTheme } = useTheme();
 
@@ -966,6 +971,48 @@ export function FlowBoard({
 		await executeCommand(command);
 	}, [currentLayer, clickPosition, executeCommand]);
 
+	const onNodeDrag = useCallback((event: any, node: Node, nodes: Node[]) => {
+		if(shiftPressed) {
+			nodes.forEach((node) => {
+				if (node.type === "layerNode") {
+					const layerData = node.data.layer as ILayer;
+					const diffX = Math.abs(node.position.x - layerData.coordinates[0]);
+					const diffY = Math.abs(node.position.y - layerData.coordinates[1]);
+					if(diffX > diffY) {
+						node.position.y = layerData.coordinates[1];
+						return;
+					}
+					node.position.x = layerData.coordinates[0];
+					return;
+				}
+
+				if (node.type === "commentNode") {
+					const commentData = node.data.comment as IComment;
+					const diffX = Math.abs(node.position.x - commentData.coordinates[0]);
+					const diffY = Math.abs(node.position.y - commentData.coordinates[1]);
+					if(diffX > diffY) {
+						node.position.y = commentData.coordinates[1];
+						return;
+					}
+					node.position.x = commentData.coordinates[0];
+					return;
+				}
+
+				if (node.type === "node") {
+					const nodeData = node.data.node as INode
+					if (!nodeData.coordinates) return;
+					const diffX = Math.abs(node.position.x - nodeData.coordinates[0]);
+					const diffY = Math.abs(node.position.y - nodeData.coordinates[1]);
+					if(diffX > diffY) {
+						node.position.y = nodeData.coordinates[1];
+						return;
+					}
+					node.position.x = nodeData.coordinates[0];
+				}
+			})
+		}
+	}, [shiftPressed])
+
 	return (
 		<div className="min-h-dvh h-dvh max-h-dvh w-full flex-1 flex-grow">
 			<div className="flex items-center justify-center absolute translate-x-[-50%] mt-5 left-[50dvw] z-40">
@@ -1215,6 +1262,7 @@ export function FlowBoard({
 										onNodesChange={onNodesChangeIntercept}
 										onEdgesChange={onEdgesChange}
 										onNodeDragStop={onNodeDragStop}
+										onNodeDrag={onNodeDrag}
 										isValidConnection={isValidConnectionCB}
 										onConnect={onConnect}
 										onReconnect={onReconnect}
