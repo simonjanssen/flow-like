@@ -83,7 +83,7 @@ impl NodeLogic for CreateLocalDatabaseNode {
     async fn get_node(&self, _app_state: &FlowLikeState) -> Node {
         let mut node = Node::new(
             "open_local_db",
-            "Open Local Database",
+            "Open Database",
             "Open a local database",
             "Database/Local",
         );

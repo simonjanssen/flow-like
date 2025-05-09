@@ -116,7 +116,7 @@ pub trait VectorStore: Send + Sync {
     /// # Returns
     ///
     /// A result indicating success or an error.
-    async fn index(&self, column: &str, fts: bool) -> Result<()>;
+    async fn index(&self, column: &str, index_type: Option<&str>) -> Result<()>;
 
     /// Optimize the vector store (implementation-specific).
     ///
