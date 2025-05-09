@@ -54,8 +54,8 @@ impl NodeLogic for IndexLocalDatabaseNode {
             vec![
                 "BTREE".to_string(),
                 "BITMAP".to_string(),
-                "LABEL_LIST".to_string(),
-                "FULL_TEXT".to_string(),
+                "LABEL LIST".to_string(),
+                "FULL TEXT".to_string(),
                 "VECTOR".to_string(),
                 "AUTO".to_string()
             ]

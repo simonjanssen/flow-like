@@ -15,11 +15,14 @@ import {
 } from "framer-motion";
 import { memo, useRef, useState } from "react";
 import { cn } from "../../lib/utils";
+import { Separator } from "../ui";
 
 type IFlowDockItem = {
 	title: string;
 	icon: React.ReactNode;
 	onClick: () => Promise<void>;
+	separator?: string;
+	highlight?: boolean;
 };
 
 export const FlowDock = memo(
@@ -116,7 +119,15 @@ const FlowDockDesktop = ({
 			)}
 		>
 			{items.map((item) => (
-				<IconContainer mouseX={mouseX} key={item.title} {...item} />
+				<>
+					{item.separator === "left" && (
+						<div className="h-10 w-[2px] rounded-full bg-gray-200 dark:bg-neutral-800" />
+					)}
+					<IconContainer mouseX={mouseX} key={item.title} {...item} />
+					{item.separator === "right" && (
+						<div className="h-10 w-[2px] rounded-full bg-gray-200 dark:bg-neutral-800" />
+					)}
+				</>
 			))}
 		</motion.div>
 	);
@@ -126,10 +137,12 @@ function IconContainer({
 	mouseX,
 	title,
 	icon,
+	highlight,
 	onClick,
 }: Readonly<{
 	mouseX: MotionValue;
 	title: string;
+	highlight?: boolean;
 	icon: React.ReactNode;
 	onClick: () => Promise<void>;
 }>) {
@@ -186,7 +199,7 @@ function IconContainer({
 				style={{ width, height }}
 				onMouseEnter={() => setHovered(true)}
 				onMouseLeave={() => setHovered(false)}
-				className="aspect-square rounded-full bg-gray-200 dark:bg-neutral-800 flex items-center justify-center relative"
+				className={`aspect-square rounded-full bg-gray-200 dark:bg-neutral-800 flex items-center justify-center relative ${highlight ? "!bg-primary !text-primary-foreground" : ""}`}
 			>
 				<motion.div
 					style={{ width: widthIcon, height: heightIcon }}

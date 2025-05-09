@@ -336,10 +336,10 @@ impl VectorStore for LanceDBVectorStore {
         let table = self.table.clone().ok_or(anyhow!("Table not initialized"))?;
         let index_type = index_type.unwrap_or("AUTO");
        let index_type = match index_type {
-            "FULL_TEXT" => Index::FTS(FtsIndexBuilder::default()),
+            "FULL TEXT" => Index::FTS(FtsIndexBuilder::default()),
             "BTREE" => Index::BTree(BTreeIndexBuilder::default()),
             "BITMAP" => Index::Bitmap(BitmapIndexBuilder::default()),
-            "LABEL_LIST" => Index::LabelList(LabelListIndexBuilder::default()),
+            "LABEL LIST" => Index::LabelList(LabelListIndexBuilder::default()),
             _ => Index::Auto,
         };
 
