@@ -8,6 +8,7 @@ import {
 	type Connection,
 	Controls,
 	type Edge,
+	type Node,
 	type FinalConnectionState,
 	type InternalNode,
 	type IsValidConnection,
@@ -15,11 +16,13 @@ import {
 	type OnEdgesChange,
 	type OnNodesChange,
 	ReactFlow,
+	type ReactFlowProps,
 	addEdge,
 	applyEdgeChanges,
 	applyNodeChanges,
 	reconnectEdge,
 	useEdgesState,
+	useKeyPress,
 	useNodesState,
 	useReactFlow,
 } from "@xyflow/react";
@@ -27,10 +30,12 @@ import "@xyflow/react/dist/style.css";
 import {
 	ArrowBigLeftDashIcon,
 	HistoryIcon,
+	LayersIcon,
 	NotebookPenIcon,
 	PlayCircleIcon,
 	Redo2Icon,
 	ScrollIcon,
+	SquareChevronUpIcon,
 	Undo2Icon,
 	VariableIcon,
 	XIcon,
@@ -60,7 +65,6 @@ import { useInvalidateInvoke, useInvoke } from "../../hooks/use-invoke";
 import {
 	type IGenericCommand,
 	type ILogMetadata,
-	IValueType,
 	addNodeCommand,
 	connectPinsCommand,
 	disconnectPinsCommand,
@@ -108,7 +112,6 @@ import {
 	Separator,
 	Textarea,
 } from "../ui";
-import { FlowBreadCrumb } from "./flow-breadcrumb";
 import { useUndoRedo } from "./flow-history";
 import { FlowRuns } from "./flow-runs";
 import { LayerNode } from "./layer-node";
@@ -116,7 +119,6 @@ export function FlowBoard({
 	appId,
 	boardId,
 }: Readonly<{ appId: string; boardId: string }>) {
-	const invalidate = useInvalidateInvoke();
 	const { pushCommand, pushCommands, redo, undo } = useUndoRedo(appId, boardId);
 	const router = useRouter();
 	const backend = useBackend();
@@ -133,13 +135,15 @@ export function FlowBoard({
 	const varPanelRef = useRef<ImperativePanelHandle>(null);
 	const runsPanelRef = useRef<ImperativePanelHandle>(null);
 
+	const shiftPressed = useKeyPress('Shift');
+
 	const { resolvedTheme } = useTheme();
 
 	const catalog: UseQueryResult<INode[]> = useInvoke(backend.getCatalog, []);
 	const board = useInvoke(backend.getBoard, [appId, boardId], boardId !== "");
-	const openBoards = useInvoke(backend.getOpenBoards, []);
 	const currentProfile = useInvoke(backend.getSettingsProfile, []);
 	const { addRun, removeRun, pushUpdate } = useRunExecutionStore();
+	const { screenToFlowPosition } = useReactFlow();
 
 	const [nodes, setNodes] = useNodesState<any>([]);
 	const [edges, setEdges] = useEdgesState<any>([]);
@@ -147,7 +151,7 @@ export function FlowBoard({
 	const [droppedPin, setDroppedPin] = useState<IPin | undefined>(undefined);
 	const [clickPosition, setClickPosition] = useState({ x: 0, y: 0 });
 	const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-	const [pinCache, setPinCache] = useState<Map<string, [IPin, INode]>>(
+	const [pinCache, setPinCache] = useState<Map<string, [IPin, INode, boolean]>>(
 		new Map(),
 	);
 	const [editBoard, setEditBoard] = useState(false);
@@ -253,6 +257,20 @@ export function FlowBoard({
 		},
 		[currentLayer, setCurrentLayer, setLayerPath, layerPath],
 	);
+
+	const popLayer = useCallback(() => {
+		if (!layerPath) return;
+		const segments = layerPath.split("/");
+		if (segments.length === 1) {
+			setLayerPath(undefined);
+			setCurrentLayer(undefined);
+			return;
+		}
+		const newPath = segments.slice(0, -1).join("/");
+		setLayerPath(newPath);
+		const segment = newPath.split("/").pop();
+		setCurrentLayer(segment);
+	}, [currentLayer, setCurrentLayer, setLayerPath]);
 
 	const executeBoard = useCallback(
 		async (node: INode, payload?: object) => {
@@ -497,7 +515,14 @@ export function FlowBoard({
 				await executeCommand(command);
 			}
 		},
-		[clickPosition, boardId, droppedPin, board.data?.refs, currentLayer],
+		[
+			clickPosition,
+			boardId,
+			droppedPin,
+			board.data?.refs,
+			currentLayer,
+			screenToFlowPosition,
+		],
 	);
 
 	const handleDrop = useCallback(
@@ -634,7 +659,6 @@ export function FlowBoard({
 		}),
 		[],
 	);
-	const { screenToFlowPosition } = useReactFlow();
 
 	const onConnect = useCallback(
 		(params: any) =>
@@ -947,20 +971,51 @@ export function FlowBoard({
 		await executeCommand(command);
 	}, [currentLayer, clickPosition, executeCommand]);
 
+	const onNodeDrag = useCallback((event: any, node: Node, nodes: Node[]) => {
+		if(shiftPressed) {
+			nodes.forEach((node) => {
+				if (node.type === "layerNode") {
+					const layerData = node.data.layer as ILayer;
+					const diffX = Math.abs(node.position.x - layerData.coordinates[0]);
+					const diffY = Math.abs(node.position.y - layerData.coordinates[1]);
+					if(diffX > diffY) {
+						node.position.y = layerData.coordinates[1];
+						return;
+					}
+					node.position.x = layerData.coordinates[0];
+					return;
+				}
+
+				if (node.type === "commentNode") {
+					const commentData = node.data.comment as IComment;
+					const diffX = Math.abs(node.position.x - commentData.coordinates[0]);
+					const diffY = Math.abs(node.position.y - commentData.coordinates[1]);
+					if(diffX > diffY) {
+						node.position.y = commentData.coordinates[1];
+						return;
+					}
+					node.position.x = commentData.coordinates[0];
+					return;
+				}
+
+				if (node.type === "node") {
+					const nodeData = node.data.node as INode
+					if (!nodeData.coordinates) return;
+					const diffX = Math.abs(node.position.x - nodeData.coordinates[0]);
+					const diffY = Math.abs(node.position.y - nodeData.coordinates[1]);
+					if(diffX > diffY) {
+						node.position.y = nodeData.coordinates[1];
+						return;
+					}
+					node.position.x = nodeData.coordinates[0];
+				}
+			})
+		}
+	}, [shiftPressed])
+
 	return (
 		<div className="min-h-dvh h-dvh max-h-dvh w-full flex-1 flex-grow">
-			<div className="absolute top-0 left-0 z-50 mt-2 px-2">
-				<FlowBreadCrumb
-					currentPath={layerPath}
-					layers={board.data?.layers}
-					onAdjustPath={(path) => {
-						setLayerPath(path);
-						const segment = path?.split("/").pop();
-						setCurrentLayer(segment);
-					}}
-				/>
-			</div>
-			<div className="flex items-center justify-center absolute translate-x-[-50%] left-[50dvw] top-5 z-40">
+			<div className="flex items-center justify-center absolute translate-x-[-50%] mt-5 left-[50dvw] z-40">
 				<Dialog
 					open={editBoard}
 					onOpenChange={async (open) => {
@@ -973,7 +1028,7 @@ export function FlowBoard({
 							boardMeta.logLevel as ILogLevel,
 							boardMeta.stage as IExecutionStage,
 						);
-						await openBoards.refetch();
+						board.refetch();
 						setEditBoard(false);
 					}}
 				>
@@ -1066,7 +1121,8 @@ export function FlowBoard({
 				</Dialog>
 				<FlowDock
 					items={[
-						...(typeof parentRegister.boardParents[boardId] === "string"
+						...(typeof parentRegister.boardParents[boardId] === "string" &&
+						!currentLayer
 							? [
 									{
 										icon: <ArrowBigLeftDashIcon />,
@@ -1094,6 +1150,7 @@ export function FlowBoard({
 						},
 						{
 							icon: <HistoryIcon />,
+							separator: "left",
 							title: "Run History",
 							onClick: async () => {
 								toggleRunHistory();
@@ -1110,11 +1167,25 @@ export function FlowBoard({
 									},
 								]
 							: ([] as any)),
+						...(currentLayer
+							? [
+									{
+										icon: <SquareChevronUpIcon />,
+										title: "Layer Up",
+										separator: "left",
+										highlight: true,
+										onClick: async () => {
+											popLayer();
+										},
+									},
+								]
+							: []),
 					]}
 				/>
 			</div>
 			<ResizablePanelGroup direction="horizontal">
 				<ResizablePanel
+					className="z-50 bg-background"
 					autoSave="flow-variables"
 					defaultSize={0}
 					collapsible={true}
@@ -1171,42 +1242,12 @@ export function FlowBoard({
 									className={`w-full h-full relative ${isOver && "border-green-400 border-2 z-10"}`}
 									ref={setNodeRef}
 								>
-									<div className="absolute top-0 left-0 p-1 z-40 flex flex-row items-center gap-1 mt-10">
-										{openBoards.data?.map(([appId, boardLoadId, boardName]) => (
-											<Link
-												key={boardLoadId}
-												className={`flex flex-row items-center gap-2 border p-1 px-2 bg-background rounded-md hover:bg-card ${boardLoadId === boardId ? "bg-card" : ""}`}
-												href={`/flow?id=${boardLoadId}&app=${appId}`}
-											>
-												<small>{boardName}</small>
-												<Button
-													size={"icon"}
-													className="w-4 h-4"
-													onClick={async (e) => {
-														e.preventDefault();
-														e.stopPropagation();
-														await backend.closeBoard(boardLoadId);
-														if (boardLoadId === boardId) {
-															const nextBoard = openBoards.data?.find(
-																([id]) => id !== boardId,
-															);
-															if (nextBoard) {
-																await openBoards.refetch();
-																router.push(
-																	`/flow?id=${nextBoard[1]}&app=${nextBoard[0]}`,
-																);
-																return;
-															}
-															router.push("/");
-															await openBoards.refetch();
-														}
-													}}
-												>
-													<XIcon className="w-3 h-3" />
-												</Button>
-											</Link>
-										))}
-									</div>
+									{currentLayer && (
+										<h2 className="absolute bottom-0 left-0 z-10 ml-16 mb-10 text-muted pointer-events-none select-none">
+											{board.data?.layers[currentLayer]?.name}
+										</h2>
+									)}
+
 									<ReactFlow
 										suppressHydrationWarning
 										onContextMenu={onContextMenuCB}
@@ -1221,6 +1262,7 @@ export function FlowBoard({
 										onNodesChange={onNodesChangeIntercept}
 										onEdgesChange={onEdgesChange}
 										onNodeDragStop={onNodeDragStop}
+										onNodeDrag={onNodeDrag}
 										isValidConnection={isValidConnectionCB}
 										onConnect={onConnect}
 										onReconnect={onReconnect}
@@ -1234,10 +1276,46 @@ export function FlowBoard({
 										proOptions={{ hideAttribution: true }}
 									>
 										<Controls />
-										<MiniMap />
+										<MiniMap
+											pannable
+											zoomable
+											nodeColor={(node) => {
+												if (node.type === "layerNode")
+													return "hsl(var(--foreground) / 0.5)";
+
+												if (node.type === "node") {
+													const nodeData: INode = node.data.node as INode;
+													if (nodeData.event_callback)
+														return "hsl(var(--primary/ 0.8))";
+													if (nodeData.start) return "hsl(var(--primary/ 0.8))";
+													if (
+														!Object.values(nodeData.pins).find(
+															(pin) =>
+																pin.data_type === IVariableType.Execution,
+														)
+													)
+														return "hsl(var(--tertiary)/ 0.8)";
+													return "hsl(var(--muted))";
+												}
+												if (node.type === "commentNode") {
+													const commentData: IComment = node.data
+														.comment as IComment;
+													const color =
+														commentData.color ?? "hsl(var(--muted)/ 0.3)";
+													return color;
+												}
+												return "hsl(var(--primary)/ 0.3)";
+											}}
+										/>
 										<Background
-											variant={BackgroundVariant.Dots}
+											variant={
+												currentLayer
+													? BackgroundVariant.Lines
+													: BackgroundVariant.Dots
+											}
+											color={currentLayer && "hsl(var(--muted) / 0.3)"}
 											gap={12}
+											// bgColor={currentLayer && "hsl(var(--background))"}
 											size={1}
 										/>
 									</ReactFlow>
@@ -1261,6 +1339,7 @@ export function FlowBoard({
 						</ResizablePanel>
 						<ResizableHandle withHandle />
 						<ResizablePanel
+							className="z-50"
 							hidden={!currentMetadata}
 							ref={logPanelRef}
 							defaultSize={0}
@@ -1274,6 +1353,7 @@ export function FlowBoard({
 				</ResizablePanel>
 				<ResizableHandle withHandle />
 				<ResizablePanel
+					className="z-50"
 					autoSave="flow-runs"
 					defaultSize={0}
 					collapsible={true}

@@ -118,8 +118,8 @@ export function CommentNode(props: NodeProps<CommentNode>) {
 				}}
 				isVisible={props.selected}
 				onResizeEnd={onResizeEnd}
-				minWidth={200}
-				minHeight={80}
+				minWidth={30}
+				minHeight={30}
 			/>
 			<ContextMenu>
 				<ContextMenuTrigger>

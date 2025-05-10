@@ -306,3 +306,6 @@
 		color: hsl(var(--destructive-foreground));
 	}
 }
+.react-flow__nodesselection-rect {
+	display: none;
+}

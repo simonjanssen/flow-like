@@ -3,6 +3,9 @@ use flow_like_types::Cacheable;
 use flow_like_types::async_trait;
 use flow_like_types::{Result, Value, anyhow};
 use futures::TryStreamExt;
+use lancedb::index::scalar::BTreeIndexBuilder;
+use lancedb::index::scalar::BitmapIndexBuilder;
+use lancedb::index::scalar::LabelListIndexBuilder;
 use lancedb::{
     Connection, Table, connect,
     index::{
@@ -329,17 +332,18 @@ impl VectorStore for LanceDBVectorStore {
         return record_batches_to_vec(result);
     }
 
-    async fn index(&self, column: &str, fts: bool) -> Result<()> {
+    async fn index(&self, column: &str, index_type: Option<&str>) -> Result<()> {
         let table = self.table.clone().ok_or(anyhow!("Table not initialized"))?;
-        if fts {
-            table
-                .create_index(&[column], Index::FTS(FtsIndexBuilder::default()))
-                .execute()
-                .await?;
-            return Ok(());
-        }
+        let index_type = index_type.unwrap_or("AUTO");
+       let index_type = match index_type {
+            "FULL TEXT" => Index::FTS(FtsIndexBuilder::default()),
+            "BTREE" => Index::BTree(BTreeIndexBuilder::default()),
+            "BITMAP" => Index::Bitmap(BitmapIndexBuilder::default()),
+            "LABEL LIST" => Index::LabelList(LabelListIndexBuilder::default()),
+            _ => Index::Auto,
+        };
 
-        table.create_index(&[column], Index::Auto).execute().await?;
+        table.create_index(&[column], index_type).execute().await?;
         Ok(())
     }
 
@@ -487,7 +491,7 @@ mod tests {
             .collect::<Result<_, _>>()?;
 
         db.upsert(json_records, "id".to_string()).await?;
-        db.index("name", true).await?;
+        db.index("name", Some("FULL_TEXT")).await?;
 
         let search_results: Vec<Value> = db.fts_search("Alice", None, 10, 0).await?;
 
