@@ -18,7 +18,7 @@ import {
 	ILogLevel,
 	type INode,
 	formatDuration,
-	formatRelativeTime
+	formatRelativeTime,
 } from "../../lib";
 import { logLevelFromNumber } from "../../lib/log-level";
 import { parseUint8ArrayToJson } from "../../lib/uint8";
@@ -240,25 +240,31 @@ const FlowRunsComponent = ({
 						onClick={() => {
 							if (currentMetadata?.run_id === run.run_id) {
 								setCurrentMetadata(undefined);
-								onVersionChange(undefined)
+								onVersionChange(undefined);
 								return;
 							}
 
 							setCurrentMetadata(run);
 							onVersionChange(
-								run.version === ("v" + version.join("-"))
+								run.version === "v" + version.join("-")
 									? undefined
-									: run.version.replace("v", "").split("-").map(Number) as [number, number, number],
+									: (run.version.replace("v", "").split("-").map(Number) as [
+											number,
+											number,
+											number,
+										]),
 							);
 						}}
 					>
 						<div className="flex flex-col gap-2 items-start justify-center">
 							<div className="flex flex-row gap-2 items-center">
-							<small className="leading-none">
-								{nodes[run.node_id]?.friendly_name ?? "Deleted Event"}
-							</small>
-							<small className="text-muted-foreground">
-									{run.version === ("v" + version.join("-")) ? "Latest" : `${run.version}`}
+								<small className="leading-none">
+									{nodes[run.node_id]?.friendly_name ?? "Deleted Event"}
+								</small>
+								<small className="text-muted-foreground">
+									{run.version === "v" + version.join("-")
+										? "Latest"
+										: `${run.version}`}
 								</small>
 							</div>
 

@@ -1,1343 +1,875 @@
 {
-    "nodes": [
-      {
-        "id": "fpg323k8fdwrm328r3qnfw69",
-        "name": "control_branch",
-        "friendly_name": "Branch",
-        "coordinates": [
-          576.5167,
-          178.93364,
-          0
-        ],
-        "pins": {
-          "ooh2rc06z1yiigz6ev95hxx5": {
-            "id": "ooh2rc06z1yiigz6ev95hxx5",
-            "name": "false",
-            "friendly_name": "False",
-            "pin_type": "Output",
-            "data_type": "Execution",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [
-              "umldlzo9dkw5i59n7rq4dsun"
-            ],
-            "index": 2
-          },
-          "dkq6p9r8lco3hf2ut3lqn82t": {
-            "id": "dkq6p9r8lco3hf2ut3lqn82t",
-            "name": "true",
-            "friendly_name": "True",
-            "pin_type": "Output",
-            "data_type": "Execution",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [
-              "v1vkmm6wz52uxdqtnyzwcwts"
-            ],
-            "index": 1
-          },
-          "jg5wqr6021g6qurye8ukyvam": {
-            "id": "jg5wqr6021g6qurye8ukyvam",
-            "name": "condition",
-            "friendly_name": "Condition",
-            "pin_type": "Input",
-            "data_type": "Boolean",
-            "value_type": "Normal",
-            "depends_on": [
-              "jrlfhj9mbfu68cpc6amgyi4b"
-            ],
-            "connected_to": [],
-            "default_value": [
-              116,
-              114,
-              117,
-              101
-            ],
-            "index": 2
-          },
-          "nokqqodrqoy8h8awwrlkc03g": {
-            "id": "nokqqodrqoy8h8awwrlkc03g",
-            "name": "exec_in",
-            "friendly_name": "Input",
-            "pin_type": "Input",
-            "data_type": "Execution",
-            "value_type": "Normal",
-            "depends_on": [
-              "im8lx3hvsdaausqu0dwtkjxd"
-            ],
-            "connected_to": [],
-            "index": 1
-          }
-        }
-      },
-      {
-        "id": "h2hldwjc4xdzll134lop038x",
-        "name": "cuid",
-        "friendly_name": "CUID v2",
-        "coordinates": [
-          515.86426,
-          573.4548,
-          0
-        ],
-        "pins": {
-          "lts7w1lyqtk3o98y0afs47vn": {
-            "id": "lts7w1lyqtk3o98y0afs47vn",
-            "name": "cuid",
-            "friendly_name": "Cuid",
-            "pin_type": "Output",
-            "data_type": "String",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [
-              "dhe2s4ey6bpfilbn6idel4j3"
-            ],
-            "index": 2
-          },
-          "xjnodd5yror4itj4c374g0ry": {
-            "id": "xjnodd5yror4itj4c374g0ry",
-            "name": "exec_in",
-            "friendly_name": "Input",
-            "pin_type": "Input",
-            "data_type": "Execution",
-            "value_type": "Normal",
-            "depends_on": [
-              "x5yh97keopjcm01s3xsamiyy"
-            ],
-            "connected_to": [],
-            "index": 1
-          },
-          "ctvrvnx15xmqgyzsbqfv0hbg": {
-            "id": "ctvrvnx15xmqgyzsbqfv0hbg",
-            "name": "exec_out",
-            "friendly_name": "Output",
-            "pin_type": "Output",
-            "data_type": "Execution",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [
-              "ryj0everm1jfq2e5xks3lhct"
-            ],
-            "index": 1
-          }
-        }
-      },
-      {
-        "id": "ueukpm0s0v6or3c1keqummi3",
-        "name": "events_simple",
-        "friendly_name": "[POST] Put Employee",
-        "coordinates": [
-          152.62411,
-          573.4548,
-          0
-        ],
-        "pins": {
-          "sq6fghjb351tc0z4e08tiuv2": {
-            "id": "sq6fghjb351tc0z4e08tiuv2",
-            "name": "exec_out",
-            "friendly_name": "Output",
-            "pin_type": "Output",
-            "data_type": "Execution",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [
-              "o6wbav35opo6kz0yen91w4ay"
-            ],
-            "index": 1
-          }
-        }
-      },
-      {
-        "id": "kwa31i0wpj2q8etl67bh7xr6",
-        "name": "events_chat_push_response",
-        "friendly_name": "Push Response",
-        "coordinates": [
-          1452.7396,
-          573.4223,
-          0
-        ],
-        "pins": {
-          "itqgs0c136qjmjv2qoioclga": {
-            "id": "itqgs0c136qjmjv2qoioclga",
-            "name": "exec_out",
-            "friendly_name": "Output",
-            "pin_type": "Output",
-            "data_type": "Execution",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [],
-            "index": 1
-          },
-          "jl76wqarf24aytqm2igsq222": {
-            "id": "jl76wqarf24aytqm2igsq222",
-            "name": "response",
-            "friendly_name": "Response",
-            "pin_type": "Input",
-            "data_type": "Struct",
-            "value_type": "Normal",
-            "depends_on": [
-              "cahom112p2n6wlngijqw0ede"
-            ],
-            "connected_to": [],
-            "index": 2
-          },
-          "ajsmg6v9fov1prtp8uxw6p3a": {
-            "id": "ajsmg6v9fov1prtp8uxw6p3a",
-            "name": "exec_in",
-            "friendly_name": "Input",
-            "pin_type": "Input",
-            "data_type": "Execution",
-            "value_type": "Normal",
-            "depends_on": [
-              "pyr30g44rylcw48suo5ui0m9"
-            ],
-            "connected_to": [],
-            "index": 1
-          }
-        }
-      },
-      {
-        "id": "t0ksdlow3n0kh00pj3vthud3",
-        "name": "ai_generative_invoke",
-        "friendly_name": "Invoke Model",
-        "comment": "Streaming, Function Calling, Images, ...",
-        "coordinates": [
-          1243.055,
-          506.22443,
-          0
-        ],
-        "pins": {
-          "awo2g09rxm865xnvcq1gu03h": {
-            "id": "awo2g09rxm865xnvcq1gu03h",
-            "name": "exec_in",
-            "friendly_name": "Input",
-            "pin_type": "Input",
-            "data_type": "Execution",
-            "value_type": "Normal",
-            "depends_on": [
-              "qhittpwlthj7abliet9c1w1x"
-            ],
-            "connected_to": [],
-            "index": 1
-          },
-          "cahom112p2n6wlngijqw0ede": {
-            "id": "cahom112p2n6wlngijqw0ede",
-            "name": "result",
-            "friendly_name": "Result",
-            "pin_type": "Output",
-            "data_type": "Struct",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [
-              "jl76wqarf24aytqm2igsq222"
-            ],
-            "index": 4
-          },
-          "pyr30g44rylcw48suo5ui0m9": {
-            "id": "pyr30g44rylcw48suo5ui0m9",
-            "name": "done",
-            "friendly_name": "Done",
-            "pin_type": "Output",
-            "data_type": "Execution",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [
-              "ajsmg6v9fov1prtp8uxw6p3a"
-            ],
-            "index": 3
-          },
-          "jmir8uml12c64dotl0lm09u4": {
-            "id": "jmir8uml12c64dotl0lm09u4",
-            "name": "history",
-            "friendly_name": "History",
-            "pin_type": "Input",
-            "data_type": "Struct",
-            "value_type": "Normal",
-            "depends_on": [
-              "gact6d0lsba6btd54nmoidwv"
-            ],
-            "connected_to": [],
-            "index": 3
-          },
-          "lfvxoaj2s2um13lkvxhk1j0k": {
-            "id": "lfvxoaj2s2um13lkvxhk1j0k",
-            "name": "chunk",
-            "friendly_name": "Chunk",
-            "pin_type": "Output",
-            "data_type": "Struct",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [],
-            "index": 2
-          },
-          "h1lk56ispbjfdszpzstbye4y": {
-            "id": "h1lk56ispbjfdszpzstbye4y",
-            "name": "model",
-            "friendly_name": "Model",
-            "pin_type": "Input",
-            "data_type": "Struct",
-            "value_type": "Normal",
-            "depends_on": [
-              "aa68o8br2ihoeevgtly7dun0"
-            ],
-            "connected_to": [],
-            "index": 2
-          },
-          "xmcd3zlmyuxud5g78uj5ryy4": {
-            "id": "xmcd3zlmyuxud5g78uj5ryy4",
-            "name": "on_stream",
-            "friendly_name": "On Stream",
-            "pin_type": "Output",
-            "data_type": "Execution",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [],
-            "index": 1
-          }
-        }
-      },
-      {
-        "id": "ps8ftc1igq6tkv1e41np4bie",
-        "name": "ai_generative_find_model",
-        "friendly_name": "Find Model",
-        "comment": "Just define the capabilities of the Model!",
-        "coordinates": [
-          870.5044,
-          506.40732,
-          0
-        ],
-        "pins": {
-          "lcxzcd1xy22qliar7f54hdte": {
-            "id": "lcxzcd1xy22qliar7f54hdte",
-            "name": "exec_in",
-            "friendly_name": "Input",
-            "pin_type": "Input",
-            "data_type": "Execution",
-            "value_type": "Normal",
-            "depends_on": [
-              "lp51ximm0xvffy1mpjvywtez"
-            ],
-            "connected_to": [],
-            "index": 1
-          },
-          "zum9rhoqw6ns35dj4aqc3h9p": {
-            "id": "zum9rhoqw6ns35dj4aqc3h9p",
-            "name": "preferences",
-            "friendly_name": "Preferences",
-            "pin_type": "Input",
-            "data_type": "Struct",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [],
-            "default_value": [
-              123,
-              34,
-              99,
-              111,
-              100,
-              105,
-              110,
-              103,
-              95,
-              119,
-              101,
-              105,
-              103,
-              104,
-              116,
-              34,
-              58,
-              110,
-              117,
-              108,
-              108,
-              44,
-              34,
-              99,
-              111,
-              115,
-              116,
-              95,
-              119,
-              101,
-              105,
-              103,
-              104,
-              116,
-              34,
-              58,
-              110,
-              117,
-              108,
-              108,
-              44,
-              34,
-              99,
-              114,
-              101,
-              97,
-              116,
-              105,
-              118,
-              105,
-              116,
-              121,
-              95,
-              119,
-              101,
-              105,
-              103,
-              104,
-              116,
-              34,
-              58,
-              110,
-              117,
-              108,
-              108,
-              44,
-              34,
-              102,
-              97,
-              99,
-              116,
-              117,
-              97,
-              108,
-              105,
-              116,
-              121,
-              95,
-              119,
-              101,
-              105,
-              103,
-              104,
-              116,
-              34,
-              58,
-              110,
-              117,
-              108,
-              108,
-              44,
-              34,
-              102,
-              117,
-              110,
-              99,
-              116,
-              105,
-              111,
-              110,
-              95,
-              99,
-              97,
-              108,
-              108,
-              105,
-              110,
-              103,
-              95,
-              119,
-              101,
-              105,
-              103,
-              104,
-              116,
-              34,
-              58,
-              110,
-              117,
-              108,
-              108,
-              44,
-              34,
-              109,
-              111,
-              100,
-              101,
-              108,
-              95,
-              104,
-              105,
-              110,
-              116,
-              34,
-              58,
-              110,
-              117,
-              108,
-              108,
-              44,
-              34,
-              109,
-              117,
-              108,
-              116,
-              105,
-              108,
-              105,
-              110,
-              103,
-              117,
-              97,
-              108,
-              105,
-              116,
-              121,
-              95,
-              119,
-              101,
-              105,
-              103,
-              104,
-              116,
-              34,
-              58,
-              110,
-              117,
-              108,
-              108,
-              44,
-              34,
-              111,
-              112,
-              101,
-              110,
-              110,
-              101,
-              115,
-              115,
-              95,
-              119,
-              101,
-              105,
-              103,
-              104,
-              116,
-              34,
-              58,
-              110,
-              117,
-              108,
-              108,
-              44,
-              34,
-              114,
-              101,
-              97,
-              115,
-              111,
-              110,
-              105,
-              110,
-              103,
-              95,
-              119,
-              101,
-              105,
-              103,
-              104,
-              116,
-              34,
-              58,
-              110,
-              117,
-              108,
-              108,
-              44,
-              34,
-              115,
-              97,
-              102,
-              101,
-              116,
-              121,
-              95,
-              119,
-              101,
-              105,
-              103,
-              104,
-              116,
-              34,
-              58,
-              110,
-              117,
-              108,
-              108,
-              44,
-              34,
-              115,
-              112,
-              101,
-              101,
-              100,
-              95,
-              119,
-              101,
-              105,
-              103,
-              104,
-              116,
-              34,
-              58,
-              110,
-              117,
-              108,
-              108,
-              125
-            ],
-            "index": 2
-          },
-          "u8vdkakvixrfmwje0g494480": {
-            "id": "u8vdkakvixrfmwje0g494480",
-            "name": "exec_out",
-            "friendly_name": "Output",
-            "pin_type": "Output",
-            "data_type": "Execution",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [
-              "z6o9npjhh2e8qimvrcg4lpd0"
-            ],
-            "index": 1
-          },
-          "f73nh46da29sgw6753io5qn2": {
-            "id": "f73nh46da29sgw6753io5qn2",
-            "name": "model",
-            "friendly_name": "Model",
-            "pin_type": "Output",
-            "data_type": "Struct",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [
-              "dqqvvbgahmwon5qdjw5fwx94"
-            ],
-            "index": 2
-          }
-        }
-      },
-      {
-        "id": "rfmnj5dmzoiswudxsf1kof35",
-        "name": "reroute",
-        "friendly_name": "Reroute",
-        "comment": "",
-        "coordinates": [
-          764.7078,
-          565.329,
-          0
-        ],
-        "pins": {
-          "w98ohd2xv3ay37ikgznenjij": {
-            "id": "w98ohd2xv3ay37ikgznenjij",
-            "name": "route_out",
-            "friendly_name": "Out",
-            "pin_type": "Output",
-            "data_type": "Execution",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [
-              "umldlzo9dkw5i59n7rq4dsun"
-            ],
-            "index": 1
-          },
-          "zycuya5yv9qzig73pdaesm4f": {
-            "id": "zycuya5yv9qzig73pdaesm4f",
-            "name": "route_in",
-            "friendly_name": "In",
-            "pin_type": "Input",
-            "data_type": "Execution",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [],
-            "index": 1
-          }
-        }
-      },
-      {
-        "id": "ow8p5bucfy97nqqip2jp7kvk",
-        "name": "reroute",
-        "friendly_name": "Reroute",
-        "coordinates": [
-          1071.9424,
-          591.92267,
-          0
-        ],
-        "pins": {
-          "dqqvvbgahmwon5qdjw5fwx94": {
-            "id": "dqqvvbgahmwon5qdjw5fwx94",
-            "name": "route_in",
-            "friendly_name": "In",
-            "pin_type": "Input",
-            "data_type": "Struct",
-            "value_type": "Normal",
-            "depends_on": [
-              "f73nh46da29sgw6753io5qn2"
-            ],
-            "connected_to": [],
-            "index": 1
-          },
-          "sjj41vvfkduezrl7q3liel7p": {
-            "id": "sjj41vvfkduezrl7q3liel7p",
-            "name": "route_out",
-            "friendly_name": "Out",
-            "pin_type": "Output",
-            "data_type": "Struct",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [
-              "utw6pey0x8phomwr7afrid7b"
-            ],
-            "index": 1
-          }
-        }
-      },
-      {
-        "id": "qz42zqfuqug85zn5po09l4px",
-        "name": "ai_generative_set_system_prompt_message",
-        "friendly_name": "Set System Message",
-        "coordinates": [
-          1071.2064,
-          506.40735,
-          0
-        ],
-        "pins": {
-          "hx9wwi75cg0onnsuqkc7wm6a": {
-            "id": "hx9wwi75cg0onnsuqkc7wm6a",
-            "name": "message",
-            "friendly_name": "Message",
-            "pin_type": "Input",
-            "data_type": "String",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [],
-            "default_value": [
-              34,
-              34
-            ],
-            "index": 3
-          },
-          "gact6d0lsba6btd54nmoidwv": {
-            "id": "gact6d0lsba6btd54nmoidwv",
-            "name": "history_out",
-            "friendly_name": "History",
-            "pin_type": "Output",
-            "data_type": "Struct",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [
-              "jmir8uml12c64dotl0lm09u4"
-            ],
-            "index": 2
-          },
-          "lvesjq7uksuknrbd4nfl5xbu": {
-            "id": "lvesjq7uksuknrbd4nfl5xbu",
-            "name": "history",
-            "friendly_name": "History",
-            "pin_type": "Input",
-            "data_type": "Struct",
-            "value_type": "Normal",
-            "depends_on": [
-              "s9r92igepm03lc01fa13ydq2"
-            ],
-            "connected_to": [],
-            "index": 2
-          },
-          "qhittpwlthj7abliet9c1w1x": {
-            "id": "qhittpwlthj7abliet9c1w1x",
-            "name": "exec_out",
-            "friendly_name": "Output",
-            "pin_type": "Output",
-            "data_type": "Execution",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [
-              "awo2g09rxm865xnvcq1gu03h"
-            ],
-            "index": 1
-          },
-          "z6o9npjhh2e8qimvrcg4lpd0": {
-            "id": "z6o9npjhh2e8qimvrcg4lpd0",
-            "name": "exec_in",
-            "friendly_name": "Input",
-            "pin_type": "Input",
-            "data_type": "Execution",
-            "value_type": "Normal",
-            "depends_on": [
-              "u8vdkakvixrfmwje0g494480"
-            ],
-            "connected_to": [],
-            "index": 1
-          }
-        }
-      },
-      {
-        "id": "v5t6lankzpkdauomqo7pmxb4",
-        "name": "reroute",
-        "friendly_name": "Reroute",
-        "coordinates": [
-          713.759,
-          565.329,
-          0
-        ],
-        "pins": {
-          "ryj0everm1jfq2e5xks3lhct": {
-            "id": "ryj0everm1jfq2e5xks3lhct",
-            "name": "route_in",
-            "friendly_name": "In",
-            "pin_type": "Input",
-            "data_type": "Execution",
-            "value_type": "Normal",
-            "depends_on": [
-              "ctvrvnx15xmqgyzsbqfv0hbg"
-            ],
-            "connected_to": [],
-            "index": 1
-          },
-          "efl7pu1dl9v357nyfn2i6a62": {
-            "id": "efl7pu1dl9v357nyfn2i6a62",
-            "name": "route_out",
-            "friendly_name": "Out",
-            "pin_type": "Output",
-            "data_type": "Execution",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [],
-            "index": 1
-          }
-        }
-      },
-      {
-        "id": "z3o319ssjzb7ux1qm0fzm4j6",
-        "name": "reroute",
-        "friendly_name": "Reroute",
-        "coordinates": [
-          524.3879,
-          665.904,
-          0
-        ],
-        "pins": {
-          "nt54dohrivgurnum6db8iazp": {
-            "id": "nt54dohrivgurnum6db8iazp",
-            "name": "route_in",
-            "friendly_name": "In",
-            "pin_type": "Input",
-            "data_type": "Struct",
-            "value_type": "Normal",
-            "depends_on": [
-              "vvh6a3n3g1vy39nxed9xtetq"
-            ],
-            "connected_to": [],
-            "index": 1
-          },
-          "fyfjma34g0wekdn4sneeks0v": {
-            "id": "fyfjma34g0wekdn4sneeks0v",
-            "name": "route_out",
-            "friendly_name": "Out",
-            "pin_type": "Output",
-            "data_type": "Struct",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [],
-            "index": 1
-          }
-        }
-      },
-      {
-        "id": "es9ogthal43izsacehkd2k5r",
-        "name": "reroute",
-        "friendly_name": "Reroute",
-        "coordinates": [
-          801.3913,
-          230.22194,
-          0
-        ],
-        "pins": {
-          "v1vkmm6wz52uxdqtnyzwcwts": {
-            "id": "v1vkmm6wz52uxdqtnyzwcwts",
-            "name": "route_in",
-            "friendly_name": "In",
-            "pin_type": "Input",
-            "data_type": "Execution",
-            "value_type": "Normal",
-            "depends_on": [
-              "dkq6p9r8lco3hf2ut3lqn82t"
-            ],
-            "connected_to": [],
-            "index": 1
-          },
-          "iyw8o4dke1526u7jtbyxpmvy": {
-            "id": "iyw8o4dke1526u7jtbyxpmvy",
-            "name": "route_out",
-            "friendly_name": "Out",
-            "pin_type": "Output",
-            "data_type": "Execution",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [],
-            "index": 1
-          }
-        }
-      },
-      {
-        "id": "zvvqi3egtekgro6uvpjnp7bu",
-        "name": "reroute",
-        "friendly_name": "Reroute",
-        "comment": "",
-        "coordinates": [
-          705.3473,
-          626.1191,
-          0
-        ],
-        "pins": {
-          "uq1bpmkdsadr1mrnn683a8io": {
-            "id": "uq1bpmkdsadr1mrnn683a8io",
-            "name": "route_out",
-            "friendly_name": "Out",
-            "pin_type": "Output",
-            "data_type": "String",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [],
-            "index": 1
-          },
-          "dhe2s4ey6bpfilbn6idel4j3": {
-            "id": "dhe2s4ey6bpfilbn6idel4j3",
-            "name": "route_in",
-            "friendly_name": "In",
-            "pin_type": "Input",
-            "data_type": "String",
-            "value_type": "Normal",
-            "depends_on": [
-              "lts7w1lyqtk3o98y0afs47vn"
-            ],
-            "connected_to": [],
-            "index": 1
-          }
-        }
-      },
-      {
-        "id": "bqusecgbpoune54abeyha79x",
-        "name": "events_simple",
-        "friendly_name": "Website Loaded",
-        "coordinates": [
-          384.59998,
-          228.62198,
-          0
-        ],
-        "pins": {
-          "im8lx3hvsdaausqu0dwtkjxd": {
-            "id": "im8lx3hvsdaausqu0dwtkjxd",
-            "name": "exec_out",
-            "friendly_name": "Output",
-            "pin_type": "Output",
-            "data_type": "Execution",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [
-              "nokqqodrqoy8h8awwrlkc03g"
-            ],
-            "index": 1
-          }
-        }
-      },
-      {
-        "id": "hdzp480cqqzbmbguj37wypm1",
-        "name": "equal_string",
-        "friendly_name": "==",
-        "comment": "User Already Knows Flow Like?",
-        "coordinates": [
-          119.5596,
-          104.72942,
-          0
-        ],
-        "pins": {
-          "jrlfhj9mbfu68cpc6amgyi4b": {
-            "id": "jrlfhj9mbfu68cpc6amgyi4b",
-            "name": "equal",
-            "friendly_name": "Is Equal?",
-            "pin_type": "Output",
-            "data_type": "Boolean",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [
-              "jg5wqr6021g6qurye8ukyvam"
-            ],
-            "index": 1
-          },
-          "ciuqv34pzvm6cke9hfxwxcky": {
-            "id": "ciuqv34pzvm6cke9hfxwxcky",
-            "name": "string",
-            "friendly_name": "String",
-            "pin_type": "Input",
-            "data_type": "String",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [],
-            "default_value": [
-              34,
-              85,
-              115,
-              101,
-              114,
-              34
-            ],
-            "index": 1
-          },
-          "xmd0cj649no6h3yjoi3yeezf": {
-            "id": "xmd0cj649no6h3yjoi3yeezf",
-            "name": "string",
-            "friendly_name": "String",
-            "pin_type": "Input",
-            "data_type": "String",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [],
-            "default_value": [
-              34,
-              65,
-              108,
-              114,
-              101,
-              97,
-              100,
-              121,
-              32,
-              75,
-              110,
-              111,
-              119,
-              115,
-              32,
-              70,
-              108,
-              111,
-              119,
-              32,
-              76,
-              105,
-              107,
-              101,
-              34
-            ],
-            "index": 2
-          }
-        }
-      },
-      {
-        "id": "m10pxih6a3emy9htl0ownozm",
-        "name": "reroute",
-        "friendly_name": "Reroute",
-        "comment": "",
-        "coordinates": [
-          1203.828,
-          591.92267,
-          0
-        ],
-        "pins": {
-          "utw6pey0x8phomwr7afrid7b": {
-            "id": "utw6pey0x8phomwr7afrid7b",
-            "name": "route_in",
-            "friendly_name": "In",
-            "pin_type": "Input",
-            "data_type": "Struct",
-            "value_type": "Normal",
-            "depends_on": [
-              "sjj41vvfkduezrl7q3liel7p"
-            ],
-            "connected_to": [],
-            "index": 1
-          },
-          "aa68o8br2ihoeevgtly7dun0": {
-            "id": "aa68o8br2ihoeevgtly7dun0",
-            "name": "route_out",
-            "friendly_name": "Out",
-            "pin_type": "Output",
-            "data_type": "Struct",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [
-              "h1lk56ispbjfdszpzstbye4y"
-            ],
-            "index": 1
-          }
-        }
-      },
-      {
-        "id": "mec4gt47k8d6l0eo9q6ptei3",
-        "name": "open_local_db",
-        "friendly_name": "Open Database",
-        "coordinates": [
-          333.5885,
-          573.4548,
-          0
-        ],
-        "pins": {
-          "vvh6a3n3g1vy39nxed9xtetq": {
-            "id": "vvh6a3n3g1vy39nxed9xtetq",
-            "name": "database",
-            "friendly_name": "Database",
-            "pin_type": "Output",
-            "data_type": "Struct",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [
-              "nt54dohrivgurnum6db8iazp"
-            ],
-            "index": 2
-          },
-          "x5yh97keopjcm01s3xsamiyy": {
-            "id": "x5yh97keopjcm01s3xsamiyy",
-            "name": "exec_out",
-            "friendly_name": "Created Database",
-            "pin_type": "Output",
-            "data_type": "Execution",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [
-              "xjnodd5yror4itj4c374g0ry"
-            ],
-            "index": 1
-          },
-          "zk29ofdo620o42lnbg5ovu13": {
-            "id": "zk29ofdo620o42lnbg5ovu13",
-            "name": "name",
-            "friendly_name": "Table Name",
-            "pin_type": "Input",
-            "data_type": "String",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [],
-            "default_value": [
-              34,
-              69,
-              109,
-              112,
-              108,
-              111,
-              121,
-              101,
-              101,
-              115,
-              34
-            ],
-            "index": 2
-          },
-          "o6wbav35opo6kz0yen91w4ay": {
-            "id": "o6wbav35opo6kz0yen91w4ay",
-            "name": "exec_in",
-            "friendly_name": "Input",
-            "pin_type": "Input",
-            "data_type": "Execution",
-            "value_type": "Normal",
-            "depends_on": [
-              "sq6fghjb351tc0z4e08tiuv2"
-            ],
-            "connected_to": [],
-            "index": 1
-          }
-        }
-      },
-      {
-        "id": "e5e1uepvefz3663n8s0gp76e",
-        "name": "ai_generative_make_history",
-        "friendly_name": "Make History",
-        "coordinates": [
-          870.5044,
-          582.10895,
-          0
-        ],
-        "pins": {
-          "fv40uyle1wro64n3czvmdbvk": {
-            "id": "fv40uyle1wro64n3czvmdbvk",
-            "name": "model_name",
-            "friendly_name": "Model Name",
-            "pin_type": "Input",
-            "data_type": "String",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [],
-            "default_value": [
-              34,
-              34
-            ],
-            "index": 1
-          },
-          "s9r92igepm03lc01fa13ydq2": {
-            "id": "s9r92igepm03lc01fa13ydq2",
-            "name": "history",
-            "friendly_name": "History",
-            "pin_type": "Output",
-            "data_type": "Struct",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [
-              "lvesjq7uksuknrbd4nfl5xbu"
-            ],
-            "index": 1
-          }
-        }
-      },
-      {
-        "id": "gbi596usqgegra6iojxwpm97",
-        "name": "reroute",
-        "friendly_name": "Reroute",
-        "coordinates": [
-          805.3197,
-          527.8632,
-          0
-        ],
-        "pins": {
-          "lp51ximm0xvffy1mpjvywtez": {
-            "id": "lp51ximm0xvffy1mpjvywtez",
-            "name": "route_out",
-            "friendly_name": "Out",
-            "pin_type": "Output",
-            "data_type": "Execution",
-            "value_type": "Normal",
-            "depends_on": [],
-            "connected_to": [
-              "lcxzcd1xy22qliar7f54hdte"
-            ],
-            "index": 1
-          },
-          "umldlzo9dkw5i59n7rq4dsun": {
-            "id": "umldlzo9dkw5i59n7rq4dsun",
-            "name": "route_in",
-            "friendly_name": "In",
-            "pin_type": "Input",
-            "data_type": "Execution",
-            "value_type": "Normal",
-            "depends_on": [
-              "ooh2rc06z1yiigz6ev95hxx5",
-              "w98ohd2xv3ay37ikgznenjij"
-            ],
-            "connected_to": [],
-            "index": 1
-          }
-        }
-      }
-    ],
-    "comments": [
-      {
-        "id": "j86h609pneilig61vo72lelb",
-        "author": "anonymous",
-        "content": "![smiling](/smiling.webp)",
-        "comment_type": "Text",
-        "timestamp": {
-          "secs_since_epoch": 0,
-          "nanos_since_epoch": 0
-        },
-        "coordinates": [
-          1267.7242,
-          1063.8608,
-          0
-        ],
-        "width": 215,
-        "height": 215,
-        "color": "#ffffff00",
-        "z_index": 3
-      },
-      {
-        "id": "sx4lrx3ejmxzb900z60pfw67",
-        "author": "anonymous",
-        "content": "# Flow-Like\nThe Only Production-Ready Automation Suite for Enterprise Scale Workflows.",
-        "comment_type": "Text",
-        "timestamp": {
-          "secs_since_epoch": 0,
-          "nanos_since_epoch": 0
-        },
-        "coordinates": [
-          404,
-          66,
-          0
-        ],
-        "width": 540,
-        "height": 227,
-        "color": "#e89048",
-        "z_index": null
-      },
-      {
-        "id": "v4mlmcwm3kz1xptesw2fq7l8",
-        "author": "anonymous",
-        "content": "## Integrating AI\nEasily integrate AI into your process!",
-        "comment_type": "Text",
-        "timestamp": {
-          "secs_since_epoch": 0,
-          "nanos_since_epoch": 0
-        },
-        "coordinates": [
-          843.59186,
-          365.55652,
-          0
-        ],
-        "width": 780,
-        "height": 280,
-        "color": "#752c9e",
-        "z_index": 2
-      },
-      {
-        "id": "jysk02zqsgitsulcumit6srp",
-        "author": "anonymous",
-        "content": "#### Links\n- [Download]()\n- [GitHub](https://github.com/TM9657/flow-like)\n- [Docs](https://docs.flow-like.com)",
-        "comment_type": "Text",
-        "timestamp": {
-          "secs_since_epoch": 0,
-          "nanos_since_epoch": 0
-        },
-        "coordinates": [
-          811.9715,
-          213.00905,
-          0
-        ],
-        "width": 148,
-        "height": 103,
-        "color": "#3f35db",
-        "z_index": 2
-      },
-      {
-        "id": "dqc31z6pufr94c4dw2hh29fh",
-        "author": "anonymous",
-        "content": "## Scalable and Fast\nNot just Agent Scripting...\n- Built in Rust, Easily Scaling to Thousands of Requests / s\n- Made for Enterprise Systems\n- Hosted Anywhere (On-Prem, Cloud, Device)\n- Integrating Release Best Practices (Canary, Best Practices, Transparent Logging)",
-        "comment_type": "Text",
-        "timestamp": {
-          "secs_since_epoch": 0,
-          "nanos_since_epoch": 0
-        },
-        "coordinates": [
-          108.688416,
-          400.93393,
-          0
-        ],
-        "width": 573,
-        "height": 248,
-        "color": "#1b737a",
-        "z_index": null
-      },
-      {
-        "id": "oya96qmsxodvhp1djsuv8enk",
-        "author": "anonymous",
-        "content": "### Features & Hosting\n\n| **Feature**              | **Personal** | **Enterprise** | **Enterprise (> 2500 Employees)** |\n| :---------------- | :------: | :------: | ----: |\n| **Pricing** |   Free   | Free | Contact Us |\n| **Hosting** |   PC & Cloud   | PC & Cloud | PC & Cloud |\n| **Features** |  All   | All | All |\n| **Support** |  Community   | Community | Professional |\n| **Custom Nodes & Trigger** | Difficult | Difficult | Easy |\n| **Parallel Workflows** | Unlimited | Unlimited | Unlimited (> 5000 / Small Node) |\n| **AI Models** | Local or Premium Plan | Local or Premium Plan | Self Hosted |\n\n#### Why is this so cheap and outperforming all Alternatives?\nWe care for good software. If you like it, contribute or consider a Premium Subscription..",
-        "comment_type": "Text",
-        "timestamp": {
-          "secs_since_epoch": 0,
-          "nanos_since_epoch": 0
-        },
-        "coordinates": [
-          719.4675,
-          706.8148,
-          0
-        ],
-        "width": 684,
-        "height": 446,
-        "color": "#7a1b56",
-        "z_index": null
-      }
-    ],
-    "cursorPosition": {
-      "x": 1747.0321874600809,
-      "y": 1271.5176847498553
-    },
-    "layers": []
-  }
+	"nodes": [
+		{
+			"id": "fpg323k8fdwrm328r3qnfw69",
+			"name": "control_branch",
+			"friendly_name": "Branch",
+			"coordinates": [576.5167, 178.93364, 0],
+			"pins": {
+				"ooh2rc06z1yiigz6ev95hxx5": {
+					"id": "ooh2rc06z1yiigz6ev95hxx5",
+					"name": "false",
+					"friendly_name": "False",
+					"pin_type": "Output",
+					"data_type": "Execution",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": ["umldlzo9dkw5i59n7rq4dsun"],
+					"index": 2
+				},
+				"dkq6p9r8lco3hf2ut3lqn82t": {
+					"id": "dkq6p9r8lco3hf2ut3lqn82t",
+					"name": "true",
+					"friendly_name": "True",
+					"pin_type": "Output",
+					"data_type": "Execution",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": ["v1vkmm6wz52uxdqtnyzwcwts"],
+					"index": 1
+				},
+				"jg5wqr6021g6qurye8ukyvam": {
+					"id": "jg5wqr6021g6qurye8ukyvam",
+					"name": "condition",
+					"friendly_name": "Condition",
+					"pin_type": "Input",
+					"data_type": "Boolean",
+					"value_type": "Normal",
+					"depends_on": ["jrlfhj9mbfu68cpc6amgyi4b"],
+					"connected_to": [],
+					"default_value": [116, 114, 117, 101],
+					"index": 2
+				},
+				"nokqqodrqoy8h8awwrlkc03g": {
+					"id": "nokqqodrqoy8h8awwrlkc03g",
+					"name": "exec_in",
+					"friendly_name": "Input",
+					"pin_type": "Input",
+					"data_type": "Execution",
+					"value_type": "Normal",
+					"depends_on": ["im8lx3hvsdaausqu0dwtkjxd"],
+					"connected_to": [],
+					"index": 1
+				}
+			}
+		},
+		{
+			"id": "h2hldwjc4xdzll134lop038x",
+			"name": "cuid",
+			"friendly_name": "CUID v2",
+			"coordinates": [515.86426, 573.4548, 0],
+			"pins": {
+				"lts7w1lyqtk3o98y0afs47vn": {
+					"id": "lts7w1lyqtk3o98y0afs47vn",
+					"name": "cuid",
+					"friendly_name": "Cuid",
+					"pin_type": "Output",
+					"data_type": "String",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": ["dhe2s4ey6bpfilbn6idel4j3"],
+					"index": 2
+				},
+				"xjnodd5yror4itj4c374g0ry": {
+					"id": "xjnodd5yror4itj4c374g0ry",
+					"name": "exec_in",
+					"friendly_name": "Input",
+					"pin_type": "Input",
+					"data_type": "Execution",
+					"value_type": "Normal",
+					"depends_on": ["x5yh97keopjcm01s3xsamiyy"],
+					"connected_to": [],
+					"index": 1
+				},
+				"ctvrvnx15xmqgyzsbqfv0hbg": {
+					"id": "ctvrvnx15xmqgyzsbqfv0hbg",
+					"name": "exec_out",
+					"friendly_name": "Output",
+					"pin_type": "Output",
+					"data_type": "Execution",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": ["ryj0everm1jfq2e5xks3lhct"],
+					"index": 1
+				}
+			}
+		},
+		{
+			"id": "ueukpm0s0v6or3c1keqummi3",
+			"name": "events_simple",
+			"friendly_name": "[POST] Put Employee",
+			"coordinates": [152.62411, 573.4548, 0],
+			"pins": {
+				"sq6fghjb351tc0z4e08tiuv2": {
+					"id": "sq6fghjb351tc0z4e08tiuv2",
+					"name": "exec_out",
+					"friendly_name": "Output",
+					"pin_type": "Output",
+					"data_type": "Execution",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": ["o6wbav35opo6kz0yen91w4ay"],
+					"index": 1
+				}
+			}
+		},
+		{
+			"id": "kwa31i0wpj2q8etl67bh7xr6",
+			"name": "events_chat_push_response",
+			"friendly_name": "Push Response",
+			"coordinates": [1452.7396, 573.4223, 0],
+			"pins": {
+				"itqgs0c136qjmjv2qoioclga": {
+					"id": "itqgs0c136qjmjv2qoioclga",
+					"name": "exec_out",
+					"friendly_name": "Output",
+					"pin_type": "Output",
+					"data_type": "Execution",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [],
+					"index": 1
+				},
+				"jl76wqarf24aytqm2igsq222": {
+					"id": "jl76wqarf24aytqm2igsq222",
+					"name": "response",
+					"friendly_name": "Response",
+					"pin_type": "Input",
+					"data_type": "Struct",
+					"value_type": "Normal",
+					"depends_on": ["cahom112p2n6wlngijqw0ede"],
+					"connected_to": [],
+					"index": 2
+				},
+				"ajsmg6v9fov1prtp8uxw6p3a": {
+					"id": "ajsmg6v9fov1prtp8uxw6p3a",
+					"name": "exec_in",
+					"friendly_name": "Input",
+					"pin_type": "Input",
+					"data_type": "Execution",
+					"value_type": "Normal",
+					"depends_on": ["pyr30g44rylcw48suo5ui0m9"],
+					"connected_to": [],
+					"index": 1
+				}
+			}
+		},
+		{
+			"id": "t0ksdlow3n0kh00pj3vthud3",
+			"name": "ai_generative_invoke",
+			"friendly_name": "Invoke Model",
+			"comment": "Streaming, Function Calling, Images, ...",
+			"coordinates": [1243.055, 506.22443, 0],
+			"pins": {
+				"awo2g09rxm865xnvcq1gu03h": {
+					"id": "awo2g09rxm865xnvcq1gu03h",
+					"name": "exec_in",
+					"friendly_name": "Input",
+					"pin_type": "Input",
+					"data_type": "Execution",
+					"value_type": "Normal",
+					"depends_on": ["qhittpwlthj7abliet9c1w1x"],
+					"connected_to": [],
+					"index": 1
+				},
+				"cahom112p2n6wlngijqw0ede": {
+					"id": "cahom112p2n6wlngijqw0ede",
+					"name": "result",
+					"friendly_name": "Result",
+					"pin_type": "Output",
+					"data_type": "Struct",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": ["jl76wqarf24aytqm2igsq222"],
+					"index": 4
+				},
+				"pyr30g44rylcw48suo5ui0m9": {
+					"id": "pyr30g44rylcw48suo5ui0m9",
+					"name": "done",
+					"friendly_name": "Done",
+					"pin_type": "Output",
+					"data_type": "Execution",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": ["ajsmg6v9fov1prtp8uxw6p3a"],
+					"index": 3
+				},
+				"jmir8uml12c64dotl0lm09u4": {
+					"id": "jmir8uml12c64dotl0lm09u4",
+					"name": "history",
+					"friendly_name": "History",
+					"pin_type": "Input",
+					"data_type": "Struct",
+					"value_type": "Normal",
+					"depends_on": ["gact6d0lsba6btd54nmoidwv"],
+					"connected_to": [],
+					"index": 3
+				},
+				"lfvxoaj2s2um13lkvxhk1j0k": {
+					"id": "lfvxoaj2s2um13lkvxhk1j0k",
+					"name": "chunk",
+					"friendly_name": "Chunk",
+					"pin_type": "Output",
+					"data_type": "Struct",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [],
+					"index": 2
+				},
+				"h1lk56ispbjfdszpzstbye4y": {
+					"id": "h1lk56ispbjfdszpzstbye4y",
+					"name": "model",
+					"friendly_name": "Model",
+					"pin_type": "Input",
+					"data_type": "Struct",
+					"value_type": "Normal",
+					"depends_on": ["aa68o8br2ihoeevgtly7dun0"],
+					"connected_to": [],
+					"index": 2
+				},
+				"xmcd3zlmyuxud5g78uj5ryy4": {
+					"id": "xmcd3zlmyuxud5g78uj5ryy4",
+					"name": "on_stream",
+					"friendly_name": "On Stream",
+					"pin_type": "Output",
+					"data_type": "Execution",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [],
+					"index": 1
+				}
+			}
+		},
+		{
+			"id": "ps8ftc1igq6tkv1e41np4bie",
+			"name": "ai_generative_find_model",
+			"friendly_name": "Find Model",
+			"comment": "Just define the capabilities of the Model!",
+			"coordinates": [870.5044, 506.40732, 0],
+			"pins": {
+				"lcxzcd1xy22qliar7f54hdte": {
+					"id": "lcxzcd1xy22qliar7f54hdte",
+					"name": "exec_in",
+					"friendly_name": "Input",
+					"pin_type": "Input",
+					"data_type": "Execution",
+					"value_type": "Normal",
+					"depends_on": ["lp51ximm0xvffy1mpjvywtez"],
+					"connected_to": [],
+					"index": 1
+				},
+				"zum9rhoqw6ns35dj4aqc3h9p": {
+					"id": "zum9rhoqw6ns35dj4aqc3h9p",
+					"name": "preferences",
+					"friendly_name": "Preferences",
+					"pin_type": "Input",
+					"data_type": "Struct",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [],
+					"default_value": [
+						123, 34, 99, 111, 100, 105, 110, 103, 95, 119, 101, 105, 103, 104,
+						116, 34, 58, 110, 117, 108, 108, 44, 34, 99, 111, 115, 116, 95, 119,
+						101, 105, 103, 104, 116, 34, 58, 110, 117, 108, 108, 44, 34, 99,
+						114, 101, 97, 116, 105, 118, 105, 116, 121, 95, 119, 101, 105, 103,
+						104, 116, 34, 58, 110, 117, 108, 108, 44, 34, 102, 97, 99, 116, 117,
+						97, 108, 105, 116, 121, 95, 119, 101, 105, 103, 104, 116, 34, 58,
+						110, 117, 108, 108, 44, 34, 102, 117, 110, 99, 116, 105, 111, 110,
+						95, 99, 97, 108, 108, 105, 110, 103, 95, 119, 101, 105, 103, 104,
+						116, 34, 58, 110, 117, 108, 108, 44, 34, 109, 111, 100, 101, 108,
+						95, 104, 105, 110, 116, 34, 58, 110, 117, 108, 108, 44, 34, 109,
+						117, 108, 116, 105, 108, 105, 110, 103, 117, 97, 108, 105, 116, 121,
+						95, 119, 101, 105, 103, 104, 116, 34, 58, 110, 117, 108, 108, 44,
+						34, 111, 112, 101, 110, 110, 101, 115, 115, 95, 119, 101, 105, 103,
+						104, 116, 34, 58, 110, 117, 108, 108, 44, 34, 114, 101, 97, 115,
+						111, 110, 105, 110, 103, 95, 119, 101, 105, 103, 104, 116, 34, 58,
+						110, 117, 108, 108, 44, 34, 115, 97, 102, 101, 116, 121, 95, 119,
+						101, 105, 103, 104, 116, 34, 58, 110, 117, 108, 108, 44, 34, 115,
+						112, 101, 101, 100, 95, 119, 101, 105, 103, 104, 116, 34, 58, 110,
+						117, 108, 108, 125
+					],
+					"index": 2
+				},
+				"u8vdkakvixrfmwje0g494480": {
+					"id": "u8vdkakvixrfmwje0g494480",
+					"name": "exec_out",
+					"friendly_name": "Output",
+					"pin_type": "Output",
+					"data_type": "Execution",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": ["z6o9npjhh2e8qimvrcg4lpd0"],
+					"index": 1
+				},
+				"f73nh46da29sgw6753io5qn2": {
+					"id": "f73nh46da29sgw6753io5qn2",
+					"name": "model",
+					"friendly_name": "Model",
+					"pin_type": "Output",
+					"data_type": "Struct",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": ["dqqvvbgahmwon5qdjw5fwx94"],
+					"index": 2
+				}
+			}
+		},
+		{
+			"id": "rfmnj5dmzoiswudxsf1kof35",
+			"name": "reroute",
+			"friendly_name": "Reroute",
+			"comment": "",
+			"coordinates": [764.7078, 565.329, 0],
+			"pins": {
+				"w98ohd2xv3ay37ikgznenjij": {
+					"id": "w98ohd2xv3ay37ikgznenjij",
+					"name": "route_out",
+					"friendly_name": "Out",
+					"pin_type": "Output",
+					"data_type": "Execution",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": ["umldlzo9dkw5i59n7rq4dsun"],
+					"index": 1
+				},
+				"zycuya5yv9qzig73pdaesm4f": {
+					"id": "zycuya5yv9qzig73pdaesm4f",
+					"name": "route_in",
+					"friendly_name": "In",
+					"pin_type": "Input",
+					"data_type": "Execution",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [],
+					"index": 1
+				}
+			}
+		},
+		{
+			"id": "ow8p5bucfy97nqqip2jp7kvk",
+			"name": "reroute",
+			"friendly_name": "Reroute",
+			"coordinates": [1071.9424, 591.92267, 0],
+			"pins": {
+				"dqqvvbgahmwon5qdjw5fwx94": {
+					"id": "dqqvvbgahmwon5qdjw5fwx94",
+					"name": "route_in",
+					"friendly_name": "In",
+					"pin_type": "Input",
+					"data_type": "Struct",
+					"value_type": "Normal",
+					"depends_on": ["f73nh46da29sgw6753io5qn2"],
+					"connected_to": [],
+					"index": 1
+				},
+				"sjj41vvfkduezrl7q3liel7p": {
+					"id": "sjj41vvfkduezrl7q3liel7p",
+					"name": "route_out",
+					"friendly_name": "Out",
+					"pin_type": "Output",
+					"data_type": "Struct",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": ["utw6pey0x8phomwr7afrid7b"],
+					"index": 1
+				}
+			}
+		},
+		{
+			"id": "qz42zqfuqug85zn5po09l4px",
+			"name": "ai_generative_set_system_prompt_message",
+			"friendly_name": "Set System Message",
+			"coordinates": [1071.2064, 506.40735, 0],
+			"pins": {
+				"hx9wwi75cg0onnsuqkc7wm6a": {
+					"id": "hx9wwi75cg0onnsuqkc7wm6a",
+					"name": "message",
+					"friendly_name": "Message",
+					"pin_type": "Input",
+					"data_type": "String",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [],
+					"default_value": [34, 34],
+					"index": 3
+				},
+				"gact6d0lsba6btd54nmoidwv": {
+					"id": "gact6d0lsba6btd54nmoidwv",
+					"name": "history_out",
+					"friendly_name": "History",
+					"pin_type": "Output",
+					"data_type": "Struct",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": ["jmir8uml12c64dotl0lm09u4"],
+					"index": 2
+				},
+				"lvesjq7uksuknrbd4nfl5xbu": {
+					"id": "lvesjq7uksuknrbd4nfl5xbu",
+					"name": "history",
+					"friendly_name": "History",
+					"pin_type": "Input",
+					"data_type": "Struct",
+					"value_type": "Normal",
+					"depends_on": ["s9r92igepm03lc01fa13ydq2"],
+					"connected_to": [],
+					"index": 2
+				},
+				"qhittpwlthj7abliet9c1w1x": {
+					"id": "qhittpwlthj7abliet9c1w1x",
+					"name": "exec_out",
+					"friendly_name": "Output",
+					"pin_type": "Output",
+					"data_type": "Execution",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": ["awo2g09rxm865xnvcq1gu03h"],
+					"index": 1
+				},
+				"z6o9npjhh2e8qimvrcg4lpd0": {
+					"id": "z6o9npjhh2e8qimvrcg4lpd0",
+					"name": "exec_in",
+					"friendly_name": "Input",
+					"pin_type": "Input",
+					"data_type": "Execution",
+					"value_type": "Normal",
+					"depends_on": ["u8vdkakvixrfmwje0g494480"],
+					"connected_to": [],
+					"index": 1
+				}
+			}
+		},
+		{
+			"id": "v5t6lankzpkdauomqo7pmxb4",
+			"name": "reroute",
+			"friendly_name": "Reroute",
+			"coordinates": [713.759, 565.329, 0],
+			"pins": {
+				"ryj0everm1jfq2e5xks3lhct": {
+					"id": "ryj0everm1jfq2e5xks3lhct",
+					"name": "route_in",
+					"friendly_name": "In",
+					"pin_type": "Input",
+					"data_type": "Execution",
+					"value_type": "Normal",
+					"depends_on": ["ctvrvnx15xmqgyzsbqfv0hbg"],
+					"connected_to": [],
+					"index": 1
+				},
+				"efl7pu1dl9v357nyfn2i6a62": {
+					"id": "efl7pu1dl9v357nyfn2i6a62",
+					"name": "route_out",
+					"friendly_name": "Out",
+					"pin_type": "Output",
+					"data_type": "Execution",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [],
+					"index": 1
+				}
+			}
+		},
+		{
+			"id": "z3o319ssjzb7ux1qm0fzm4j6",
+			"name": "reroute",
+			"friendly_name": "Reroute",
+			"coordinates": [524.3879, 665.904, 0],
+			"pins": {
+				"nt54dohrivgurnum6db8iazp": {
+					"id": "nt54dohrivgurnum6db8iazp",
+					"name": "route_in",
+					"friendly_name": "In",
+					"pin_type": "Input",
+					"data_type": "Struct",
+					"value_type": "Normal",
+					"depends_on": ["vvh6a3n3g1vy39nxed9xtetq"],
+					"connected_to": [],
+					"index": 1
+				},
+				"fyfjma34g0wekdn4sneeks0v": {
+					"id": "fyfjma34g0wekdn4sneeks0v",
+					"name": "route_out",
+					"friendly_name": "Out",
+					"pin_type": "Output",
+					"data_type": "Struct",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [],
+					"index": 1
+				}
+			}
+		},
+		{
+			"id": "es9ogthal43izsacehkd2k5r",
+			"name": "reroute",
+			"friendly_name": "Reroute",
+			"coordinates": [801.3913, 230.22194, 0],
+			"pins": {
+				"v1vkmm6wz52uxdqtnyzwcwts": {
+					"id": "v1vkmm6wz52uxdqtnyzwcwts",
+					"name": "route_in",
+					"friendly_name": "In",
+					"pin_type": "Input",
+					"data_type": "Execution",
+					"value_type": "Normal",
+					"depends_on": ["dkq6p9r8lco3hf2ut3lqn82t"],
+					"connected_to": [],
+					"index": 1
+				},
+				"iyw8o4dke1526u7jtbyxpmvy": {
+					"id": "iyw8o4dke1526u7jtbyxpmvy",
+					"name": "route_out",
+					"friendly_name": "Out",
+					"pin_type": "Output",
+					"data_type": "Execution",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [],
+					"index": 1
+				}
+			}
+		},
+		{
+			"id": "zvvqi3egtekgro6uvpjnp7bu",
+			"name": "reroute",
+			"friendly_name": "Reroute",
+			"comment": "",
+			"coordinates": [705.3473, 626.1191, 0],
+			"pins": {
+				"uq1bpmkdsadr1mrnn683a8io": {
+					"id": "uq1bpmkdsadr1mrnn683a8io",
+					"name": "route_out",
+					"friendly_name": "Out",
+					"pin_type": "Output",
+					"data_type": "String",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [],
+					"index": 1
+				},
+				"dhe2s4ey6bpfilbn6idel4j3": {
+					"id": "dhe2s4ey6bpfilbn6idel4j3",
+					"name": "route_in",
+					"friendly_name": "In",
+					"pin_type": "Input",
+					"data_type": "String",
+					"value_type": "Normal",
+					"depends_on": ["lts7w1lyqtk3o98y0afs47vn"],
+					"connected_to": [],
+					"index": 1
+				}
+			}
+		},
+		{
+			"id": "bqusecgbpoune54abeyha79x",
+			"name": "events_simple",
+			"friendly_name": "Website Loaded",
+			"coordinates": [384.59998, 228.62198, 0],
+			"pins": {
+				"im8lx3hvsdaausqu0dwtkjxd": {
+					"id": "im8lx3hvsdaausqu0dwtkjxd",
+					"name": "exec_out",
+					"friendly_name": "Output",
+					"pin_type": "Output",
+					"data_type": "Execution",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": ["nokqqodrqoy8h8awwrlkc03g"],
+					"index": 1
+				}
+			}
+		},
+		{
+			"id": "hdzp480cqqzbmbguj37wypm1",
+			"name": "equal_string",
+			"friendly_name": "==",
+			"comment": "User Already Knows Flow Like?",
+			"coordinates": [119.5596, 104.72942, 0],
+			"pins": {
+				"jrlfhj9mbfu68cpc6amgyi4b": {
+					"id": "jrlfhj9mbfu68cpc6amgyi4b",
+					"name": "equal",
+					"friendly_name": "Is Equal?",
+					"pin_type": "Output",
+					"data_type": "Boolean",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": ["jg5wqr6021g6qurye8ukyvam"],
+					"index": 1
+				},
+				"ciuqv34pzvm6cke9hfxwxcky": {
+					"id": "ciuqv34pzvm6cke9hfxwxcky",
+					"name": "string",
+					"friendly_name": "String",
+					"pin_type": "Input",
+					"data_type": "String",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [],
+					"default_value": [34, 85, 115, 101, 114, 34],
+					"index": 1
+				},
+				"xmd0cj649no6h3yjoi3yeezf": {
+					"id": "xmd0cj649no6h3yjoi3yeezf",
+					"name": "string",
+					"friendly_name": "String",
+					"pin_type": "Input",
+					"data_type": "String",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [],
+					"default_value": [
+						34, 65, 108, 114, 101, 97, 100, 121, 32, 75, 110, 111, 119, 115, 32,
+						70, 108, 111, 119, 32, 76, 105, 107, 101, 34
+					],
+					"index": 2
+				}
+			}
+		},
+		{
+			"id": "m10pxih6a3emy9htl0ownozm",
+			"name": "reroute",
+			"friendly_name": "Reroute",
+			"comment": "",
+			"coordinates": [1203.828, 591.92267, 0],
+			"pins": {
+				"utw6pey0x8phomwr7afrid7b": {
+					"id": "utw6pey0x8phomwr7afrid7b",
+					"name": "route_in",
+					"friendly_name": "In",
+					"pin_type": "Input",
+					"data_type": "Struct",
+					"value_type": "Normal",
+					"depends_on": ["sjj41vvfkduezrl7q3liel7p"],
+					"connected_to": [],
+					"index": 1
+				},
+				"aa68o8br2ihoeevgtly7dun0": {
+					"id": "aa68o8br2ihoeevgtly7dun0",
+					"name": "route_out",
+					"friendly_name": "Out",
+					"pin_type": "Output",
+					"data_type": "Struct",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": ["h1lk56ispbjfdszpzstbye4y"],
+					"index": 1
+				}
+			}
+		},
+		{
+			"id": "mec4gt47k8d6l0eo9q6ptei3",
+			"name": "open_local_db",
+			"friendly_name": "Open Database",
+			"coordinates": [333.5885, 573.4548, 0],
+			"pins": {
+				"vvh6a3n3g1vy39nxed9xtetq": {
+					"id": "vvh6a3n3g1vy39nxed9xtetq",
+					"name": "database",
+					"friendly_name": "Database",
+					"pin_type": "Output",
+					"data_type": "Struct",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": ["nt54dohrivgurnum6db8iazp"],
+					"index": 2
+				},
+				"x5yh97keopjcm01s3xsamiyy": {
+					"id": "x5yh97keopjcm01s3xsamiyy",
+					"name": "exec_out",
+					"friendly_name": "Created Database",
+					"pin_type": "Output",
+					"data_type": "Execution",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": ["xjnodd5yror4itj4c374g0ry"],
+					"index": 1
+				},
+				"zk29ofdo620o42lnbg5ovu13": {
+					"id": "zk29ofdo620o42lnbg5ovu13",
+					"name": "name",
+					"friendly_name": "Table Name",
+					"pin_type": "Input",
+					"data_type": "String",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [],
+					"default_value": [34, 69, 109, 112, 108, 111, 121, 101, 101, 115, 34],
+					"index": 2
+				},
+				"o6wbav35opo6kz0yen91w4ay": {
+					"id": "o6wbav35opo6kz0yen91w4ay",
+					"name": "exec_in",
+					"friendly_name": "Input",
+					"pin_type": "Input",
+					"data_type": "Execution",
+					"value_type": "Normal",
+					"depends_on": ["sq6fghjb351tc0z4e08tiuv2"],
+					"connected_to": [],
+					"index": 1
+				}
+			}
+		},
+		{
+			"id": "e5e1uepvefz3663n8s0gp76e",
+			"name": "ai_generative_make_history",
+			"friendly_name": "Make History",
+			"coordinates": [870.5044, 582.10895, 0],
+			"pins": {
+				"fv40uyle1wro64n3czvmdbvk": {
+					"id": "fv40uyle1wro64n3czvmdbvk",
+					"name": "model_name",
+					"friendly_name": "Model Name",
+					"pin_type": "Input",
+					"data_type": "String",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [],
+					"default_value": [34, 34],
+					"index": 1
+				},
+				"s9r92igepm03lc01fa13ydq2": {
+					"id": "s9r92igepm03lc01fa13ydq2",
+					"name": "history",
+					"friendly_name": "History",
+					"pin_type": "Output",
+					"data_type": "Struct",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": ["lvesjq7uksuknrbd4nfl5xbu"],
+					"index": 1
+				}
+			}
+		},
+		{
+			"id": "gbi596usqgegra6iojxwpm97",
+			"name": "reroute",
+			"friendly_name": "Reroute",
+			"coordinates": [805.3197, 527.8632, 0],
+			"pins": {
+				"lp51ximm0xvffy1mpjvywtez": {
+					"id": "lp51ximm0xvffy1mpjvywtez",
+					"name": "route_out",
+					"friendly_name": "Out",
+					"pin_type": "Output",
+					"data_type": "Execution",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": ["lcxzcd1xy22qliar7f54hdte"],
+					"index": 1
+				},
+				"umldlzo9dkw5i59n7rq4dsun": {
+					"id": "umldlzo9dkw5i59n7rq4dsun",
+					"name": "route_in",
+					"friendly_name": "In",
+					"pin_type": "Input",
+					"data_type": "Execution",
+					"value_type": "Normal",
+					"depends_on": [
+						"ooh2rc06z1yiigz6ev95hxx5",
+						"w98ohd2xv3ay37ikgznenjij"
+					],
+					"connected_to": [],
+					"index": 1
+				}
+			}
+		}
+	],
+	"comments": [
+		{
+			"id": "j86h609pneilig61vo72lelb",
+			"author": "anonymous",
+			"content": "![smiling](/smiling.webp)",
+			"comment_type": "Text",
+			"timestamp": {
+				"secs_since_epoch": 0,
+				"nanos_since_epoch": 0
+			},
+			"coordinates": [1267.7242, 1063.8608, 0],
+			"width": 215,
+			"height": 215,
+			"color": "#ffffff00",
+			"z_index": 3
+		},
+		{
+			"id": "sx4lrx3ejmxzb900z60pfw67",
+			"author": "anonymous",
+			"content": "# Flow-Like\nThe Only Production-Ready Automation Suite for Enterprise Scale Workflows.",
+			"comment_type": "Text",
+			"timestamp": {
+				"secs_since_epoch": 0,
+				"nanos_since_epoch": 0
+			},
+			"coordinates": [404, 66, 0],
+			"width": 540,
+			"height": 227,
+			"color": "#e89048",
+			"z_index": null
+		},
+		{
+			"id": "v4mlmcwm3kz1xptesw2fq7l8",
+			"author": "anonymous",
+			"content": "## Integrating AI\nEasily integrate AI into your process!",
+			"comment_type": "Text",
+			"timestamp": {
+				"secs_since_epoch": 0,
+				"nanos_since_epoch": 0
+			},
+			"coordinates": [843.59186, 365.55652, 0],
+			"width": 780,
+			"height": 280,
+			"color": "#752c9e",
+			"z_index": 2
+		},
+		{
+			"id": "jysk02zqsgitsulcumit6srp",
+			"author": "anonymous",
+			"content": "#### Links\n- [Download]()\n- [GitHub](https://github.com/TM9657/flow-like)\n- [Docs](https://docs.flow-like.com)",
+			"comment_type": "Text",
+			"timestamp": {
+				"secs_since_epoch": 0,
+				"nanos_since_epoch": 0
+			},
+			"coordinates": [811.9715, 213.00905, 0],
+			"width": 148,
+			"height": 103,
+			"color": "#3f35db",
+			"z_index": 2
+		},
+		{
+			"id": "dqc31z6pufr94c4dw2hh29fh",
+			"author": "anonymous",
+			"content": "## Scalable and Fast\nNot just Agent Scripting...\n- Built in Rust, Easily Scaling to Thousands of Requests / s\n- Made for Enterprise Systems\n- Hosted Anywhere (On-Prem, Cloud, Device)\n- Integrating Release Best Practices (Canary, Best Practices, Transparent Logging)",
+			"comment_type": "Text",
+			"timestamp": {
+				"secs_since_epoch": 0,
+				"nanos_since_epoch": 0
+			},
+			"coordinates": [108.688416, 400.93393, 0],
+			"width": 573,
+			"height": 248,
+			"color": "#1b737a",
+			"z_index": null
+		},
+		{
+			"id": "oya96qmsxodvhp1djsuv8enk",
+			"author": "anonymous",
+			"content": "### Features & Hosting\n\n| **Feature**              | **Personal** | **Enterprise** | **Enterprise (> 2500 Employees)** |\n| :---------------- | :------: | :------: | ----: |\n| **Pricing** |   Free   | Free | Contact Us |\n| **Hosting** |   PC & Cloud   | PC & Cloud | PC & Cloud |\n| **Features** |  All   | All | All |\n| **Support** |  Community   | Community | Professional |\n| **Custom Nodes & Trigger** | Difficult | Difficult | Easy |\n| **Parallel Workflows** | Unlimited | Unlimited | Unlimited (> 5000 / Small Node) |\n| **AI Models** | Local or Premium Plan | Local or Premium Plan | Self Hosted |\n\n#### Why is this so cheap and outperforming all Alternatives?\nWe care for good software. If you like it, contribute or consider a Premium Subscription..",
+			"comment_type": "Text",
+			"timestamp": {
+				"secs_since_epoch": 0,
+				"nanos_since_epoch": 0
+			},
+			"coordinates": [719.4675, 706.8148, 0],
+			"width": 684,
+			"height": 446,
+			"color": "#7a1b56",
+			"z_index": null
+		}
+	],
+	"cursorPosition": {
+		"x": 1747.0321874600809,
+		"y": 1271.5176847498553
+	},
+	"layers": []
+}

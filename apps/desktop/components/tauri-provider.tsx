@@ -21,14 +21,13 @@ import {
 	type IProfile,
 	type IRunPayload,
 	type ISettingsProfile,
-	IVersionType,
+	type IVersionType,
 	useBackendStore,
 	useDownloadManager,
 } from "@tm9657/flow-like-ui";
 import { useEffect, useState } from "react";
 
 export class TauriBackend implements IBackendState {
-
 	async getCatalog(): Promise<INode[]> {
 		const nodes: INode[] = await invoke("get_catalog");
 		return nodes;
@@ -47,21 +46,34 @@ export class TauriBackend implements IBackendState {
 		return board;
 	}
 
-	async createBoardVersion(appId: string, boardId: string, versionType: IVersionType): Promise<[number, number, number]> {
-		const newVersion: [number, number, number] = await invoke("create_board_version", {
-			appId: appId,
-			boardId: boardId,
-			versionType: versionType,
-		});
+	async createBoardVersion(
+		appId: string,
+		boardId: string,
+		versionType: IVersionType,
+	): Promise<[number, number, number]> {
+		const newVersion: [number, number, number] = await invoke(
+			"create_board_version",
+			{
+				appId: appId,
+				boardId: boardId,
+				versionType: versionType,
+			},
+		);
 
 		return newVersion;
 	}
 
-	async getBoardVersions(appId: string, boardId: string): Promise<[number, number, number][]> {
-		const boardVersions: [number, number, number][] = await invoke("get_board_versions", {
-			appId: appId,
-			boardId: boardId,
-		});
+	async getBoardVersions(
+		appId: string,
+		boardId: string,
+	): Promise<[number, number, number][]> {
+		const boardVersions: [number, number, number][] = await invoke(
+			"get_board_versions",
+			{
+				appId: appId,
+				boardId: boardId,
+			},
+		);
 		return boardVersions;
 	}
 

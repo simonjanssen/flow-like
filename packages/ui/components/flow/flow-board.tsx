@@ -23,7 +23,7 @@ import {
 	useEdgesState,
 	useKeyPress,
 	useNodesState,
-	useReactFlow
+	useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import {
@@ -36,7 +36,7 @@ import {
 	SquareChevronUpIcon,
 	Undo2Icon,
 	VariableIcon,
-	XIcon
+	XIcon,
 } from "lucide-react";
 import MiniSearch from "minisearch";
 import { useTheme } from "next-themes";
@@ -81,7 +81,7 @@ import { toastError, toastSuccess } from "../../lib/messages";
 import {
 	type IComment,
 	ICommentType,
-	type IVariable
+	type IVariable,
 } from "../../lib/schema/flow/board";
 import { type INode, IVariableType } from "../../lib/schema/flow/node";
 import type { IPin } from "../../lib/schema/flow/pin";
@@ -96,14 +96,14 @@ import { FlowRuns } from "./flow-runs";
 import { LayerNode } from "./layer-node";
 
 function hexToRgba(hex: string, alpha = 0.3): string {
-	let c = hex.replace('#', '');
-	if (c.length === 3) c = c[0]+c[0]+c[1]+c[1]+c[2]+c[2];
-	const num = parseInt(c, 16);
+	let c = hex.replace("#", "");
+	if (c.length === 3) c = c[0] + c[0] + c[1] + c[1] + c[2] + c[2];
+	const num = Number.parseInt(c, 16);
 	const r = (num >> 16) & 255;
 	const g = (num >> 8) & 255;
 	const b = num & 255;
 	return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  }
+}
 
 export function FlowBoard({
 	appId,
@@ -130,7 +130,11 @@ export function FlowBoard({
 	const { resolvedTheme } = useTheme();
 
 	const catalog: UseQueryResult<INode[]> = useInvoke(backend.getCatalog, []);
-	const board = useInvoke(backend.getBoard, [appId, boardId, version], boardId !== "");
+	const board = useInvoke(
+		backend.getBoard,
+		[appId, boardId, version],
+		boardId !== "",
+	);
 	const currentProfile = useInvoke(backend.getSettingsProfile, []);
 	const { addRun, removeRun, pushUpdate } = useRunExecutionStore();
 	const { screenToFlowPosition } = useReactFlow();
@@ -1037,7 +1041,16 @@ export function FlowBoard({
 	return (
 		<div className="min-h-dvh h-dvh max-h-dvh w-full flex-1 flex-grow">
 			<div className="flex items-center justify-center absolute translate-x-[-50%] mt-5 left-[50dvw] z-40">
-				{board.data && editBoard && <BoardMeta appId={appId} board={board.data} boardId={boardId} closeMeta={() => setEditBoard(false)} version={version} selectVersion={(version) => setVersion(version)} />}
+				{board.data && editBoard && (
+					<BoardMeta
+						appId={appId}
+						board={board.data}
+						boardId={boardId}
+						closeMeta={() => setEditBoard(false)}
+						version={version}
+						selectVersion={(version) => setVersion(version)}
+					/>
+				)}
 				<FlowDock
 					items={[
 						...(typeof parentRegister.boardParents[boardId] === "string" &&
