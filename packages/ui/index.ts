@@ -19,5 +19,5 @@ export {
 	type UseQueryResult,
 } from "@tanstack/react-query";
 export { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
-export { ReactFlowProvider } from "@xyflow/react";
+export * from "@xyflow/react";
 export { useTheme } from "next-themes";

@@ -14,10 +14,10 @@ export default defineConfig({
 		tailwind({
 			applyBaseStyles: false,
 		}),
-		markdoc(),
-		robotsTxt(),
-		sitemap(),
-		playformCompress(),
+		// markdoc(),
+		// robotsTxt(),
+		// sitemap(),
+		// playformCompress(),
 	],
 	output: "static",
 	markdown: {
