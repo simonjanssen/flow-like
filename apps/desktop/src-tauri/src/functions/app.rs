@@ -173,15 +173,15 @@ pub async fn get_app_size(
     app_handle: AppHandle,
     app_id: String,
 ) -> Result<usize, TauriFunctionError> {
-    let store = TauriFlowLikeState::get_project_store(&app_handle).await?;
+    let content_store = TauriFlowLikeState::get_project_storage_store(&app_handle).await?;
     let path = Path::from("apps").child(app_id);
 
-    let mut locations = store.list(Some(&path)).map_ok(|m| m.location).boxed();
+    let mut locations = content_store.list(Some(&path)).map_ok(|m| m.location).boxed();
     let mut size = 0;
 
     while let Some(location) = locations.next().await {
         if let Ok(location) = location {
-            if let Ok(meta) = store.head(&location).await {
+            if let Ok(meta) = content_store.head(&location).await {
                 size += meta.size;
             }
         }
@@ -196,7 +196,7 @@ pub async fn delete_app(app_handle: AppHandle, app_id: String) -> Result<(), Tau
         return Err(TauriFunctionError::new("App ID is empty"));
     };
 
-    let store = TauriFlowLikeState::get_project_store(&app_handle).await?;
+    let store = TauriFlowLikeState::get_project_storage_store(&app_handle).await?;
     let settings = TauriSettingsState::construct(&app_handle).await?;
 
     let mut settings = settings.lock().await;

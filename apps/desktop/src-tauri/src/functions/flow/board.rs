@@ -129,7 +129,7 @@ pub async fn get_board(
 #[tauri::command(async)]
 pub async fn close_board(handler: AppHandle, board_id: String) -> Result<(), TauriFunctionError> {
     let board_state = TauriFlowLikeState::construct(&handler).await?;
-    let store = TauriFlowLikeState::get_project_store(&handler).await?;
+    let store = TauriFlowLikeState::get_project_meta_store(&handler).await?;
 
     let board = { board_state.lock().await.remove_board(&board_id)? };
 
@@ -184,7 +184,7 @@ pub async fn update_board_meta(
     log_level: LogLevel,
     stage: ExecutionStage,
 ) -> Result<Board, TauriFunctionError> {
-    let store = TauriFlowLikeState::get_project_store(&handler).await?;
+    let store = TauriFlowLikeState::get_project_meta_store(&handler).await?;
     let board_state = TauriFlowLikeState::construct(&handler).await?;
     let board = board_state.lock().await.get_board(&board_id)?;
     let mut board = board.lock().await;
@@ -205,7 +205,7 @@ pub async fn undo_board(
 ) -> Result<Board, TauriFunctionError> {
     let flow_like_state = TauriFlowLikeState::construct(&handler).await?;
     let board = flow_like_state.lock().await.get_board(&board_id)?;
-    let store = TauriFlowLikeState::get_project_store(&handler).await?;
+    let store = TauriFlowLikeState::get_project_meta_store(&handler).await?;
     let mut board = board.lock().await;
     let _ = board.undo(commands, flow_like_state).await;
     board.save(Some(store.clone())).await?;
@@ -219,7 +219,7 @@ pub async fn redo_board(
     board_id: String,
     commands: Vec<GenericCommand>,
 ) -> Result<Board, TauriFunctionError> {
-    let store = TauriFlowLikeState::get_project_store(&handler).await?;
+    let store = TauriFlowLikeState::get_project_meta_store(&handler).await?;
     let flow_like_state = TauriFlowLikeState::construct(&handler).await?;
     let board = flow_like_state.lock().await.get_board(&board_id)?;
     let mut board = board.lock().await;
@@ -236,7 +236,7 @@ pub async fn execute_command(
     command: GenericCommand,
 ) -> Result<GenericCommand, TauriFunctionError> {
     let flow_like_state = TauriFlowLikeState::construct(&handler).await?;
-    let store = TauriFlowLikeState::get_project_store(&handler).await?;
+    let store = TauriFlowLikeState::get_project_meta_store(&handler).await?;
 
     let board = flow_like_state.lock().await.get_board(&board_id)?;
 
@@ -255,7 +255,7 @@ pub async fn execute_commands(
     commands: Vec<GenericCommand>,
 ) -> Result<Vec<GenericCommand>, TauriFunctionError> {
     let flow_like_state = TauriFlowLikeState::construct(&handler).await?;
-    let store = TauriFlowLikeState::get_project_store(&handler).await?;
+    let store = TauriFlowLikeState::get_project_meta_store(&handler).await?;
 
     let board = flow_like_state.lock().await.get_board(&board_id)?;
 
