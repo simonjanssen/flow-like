@@ -15,9 +15,8 @@ import type {
 	ILogMetadata,
 	INode,
 	IProfile,
-	IRelease,
-	IVersionType,
 	IRunPayload,
+	IVersionType
 } from "../lib";
 import type { ISettingsProfile } from "../types";
 

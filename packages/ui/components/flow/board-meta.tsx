@@ -2,24 +2,13 @@
 
 import { useCallback, useState } from "react";
 import { useInvalidateInvoke, useInvoke } from "../../hooks";
-import { ILogLevel, type IBoard } from "../../lib";
-import { IExecutionStage, IVersionType } from "../../lib";
+import { IExecutionStage, ILogLevel, IVersionType, type IBoard } from "../../lib";
 import { useBackend } from "../../state/backend-state";
-import { Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Input, Label, Popover, PopoverContent, PopoverTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Separator, Textarea } from "../ui";
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuPortal,
-    DropdownMenuSeparator,
-    DropdownMenuShortcut,
-    DropdownMenuSub,
-    DropdownMenuSubContent,
-    DropdownMenuSubTrigger,
-    DropdownMenuTrigger,
-} from "../ui"
+    Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DropdownMenu,
+    DropdownMenuContent, DropdownMenuItem,
+    DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Separator, Textarea
+} from "../ui";
 export interface IBoardMeta {
     name: string;
     description: string;
@@ -27,14 +16,14 @@ export interface IBoardMeta {
     logLevel: ILogLevel;
 }
 
-export function BoardMeta({ appId, boardId, board, version, closeMeta, selectVersion }: {
+export function BoardMeta({ appId, boardId, board, version, closeMeta, selectVersion }: Readonly<{
     appId: string;
     boardId: string;
     board: IBoard,
     version?: [number, number, number];
     closeMeta: () => void;
     selectVersion: (version?: [number, number, number]) => void;
-}) {
+}>) {
     const [boardMeta, setBoardMeta] = useState<IBoardMeta>({
         name: board.name,
         description: board.description,

@@ -16,7 +16,6 @@ import {
 	type OnEdgesChange,
 	type OnNodesChange,
 	ReactFlow,
-	type ReactFlowProps,
 	addEdge,
 	applyEdgeChanges,
 	applyNodeChanges,
@@ -24,13 +23,12 @@ import {
 	useEdgesState,
 	useKeyPress,
 	useNodesState,
-	useReactFlow,
+	useReactFlow
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import {
 	ArrowBigLeftDashIcon,
 	HistoryIcon,
-	LayersIcon,
 	NotebookPenIcon,
 	PlayCircleIcon,
 	Redo2Icon,
@@ -38,11 +36,10 @@ import {
 	SquareChevronUpIcon,
 	Undo2Icon,
 	VariableIcon,
-	XIcon,
+	XIcon
 } from "lucide-react";
 import MiniSearch from "minisearch";
 import { useTheme } from "next-themes";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ImperativePanelHandle } from "react-resizable-panels";
@@ -61,7 +58,7 @@ import {
 	ResizablePanel,
 	ResizablePanelGroup,
 } from "../../components/ui/resizable";
-import { useInvalidateInvoke, useInvoke } from "../../hooks/use-invoke";
+import { useInvoke } from "../../hooks/use-invoke";
 import {
 	type IGenericCommand,
 	type ILogMetadata,
@@ -84,9 +81,7 @@ import { toastError, toastSuccess } from "../../lib/messages";
 import {
 	type IComment,
 	ICommentType,
-	IExecutionStage,
-	ILogLevel,
-	type IVariable,
+	type IVariable
 } from "../../lib/schema/flow/board";
 import { type INode, IVariableType } from "../../lib/schema/flow/node";
 import type { IPin } from "../../lib/schema/flow/pin";
@@ -95,27 +90,21 @@ import { convertJsonToUint8Array } from "../../lib/uint8";
 import { useBackend } from "../../state/backend-state";
 import { useFlowBoardParentState } from "../../state/flow-board-parent-state";
 import { useRunExecutionStore } from "../../state/run-execution-state";
-import {
-	Button,
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-	Input,
-	Label,
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-	Separator,
-	Textarea,
-} from "../ui";
+import { BoardMeta } from "./board-meta";
 import { useUndoRedo } from "./flow-history";
 import { FlowRuns } from "./flow-runs";
 import { LayerNode } from "./layer-node";
-import { BoardMeta } from "./board-meta";
+
+function hexToRgba(hex: string, alpha = 0.3): string {
+	let c = hex.replace('#', '');
+	if (c.length === 3) c = c[0]+c[0]+c[1]+c[1]+c[2]+c[2];
+	const num = parseInt(c, 16);
+	const r = (num >> 16) & 255;
+	const g = (num >> 8) & 255;
+	const b = num & 255;
+	return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
 export function FlowBoard({
 	appId,
 	boardId,
@@ -1236,11 +1225,15 @@ export function FlowBoard({
 												if (node.type === "commentNode") {
 													const commentData: IComment = node.data
 														.comment as IComment;
-													const color =
+													let color =
 														commentData.color ?? "hsl(var(--muted)/ 0.3)";
+
+													if (color.startsWith("#")) {
+														color = hexToRgba(color, 0.3);
+													}
 													return color;
 												}
-												return "hsl(var(--primary)/ 0.3)";
+												return "hsl(var(--primary)/ 0.6)";
 											}}
 										/>
 										<Background

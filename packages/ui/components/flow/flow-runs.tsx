@@ -14,14 +14,11 @@ import {
 } from "lucide-react";
 import { memo, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useInvoke } from "../../hooks";
 import {
-	type IBoard,
 	ILogLevel,
-	type ILogMetadata,
 	type INode,
 	formatDuration,
-	formatRelativeTime,
+	formatRelativeTime
 } from "../../lib";
 import { logLevelFromNumber } from "../../lib/log-level";
 import { parseUint8ArrayToJson } from "../../lib/uint8";
