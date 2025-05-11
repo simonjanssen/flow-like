@@ -33,7 +33,7 @@ export type {
 	IReleaseNotes,
 	ICanaryRelease,
 } from "./flow/release";
-export type { IVersionType } from "./flow/version-type";
+export { IVersionType } from "./flow/version-type";
 export type { ICanary } from "./flow/canary";
 export {
 	type IPin,

@@ -33,7 +33,7 @@ impl TauriFlowLikeState {
         board_id: &str,
     ) -> anyhow::Result<(Arc<Mutex<Board>>, Arc<Mutex<FlowLikeState>>)> {
         let flow_like_state = TauriFlowLikeState::construct(app_handle).await?;
-        let board = flow_like_state.lock().await.get_board(board_id)?;
+        let board = flow_like_state.lock().await.get_board(board_id, None)?;
         Ok((board, flow_like_state))
     }
 

@@ -314,8 +314,15 @@ impl FlowLikeState {
     }
 
     #[cfg(feature = "flow-runtime")]
-    pub fn get_board(&self, board_id: &str) -> flow_like_types::Result<Arc<Mutex<Board>>> {
-        let board = self.board_registry.try_get(board_id);
+    pub fn get_board(&self, board_id: &str, version: Option<(u32, u32, u32)>) -> flow_like_types::Result<Arc<Mutex<Board>>> {
+
+        let key = if let Some(version) = version {
+            format!("{}-{}-{}-{}", board_id, version.0, version.1, version.2)
+        } else {
+            board_id.to_string()
+        };
+
+        let board = self.board_registry.try_get(&key);
 
         match board.try_unwrap() {
             Some(board) => Ok(board.clone()),
@@ -343,9 +350,15 @@ impl FlowLikeState {
         &self,
         board_id: &str,
         board: Arc<Mutex<Board>>,
+        version: Option<(u32, u32, u32)>,
     ) -> flow_like_types::Result<()> {
+        let key = if let Some(version) = version {
+            format!("{}-{}-{}-{}", board_id, version.0, version.1, version.2)
+        } else {
+            board_id.to_string()
+        };
         self.board_registry
-            .insert(board_id.to_string(), board.clone());
+            .insert(key, board.clone());
         Ok(())
     }
 

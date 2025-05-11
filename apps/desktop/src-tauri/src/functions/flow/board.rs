@@ -20,7 +20,7 @@ pub async fn save_board(handler: AppHandle, board_id: String) -> Result<(), Taur
     let file_path = handler.dialog().file().blocking_save_file();
     if let Some(file_path) = file_path {
         let board_state = TauriFlowLikeState::construct(&handler).await?;
-        let board = board_state.lock().await.get_board(&board_id)?;
+        let board = board_state.lock().await.get_board(&board_id, None)?;
         let board = board.lock().await.clone();
         let board_string = serde_json::to_string(&board)
             .map_err(|e| TauriFunctionError::from(anyhow::Error::new(e)))?;
@@ -43,7 +43,7 @@ pub async fn create_board(app_handle: AppHandle) -> Result<Board, TauriFunctionE
     board_state
         .lock()
         .await
-        .register_board(&board.id, Arc::new(Mutex::new(board.clone())))?;
+        .register_board(&board.id, Arc::new(Mutex::new(board.clone())), None)?;
     Ok(board)
 }
 
@@ -55,7 +55,7 @@ pub async fn create_board_version(
     version_type: VersionType,
 ) -> Result<(u32, u32, u32), TauriFunctionError> {
     let board_state = TauriFlowLikeState::construct(&handler).await?;
-    let board = board_state.lock().await.get_board(&board_id);
+    let board = board_state.lock().await.get_board(&board_id, None);
     if let Ok(board) = board {
         let mut board = board.lock().await;
         let version = board.create_version(version_type, None).await?;
@@ -84,7 +84,7 @@ pub async fn get_board_versions(
     board_id: String,
 ) -> Result<Vec<(u32, u32, u32)>, TauriFunctionError> {
     let board_state = TauriFlowLikeState::construct(&handler).await?;
-    let board = board_state.lock().await.get_board(&board_id);
+    let board = board_state.lock().await.get_board(&board_id, None);
     if let Ok(board) = board {
         let board = board.lock().await;
         let versions = board.get_versions(None).await?;
@@ -110,7 +110,7 @@ pub async fn get_board(
     version: Option<(u32, u32, u32)>,
 ) -> Result<Board, TauriFunctionError> {
     let board_state = TauriFlowLikeState::construct(&handler).await?;
-    let board = board_state.lock().await.get_board(&board_id);
+    let board = board_state.lock().await.get_board(&board_id, version);
     if let Ok(board) = board {
         let board = board.lock().await.clone();
         return Ok(board);
@@ -186,7 +186,7 @@ pub async fn update_board_meta(
 ) -> Result<Board, TauriFunctionError> {
     let store = TauriFlowLikeState::get_project_meta_store(&handler).await?;
     let board_state = TauriFlowLikeState::construct(&handler).await?;
-    let board = board_state.lock().await.get_board(&board_id)?;
+    let board = board_state.lock().await.get_board(&board_id, None)?;
     let mut board = board.lock().await;
     board.name = name;
     board.description = description;
@@ -204,7 +204,7 @@ pub async fn undo_board(
     commands: Vec<GenericCommand>,
 ) -> Result<Board, TauriFunctionError> {
     let flow_like_state = TauriFlowLikeState::construct(&handler).await?;
-    let board = flow_like_state.lock().await.get_board(&board_id)?;
+    let board = flow_like_state.lock().await.get_board(&board_id, None)?;
     let store = TauriFlowLikeState::get_project_meta_store(&handler).await?;
     let mut board = board.lock().await;
     let _ = board.undo(commands, flow_like_state).await;
@@ -221,7 +221,7 @@ pub async fn redo_board(
 ) -> Result<Board, TauriFunctionError> {
     let store = TauriFlowLikeState::get_project_meta_store(&handler).await?;
     let flow_like_state = TauriFlowLikeState::construct(&handler).await?;
-    let board = flow_like_state.lock().await.get_board(&board_id)?;
+    let board = flow_like_state.lock().await.get_board(&board_id, None)?;
     let mut board = board.lock().await;
     let _ = board.redo(commands, flow_like_state).await;
     board.save(Some(store.clone())).await?;
@@ -238,7 +238,7 @@ pub async fn execute_command(
     let flow_like_state = TauriFlowLikeState::construct(&handler).await?;
     let store = TauriFlowLikeState::get_project_meta_store(&handler).await?;
 
-    let board = flow_like_state.lock().await.get_board(&board_id)?;
+    let board = flow_like_state.lock().await.get_board(&board_id, None)?;
 
     let mut board = board.lock().await;
     let command = board.execute_command(command, flow_like_state).await?;
@@ -257,7 +257,7 @@ pub async fn execute_commands(
     let flow_like_state = TauriFlowLikeState::construct(&handler).await?;
     let store = TauriFlowLikeState::get_project_meta_store(&handler).await?;
 
-    let board = flow_like_state.lock().await.get_board(&board_id)?;
+    let board = flow_like_state.lock().await.get_board(&board_id, None)?;
 
     let mut board = board.lock().await;
     let commands = board.execute_commands(commands, flow_like_state).await?;

@@ -115,6 +115,7 @@ import {
 import { useUndoRedo } from "./flow-history";
 import { FlowRuns } from "./flow-runs";
 import { LayerNode } from "./layer-node";
+import { BoardMeta } from "./board-meta";
 export function FlowBoard({
 	appId,
 	boardId,
@@ -129,7 +130,7 @@ export function FlowBoard({
 	const { refetchLogs, setCurrentMetadata, currentMetadata } =
 		useLogAggregation();
 	const flowRef = useRef<any>(null);
-
+	const [version, setVersion] = useState<[number, number, number]>();
 	const flowPanelRef = useRef<ImperativePanelHandle>(null);
 	const logPanelRef = useRef<ImperativePanelHandle>(null);
 	const varPanelRef = useRef<ImperativePanelHandle>(null);
@@ -140,7 +141,7 @@ export function FlowBoard({
 	const { resolvedTheme } = useTheme();
 
 	const catalog: UseQueryResult<INode[]> = useInvoke(backend.getCatalog, []);
-	const board = useInvoke(backend.getBoard, [appId, boardId], boardId !== "");
+	const board = useInvoke(backend.getBoard, [appId, boardId, version], boardId !== "");
 	const currentProfile = useInvoke(backend.getSettingsProfile, []);
 	const { addRun, removeRun, pushUpdate } = useRunExecutionStore();
 	const { screenToFlowPosition } = useReactFlow();
@@ -155,12 +156,6 @@ export function FlowBoard({
 		new Map(),
 	);
 	const [editBoard, setEditBoard] = useState(false);
-	const [boardMeta, setBoardMeta] = useState({
-		name: "",
-		description: "",
-		stage: "Dev",
-		logLevel: "Debug",
-	});
 	const [currentLayer, setCurrentLayer] = useState<string | undefined>();
 	const [layerPath, setLayerPath] = useState<string | undefined>();
 	const colorMode = useMemo(
@@ -178,23 +173,31 @@ export function FlowBoard({
 
 	const executeCommand = useCallback(
 		async (command: IGenericCommand, append = false): Promise<any> => {
+			if (typeof version !== "undefined") {
+				toastError("Cannot change old version", <XIcon />);
+				return;
+			}
 			const result = await backend.executeCommand(appId, boardId, command);
 			await pushCommand(result, append);
 			await board.refetch();
 			return result;
 		},
-		[board.refetch],
+		[board.refetch, appId, boardId, backend, pushCommand, version],
 	);
 
 	const executeCommands = useCallback(
 		async (commands: IGenericCommand[]) => {
+			if (typeof version !== "undefined") {
+				toastError("Cannot change old version", <XIcon />);
+				return;
+			}
 			if (commands.length === 0) return;
 			const result = await backend.executeCommands(appId, boardId, commands);
 			await pushCommands(result);
 			await board.refetch();
 			return result;
 		},
-		[board.refetch],
+		[board.refetch, appId, boardId, backend, pushCommands, version],
 	);
 
 	useEffect(() => {
@@ -314,6 +317,10 @@ export function FlowBoard({
 
 	const handlePasteCB = useCallback(
 		async (event: ClipboardEvent) => {
+			if (typeof version !== "undefined") {
+				toastError("Cannot change old version", <XIcon />);
+				return;
+			}
 			const currentCursorPosition = screenToFlowPosition({
 				x: mousePosition.x,
 				y: mousePosition.y,
@@ -326,7 +333,7 @@ export function FlowBoard({
 				currentLayer,
 			);
 		},
-		[boardId, mousePosition, executeCommand, currentLayer],
+		[boardId, mousePosition, executeCommand, currentLayer, version],
 	);
 
 	const handleCopyCB = useCallback(
@@ -361,6 +368,10 @@ export function FlowBoard({
 			) {
 				event.preventDefault();
 				event.stopPropagation();
+				if (typeof version !== "undefined") {
+					toastError("Cannot change old version", <XIcon />);
+					return;
+				}
 				const stack = await undo();
 				if (stack) await backend.undoBoard(appId, boardId, stack);
 				toastSuccess("Undo", <Undo2Icon className="w-4 h-4" />);
@@ -372,6 +383,10 @@ export function FlowBoard({
 			if ((event.metaKey || event.ctrlKey) && event.key === "y") {
 				event.preventDefault();
 				event.stopPropagation();
+				if (typeof version !== "undefined") {
+					toastError("Cannot change old version", <XIcon />);
+					return;
+				}
 				const stack = await redo();
 				if (stack) await backend.redoBoard(appId, boardId, stack);
 				toastSuccess("Redo", <Redo2Icon className="w-4 h-4" />);
@@ -386,6 +401,10 @@ export function FlowBoard({
 			) {
 				event.preventDefault();
 				event.stopPropagation();
+				if (typeof version !== "undefined") {
+					toastError("Cannot change old version", <XIcon />);
+					return;
+				}
 				const node = catalog.data?.find(
 					(node) => node.name === "control_branch",
 				);
@@ -403,6 +422,10 @@ export function FlowBoard({
 			) {
 				event.preventDefault();
 				event.stopPropagation();
+				if (typeof version !== "undefined") {
+					toastError("Cannot change old version", <XIcon />);
+					return;
+				}
 				const node = catalog.data?.find(
 					(node) => node.name === "control_for_each",
 				);
@@ -419,6 +442,10 @@ export function FlowBoard({
 			) {
 				event.preventDefault();
 				event.stopPropagation();
+				if (typeof version !== "undefined") {
+					toastError("Cannot change old version", <XIcon />);
+					return;
+				}
 				const node = catalog.data?.find((node) => node.name === "log_info");
 				if (!node) return;
 				await placeNodeShortcut(node);
@@ -433,13 +460,17 @@ export function FlowBoard({
 			) {
 				event.preventDefault();
 				event.stopPropagation();
+				if (typeof version !== "undefined") {
+					toastError("Cannot change old version", <XIcon />);
+					return;
+				}
 				const node = catalog.data?.find((node) => node.name === "reroute");
 				if (!node) return;
 				await placeNodeShortcut(node);
 				await board.refetch();
 			}
 		},
-		[boardId, board, backend],
+		[boardId, board, backend, version],
 	);
 
 	const placeNode = useCallback(
@@ -607,12 +638,6 @@ export function FlowBoard({
 		setNodes(parsed.nodes);
 		setEdges(parsed.edges);
 		setPinCache(new Map(parsed.cache));
-		setBoardMeta({
-			name: board.data.name,
-			description: board.data.description,
-			stage: board.data.stage,
-			logLevel: board.data.log_level,
-		});
 	}, [board.data, currentLayer]);
 
 	const miniSearch = useMemo(
@@ -1023,109 +1048,7 @@ export function FlowBoard({
 	return (
 		<div className="min-h-dvh h-dvh max-h-dvh w-full flex-1 flex-grow">
 			<div className="flex items-center justify-center absolute translate-x-[-50%] mt-5 left-[50dvw] z-40">
-				<Dialog
-					open={editBoard}
-					onOpenChange={async (open) => {
-						if (open) return;
-						await backend.updateBoardMeta(
-							appId,
-							boardId,
-							boardMeta.name,
-							boardMeta.description,
-							boardMeta.logLevel as ILogLevel,
-							boardMeta.stage as IExecutionStage,
-						);
-						board.refetch();
-						setEditBoard(false);
-					}}
-				>
-					<DialogContent>
-						<DialogHeader>
-							<DialogTitle>Edit Board Metadata</DialogTitle>
-							<DialogDescription>
-								Give your Board a name and Description for future use!
-							</DialogDescription>
-						</DialogHeader>
-						<Separator />
-						<div className="grid w-full max-w-sm items-center gap-1.5">
-							<Label htmlFor="name">Name</Label>
-							<Input
-								value={boardMeta.name}
-								onChange={(e) =>
-									setBoardMeta((old) => ({ ...old, name: e.target.value }))
-								}
-								type="text"
-								id="name"
-								placeholder="Name"
-							/>
-						</div>
-						<div className="grid w-full max-w-sm items-center gap-1.5">
-							<Label htmlFor="description">Description</Label>
-							<Textarea
-								value={boardMeta.description}
-								onChange={(e) =>
-									setBoardMeta((old) => ({
-										...old,
-										description: e.target.value,
-									}))
-								}
-								id="description"
-								placeholder="Description"
-							/>
-						</div>
-						<div className="grid w-full max-w-sm items-center gap-1.5">
-							<Label htmlFor="stage">Stage</Label>
-							<Select
-								value={boardMeta.stage}
-								onValueChange={(e) =>
-									setBoardMeta((old) => ({
-										...old,
-										stage: e as IExecutionStage,
-									}))
-								}
-							>
-								<SelectTrigger id="stage" className="w-full max-w-sm">
-									<SelectValue placeholder="Stage" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value={IExecutionStage.Dev}>
-										Development
-									</SelectItem>
-									<SelectItem value={IExecutionStage.Int}>
-										Integration
-									</SelectItem>
-									<SelectItem value={IExecutionStage.QA}>QA</SelectItem>
-									<SelectItem value={IExecutionStage.PreProd}>
-										Pre-Production
-									</SelectItem>
-									<SelectItem value={IExecutionStage.Prod}>
-										Production
-									</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
-						<div className="grid w-full max-w-sm items-center gap-1.5">
-							<Label htmlFor="stage">Log Level</Label>
-							<Select
-								value={boardMeta.logLevel}
-								onValueChange={(e) =>
-									setBoardMeta((old) => ({ ...old, logLevel: e as ILogLevel }))
-								}
-							>
-								<SelectTrigger id="stage" className="w-full max-w-sm">
-									<SelectValue placeholder="Stage" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value={ILogLevel.Debug}>Debug</SelectItem>
-									<SelectItem value={ILogLevel.Info}>Info</SelectItem>
-									<SelectItem value={ILogLevel.Warn}>Warning</SelectItem>
-									<SelectItem value={ILogLevel.Error}>Error</SelectItem>
-									<SelectItem value={ILogLevel.Fatal}>Fatal</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
-					</DialogContent>
-				</Dialog>
+				{board.data && editBoard && <BoardMeta appId={appId} board={board.data} boardId={boardId} closeMeta={() => setEditBoard(false)} version={version} selectVersion={(version) => setVersion(version)} />}
 				<FlowDock
 					items={[
 						...(typeof parentRegister.boardParents[boardId] === "string" &&
@@ -1150,7 +1073,7 @@ export function FlowBoard({
 						},
 						{
 							icon: <NotebookPenIcon />,
-							title: "Rename Board",
+							title: "Manage Board",
 							onClick: async () => {
 								setEditBoard(true);
 							},
@@ -1254,10 +1177,16 @@ export function FlowBoard({
 											{board.data?.layers[currentLayer]?.name}
 										</h2>
 									)}
-
+									{version && (
+										<h3 className="absolute top-0 mr-2 mt-2 right-0 z-10 text-muted pointer-events-none select-none">
+											Version {version[0]}.{version[1]}.{version[2]} - Read-Only
+										</h3>
+									)}
 									<ReactFlow
 										suppressHydrationWarning
 										onContextMenu={onContextMenuCB}
+										nodesDraggable={typeof version === "undefined"}
+										nodesConnectable={typeof version === "undefined"}
 										ref={flowRef}
 										colorMode={colorMode}
 										nodes={nodes}
@@ -1373,6 +1302,8 @@ export function FlowBoard({
 							nodes={board.data.nodes}
 							appId={appId}
 							boardId={boardId}
+							version={board.data.version as [number, number, number]}
+							onVersionChange={setVersion}
 						/>
 					)}
 				</ResizablePanel>

@@ -546,7 +546,7 @@ impl Board {
                 Some(name) => name,
                 None => continue,
             };
-            if file_name.ends_with(".board") {
+            if !file_name.ends_with(".board") {
                 continue;
             }
             let version = file_name.strip_suffix(".board").unwrap_or(file_name);
