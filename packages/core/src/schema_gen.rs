@@ -3,7 +3,7 @@ use crate::{
     bit::{Bit, BitModelPreference, BitPack, LLMParameters, VLMParameters},
     flow::{
         board::{
-            Board,
+            Board, VersionType,
             commands::{
                 GenericCommand,
                 comments::{
@@ -27,6 +27,7 @@ use crate::{
         execution::{LogMeta, RunPayload, log::LogMessage},
         node::Node,
         pin::Pin,
+        release::{CanaryRelease, Release},
         variable::Variable,
     },
     hub::Hub,
@@ -87,6 +88,9 @@ pub fn generate_schema(base_path: PathBuf) -> flow_like_types::Result<()> {
 
     generate_and_save_schema::<RunPayload>(&base_path, "flow/run-payload.json")?;
     generate_and_save_schema::<Board>(&base_path, "flow/board.json")?;
+    generate_and_save_schema::<Release>(&base_path, "flow/release.json")?;
+    generate_and_save_schema::<VersionType>(&base_path, "flow/version-type.json")?;
+    generate_and_save_schema::<CanaryRelease>(&base_path, "flow/canary.json")?;
     generate_and_save_schema::<GenericCommand>(
         &base_path,
         "flow/board/commands/generic-command.json",

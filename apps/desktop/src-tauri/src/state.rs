@@ -57,7 +57,7 @@ impl TauriFlowLikeState {
             .read()
             .await
             .stores
-            .project_store
+            .app_storage_store
             .clone()
             .ok_or(anyhow::anyhow!("Project store not found"))?
             .as_generic();

@@ -14,6 +14,7 @@ impl ToProto<flow_like_types::proto::App> for App {
             authors: self.authors.clone(),
             bits: self.bits.clone(),
             boards: self.boards.clone(),
+            releases: self.releases.clone(),
             created_at: Some(Timestamp::from(self.created_at)),
             updated_at: Some(Timestamp::from(self.updated_at)),
         }
@@ -32,6 +33,7 @@ impl FromProto<flow_like_types::proto::App> for App {
             authors: proto.authors,
             bits: proto.bits,
             boards: proto.boards,
+            releases: proto.releases,
             created_at: proto
                 .created_at
                 .map(|t| SystemTime::try_from(t).unwrap_or(SystemTime::UNIX_EPOCH))

@@ -44,23 +44,20 @@ impl NodeLogic for IndexLocalDatabaseNode {
 
         node.add_input_pin("column", "Column", "Column to Index", VariableType::String)
             .set_default_value(Some(json!("")));
-        node.add_input_pin(
-            "type",
-            "Type",
-            "Index Type to build",
-            VariableType::String,
-        )
-        .set_options(PinOptions::new().set_valid_values(
-            vec![
-                "BTREE".to_string(),
-                "BITMAP".to_string(),
-                "LABEL LIST".to_string(),
-                "FULL TEXT".to_string(),
-                "VECTOR".to_string(),
-                "AUTO".to_string()
-            ]
-        ).build())
-        .set_default_value(Some(json!("AUTO")));
+        node.add_input_pin("type", "Type", "Index Type to build", VariableType::String)
+            .set_options(
+                PinOptions::new()
+                    .set_valid_values(vec![
+                        "BTREE".to_string(),
+                        "BITMAP".to_string(),
+                        "LABEL LIST".to_string(),
+                        "FULL TEXT".to_string(),
+                        "VECTOR".to_string(),
+                        "AUTO".to_string(),
+                    ])
+                    .build(),
+            )
+            .set_default_value(Some(json!("AUTO")));
 
         node.add_output_pin(
             "exec_out",

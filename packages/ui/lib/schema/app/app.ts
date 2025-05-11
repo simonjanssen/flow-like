@@ -6,6 +6,7 @@ export interface IApp {
 	frontend?: null | IFrontendConfiguration;
 	id: string;
 	meta: { [key: string]: IBitMeta };
+	releases: string[];
 	updated_at: ISystemTime;
 	[property: string]: any;
 }

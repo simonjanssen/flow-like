@@ -70,17 +70,17 @@
 			"items": [
 				{
 					"type": "integer",
-					"format": "uint8",
+					"format": "uint32",
 					"minimum": 0.0
 				},
 				{
 					"type": "integer",
-					"format": "uint8",
+					"format": "uint32",
 					"minimum": 0.0
 				},
 				{
 					"type": "integer",
-					"format": "uint8",
+					"format": "uint32",
 					"minimum": 0.0
 				}
 			],

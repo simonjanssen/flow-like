@@ -15,6 +15,7 @@ use crate::{
 use commands::GenericCommand;
 use flow_like_storage::object_store::{ObjectStore, path::Path};
 use flow_like_types::{FromProto, ToProto, create_id, sync::Mutex};
+use futures::StreamExt;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -44,6 +45,14 @@ pub enum LayerType {
     Macro,
     Collapsed,
 }
+
+#[derive(Serialize, Deserialize, JsonSchema, Clone)]
+pub enum VersionType {
+    Major,
+    Minor,
+    Patch,
+}
+
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 pub struct Layer {
     pub id: String,
@@ -88,7 +97,7 @@ pub struct Board {
     pub variables: HashMap<String, Variable>,
     pub comments: HashMap<String, Comment>,
     pub viewport: (f32, f32, f32),
-    pub version: (u8, u8, u8),
+    pub version: (u32, u32, u32),
     pub stage: ExecutionStage,
     pub log_level: LogLevel,
     pub refs: HashMap<String, String>,
@@ -147,26 +156,19 @@ impl Board {
 
     async fn node_updates(&mut self, state: Arc<Mutex<FlowLikeState>>) {
         let reference = Arc::new(self.clone());
+        let registry = state.lock().await.node_registry().clone();
+        let registry = registry.read().await;
         for node in self.nodes.values_mut() {
             let node_logic = match self.logic_nodes.get(&node.name) {
                 Some(logic) => Arc::clone(logic),
-                None => {
-                    match state
-                        .lock()
-                        .await
-                        .node_registry()
-                        .read()
-                        .await
-                        .instantiate(node)
-                    {
-                        Ok(new_logic) => {
-                            self.logic_nodes
-                                .insert(node.name.clone(), Arc::clone(&new_logic));
-                            Arc::clone(&new_logic)
-                        }
-                        Err(_) => continue,
+                None => match registry.instantiate(node) {
+                    Ok(new_logic) => {
+                        self.logic_nodes
+                            .insert(node.name.clone(), Arc::clone(&new_logic));
+                        Arc::clone(&new_logic)
                     }
-                }
+                    Err(_) => continue,
+                },
             };
             node_logic.on_update(node, reference.clone()).await;
         }
@@ -431,6 +433,55 @@ impl Board {
         self.variables.get(variable_id)
     }
 
+    pub async fn create_version(
+        &mut self,
+        version_type: VersionType,
+        store: Option<Arc<dyn ObjectStore>>,
+    ) -> flow_like_types::Result<(u32, u32, u32)> {
+        let version = self.version.clone();
+
+        let to = self
+            .board_dir
+            .child("versions")
+            .child(self.id.clone())
+            .child(format!(
+                "{}_{}_{}.board",
+                self.version.0, self.version.1, self.version.2
+            ));
+
+        let store = match store {
+            Some(store) => store,
+            None => self
+                .app_state
+                .as_ref()
+                .expect("app_state should always be set")
+                .lock()
+                .await
+                .config
+                .read()
+                .await
+                .stores
+                .app_meta_store
+                .clone()
+                .ok_or(flow_like_types::anyhow!("Project store not found"))?
+                .as_generic(),
+        };
+
+        let board = self.to_proto();
+        compress_to_file(store.clone(), to, &board).await?;
+
+        let new_version = match version_type {
+            VersionType::Major => (version.0 + 1, 0, 0),
+            VersionType::Minor => (version.0, version.1 + 1, 0),
+            VersionType::Patch => (version.0, version.1, version.2 + 1),
+        };
+
+        self.version = new_version;
+        self.updated_at = SystemTime::now();
+        self.save(Some(store)).await?;
+        Ok(new_version)
+    }
+
     pub async fn save(&self, store: Option<Arc<dyn ObjectStore>>) -> flow_like_types::Result<()> {
         let to = self.board_dir.child(format!("{}.board", self.id));
         let store = match store {
@@ -445,7 +496,7 @@ impl Board {
                 .read()
                 .await
                 .stores
-                .project_store
+                .app_meta_store
                 .clone()
                 .ok_or(flow_like_types::anyhow!("Project store not found"))?
                 .as_generic(),
@@ -456,10 +507,68 @@ impl Board {
         Ok(())
     }
 
+    pub async fn get_versions(
+        &self,
+        store: Option<Arc<dyn ObjectStore>>,
+    ) -> flow_like_types::Result<Vec<(u32, u32, u32)>> {
+        let versions_dir = self.board_dir.child("versions").child(self.id.clone());
+
+        let store = match store {
+            Some(store) => store,
+            None => self
+                .app_state
+                .as_ref()
+                .expect("app_state should always be set")
+                .lock()
+                .await
+                .config
+                .read()
+                .await
+                .stores
+                .app_meta_store
+                .clone()
+                .ok_or(flow_like_types::anyhow!("Project store not found"))?
+                .as_generic(),
+        };
+
+        let mut versions = store.list(Some(&versions_dir));
+        let mut version_list = Vec::new();
+
+        while let Some(Ok(meta)) = versions.next().await {
+            let file_name = match meta.location.filename() {
+                Some(name) => name,
+                None => continue,
+            };
+            if file_name.ends_with(".board") {
+                continue;
+            }
+            let version = file_name.strip_suffix(".board").unwrap_or(file_name);
+            if version == "latest" {
+                continue;
+            }
+            let version = version.strip_prefix("v").unwrap_or(version);
+            let version = version.split("_").collect::<Vec<&str>>();
+
+            if version.len() < 3 {
+                continue;
+            }
+
+            let version = (
+                version[0].parse::<u32>().unwrap_or(0),
+                version[1].parse::<u32>().unwrap_or(0),
+                version[2].parse::<u32>().unwrap_or(0),
+            );
+
+            version_list.push(version);
+        }
+        Ok(version_list)
+    }
+
     pub async fn load(
         path: Path,
         id: &str,
         app_state: Arc<Mutex<FlowLikeState>>,
+        version: Option<(u32, u32, u32)>,
     ) -> flow_like_types::Result<Self> {
         let store = app_state
             .lock()
@@ -468,15 +577,24 @@ impl Board {
             .read()
             .await
             .stores
-            .project_store
+            .app_meta_store
             .clone()
             .ok_or(flow_like_types::anyhow!("Project store not found"))?
             .as_generic();
 
-        let board: flow_like_types::proto::Board =
-            from_compressed(store, path.child(format!("{}.board", id))).await?;
+        let path = if let Some(version) = version {
+            path.child("versions")
+                .child(id)
+                .child(format!("{}_{}_{}.board", version.0, version.1, version.2))
+        } else {
+            path.child(format!("{}.board", id))
+        };
+
+        let board_dir = path.child(format!("{}.board", id));
+
+        let board: flow_like_types::proto::Board = from_compressed(store, path).await?;
         let mut board = Board::from_proto(board);
-        board.board_dir = path;
+        board.board_dir = board_dir;
         board.app_state = Some(app_state.clone());
         board.logic_nodes = HashMap::new();
         board.fix_pins_set_layer();
@@ -519,7 +637,7 @@ mod tests {
 
     async fn flow_state() -> Arc<Mutex<crate::state::FlowLikeState>> {
         let mut config: FlowLikeConfig = FlowLikeConfig::new();
-        config.register_project_store(FlowLikeStore::Other(Arc::new(
+        config.register_app_meta_store(FlowLikeStore::Other(Arc::new(
             object_store::memory::InMemory::new(),
         )));
         let (http_client, _refetch_rx) = HTTPClient::new();

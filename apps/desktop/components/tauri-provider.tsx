@@ -21,23 +21,48 @@ import {
 	type IProfile,
 	type IRunPayload,
 	type ISettingsProfile,
+	IVersionType,
 	useBackendStore,
 	useDownloadManager,
 } from "@tm9657/flow-like-ui";
 import { useEffect, useState } from "react";
 
 export class TauriBackend implements IBackendState {
+
 	async getCatalog(): Promise<INode[]> {
 		const nodes: INode[] = await invoke("get_catalog");
 		return nodes;
 	}
 
-	async getBoard(appId: string, boardId: string): Promise<IBoard> {
+	async getBoard(
+		appId: string,
+		boardId: string,
+		version?: [number, number, number],
+	): Promise<IBoard> {
 		const board: IBoard = await invoke("get_board", {
 			appId: appId,
 			boardId: boardId,
+			version: version,
 		});
 		return board;
+	}
+
+	async createBoardVersion(appId: string, boardId: string, versionType: IVersionType): Promise<[number, number, number]> {
+		const newVersion: [number, number, number] = await invoke("create_board_version", {
+			appId: appId,
+			boardId: boardId,
+			versionType: versionType,
+		});
+
+		return newVersion;
+	}
+
+	async getBoardVersions(appId: string, boardId: string): Promise<[number, number, number][]> {
+		const boardVersions: [number, number, number][] = await invoke("get_board_versions", {
+			appId: appId,
+			boardId: boardId,
+		});
+		return boardVersions;
 	}
 
 	async getOpenBoards(): Promise<[string, string, string][]> {
