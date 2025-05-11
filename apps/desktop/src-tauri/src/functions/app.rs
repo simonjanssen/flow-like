@@ -176,7 +176,10 @@ pub async fn get_app_size(
     let content_store = TauriFlowLikeState::get_project_storage_store(&app_handle).await?;
     let path = Path::from("apps").child(app_id);
 
-    let mut locations = content_store.list(Some(&path)).map_ok(|m| m.location).boxed();
+    let mut locations = content_store
+        .list(Some(&path))
+        .map_ok(|m| m.location)
+        .boxed();
     let mut size = 0;
 
     while let Some(location) = locations.next().await {

@@ -13,10 +13,7 @@ use crate::{
     },
 };
 use commands::GenericCommand;
-use flow_like_storage::object_store::{
-    ObjectStore,
-    path::{Path, PathPart},
-};
+use flow_like_storage::object_store::{ObjectStore, path::Path};
 use flow_like_types::{FromProto, ToProto, create_id, sync::Mutex};
 use futures::StreamExt;
 use schemars::JsonSchema;
@@ -441,7 +438,7 @@ impl Board {
         version_type: VersionType,
         store: Option<Arc<dyn ObjectStore>>,
     ) -> flow_like_types::Result<(u32, u32, u32)> {
-        let version = self.version.clone();
+        let version = self.version;
 
         let to = self
             .board_dir

@@ -314,8 +314,11 @@ impl FlowLikeState {
     }
 
     #[cfg(feature = "flow-runtime")]
-    pub fn get_board(&self, board_id: &str, version: Option<(u32, u32, u32)>) -> flow_like_types::Result<Arc<Mutex<Board>>> {
-
+    pub fn get_board(
+        &self,
+        board_id: &str,
+        version: Option<(u32, u32, u32)>,
+    ) -> flow_like_types::Result<Arc<Mutex<Board>>> {
         let key = if let Some(version) = version {
             format!("{}-{}-{}-{}", board_id, version.0, version.1, version.2)
         } else {
@@ -357,8 +360,7 @@ impl FlowLikeState {
         } else {
             board_id.to_string()
         };
-        self.board_registry
-            .insert(key, board.clone());
+        self.board_registry.insert(key, board.clone());
         Ok(())
     }
 

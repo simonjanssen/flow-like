@@ -292,7 +292,7 @@ impl NodeLogic for BatchInsertCSVLocalDatabaseNode {
             }
         }
 
-        if chunk.len() > 0 {
+        if !chunk.is_empty() {
             let insert = database.insert(chunk.to_owned()).await;
             if let Err(e) = insert {
                 context.log_message(&format!("Error inserting chunk: {:?}", e), LogLevel::Error);

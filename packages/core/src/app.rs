@@ -191,7 +191,7 @@ impl App {
         store.delete(&board_dir).await?;
 
         if let Some(app_state) = &self.app_state {
-            app_state.lock().await.remove_board(&board_id)?;
+            app_state.lock().await.remove_board(board_id)?;
         }
 
         self.updated_at = SystemTime::now();

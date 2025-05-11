@@ -85,7 +85,7 @@ impl FromProto<flow_like_types::proto::Release> for Release {
                 .collect(),
             active: proto.active,
             config: proto.config,
-            canary: proto.canary.map(|c| CanaryRelease::from_proto(c)),
+            canary: proto.canary.map(CanaryRelease::from_proto),
             notes: proto.notes.map(|n| match n {
                 flow_like_types::proto::release::Notes::ReleaseNotes(s) => ReleaseNotes::NOTES(s),
                 flow_like_types::proto::release::Notes::ReleaseNotesUrl(s) => ReleaseNotes::URL(s),

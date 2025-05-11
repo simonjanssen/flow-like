@@ -40,10 +40,11 @@ pub async fn create_board(app_handle: AppHandle) -> Result<Board, TauriFunctionE
     let board = Board::new(None, path, flow_like_state);
 
     let board_state = TauriFlowLikeState::construct(&app_handle).await?;
-    board_state
-        .lock()
-        .await
-        .register_board(&board.id, Arc::new(Mutex::new(board.clone())), None)?;
+    board_state.lock().await.register_board(
+        &board.id,
+        Arc::new(Mutex::new(board.clone())),
+        None,
+    )?;
     Ok(board)
 }
 
