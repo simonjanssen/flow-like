@@ -5,7 +5,7 @@ use crate::{
 use flow_like::{
     app::App,
     flow::{
-        board::{Board, ExecutionStage, commands::GenericCommand},
+        board::{Board, ExecutionStage, VersionType, commands::GenericCommand},
         execution::LogLevel,
     },
     flow_like_storage::Path,
@@ -48,10 +48,66 @@ pub async fn create_board(app_handle: AppHandle) -> Result<Board, TauriFunctionE
 }
 
 #[tauri::command(async)]
+pub async fn create_board_version(
+    handler: AppHandle,
+    app_id: String,
+    board_id: String,
+    version_type: VersionType,
+) -> Result<(u32, u32, u32), TauriFunctionError> {
+    let board_state = TauriFlowLikeState::construct(&handler).await?;
+    let board = board_state.lock().await.get_board(&board_id);
+    if let Ok(board) = board {
+        let mut board = board.lock().await;
+        let version = board.create_version(version_type, None).await?;
+        return Ok(version);
+    }
+
+    let flow_like_state = TauriFlowLikeState::construct(&handler).await?;
+
+    if let Ok(app) = App::load(app_id, flow_like_state).await {
+        let board = app.open_board(board_id, Some(true), None).await?;
+        let version = board
+            .lock()
+            .await
+            .create_version(version_type, None)
+            .await?;
+        return Ok(version);
+    }
+
+    Err(TauriFunctionError::new("Board not found"))
+}
+
+#[tauri::command(async)]
+pub async fn get_board_versions(
+    handler: AppHandle,
+    app_id: String,
+    board_id: String,
+) -> Result<Vec<(u32, u32, u32)>, TauriFunctionError> {
+    let board_state = TauriFlowLikeState::construct(&handler).await?;
+    let board = board_state.lock().await.get_board(&board_id);
+    if let Ok(board) = board {
+        let board = board.lock().await;
+        let versions = board.get_versions(None).await?;
+        return Ok(versions);
+    }
+
+    let flow_like_state = TauriFlowLikeState::construct(&handler).await?;
+
+    if let Ok(app) = App::load(app_id, flow_like_state).await {
+        let board = app.open_board(board_id, Some(true), None).await?;
+        let versions = board.lock().await.get_versions(None).await?;
+        return Ok(versions);
+    }
+
+    Err(TauriFunctionError::new("Board not found"))
+}
+
+#[tauri::command(async)]
 pub async fn get_board(
     handler: AppHandle,
     app_id: String,
     board_id: String,
+    version: Option<(u32, u32, u32)>,
 ) -> Result<Board, TauriFunctionError> {
     let board_state = TauriFlowLikeState::construct(&handler).await?;
     let board = board_state.lock().await.get_board(&board_id);
@@ -63,7 +119,7 @@ pub async fn get_board(
     let flow_like_state = TauriFlowLikeState::construct(&handler).await?;
 
     if let Ok(app) = App::load(app_id, flow_like_state).await {
-        let board = app.open_board(board_id, Some(true)).await?;
+        let board = app.open_board(board_id, Some(true), version).await?;
         return Ok(board.lock().await.clone());
     }
 

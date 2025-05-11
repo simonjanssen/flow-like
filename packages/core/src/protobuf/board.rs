@@ -138,9 +138,9 @@ impl FromProto<flow_like_types::proto::Board> for Board {
                 .collect(),
             viewport: (proto.viewport_x, proto.viewport_y, proto.viewport_zoom),
             version: (
-                proto.version_major as u8,
-                proto.version_minor as u8,
-                proto.version_patch as u8,
+                proto.version_major,
+                proto.version_minor,
+                proto.version_patch,
             ),
             layers: proto
                 .layers

@@ -335,7 +335,7 @@ impl VectorStore for LanceDBVectorStore {
     async fn index(&self, column: &str, index_type: Option<&str>) -> Result<()> {
         let table = self.table.clone().ok_or(anyhow!("Table not initialized"))?;
         let index_type = index_type.unwrap_or("AUTO");
-       let index_type = match index_type {
+        let index_type = match index_type {
             "FULL TEXT" => Index::FTS(FtsIndexBuilder::default()),
             "BTREE" => Index::BTree(BTreeIndexBuilder::default()),
             "BITMAP" => Index::Bitmap(BitmapIndexBuilder::default()),

@@ -26,7 +26,7 @@ async fn default_state() -> Arc<Mutex<FlowLikeState>> {
     let store = FlowLikeStore::Local(Arc::new(store));
     config.register_bits_store(store.clone());
     config.register_user_store(store.clone());
-    config.register_project_store(store);
+    config.register_app_storage_store(store);
     let (http_client, _refetch_rx) = HTTPClient::new();
     let state = FlowLikeState::new(config, http_client);
     Arc::new(Mutex::new(state))
@@ -40,7 +40,7 @@ fn construct_profile() -> Profile {
 
 async fn open_board(id: &str, state: Arc<Mutex<FlowLikeState>>) -> Board {
     let path = Path::from("flow").child("q99s8hb4z56mpwz8dscz7qmz");
-    Board::load(path, id, state).await.unwrap()
+    Board::load(path, id, state, None).await.unwrap()
 }
 
 async fn run_board(id: &str, start_ids: Vec<String>) {

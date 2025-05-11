@@ -2,11 +2,7 @@
 
 import { createId } from "@paralleldrive/cuid2";
 import { useDebounce } from "@uidotdev/usehooks";
-import {
-	type Node,
-	type NodeProps,
-	useReactFlow
-} from "@xyflow/react";
+import { type Node, type NodeProps, useReactFlow } from "@xyflow/react";
 import {
 	AlignCenterVerticalIcon,
 	AlignEndVerticalIcon,
@@ -26,7 +22,7 @@ import {
 	SquarePenIcon,
 	Trash2Icon,
 	TriangleAlertIcon,
-	WorkflowIcon
+	WorkflowIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";

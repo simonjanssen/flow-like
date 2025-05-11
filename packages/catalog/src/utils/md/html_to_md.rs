@@ -38,25 +38,11 @@ impl NodeLogic for HTMLToMarkdownNode {
             VariableType::Execution,
         );
 
-        node.add_input_pin(
-            "html",
-            "Html",
-            "Html to Parse",
-            VariableType::String,
-        );
+        node.add_input_pin("html", "Html", "Html to Parse", VariableType::String);
 
-        node.add_input_pin(
-            "skipped_tags",
-            "Tags",
-            "Tags to skip",
-            VariableType::String,
-        )
-        .set_value_type(flow_like::flow::pin::ValueType::Array)
-        .set_default_value(Some(json!([
-            "script",
-            "style",
-            "iframe",
-        ])));
+        node.add_input_pin("skipped_tags", "Tags", "Tags to skip", VariableType::String)
+            .set_value_type(flow_like::flow::pin::ValueType::Array)
+            .set_default_value(Some(json!(["script", "style", "iframe",])));
 
         node.add_output_pin(
             "exec_out",
@@ -86,8 +72,7 @@ impl NodeLogic for HTMLToMarkdownNode {
             .collect::<Vec<&str>>();
 
         let converter = HtmlToMarkdownBuilder::new().skip_tags(skipped_tags).build();
-        let markdown = converter
-            .convert(&html)?;
+        let markdown = converter.convert(&html)?;
 
         context.set_pin_value("markdown", json!(markdown)).await?;
         context.activate_exec_pin("exec_out").await?;
