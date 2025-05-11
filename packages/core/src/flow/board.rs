@@ -13,7 +13,10 @@ use crate::{
     },
 };
 use commands::GenericCommand;
-use flow_like_storage::object_store::{ObjectStore, path::Path};
+use flow_like_storage::object_store::{
+    ObjectStore,
+    path::{Path, PathPart},
+};
 use flow_like_types::{FromProto, ToProto, create_id, sync::Mutex};
 use futures::StreamExt;
 use schemars::JsonSchema;
@@ -511,7 +514,11 @@ impl Board {
         &self,
         store: Option<Arc<dyn ObjectStore>>,
     ) -> flow_like_types::Result<Vec<(u32, u32, u32)>> {
-        let versions_dir = self.board_dir.child("versions").child(self.id.clone());
+        let versions_dir = self
+            .board_dir
+            .clone()
+            .child("versions")
+            .child(self.id.clone());
 
         let store = match store {
             Some(store) => store,
@@ -582,6 +589,7 @@ impl Board {
             .ok_or(flow_like_types::anyhow!("Project store not found"))?
             .as_generic();
 
+        let board_dir = path.clone();
         let path = if let Some(version) = version {
             path.child("versions")
                 .child(id)
@@ -589,8 +597,6 @@ impl Board {
         } else {
             path.child(format!("{}.board", id))
         };
-
-        let board_dir = path.child(format!("{}.board", id));
 
         let board: flow_like_types::proto::Board = from_compressed(store, path).await?;
         let mut board = Board::from_proto(board);

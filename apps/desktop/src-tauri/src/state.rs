@@ -48,7 +48,7 @@ impl TauriFlowLikeState {
     }
 
     #[inline]
-    pub async fn get_project_store(app_handle: &AppHandle) -> anyhow::Result<Arc<dyn ObjectStore>> {
+    pub async fn get_project_storage_store(app_handle: &AppHandle) -> anyhow::Result<Arc<dyn ObjectStore>> {
         let flow_like_state = TauriFlowLikeState::construct(app_handle).await?;
         let project_store = flow_like_state
             .lock()
@@ -58,6 +58,23 @@ impl TauriFlowLikeState {
             .await
             .stores
             .app_storage_store
+            .clone()
+            .ok_or(anyhow::anyhow!("Project store not found"))?
+            .as_generic();
+        Ok(project_store)
+    }
+
+    #[inline]
+    pub async fn get_project_meta_store(app_handle: &AppHandle) -> anyhow::Result<Arc<dyn ObjectStore>> {
+        let flow_like_state = TauriFlowLikeState::construct(app_handle).await?;
+        let project_store = flow_like_state
+            .lock()
+            .await
+            .config
+            .read()
+            .await
+            .stores
+            .app_meta_store
             .clone()
             .ok_or(anyhow::anyhow!("Project store not found"))?
             .as_generic();
