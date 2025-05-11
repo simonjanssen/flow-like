@@ -11,7 +11,7 @@ use flow_like::{
     state::FlowLikeState,
 };
 use flow_like_types::{
-    anyhow, async_trait, image::{DynamicImage, Rgba}, json::json, Error
+    anyhow, async_trait, json::json
 };
 
 use std::sync::Arc;
@@ -62,6 +62,29 @@ impl NodeLogic for MakeBoxNode {
             .set_default_value(Some(json!("xyxy")));
 
         node.add_input_pin(
+            "class_idx",
+            "Class",
+            "Class Index",
+            VariableType::Integer,
+        )
+            .set_default_value(Some(json!(0)));
+
+        node.add_input_pin(
+            "score",
+            "Score",
+            "Score or Confidence",
+            VariableType::Float,
+        )
+            .set_default_value(Some(json!(1.0)));
+
+        node.add_input_pin(
+            "x1",
+            "x1",
+            "Left",
+            VariableType::Integer,
+        );
+
+        node.add_input_pin(
             "x1",
             "x1",
             "Left",
@@ -103,24 +126,26 @@ impl NodeLogic for MakeBoxNode {
 
         // fetch inputs
         let definition: String = context.evaluate_pin("definition").await?;
-        let bbox = match &definition {
+        let class_idx: i32 = context.evaluate_pin("class_idx").await?;
+        let score: f32 = context.evaluate_pin("score").await?;
+        let bbox = match definition.as_str() {
             "xyxy" => {
-                let x1 = context.evaluate_pin("x1").await?;
-                let y1 = context.evaluate_pin("y1").await?;
-                let x2 = context.evaluate_pin("x2").await?;
-                let y2 = context.evaluate_pin("y2").await?;
-                BoundingBox { x1, y1, x2, y2, score: 1.0, class_idx: 0 }
+                let x1: i32 = context.evaluate_pin("x1").await?;
+                let y1: i32 = context.evaluate_pin("y1").await?;
+                let x2: i32 = context.evaluate_pin("x2").await?;
+                let y2: i32 = context.evaluate_pin("y2").await?;
+                BoundingBox { x1: x1 as f32, y1: y1 as f32, x2: x2 as f32, y2: y2 as f32, score, class_idx }
             },
             "x1y1wh" => {
-                let x1 = context.evaluate_pin("x1").await?;
-                let y1 = context.evaluate_pin("y1").await?;
-                let w = context.evaluate_pin("w").await?;
-                let h = context.evaluate_pin("h").await?;
+                let x1: i32 = context.evaluate_pin("x1").await?;
+                let y1: i32 = context.evaluate_pin("y1").await?;
+                let w: i32 = context.evaluate_pin("w").await?;
+                let h: i32 = context.evaluate_pin("h").await?;
                 let x2 = x1 + w;
                 let y2 = y1 + h;
-                BoundingBox { x1, y1, x2, y2, score: 1.0, class_idx: 0 }
+                BoundingBox { x1: x1 as f32, y1: y1 as f32, x2: x2 as f32, y2: y2 as f32, score, class_idx }
             },
-            _ => Err(anyhow!("Invalid Bounding Box Definition"))
+            _ => return Err(anyhow!("Invalid Bounding Box Definition"))
         };
         
         // set outputs
@@ -136,14 +161,24 @@ impl NodeLogic for MakeBoxNode {
             .and_then(|bytes| flow_like_types::json::from_slice::<String>(&bytes).ok())
             .unwrap_or_default();
 
-        let x1 = node.get_pin_by_name("x1").cloned();
-        let y1 = node.get_pin_by_name("y1").cloned();
+        //let x1 = node.get_pin_by_name("x1").cloned();
+        //let y1 = node.get_pin_by_name("y1").cloned();
         let x2 = node.get_pin_by_name("x2").cloned();
         let y2 = node.get_pin_by_name("y2").cloned();
         let w = node.get_pin_by_name("w").cloned();
         let h = node.get_pin_by_name("h").cloned();
 
         match definition.as_str() {
+            "xyxy" => {
+                remove_pin(node, w);
+                remove_pin(node, h);
+                if !x2.is_some() {
+                    node.add_input_pin("x2", "x2", "Right", VariableType::Integer);
+                }
+                if !y2.is_some() {
+                    node.add_input_pin("y2", "y2", "Bottom", VariableType::Integer);
+                }
+            },
             "x1y1wh" => {
                 remove_pin(node, x2);
                 remove_pin(node, y2);
@@ -153,17 +188,9 @@ impl NodeLogic for MakeBoxNode {
                 if !h.is_some() {
                     node.add_input_pin("h", "h", "Bounding Box Height", VariableType::Integer);
                 }
-            }
-            _ => {
-                remove_pin(node, w);
-                remove_pin(node, h);
-                if !x2.is_some() {
-                    node.add_input_pin("x2", "x2", "Right", VariableType::Integer);
-                }
-                if !y2.is_some() {
-                    node.add_input_pin("y2", "y2", "Bottom", VariableType::Integer);
-                }
-            }
+            },
+            _ => {}
+            
         }
     }
 }

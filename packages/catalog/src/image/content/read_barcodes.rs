@@ -2,6 +2,7 @@
 use crate::image::NodeImage;
 use flow_like::{
     flow::{
+        pin::Pin,
         board::Board,
         execution::context::ExecutionContext,
         node::{Node, NodeLogic},
@@ -161,7 +162,7 @@ impl NodeLogic for ReadBarcodesNode {
             .and_then(|bytes| flow_like_types::json::from_slice::<bool>(&bytes).ok())
             .unwrap_or_default();
 
-        let format_pin = node.get_pin_by_name("format");
+        let format_pin = node.get_pin_by_name("format").cloned();
 
         if apply_filter {
             if format_pin.is_some() {
@@ -196,9 +197,13 @@ impl NodeLogic for ReadBarcodesNode {
                         .build(),
                 );
         } else {
-            if format_pin.is_some() {
-                node.pins.remove(&format_pin.id);
-            }
+            remove_pin(node, format_pin);
         }
+    }
+}
+
+fn remove_pin(node: &mut Node, pin: Option<Pin>) {
+    if let Some(pin) = pin {
+        node.pins.remove(&pin.id);
     }
 }
