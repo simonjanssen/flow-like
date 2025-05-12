@@ -46,7 +46,7 @@ fn draw_bboxes(mut img: DynamicImage, bboxes: &Vec<BoundingBox>) -> Result<Dynam
             let y = y1 - t;
             let w = w + 2*t;
             let h = h + 2*t;
-            let rect = Rect::at(x as i32, y as i32).of_size(w as u32, h as u32);
+            let rect = Rect::at(x as i32, y as i32).of_size(w, h);
             draw_hollow_rect_mut(&mut img, rect, box_color);
         }
     }

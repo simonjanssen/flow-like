@@ -39,7 +39,7 @@ pub struct Barcode {
 impl From<RXingResult> for Barcode {
     fn from(value: RXingResult) -> Self {
         let points = value.getPoints()
-            .into_iter()
+            .iter()
             .map(|p| BarcodePoint { x: p.x, y: p.y } )
             .collect();
         Barcode { 

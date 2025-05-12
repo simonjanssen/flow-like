@@ -165,20 +165,20 @@ impl NodeLogic for MakeBoxNode {
             "xyxy" => {
                 remove_pin(node, w);
                 remove_pin(node, h);
-                if !x2.is_some() {
+                if x2.is_none() {
                     node.add_input_pin("x2", "x2", "Right", VariableType::Integer);
                 }
-                if !y2.is_some() {
+                if y2.is_none() {
                     node.add_input_pin("y2", "y2", "Bottom", VariableType::Integer);
                 }
             },
             "x1y1wh" => {
                 remove_pin(node, x2);
                 remove_pin(node, y2);
-                if !w.is_some() {
+                if w.is_none() {
                     node.add_input_pin("w", "w", "Bounding Box Width", VariableType::Integer);
                 }
-                if !h.is_some() {
+                if h.is_none() {
                     node.add_input_pin("h", "h", "Bounding Box Height", VariableType::Integer);
                 }
             },

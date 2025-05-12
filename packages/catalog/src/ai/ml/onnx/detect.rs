@@ -352,11 +352,11 @@ impl NodeLogic for ObjectDetectionNode {
             let session_guard = session.lock().await;
 
             // dynamically fetch input/output array names from onnx session
-            let input_name = match session_guard.inputs.get(0) {
+            let input_name = match session_guard.inputs.first() {
                 Some(input_name) => &input_name.name,
                 _ => "images"
             };
-            let output_name = match session_guard.outputs.get(0) {
+            let output_name = match session_guard.outputs.first() {
                 Some(output_name) => &output_name.name,
                 _ => "output0"
             };
@@ -403,7 +403,7 @@ impl NodeLogic for ObjectDetectionNode {
 
         // extract bboxes from output vectors
         let mut bboxes: Vec<BoundingBox> = Vec::with_capacity(candidates_image.len_of(Axis(1)));
-        for (_, candidate) in candidates_image.axis_iter(Axis(1)).enumerate() {
+        for candidate in candidates_image.axis_iter(Axis(1)) {
             //println!("\tshape for candidate {:?}: {:?}", idx_candidate, candidate.shape());
             let bbox = BoundingBox::from_array(candidate.to_shape(candidate.len(),).unwrap().view());
             bboxes.push(bbox);
