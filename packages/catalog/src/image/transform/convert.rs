@@ -126,7 +126,7 @@ impl NodeLogic for ConvertImageNode {
                 *img_guard = img_converted;
             }
         }
-        
+
         // set outputs
         context.set_pin_value("image_out", json!(node_img)).await?;
         context.activate_exec_pin("exec_out").await?;

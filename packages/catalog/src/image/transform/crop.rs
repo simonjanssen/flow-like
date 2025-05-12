@@ -1,7 +1,4 @@
-use crate::{
-    image::NodeImage,
-    ai::ml::onnx::detect::BoundingBox,
-};
+use crate::{ai::ml::onnx::detect::BoundingBox, image::NodeImage};
 
 use flow_like::{
     flow::{
@@ -12,10 +9,7 @@ use flow_like::{
     },
     state::FlowLikeState,
 };
-use flow_like_types::{
-    async_trait,
-    json::json,
-};
+use flow_like_types::{async_trait, json::json};
 
 #[derive(Default)]
 pub struct CropImageNode {}
@@ -53,7 +47,7 @@ impl NodeLogic for CropImageNode {
             "Use Reference of the image, transforming the original instead of a copy",
             VariableType::Boolean,
         )
-        .set_default_value(Some(json!(false)));  // default false since we typically want to crop the source image multiple times
+        .set_default_value(Some(json!(false))); // default false since we typically want to crop the source image multiple times
 
         // outputs
         node.add_output_pin(
@@ -63,8 +57,13 @@ impl NodeLogic for CropImageNode {
             VariableType::Execution,
         );
 
-        node.add_output_pin("image_out", "Cropped", "Cropped Image object", VariableType::Struct)
-            .set_schema::<NodeImage>();
+        node.add_output_pin(
+            "image_out",
+            "Cropped",
+            "Cropped Image object",
+            VariableType::Struct,
+        )
+        .set_schema::<NodeImage>();
 
         node
     }
@@ -88,7 +87,7 @@ impl NodeLogic for CropImageNode {
             let img_cropped = img_guard.crop_imm(x, y, w, h);
             *img_guard = img_cropped;
         }
-        
+
         // set outputs
         context.set_pin_value("image_out", json!(node_img)).await?;
         context.activate_exec_pin("exec_out").await?;

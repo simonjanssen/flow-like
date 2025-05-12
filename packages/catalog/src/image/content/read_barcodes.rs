@@ -1,19 +1,19 @@
-
 use crate::image::NodeImage;
 use flow_like::{
     flow::{
-        pin::Pin,
         board::Board,
         execution::{LogLevel, context::ExecutionContext},
         node::{Node, NodeLogic},
+        pin::Pin,
         pin::PinOptions,
         variable::VariableType,
     },
     state::FlowLikeState,
 };
 use flow_like_types::{
-    anyhow, async_trait, json::json,
-    rxing::{helpers, BarcodeFormat, RXingResult, DecodeHints, Exceptions::NotFoundException},
+    anyhow, async_trait,
+    json::json,
+    rxing::{BarcodeFormat, DecodeHints, Exceptions::NotFoundException, RXingResult, helpers},
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -22,7 +22,7 @@ use std::{collections::HashSet, sync::Arc};
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 pub struct BarcodePoint {
     pub x: f32,
-    pub y: f32
+    pub y: f32,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
@@ -38,17 +38,18 @@ pub struct Barcode {
 
 impl From<RXingResult> for Barcode {
     fn from(value: RXingResult) -> Self {
-        let points = value.getPoints()
+        let points = value
+            .getPoints()
             .iter()
-            .map(|p| BarcodePoint { x: p.x, y: p.y } )
+            .map(|p| BarcodePoint { x: p.x, y: p.y })
             .collect();
-        Barcode { 
-            text: value.getText().to_string(), 
-            raw_bytes: value.getRawBytes().to_vec(), 
-            num_bits: value.getNumBits(), 
-            format: value.getBarcodeFormat().to_string(), 
-            timestamp: value.getTimestamp(), 
-            line_count: value.line_count(), 
+        Barcode {
+            text: value.getText().to_string(),
+            raw_bytes: value.getRawBytes().to_vec(),
+            num_bits: value.getNumBits(),
+            format: value.getBarcodeFormat().to_string(),
+            timestamp: value.getTimestamp(),
+            line_count: value.line_count(),
             points,
         }
     }
@@ -73,24 +74,44 @@ impl NodeLogic for ReadBarcodesNode {
             "Read/Decode Barcodes",
             "Image/Content",
         );
-        node.add_icon("/flow/icons/image.svg");
+        node.add_icon("/flow/icons/barcode.svg");
 
         // inputs
-        node.add_input_pin("exec_in", "Input", "Initiate Execution", VariableType::Execution);
+        node.add_input_pin(
+            "exec_in",
+            "Input",
+            "Initiate Execution",
+            VariableType::Execution,
+        );
 
         node.add_input_pin("image_in", "Image", "Image object", VariableType::Struct)
             .set_schema::<NodeImage>()
             .set_options(PinOptions::new().set_enforce_schema(true).build());
 
-        node.add_input_pin("filter", "Filter?", "Filter for Certain Code Type", VariableType::Boolean)
-            .set_default_value(Some(json!(false)));
+        node.add_input_pin(
+            "filter",
+            "Filter?",
+            "Filter for Certain Code Type",
+            VariableType::Boolean,
+        )
+        .set_default_value(Some(json!(false)));
 
         // outputs
-        node.add_output_pin("exec_out", "Output", "Done with the Execution", VariableType::Execution);
+        node.add_output_pin(
+            "exec_out",
+            "Output",
+            "Done with the Execution",
+            VariableType::Execution,
+        );
 
-        node.add_output_pin("results", "Results", "Detected/Decoded Codes", VariableType::Struct)
-            .set_schema::<Barcode>()
-            .set_value_type(flow_like::flow::pin::ValueType::Array);
+        node.add_output_pin(
+            "results",
+            "Results",
+            "Detected/Decoded Codes",
+            VariableType::Struct,
+        )
+        .set_schema::<Barcode>()
+        .set_value_type(flow_like::flow::pin::ValueType::Array);
 
         node
     }
@@ -109,7 +130,7 @@ impl NodeLogic for ReadBarcodesNode {
             let (w, h) = (img_guard.width(), img_guard.height());
             let img_vec = img_guard
                 .clone()
-                .into_luma8()  // decoding works best with grayscale images
+                .into_luma8() // decoding works best with grayscale images
                 .to_vec();
             (img_vec, w, h)
         };
@@ -117,17 +138,13 @@ impl NodeLogic for ReadBarcodesNode {
         // detect + decode (bar)codes
         let results_rxing = match apply_filter {
             // many codes & many types (potentially expensive)
-            false => {
-                match helpers::detect_multiple_in_luma(img_vec, w, h) {
-                    Ok(results) => results,
-                    Err(NotFoundException(_)) => {
-                        context.log_message("No Codes Detected / Decoded!", LogLevel::Warn);
-                        vec![]
-                    },
-                    Err(_) => {
-                        return Err(anyhow!("Unknown Decoder Error"))
-                    }
+            false => match helpers::detect_multiple_in_luma(img_vec, w, h) {
+                Ok(results) => results,
+                Err(NotFoundException(_)) => {
+                    context.log_message("No Codes Detected / Decoded!", LogLevel::Warn);
+                    vec![]
                 }
+                Err(e) => return Err(anyhow!("Decoder Error: {}", e)),
             },
             // many codes & single type
             true => {
@@ -140,12 +157,10 @@ impl NodeLogic for ReadBarcodesNode {
                     Err(NotFoundException(_)) => {
                         context.log_message("No Codes Detected / Decoded!", LogLevel::Warn);
                         vec![]
-                    },
-                    Err(_) => {
-                        return Err(anyhow!("Unknown Decoder Error"))
                     }
+                    Err(e) => return Err(anyhow!("Decoder Error: {}", e)),
                 }
-            },
+            }
         };
 
         // map to serializable results

@@ -1,12 +1,10 @@
-
 use flow_like::flow::node::NodeLogic;
 use std::sync::Arc;
 
-pub mod convert;
 pub mod contrast;
+pub mod convert;
 pub mod crop;
 pub mod resize;
-
 
 /// Image-Transform Nodes
 pub async fn register_functions() -> Vec<Arc<dyn NodeLogic>> {

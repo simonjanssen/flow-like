@@ -1,7 +1,4 @@
-use crate::{
-    image::NodeImage,
-    ai::ml::onnx::detect::BoundingBox,
-};
+use crate::{ai::ml::onnx::detect::BoundingBox, image::NodeImage};
 
 use flow_like::{
     flow::{
@@ -13,8 +10,10 @@ use flow_like::{
     state::FlowLikeState,
 };
 use flow_like_types::{
-    async_trait, image::{DynamicImage, Rgba}, json::json, Error,
-    imageproc::{rect::Rect, drawing::draw_hollow_rect_mut},
+    Error, async_trait,
+    image::{DynamicImage, Rgba},
+    imageproc::{drawing::draw_hollow_rect_mut, rect::Rect},
+    json::json,
 };
 
 /// Pastelle Colors for Bounding Boxes
@@ -44,8 +43,8 @@ fn draw_bboxes(mut img: DynamicImage, bboxes: &Vec<BoundingBox>) -> Result<Dynam
         for t in 0..thickness {
             let x = x1 - t;
             let y = y1 - t;
-            let w = w + 2*t;
-            let h = h + 2*t;
+            let w = w + 2 * t;
+            let h = h + 2 * t;
             let rect = Rect::at(x as i32, y as i32).of_size(w, h);
             draw_hollow_rect_mut(&mut img, rect, box_color);
         }
@@ -66,10 +65,10 @@ impl DrawBoxesNode {
 impl NodeLogic for DrawBoxesNode {
     async fn get_node(&self, _app_state: &FlowLikeState) -> Node {
         let mut node = Node::new(
-            "draw_boxes", 
+            "draw_boxes",
             "Draw Boxes",
-            "Draw Bounding Boxes", 
-            "Image/Annotate"
+            "Draw Bounding Boxes",
+            "Image/Annotate",
         );
         node.add_icon("/flow/icons/image.svg");
 
@@ -95,7 +94,7 @@ impl NodeLogic for DrawBoxesNode {
             "Use Reference of the image, transforming the original instead of a copy",
             VariableType::Boolean,
         )
-        .set_default_value(Some(json!(false)));  // default false since we typically want to re-use the source image without painted boxes
+        .set_default_value(Some(json!(false))); // default false since we typically want to re-use the source image without painted boxes
 
         // outputs
         node.add_output_pin(
@@ -105,8 +104,13 @@ impl NodeLogic for DrawBoxesNode {
             VariableType::Execution,
         );
 
-        node.add_output_pin("image_out", "Image", "Image with Bounding Boxes", VariableType::Struct)
-            .set_schema::<NodeImage>();
+        node.add_output_pin(
+            "image_out",
+            "Image",
+            "Image with Bounding Boxes",
+            VariableType::Struct,
+        )
+        .set_schema::<NodeImage>();
 
         node
     }
@@ -129,7 +133,7 @@ impl NodeLogic for DrawBoxesNode {
             let img_annotated = draw_bboxes(img_guard.clone(), &bboxes)?;
             *img_guard = img_annotated;
         }
-        
+
         // set outputs
         context.set_pin_value("image_out", json!(node_img)).await?;
         context.activate_exec_pin("exec_out").await?;

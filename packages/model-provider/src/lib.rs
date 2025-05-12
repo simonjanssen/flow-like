@@ -7,6 +7,6 @@ pub mod response_chunk;
 pub use fastembed;
 pub use text_splitter;
 pub use tokenizers;
+pub mod ml;
 pub mod provider;
 pub mod tokenizer;
-pub mod ml;

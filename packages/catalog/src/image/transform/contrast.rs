@@ -1,4 +1,3 @@
-
 use crate::image::NodeImage;
 use flow_like::{
     flow::{
@@ -9,10 +8,7 @@ use flow_like::{
     },
     state::FlowLikeState,
 };
-use flow_like_types::{
-    Ok, async_trait,
-    json::json,
-};
+use flow_like_types::{Ok, async_trait, json::json};
 
 #[derive(Default)]
 pub struct ContrastImageNode {}
@@ -62,8 +58,13 @@ impl NodeLogic for ContrastImageNode {
             "Done with the Execution",
             VariableType::Execution,
         );
-        node.add_output_pin("image_out", "Image", "Image with Applied Contrast", VariableType::Struct)
-            .set_schema::<NodeImage>();
+        node.add_output_pin(
+            "image_out",
+            "Image",
+            "Image with Applied Contrast",
+            VariableType::Struct,
+        )
+        .set_schema::<NodeImage>();
 
         node
     }
@@ -86,7 +87,7 @@ impl NodeLogic for ContrastImageNode {
             let img_contrast = img_guard.adjust_contrast(contrast);
             *img_guard = img_contrast;
         }
-        
+
         // set outputs
         context.set_pin_value("image_out", json!(node_img)).await?;
         context.activate_exec_pin("exec_out").await?;

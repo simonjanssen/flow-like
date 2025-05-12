@@ -1,9 +1,5 @@
 /// # ONNX Model Loader Nodes
-
-use crate::{
-    ai::ml::onnx::NodeOnnxSession, 
-    storage::path::FlowPath
-};
+use crate::{ai::ml::onnx::NodeOnnxSession, storage::path::FlowPath};
 use flow_like::{
     flow::{
         execution::{LogLevel, context::ExecutionContext},
@@ -13,12 +9,7 @@ use flow_like::{
     },
     state::FlowLikeState,
 };
-use flow_like_types::{
-    Ok, 
-    Result,
-    async_trait,
-    json::json,
-};
+use flow_like_types::{Ok, Result, async_trait, json::json};
 
 use flow_like_model_provider::ml::ort::session::Session;
 
@@ -30,7 +21,7 @@ pub struct LoadOnnxNode {}
 impl LoadOnnxNode {
     /// Create new LoadOnnxNode Instance
     pub fn new() -> Self {
-        LoadOnnxNode {  }
+        LoadOnnxNode {}
     }
 }
 
@@ -56,11 +47,9 @@ impl NodeLogic for LoadOnnxNode {
 
         node.add_input_pin("path", "Path", "FlowPath", VariableType::Struct)
             .set_schema::<FlowPath>()
-            .set_options(PinOptions::new()
-            .set_enforce_schema(true).build());
+            .set_options(PinOptions::new().set_enforce_schema(true).build());
 
-        
-        // outputs 
+        // outputs
         node.add_output_pin(
             "exec_out",
             "Output",
@@ -68,16 +57,10 @@ impl NodeLogic for LoadOnnxNode {
             VariableType::Execution,
         );
 
-        node.add_output_pin(
-            "model", 
-            "Model", 
-            "ONNX Model Session", 
-            VariableType::Struct
-        )
+        node.add_output_pin("model", "Model", "ONNX Model Session", VariableType::Struct)
             .set_schema::<NodeOnnxSession>();
 
         node
-
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> Result<()> {
@@ -92,8 +75,7 @@ impl NodeLogic for LoadOnnxNode {
             .bytes()
             .await?
             .to_vec();
-        let session = Session::builder()?
-            .commit_from_memory(&bytes)?;
+        let session = Session::builder()?.commit_from_memory(&bytes)?;
         for input in &session.inputs {
             // todo: dynamically read input names in inference node
             context.log_message(&format!("model input: {:?}", input.name), LogLevel::Debug);

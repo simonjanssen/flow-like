@@ -1,7 +1,7 @@
 pub mod generative;
-pub mod processing;
 /// Machine Learning Nodes
 pub mod ml;
+pub mod processing;
 
 use flow_like::flow::node::NodeLogic;
 use std::sync::Arc;

@@ -1,20 +1,11 @@
 /// # ONNX Nodes
 /// Loading and Inference for ONNX-based Models
-
-use flow_like::flow::{
-    execution::context::ExecutionContext, 
-    node::NodeLogic
-};
-use flow_like_types::{
-    sync::Mutex, 
-    Cacheable,
-    Result,
-    create_id,
-};
+use flow_like::flow::{execution::context::ExecutionContext, node::NodeLogic};
 use flow_like_model_provider::ml::ort::session::Session;
-use std::sync::Arc;
+use flow_like_types::{Cacheable, Result, create_id, sync::Mutex};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 /// ONNX Image Classification Nodes
 pub mod classify;
@@ -79,7 +70,7 @@ impl NodeOnnxSession {
     //         .as_any()
     //         .downcast_ref::<NodeOnnxSessionWrapper>()
     //         .ok_or_else(|| flow_like_types::anyhow!("Could not downcast to NodeOnnxSessionWrapper!"))?;
-        
+
     //     let session = session_wrapper
     //         .session
     //         .lock()
@@ -104,19 +95,20 @@ impl NodeOnnxSession {
         let session = ctx
             .cache
             .read()
-            .await 
+            .await
             .get(&self.session_ref)
             .cloned()
             .ok_or_else(|| flow_like_types::anyhow!("ONNX session not found in cache!"))?;
         let session_wrapper = session
             .as_any()
             .downcast_ref::<NodeOnnxSessionWrapper>()
-            .ok_or_else(|| flow_like_types::anyhow!("Could not downcast to NodeOnnxSessionWrapper"))?;
+            .ok_or_else(|| {
+                flow_like_types::anyhow!("Could not downcast to NodeOnnxSessionWrapper")
+            })?;
         let session = session_wrapper.session.clone();
         Ok(session)
     }
 }
-
 
 /// Add ONNX-related Nodes to Catalog Lib
 pub async fn register_functions() -> Vec<Arc<dyn NodeLogic>> {
