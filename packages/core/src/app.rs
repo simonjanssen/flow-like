@@ -148,7 +148,7 @@ impl App {
     ) -> flow_like_types::Result<Arc<Mutex<Board>>> {
         let storage_root = Path::from("apps").child(self.id.clone());
         if let Some(app_state) = &self.app_state {
-            let board = app_state.lock().await.get_board(&board_id);
+            let board = app_state.lock().await.get_board(&board_id, version);
 
             if let Ok(board) = board {
                 return Ok(board);
@@ -168,7 +168,7 @@ impl App {
                 app_state
                     .lock()
                     .await
-                    .register_board(&board_id, board_ref.clone())?;
+                    .register_board(&board_id, board_ref.clone(), version)?;
             }
         }
 
@@ -191,7 +191,7 @@ impl App {
         store.delete(&board_dir).await?;
 
         if let Some(app_state) = &self.app_state {
-            app_state.lock().await.remove_board(&board_id)?;
+            app_state.lock().await.remove_board(board_id)?;
         }
 
         self.updated_at = SystemTime::now();
@@ -209,7 +209,7 @@ impl App {
                 let mut refs = Vec::with_capacity(self.boards.len());
 
                 for board_id in &self.boards {
-                    if let Ok(board) = guard.get_board(board_id) {
+                    if let Ok(board) = guard.get_board(board_id, None) {
                         refs.push(board.clone());
                     }
                 }

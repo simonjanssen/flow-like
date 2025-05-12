@@ -15,9 +15,8 @@ import type {
 	ILogMetadata,
 	INode,
 	IProfile,
-	IRelease,
-	IVersionType,
 	IRunPayload,
+	IVersionType,
 } from "../lib";
 import type { ISettingsProfile } from "../types";
 
@@ -34,7 +33,7 @@ export interface IBackendState {
 	createBoardVersion(
 		appId: string,
 		boardId: string,
-		versionType: IVersionType
+		versionType: IVersionType,
 	): Promise<[number, number, number]>;
 	getBoardVersions(
 		appId: string,

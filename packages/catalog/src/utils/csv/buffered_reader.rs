@@ -1,25 +1,20 @@
-use std::{io, pin::Pin};
-
 use flow_like::{
     flow::{
         execution::{LogLevel, context::ExecutionContext, internal_node::InternalNode},
-        node::{self, Node, NodeLogic},
+        node::{Node, NodeLogic},
         pin::PinOptions,
         variable::VariableType,
     },
     state::FlowLikeState,
-    utils::json,
 };
 use flow_like_storage::object_store::buffered::BufReader;
 use flow_like_types::{
     async_trait,
-    image::buffer,
-    json::{from_value, json, to_value},
-    tokio::io::AsyncRead,
+    json::{json, to_value},
 };
-use futures::{StreamExt, TryStreamExt};
+use futures::StreamExt;
 
-use crate::{ai::generative::llm::response::chunk, storage::path::FlowPath};
+use crate::storage::path::FlowPath;
 
 #[derive(Default)]
 pub struct BufferedCsvReaderNode {}
@@ -140,7 +135,7 @@ impl NodeLogic for BufferedCsvReaderNode {
                 value.lock().await.set_value(to_value(&chunk)?).await;
                 chunk = Vec::with_capacity(chunk_size as usize);
                 for node in &flow {
-                    let mut sub_context = context.create_sub_context(&node).await;
+                    let mut sub_context = context.create_sub_context(node).await;
                     let run = InternalNode::trigger(&mut sub_context, &mut None, true).await;
                     sub_context.end_trace();
                     context.push_sub_context(sub_context);
@@ -153,10 +148,10 @@ impl NodeLogic for BufferedCsvReaderNode {
             }
         }
 
-        if chunk.len() > 0 {
+        if !chunk.is_empty() {
             value.lock().await.set_value(to_value(&chunk)?).await;
             for node in &flow {
-                let mut sub_context = context.create_sub_context(&node).await;
+                let mut sub_context = context.create_sub_context(node).await;
                 let run = InternalNode::trigger(&mut sub_context, &mut None, true).await;
                 sub_context.end_trace();
                 context.push_sub_context(sub_context);
