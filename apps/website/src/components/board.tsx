@@ -2,7 +2,7 @@ import { Background, BackgroundVariant, ReactFlow } from "@tm9657/flow-like-ui";
 import { CommentNode } from "@tm9657/flow-like-ui/components/flow/comment-node";
 import { FlowNode } from "@tm9657/flow-like-ui/components/flow/flow-node";
 import { LayerNode } from "@tm9657/flow-like-ui/components/flow/layer-node";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export function Board({
 	nodes,
@@ -17,6 +17,14 @@ export function Board({
 		}),
 		[],
 	);
+
+	const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  useEffect(() => {
+    const update = () => setIsMobile(window.innerWidth <= 768);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
 
 	return (
 		<div className="min-h-dvh h-dvh max-h-dvh w-full flex-1 flex-grow">
@@ -33,7 +41,14 @@ export function Board({
 				minZoom={0.1}
 				onInit={(instance) => {
 					instance.fitView({
-						nodes: [
+						nodes: isMobile ? [
+							{
+								id: "sx4lrx3ejmxzb900z60pfw67"
+							},
+							{
+								id: "h2hldwjc4xdzll134lop038x",
+							},
+						] : [
 							{
 								id: "sx4lrx3ejmxzb900z60pfw67",
 							},
