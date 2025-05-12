@@ -20,6 +20,7 @@ import {
 	type IVersionType,
 	PersistQueryClientProvider,
 	QueryClient,
+	ThemeProvider,
 	createIDBPersister,
 	useBackendStore,
 } from "@tm9657/flow-like-ui";
@@ -227,13 +228,21 @@ export function EmptyBackendProvider({
 	}
 
 	return (
-		<PersistQueryClientProvider
-			client={queryClient}
-			persistOptions={{
-				persister,
-			}}
+		<ThemeProvider
+			attribute="class"
+			defaultTheme="dark"
+			enableSystem
+			disableTransitionOnChange
 		>
-			<Board nodes={nodes} edges={edges} />
-		</PersistQueryClientProvider>
+
+			<PersistQueryClientProvider
+				client={queryClient}
+				persistOptions={{
+					persister,
+				}}
+			>
+				<Board nodes={nodes} edges={edges} />
+			</PersistQueryClientProvider>
+		</ThemeProvider>
 	);
 }

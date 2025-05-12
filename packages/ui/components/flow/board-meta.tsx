@@ -62,8 +62,9 @@ export function BoardMeta({
 	});
 	const backend = useBackend();
 	const invalidate = useInvalidateInvoke();
-
 	const versions = useInvoke(backend.getBoardVersions, [appId, boardId]);
+
+	const [localVersion, setLocalVersion] = useState<[number, number, number] | undefined>(board.version as [number, number, number] | undefined);
 
 	const invalidateBoard = useCallback(async () => {
 		await invalidate(backend.getBoard, [appId, boardId]);
@@ -86,6 +87,7 @@ export function BoardMeta({
 	const createVersion = useCallback(
 		async (type: IVersionType) => {
 			const newVersion = await backend.createBoardVersion(appId, boardId, type);
+			setLocalVersion(newVersion);
 			await versions.refetch();
 		},
 		[appId, boardId, versions],
@@ -198,7 +200,7 @@ export function BoardMeta({
 							<SelectValue placeholder="Version" />
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value="Latest">Latest</SelectItem>
+							<SelectItem value="Latest">Latest ({localVersion?.join(".")})</SelectItem>
 							{versions.data
 								?.sort((a, b) => {
 									if (a[0] !== b[0]) {

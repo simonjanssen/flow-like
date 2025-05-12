@@ -11,8 +11,8 @@ const nodeJson = JSON.parse(
 const parsedNodes: Node[] = [];
 const parsedEdges: any[] = [];
 
-const nodes: INode[] = nodeJson.nodes;
-const comments: IComment[] = nodeJson.comments;
+const nodes: INode[] = Object.values(nodeJson.nodes);
+const comments: IComment[] = Object.values(nodeJson.comments);
 
 for (const node of nodes) {
 	for (const pin of Object.values(node.pins)) {

@@ -1,827 +1,1702 @@
 {
-	"nodes": [
-		{
+	"id": "e2qldr3txmfm9iwt77jw2uvr",
+	"name": "New Board",
+	"description": "Your new Workflow!",
+	"nodes": {
+		"fpg323k8fdwrm328r3qnfw69": {
 			"id": "fpg323k8fdwrm328r3qnfw69",
 			"name": "control_branch",
 			"friendly_name": "Branch",
-			"coordinates": [576.5167, 178.93364, 0],
+			"description": "17904190770306764727",
+			"coordinates": [
+				576.5167,
+				178.93364,
+				0
+			],
+			"category": "Control",
+			"scores": null,
 			"pins": {
-				"ooh2rc06z1yiigz6ev95hxx5": {
-					"id": "ooh2rc06z1yiigz6ev95hxx5",
-					"name": "false",
-					"friendly_name": "False",
-					"pin_type": "Output",
-					"data_type": "Execution",
-					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": ["umldlzo9dkw5i59n7rq4dsun"],
-					"index": 2
-				},
 				"dkq6p9r8lco3hf2ut3lqn82t": {
 					"id": "dkq6p9r8lco3hf2ut3lqn82t",
 					"name": "true",
 					"friendly_name": "True",
+					"description": "5263826465754033912",
 					"pin_type": "Output",
 					"data_type": "Execution",
+					"schema": null,
 					"value_type": "Normal",
 					"depends_on": [],
-					"connected_to": ["v1vkmm6wz52uxdqtnyzwcwts"],
-					"index": 1
+					"connected_to": [
+						"v1vkmm6wz52uxdqtnyzwcwts"
+					],
+					"default_value": null,
+					"index": 1,
+					"options": null
+				},
+				"ooh2rc06z1yiigz6ev95hxx5": {
+					"id": "ooh2rc06z1yiigz6ev95hxx5",
+					"name": "false",
+					"friendly_name": "False",
+					"description": "10819820416658184077",
+					"pin_type": "Output",
+					"data_type": "Execution",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [
+						"umldlzo9dkw5i59n7rq4dsun"
+					],
+					"default_value": null,
+					"index": 2,
+					"options": null
 				},
 				"jg5wqr6021g6qurye8ukyvam": {
 					"id": "jg5wqr6021g6qurye8ukyvam",
 					"name": "condition",
 					"friendly_name": "Condition",
+					"description": "5425691739547396196",
 					"pin_type": "Input",
 					"data_type": "Boolean",
+					"schema": null,
 					"value_type": "Normal",
-					"depends_on": ["jrlfhj9mbfu68cpc6amgyi4b"],
+					"depends_on": [
+						"jrlfhj9mbfu68cpc6amgyi4b"
+					],
 					"connected_to": [],
-					"default_value": [116, 114, 117, 101],
-					"index": 2
+					"default_value": [
+						116,
+						114,
+						117,
+						101
+					],
+					"index": 2,
+					"options": null
 				},
 				"nokqqodrqoy8h8awwrlkc03g": {
 					"id": "nokqqodrqoy8h8awwrlkc03g",
 					"name": "exec_in",
 					"friendly_name": "Input",
+					"description": "5454119197816847421",
 					"pin_type": "Input",
 					"data_type": "Execution",
+					"schema": null,
 					"value_type": "Normal",
-					"depends_on": ["im8lx3hvsdaausqu0dwtkjxd"],
+					"depends_on": [
+						"im8lx3hvsdaausqu0dwtkjxd"
+					],
 					"connected_to": [],
-					"index": 1
+					"default_value": null,
+					"index": 1,
+					"options": null
 				}
-			}
+			},
+			"start": null,
+			"icon": "/flow/icons/split.svg",
+			"comment": null,
+			"long_running": null,
+			"error": null,
+			"docs": null,
+			"event_callback": null,
+			"layer": null
 		},
-		{
-			"id": "h2hldwjc4xdzll134lop038x",
-			"name": "cuid",
-			"friendly_name": "CUID v2",
-			"coordinates": [515.86426, 573.4548, 0],
-			"pins": {
-				"lts7w1lyqtk3o98y0afs47vn": {
-					"id": "lts7w1lyqtk3o98y0afs47vn",
-					"name": "cuid",
-					"friendly_name": "Cuid",
-					"pin_type": "Output",
-					"data_type": "String",
-					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": ["dhe2s4ey6bpfilbn6idel4j3"],
-					"index": 2
-				},
-				"xjnodd5yror4itj4c374g0ry": {
-					"id": "xjnodd5yror4itj4c374g0ry",
-					"name": "exec_in",
-					"friendly_name": "Input",
-					"pin_type": "Input",
-					"data_type": "Execution",
-					"value_type": "Normal",
-					"depends_on": ["x5yh97keopjcm01s3xsamiyy"],
-					"connected_to": [],
-					"index": 1
-				},
-				"ctvrvnx15xmqgyzsbqfv0hbg": {
-					"id": "ctvrvnx15xmqgyzsbqfv0hbg",
-					"name": "exec_out",
-					"friendly_name": "Output",
-					"pin_type": "Output",
-					"data_type": "Execution",
-					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": ["ryj0everm1jfq2e5xks3lhct"],
-					"index": 1
-				}
-			}
-		},
-		{
-			"id": "ueukpm0s0v6or3c1keqummi3",
-			"name": "events_simple",
-			"friendly_name": "[POST] Put Employee",
-			"coordinates": [152.62411, 573.4548, 0],
-			"pins": {
-				"sq6fghjb351tc0z4e08tiuv2": {
-					"id": "sq6fghjb351tc0z4e08tiuv2",
-					"name": "exec_out",
-					"friendly_name": "Output",
-					"pin_type": "Output",
-					"data_type": "Execution",
-					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": ["o6wbav35opo6kz0yen91w4ay"],
-					"index": 1
-				}
-			}
-		},
-		{
-			"id": "kwa31i0wpj2q8etl67bh7xr6",
-			"name": "events_chat_push_response",
-			"friendly_name": "Push Response",
-			"coordinates": [1452.7396, 573.4223, 0],
-			"pins": {
-				"itqgs0c136qjmjv2qoioclga": {
-					"id": "itqgs0c136qjmjv2qoioclga",
-					"name": "exec_out",
-					"friendly_name": "Output",
-					"pin_type": "Output",
-					"data_type": "Execution",
-					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": [],
-					"index": 1
-				},
-				"jl76wqarf24aytqm2igsq222": {
-					"id": "jl76wqarf24aytqm2igsq222",
-					"name": "response",
-					"friendly_name": "Response",
-					"pin_type": "Input",
-					"data_type": "Struct",
-					"value_type": "Normal",
-					"depends_on": ["cahom112p2n6wlngijqw0ede"],
-					"connected_to": [],
-					"index": 2
-				},
-				"ajsmg6v9fov1prtp8uxw6p3a": {
-					"id": "ajsmg6v9fov1prtp8uxw6p3a",
-					"name": "exec_in",
-					"friendly_name": "Input",
-					"pin_type": "Input",
-					"data_type": "Execution",
-					"value_type": "Normal",
-					"depends_on": ["pyr30g44rylcw48suo5ui0m9"],
-					"connected_to": [],
-					"index": 1
-				}
-			}
-		},
-		{
+		"t0ksdlow3n0kh00pj3vthud3": {
 			"id": "t0ksdlow3n0kh00pj3vthud3",
 			"name": "ai_generative_invoke",
 			"friendly_name": "Invoke Model",
-			"comment": "Streaming, Function Calling, Images, ...",
-			"coordinates": [1243.055, 506.22443, 0],
+			"description": "7247578861291942550",
+			"coordinates": [
+				1243.055,
+				506.22443,
+				0
+			],
+			"category": "AI/Generative",
+			"scores": null,
 			"pins": {
-				"awo2g09rxm865xnvcq1gu03h": {
-					"id": "awo2g09rxm865xnvcq1gu03h",
-					"name": "exec_in",
-					"friendly_name": "Input",
-					"pin_type": "Input",
-					"data_type": "Execution",
-					"value_type": "Normal",
-					"depends_on": ["qhittpwlthj7abliet9c1w1x"],
-					"connected_to": [],
-					"index": 1
-				},
-				"cahom112p2n6wlngijqw0ede": {
-					"id": "cahom112p2n6wlngijqw0ede",
-					"name": "result",
-					"friendly_name": "Result",
-					"pin_type": "Output",
-					"data_type": "Struct",
-					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": ["jl76wqarf24aytqm2igsq222"],
-					"index": 4
-				},
-				"pyr30g44rylcw48suo5ui0m9": {
-					"id": "pyr30g44rylcw48suo5ui0m9",
-					"name": "done",
-					"friendly_name": "Done",
-					"pin_type": "Output",
-					"data_type": "Execution",
-					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": ["ajsmg6v9fov1prtp8uxw6p3a"],
-					"index": 3
-				},
-				"jmir8uml12c64dotl0lm09u4": {
-					"id": "jmir8uml12c64dotl0lm09u4",
-					"name": "history",
-					"friendly_name": "History",
-					"pin_type": "Input",
-					"data_type": "Struct",
-					"value_type": "Normal",
-					"depends_on": ["gact6d0lsba6btd54nmoidwv"],
-					"connected_to": [],
-					"index": 3
-				},
 				"lfvxoaj2s2um13lkvxhk1j0k": {
 					"id": "lfvxoaj2s2um13lkvxhk1j0k",
 					"name": "chunk",
 					"friendly_name": "Chunk",
+					"description": "16248035215404677707",
 					"pin_type": "Output",
 					"data_type": "Struct",
+					"schema": "16140371220437556509",
 					"value_type": "Normal",
 					"depends_on": [],
 					"connected_to": [],
-					"index": 2
-				},
-				"h1lk56ispbjfdszpzstbye4y": {
-					"id": "h1lk56ispbjfdszpzstbye4y",
-					"name": "model",
-					"friendly_name": "Model",
-					"pin_type": "Input",
-					"data_type": "Struct",
-					"value_type": "Normal",
-					"depends_on": ["aa68o8br2ihoeevgtly7dun0"],
-					"connected_to": [],
-					"index": 2
+					"default_value": null,
+					"index": 2,
+					"options": {
+						"valid_values": null,
+						"range": null,
+						"step": null,
+						"enforce_schema": true,
+						"enforce_generic_value_type": null
+					}
 				},
 				"xmcd3zlmyuxud5g78uj5ryy4": {
 					"id": "xmcd3zlmyuxud5g78uj5ryy4",
 					"name": "on_stream",
 					"friendly_name": "On Stream",
+					"description": "4629351131899522477",
 					"pin_type": "Output",
 					"data_type": "Execution",
+					"schema": null,
 					"value_type": "Normal",
 					"depends_on": [],
 					"connected_to": [],
-					"index": 1
-				}
-			}
-		},
-		{
-			"id": "ps8ftc1igq6tkv1e41np4bie",
-			"name": "ai_generative_find_model",
-			"friendly_name": "Find Model",
-			"comment": "Just define the capabilities of the Model!",
-			"coordinates": [870.5044, 506.40732, 0],
-			"pins": {
-				"lcxzcd1xy22qliar7f54hdte": {
-					"id": "lcxzcd1xy22qliar7f54hdte",
-					"name": "exec_in",
-					"friendly_name": "Input",
-					"pin_type": "Input",
-					"data_type": "Execution",
-					"value_type": "Normal",
-					"depends_on": ["lp51ximm0xvffy1mpjvywtez"],
-					"connected_to": [],
-					"index": 1
+					"default_value": null,
+					"index": 1,
+					"options": null
 				},
-				"zum9rhoqw6ns35dj4aqc3h9p": {
-					"id": "zum9rhoqw6ns35dj4aqc3h9p",
-					"name": "preferences",
-					"friendly_name": "Preferences",
+				"jmir8uml12c64dotl0lm09u4": {
+					"id": "jmir8uml12c64dotl0lm09u4",
+					"name": "history",
+					"friendly_name": "History",
+					"description": "3261409588290310934",
 					"pin_type": "Input",
 					"data_type": "Struct",
+					"schema": "17638850536523711416",
 					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": [],
-					"default_value": [
-						123, 34, 99, 111, 100, 105, 110, 103, 95, 119, 101, 105, 103, 104,
-						116, 34, 58, 110, 117, 108, 108, 44, 34, 99, 111, 115, 116, 95, 119,
-						101, 105, 103, 104, 116, 34, 58, 110, 117, 108, 108, 44, 34, 99,
-						114, 101, 97, 116, 105, 118, 105, 116, 121, 95, 119, 101, 105, 103,
-						104, 116, 34, 58, 110, 117, 108, 108, 44, 34, 102, 97, 99, 116, 117,
-						97, 108, 105, 116, 121, 95, 119, 101, 105, 103, 104, 116, 34, 58,
-						110, 117, 108, 108, 44, 34, 102, 117, 110, 99, 116, 105, 111, 110,
-						95, 99, 97, 108, 108, 105, 110, 103, 95, 119, 101, 105, 103, 104,
-						116, 34, 58, 110, 117, 108, 108, 44, 34, 109, 111, 100, 101, 108,
-						95, 104, 105, 110, 116, 34, 58, 110, 117, 108, 108, 44, 34, 109,
-						117, 108, 116, 105, 108, 105, 110, 103, 117, 97, 108, 105, 116, 121,
-						95, 119, 101, 105, 103, 104, 116, 34, 58, 110, 117, 108, 108, 44,
-						34, 111, 112, 101, 110, 110, 101, 115, 115, 95, 119, 101, 105, 103,
-						104, 116, 34, 58, 110, 117, 108, 108, 44, 34, 114, 101, 97, 115,
-						111, 110, 105, 110, 103, 95, 119, 101, 105, 103, 104, 116, 34, 58,
-						110, 117, 108, 108, 44, 34, 115, 97, 102, 101, 116, 121, 95, 119,
-						101, 105, 103, 104, 116, 34, 58, 110, 117, 108, 108, 44, 34, 115,
-						112, 101, 101, 100, 95, 119, 101, 105, 103, 104, 116, 34, 58, 110,
-						117, 108, 108, 125
+					"depends_on": [
+						"gact6d0lsba6btd54nmoidwv"
 					],
-					"index": 2
+					"connected_to": [],
+					"default_value": null,
+					"index": 3,
+					"options": {
+						"valid_values": null,
+						"range": null,
+						"step": null,
+						"enforce_schema": true,
+						"enforce_generic_value_type": null
+					}
 				},
-				"u8vdkakvixrfmwje0g494480": {
-					"id": "u8vdkakvixrfmwje0g494480",
-					"name": "exec_out",
-					"friendly_name": "Output",
-					"pin_type": "Output",
+				"awo2g09rxm865xnvcq1gu03h": {
+					"id": "awo2g09rxm865xnvcq1gu03h",
+					"name": "exec_in",
+					"friendly_name": "Input",
+					"description": "5454119197816847421",
+					"pin_type": "Input",
 					"data_type": "Execution",
+					"schema": null,
 					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": ["z6o9npjhh2e8qimvrcg4lpd0"],
-					"index": 1
+					"depends_on": [
+						"qhittpwlthj7abliet9c1w1x"
+					],
+					"connected_to": [],
+					"default_value": null,
+					"index": 1,
+					"options": null
 				},
-				"f73nh46da29sgw6753io5qn2": {
-					"id": "f73nh46da29sgw6753io5qn2",
+				"h1lk56ispbjfdszpzstbye4y": {
+					"id": "h1lk56ispbjfdszpzstbye4y",
 					"name": "model",
 					"friendly_name": "Model",
-					"pin_type": "Output",
-					"data_type": "Struct",
-					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": ["dqqvvbgahmwon5qdjw5fwx94"],
-					"index": 2
-				}
-			}
-		},
-		{
-			"id": "rfmnj5dmzoiswudxsf1kof35",
-			"name": "reroute",
-			"friendly_name": "Reroute",
-			"comment": "",
-			"coordinates": [764.7078, 565.329, 0],
-			"pins": {
-				"w98ohd2xv3ay37ikgznenjij": {
-					"id": "w98ohd2xv3ay37ikgznenjij",
-					"name": "route_out",
-					"friendly_name": "Out",
-					"pin_type": "Output",
-					"data_type": "Execution",
-					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": ["umldlzo9dkw5i59n7rq4dsun"],
-					"index": 1
-				},
-				"zycuya5yv9qzig73pdaesm4f": {
-					"id": "zycuya5yv9qzig73pdaesm4f",
-					"name": "route_in",
-					"friendly_name": "In",
-					"pin_type": "Input",
-					"data_type": "Execution",
-					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": [],
-					"index": 1
-				}
-			}
-		},
-		{
-			"id": "ow8p5bucfy97nqqip2jp7kvk",
-			"name": "reroute",
-			"friendly_name": "Reroute",
-			"coordinates": [1071.9424, 591.92267, 0],
-			"pins": {
-				"dqqvvbgahmwon5qdjw5fwx94": {
-					"id": "dqqvvbgahmwon5qdjw5fwx94",
-					"name": "route_in",
-					"friendly_name": "In",
+					"description": "13082297289417109326",
 					"pin_type": "Input",
 					"data_type": "Struct",
+					"schema": "9466936283142343191",
 					"value_type": "Normal",
-					"depends_on": ["f73nh46da29sgw6753io5qn2"],
-					"connected_to": [],
-					"index": 1
-				},
-				"sjj41vvfkduezrl7q3liel7p": {
-					"id": "sjj41vvfkduezrl7q3liel7p",
-					"name": "route_out",
-					"friendly_name": "Out",
-					"pin_type": "Output",
-					"data_type": "Struct",
-					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": ["utw6pey0x8phomwr7afrid7b"],
-					"index": 1
-				}
-			}
-		},
-		{
-			"id": "qz42zqfuqug85zn5po09l4px",
-			"name": "ai_generative_set_system_prompt_message",
-			"friendly_name": "Set System Message",
-			"coordinates": [1071.2064, 506.40735, 0],
-			"pins": {
-				"hx9wwi75cg0onnsuqkc7wm6a": {
-					"id": "hx9wwi75cg0onnsuqkc7wm6a",
-					"name": "message",
-					"friendly_name": "Message",
-					"pin_type": "Input",
-					"data_type": "String",
-					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": [],
-					"default_value": [34, 34],
-					"index": 3
-				},
-				"gact6d0lsba6btd54nmoidwv": {
-					"id": "gact6d0lsba6btd54nmoidwv",
-					"name": "history_out",
-					"friendly_name": "History",
-					"pin_type": "Output",
-					"data_type": "Struct",
-					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": ["jmir8uml12c64dotl0lm09u4"],
-					"index": 2
-				},
-				"lvesjq7uksuknrbd4nfl5xbu": {
-					"id": "lvesjq7uksuknrbd4nfl5xbu",
-					"name": "history",
-					"friendly_name": "History",
-					"pin_type": "Input",
-					"data_type": "Struct",
-					"value_type": "Normal",
-					"depends_on": ["s9r92igepm03lc01fa13ydq2"],
-					"connected_to": [],
-					"index": 2
-				},
-				"qhittpwlthj7abliet9c1w1x": {
-					"id": "qhittpwlthj7abliet9c1w1x",
-					"name": "exec_out",
-					"friendly_name": "Output",
-					"pin_type": "Output",
-					"data_type": "Execution",
-					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": ["awo2g09rxm865xnvcq1gu03h"],
-					"index": 1
-				},
-				"z6o9npjhh2e8qimvrcg4lpd0": {
-					"id": "z6o9npjhh2e8qimvrcg4lpd0",
-					"name": "exec_in",
-					"friendly_name": "Input",
-					"pin_type": "Input",
-					"data_type": "Execution",
-					"value_type": "Normal",
-					"depends_on": ["u8vdkakvixrfmwje0g494480"],
-					"connected_to": [],
-					"index": 1
-				}
-			}
-		},
-		{
-			"id": "v5t6lankzpkdauomqo7pmxb4",
-			"name": "reroute",
-			"friendly_name": "Reroute",
-			"coordinates": [713.759, 565.329, 0],
-			"pins": {
-				"ryj0everm1jfq2e5xks3lhct": {
-					"id": "ryj0everm1jfq2e5xks3lhct",
-					"name": "route_in",
-					"friendly_name": "In",
-					"pin_type": "Input",
-					"data_type": "Execution",
-					"value_type": "Normal",
-					"depends_on": ["ctvrvnx15xmqgyzsbqfv0hbg"],
-					"connected_to": [],
-					"index": 1
-				},
-				"efl7pu1dl9v357nyfn2i6a62": {
-					"id": "efl7pu1dl9v357nyfn2i6a62",
-					"name": "route_out",
-					"friendly_name": "Out",
-					"pin_type": "Output",
-					"data_type": "Execution",
-					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": [],
-					"index": 1
-				}
-			}
-		},
-		{
-			"id": "z3o319ssjzb7ux1qm0fzm4j6",
-			"name": "reroute",
-			"friendly_name": "Reroute",
-			"coordinates": [524.3879, 665.904, 0],
-			"pins": {
-				"nt54dohrivgurnum6db8iazp": {
-					"id": "nt54dohrivgurnum6db8iazp",
-					"name": "route_in",
-					"friendly_name": "In",
-					"pin_type": "Input",
-					"data_type": "Struct",
-					"value_type": "Normal",
-					"depends_on": ["vvh6a3n3g1vy39nxed9xtetq"],
-					"connected_to": [],
-					"index": 1
-				},
-				"fyfjma34g0wekdn4sneeks0v": {
-					"id": "fyfjma34g0wekdn4sneeks0v",
-					"name": "route_out",
-					"friendly_name": "Out",
-					"pin_type": "Output",
-					"data_type": "Struct",
-					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": [],
-					"index": 1
-				}
-			}
-		},
-		{
-			"id": "es9ogthal43izsacehkd2k5r",
-			"name": "reroute",
-			"friendly_name": "Reroute",
-			"coordinates": [801.3913, 230.22194, 0],
-			"pins": {
-				"v1vkmm6wz52uxdqtnyzwcwts": {
-					"id": "v1vkmm6wz52uxdqtnyzwcwts",
-					"name": "route_in",
-					"friendly_name": "In",
-					"pin_type": "Input",
-					"data_type": "Execution",
-					"value_type": "Normal",
-					"depends_on": ["dkq6p9r8lco3hf2ut3lqn82t"],
-					"connected_to": [],
-					"index": 1
-				},
-				"iyw8o4dke1526u7jtbyxpmvy": {
-					"id": "iyw8o4dke1526u7jtbyxpmvy",
-					"name": "route_out",
-					"friendly_name": "Out",
-					"pin_type": "Output",
-					"data_type": "Execution",
-					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": [],
-					"index": 1
-				}
-			}
-		},
-		{
-			"id": "zvvqi3egtekgro6uvpjnp7bu",
-			"name": "reroute",
-			"friendly_name": "Reroute",
-			"comment": "",
-			"coordinates": [705.3473, 626.1191, 0],
-			"pins": {
-				"uq1bpmkdsadr1mrnn683a8io": {
-					"id": "uq1bpmkdsadr1mrnn683a8io",
-					"name": "route_out",
-					"friendly_name": "Out",
-					"pin_type": "Output",
-					"data_type": "String",
-					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": [],
-					"index": 1
-				},
-				"dhe2s4ey6bpfilbn6idel4j3": {
-					"id": "dhe2s4ey6bpfilbn6idel4j3",
-					"name": "route_in",
-					"friendly_name": "In",
-					"pin_type": "Input",
-					"data_type": "String",
-					"value_type": "Normal",
-					"depends_on": ["lts7w1lyqtk3o98y0afs47vn"],
-					"connected_to": [],
-					"index": 1
-				}
-			}
-		},
-		{
-			"id": "bqusecgbpoune54abeyha79x",
-			"name": "events_simple",
-			"friendly_name": "Website Loaded",
-			"coordinates": [384.59998, 228.62198, 0],
-			"pins": {
-				"im8lx3hvsdaausqu0dwtkjxd": {
-					"id": "im8lx3hvsdaausqu0dwtkjxd",
-					"name": "exec_out",
-					"friendly_name": "Output",
-					"pin_type": "Output",
-					"data_type": "Execution",
-					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": ["nokqqodrqoy8h8awwrlkc03g"],
-					"index": 1
-				}
-			}
-		},
-		{
-			"id": "hdzp480cqqzbmbguj37wypm1",
-			"name": "equal_string",
-			"friendly_name": "==",
-			"comment": "User Already Knows Flow Like?",
-			"coordinates": [119.5596, 104.72942, 0],
-			"pins": {
-				"jrlfhj9mbfu68cpc6amgyi4b": {
-					"id": "jrlfhj9mbfu68cpc6amgyi4b",
-					"name": "equal",
-					"friendly_name": "Is Equal?",
-					"pin_type": "Output",
-					"data_type": "Boolean",
-					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": ["jg5wqr6021g6qurye8ukyvam"],
-					"index": 1
-				},
-				"ciuqv34pzvm6cke9hfxwxcky": {
-					"id": "ciuqv34pzvm6cke9hfxwxcky",
-					"name": "string",
-					"friendly_name": "String",
-					"pin_type": "Input",
-					"data_type": "String",
-					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": [],
-					"default_value": [34, 85, 115, 101, 114, 34],
-					"index": 1
-				},
-				"xmd0cj649no6h3yjoi3yeezf": {
-					"id": "xmd0cj649no6h3yjoi3yeezf",
-					"name": "string",
-					"friendly_name": "String",
-					"pin_type": "Input",
-					"data_type": "String",
-					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": [],
-					"default_value": [
-						34, 65, 108, 114, 101, 97, 100, 121, 32, 75, 110, 111, 119, 115, 32,
-						70, 108, 111, 119, 32, 76, 105, 107, 101, 34
+					"depends_on": [
+						"aa68o8br2ihoeevgtly7dun0"
 					],
-					"index": 2
-				}
-			}
-		},
-		{
-			"id": "m10pxih6a3emy9htl0ownozm",
-			"name": "reroute",
-			"friendly_name": "Reroute",
-			"comment": "",
-			"coordinates": [1203.828, 591.92267, 0],
-			"pins": {
-				"utw6pey0x8phomwr7afrid7b": {
-					"id": "utw6pey0x8phomwr7afrid7b",
-					"name": "route_in",
-					"friendly_name": "In",
-					"pin_type": "Input",
-					"data_type": "Struct",
-					"value_type": "Normal",
-					"depends_on": ["sjj41vvfkduezrl7q3liel7p"],
 					"connected_to": [],
-					"index": 1
+					"default_value": null,
+					"index": 2,
+					"options": {
+						"valid_values": null,
+						"range": null,
+						"step": null,
+						"enforce_schema": true,
+						"enforce_generic_value_type": null
+					}
 				},
-				"aa68o8br2ihoeevgtly7dun0": {
-					"id": "aa68o8br2ihoeevgtly7dun0",
-					"name": "route_out",
-					"friendly_name": "Out",
+				"cahom112p2n6wlngijqw0ede": {
+					"id": "cahom112p2n6wlngijqw0ede",
+					"name": "result",
+					"friendly_name": "Result",
+					"description": "14248494543013154112",
 					"pin_type": "Output",
 					"data_type": "Struct",
+					"schema": "12714623100737772828",
 					"value_type": "Normal",
 					"depends_on": [],
-					"connected_to": ["h1lk56ispbjfdszpzstbye4y"],
-					"index": 1
-				}
-			}
-		},
-		{
-			"id": "mec4gt47k8d6l0eo9q6ptei3",
-			"name": "open_local_db",
-			"friendly_name": "Open Database",
-			"coordinates": [333.5885, 573.4548, 0],
-			"pins": {
-				"vvh6a3n3g1vy39nxed9xtetq": {
-					"id": "vvh6a3n3g1vy39nxed9xtetq",
-					"name": "database",
-					"friendly_name": "Database",
-					"pin_type": "Output",
-					"data_type": "Struct",
-					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": ["nt54dohrivgurnum6db8iazp"],
-					"index": 2
+					"connected_to": [
+						"jl76wqarf24aytqm2igsq222"
+					],
+					"default_value": null,
+					"index": 4,
+					"options": {
+						"valid_values": null,
+						"range": null,
+						"step": null,
+						"enforce_schema": true,
+						"enforce_generic_value_type": null
+					}
 				},
-				"x5yh97keopjcm01s3xsamiyy": {
-					"id": "x5yh97keopjcm01s3xsamiyy",
-					"name": "exec_out",
-					"friendly_name": "Created Database",
+				"pyr30g44rylcw48suo5ui0m9": {
+					"id": "pyr30g44rylcw48suo5ui0m9",
+					"name": "done",
+					"friendly_name": "Done",
+					"description": "1873557855867980067",
 					"pin_type": "Output",
 					"data_type": "Execution",
+					"schema": null,
 					"value_type": "Normal",
 					"depends_on": [],
-					"connected_to": ["xjnodd5yror4itj4c374g0ry"],
-					"index": 1
-				},
-				"zk29ofdo620o42lnbg5ovu13": {
-					"id": "zk29ofdo620o42lnbg5ovu13",
-					"name": "name",
-					"friendly_name": "Table Name",
-					"pin_type": "Input",
-					"data_type": "String",
-					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": [],
-					"default_value": [34, 69, 109, 112, 108, 111, 121, 101, 101, 115, 34],
-					"index": 2
-				},
-				"o6wbav35opo6kz0yen91w4ay": {
-					"id": "o6wbav35opo6kz0yen91w4ay",
-					"name": "exec_in",
-					"friendly_name": "Input",
-					"pin_type": "Input",
-					"data_type": "Execution",
-					"value_type": "Normal",
-					"depends_on": ["sq6fghjb351tc0z4e08tiuv2"],
-					"connected_to": [],
-					"index": 1
+					"connected_to": [
+						"ajsmg6v9fov1prtp8uxw6p3a"
+					],
+					"default_value": null,
+					"index": 3,
+					"options": null
 				}
-			}
+			},
+			"start": null,
+			"icon": "/flow/icons/bot-invoke.svg",
+			"comment": "Streaming, Function Calling, Images, ...",
+			"long_running": true,
+			"error": null,
+			"docs": null,
+			"event_callback": null,
+			"layer": null
 		},
-		{
-			"id": "e5e1uepvefz3663n8s0gp76e",
-			"name": "ai_generative_make_history",
-			"friendly_name": "Make History",
-			"coordinates": [870.5044, 582.10895, 0],
-			"pins": {
-				"fv40uyle1wro64n3czvmdbvk": {
-					"id": "fv40uyle1wro64n3czvmdbvk",
-					"name": "model_name",
-					"friendly_name": "Model Name",
-					"pin_type": "Input",
-					"data_type": "String",
-					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": [],
-					"default_value": [34, 34],
-					"index": 1
-				},
-				"s9r92igepm03lc01fa13ydq2": {
-					"id": "s9r92igepm03lc01fa13ydq2",
-					"name": "history",
-					"friendly_name": "History",
-					"pin_type": "Output",
-					"data_type": "Struct",
-					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": ["lvesjq7uksuknrbd4nfl5xbu"],
-					"index": 1
-				}
-			}
-		},
-		{
+		"gbi596usqgegra6iojxwpm97": {
 			"id": "gbi596usqgegra6iojxwpm97",
 			"name": "reroute",
 			"friendly_name": "Reroute",
-			"coordinates": [805.3197, 527.8632, 0],
+			"description": "4831355782476522024",
+			"coordinates": [
+				805.3197,
+				527.8632,
+				0
+			],
+			"category": "Control",
+			"scores": null,
 			"pins": {
-				"lp51ximm0xvffy1mpjvywtez": {
-					"id": "lp51ximm0xvffy1mpjvywtez",
-					"name": "route_out",
-					"friendly_name": "Out",
-					"pin_type": "Output",
-					"data_type": "Execution",
-					"value_type": "Normal",
-					"depends_on": [],
-					"connected_to": ["lcxzcd1xy22qliar7f54hdte"],
-					"index": 1
-				},
 				"umldlzo9dkw5i59n7rq4dsun": {
 					"id": "umldlzo9dkw5i59n7rq4dsun",
 					"name": "route_in",
 					"friendly_name": "In",
+					"description": "16248035215404677707",
 					"pin_type": "Input",
 					"data_type": "Execution",
+					"schema": null,
 					"value_type": "Normal",
 					"depends_on": [
 						"ooh2rc06z1yiigz6ev95hxx5",
 						"w98ohd2xv3ay37ikgznenjij"
 					],
 					"connected_to": [],
-					"index": 1
+					"default_value": null,
+					"index": 1,
+					"options": null
+				},
+				"lp51ximm0xvffy1mpjvywtez": {
+					"id": "lp51ximm0xvffy1mpjvywtez",
+					"name": "route_out",
+					"friendly_name": "Out",
+					"description": "16248035215404677707",
+					"pin_type": "Output",
+					"data_type": "Execution",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [
+						"lcxzcd1xy22qliar7f54hdte"
+					],
+					"default_value": null,
+					"index": 1,
+					"options": null
 				}
-			}
+			},
+			"start": null,
+			"icon": null,
+			"comment": null,
+			"long_running": null,
+			"error": null,
+			"docs": null,
+			"event_callback": null,
+			"layer": null
+		},
+		"kwa31i0wpj2q8etl67bh7xr6": {
+			"id": "kwa31i0wpj2q8etl67bh7xr6",
+			"name": "events_chat_push_response",
+			"friendly_name": "Push Response",
+			"description": "17578778484962692026",
+			"coordinates": [
+				1452.7396,
+				573.4223,
+				0
+			],
+			"category": "Events/Chat",
+			"scores": null,
+			"pins": {
+				"itqgs0c136qjmjv2qoioclga": {
+					"id": "itqgs0c136qjmjv2qoioclga",
+					"name": "exec_out",
+					"friendly_name": "Output",
+					"description": "5874588604662946312",
+					"pin_type": "Output",
+					"data_type": "Execution",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [],
+					"default_value": null,
+					"index": 1,
+					"options": null
+				},
+				"jl76wqarf24aytqm2igsq222": {
+					"id": "jl76wqarf24aytqm2igsq222",
+					"name": "response",
+					"friendly_name": "Response",
+					"description": "15586502907263183237",
+					"pin_type": "Input",
+					"data_type": "Struct",
+					"schema": "12714623100737772828",
+					"value_type": "Normal",
+					"depends_on": [
+						"cahom112p2n6wlngijqw0ede"
+					],
+					"connected_to": [],
+					"default_value": null,
+					"index": 2,
+					"options": {
+						"valid_values": null,
+						"range": null,
+						"step": null,
+						"enforce_schema": true,
+						"enforce_generic_value_type": null
+					}
+				},
+				"ajsmg6v9fov1prtp8uxw6p3a": {
+					"id": "ajsmg6v9fov1prtp8uxw6p3a",
+					"name": "exec_in",
+					"friendly_name": "Input",
+					"description": "4586845553155246922",
+					"pin_type": "Input",
+					"data_type": "Execution",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [
+						"pyr30g44rylcw48suo5ui0m9"
+					],
+					"connected_to": [],
+					"default_value": null,
+					"index": 1,
+					"options": null
+				}
+			},
+			"start": null,
+			"icon": "/flow/icons/event.svg",
+			"comment": null,
+			"long_running": null,
+			"error": null,
+			"docs": null,
+			"event_callback": true,
+			"layer": null
+		},
+		"es9ogthal43izsacehkd2k5r": {
+			"id": "es9ogthal43izsacehkd2k5r",
+			"name": "reroute",
+			"friendly_name": "Reroute",
+			"description": "4831355782476522024",
+			"coordinates": [
+				801.3913,
+				230.22194,
+				0
+			],
+			"category": "Control",
+			"scores": null,
+			"pins": {
+				"iyw8o4dke1526u7jtbyxpmvy": {
+					"id": "iyw8o4dke1526u7jtbyxpmvy",
+					"name": "route_out",
+					"friendly_name": "Out",
+					"description": "16248035215404677707",
+					"pin_type": "Output",
+					"data_type": "Execution",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [],
+					"default_value": null,
+					"index": 1,
+					"options": null
+				},
+				"v1vkmm6wz52uxdqtnyzwcwts": {
+					"id": "v1vkmm6wz52uxdqtnyzwcwts",
+					"name": "route_in",
+					"friendly_name": "In",
+					"description": "16248035215404677707",
+					"pin_type": "Input",
+					"data_type": "Execution",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [
+						"dkq6p9r8lco3hf2ut3lqn82t"
+					],
+					"connected_to": [],
+					"default_value": null,
+					"index": 1,
+					"options": null
+				}
+			},
+			"start": null,
+			"icon": null,
+			"comment": null,
+			"long_running": null,
+			"error": null,
+			"docs": null,
+			"event_callback": null,
+			"layer": null
+		},
+		"e5e1uepvefz3663n8s0gp76e": {
+			"id": "e5e1uepvefz3663n8s0gp76e",
+			"name": "ai_generative_make_history",
+			"friendly_name": "Make History",
+			"description": "18370806395568600871",
+			"coordinates": [
+				870.5044,
+				582.10895,
+				0
+			],
+			"category": "AI/Generative/History",
+			"scores": null,
+			"pins": {
+				"s9r92igepm03lc01fa13ydq2": {
+					"id": "s9r92igepm03lc01fa13ydq2",
+					"name": "history",
+					"friendly_name": "History",
+					"description": "7386973974921172145",
+					"pin_type": "Output",
+					"data_type": "Struct",
+					"schema": "17638850536523711416",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [
+						"lvesjq7uksuknrbd4nfl5xbu"
+					],
+					"default_value": null,
+					"index": 1,
+					"options": {
+						"valid_values": null,
+						"range": null,
+						"step": null,
+						"enforce_schema": true,
+						"enforce_generic_value_type": null
+					}
+				},
+				"fv40uyle1wro64n3czvmdbvk": {
+					"id": "fv40uyle1wro64n3czvmdbvk",
+					"name": "model_name",
+					"friendly_name": "Model Name",
+					"description": "16647092055928900552",
+					"pin_type": "Input",
+					"data_type": "String",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [],
+					"default_value": [
+						34,
+						34
+					],
+					"index": 1,
+					"options": null
+				}
+			},
+			"start": null,
+			"icon": "/flow/icons/history.svg",
+			"comment": null,
+			"long_running": null,
+			"error": null,
+			"docs": null,
+			"event_callback": null,
+			"layer": null
+		},
+		"qz42zqfuqug85zn5po09l4px": {
+			"id": "qz42zqfuqug85zn5po09l4px",
+			"name": "ai_generative_set_system_prompt_message",
+			"friendly_name": "Set System Message",
+			"description": "16020318270070404108",
+			"coordinates": [
+				1071.2064,
+				506.40735,
+				0
+			],
+			"category": "AI/Generative/History",
+			"scores": null,
+			"pins": {
+				"lvesjq7uksuknrbd4nfl5xbu": {
+					"id": "lvesjq7uksuknrbd4nfl5xbu",
+					"name": "history",
+					"friendly_name": "History",
+					"description": "7386973974921172145",
+					"pin_type": "Input",
+					"data_type": "Struct",
+					"schema": "17638850536523711416",
+					"value_type": "Normal",
+					"depends_on": [
+						"s9r92igepm03lc01fa13ydq2"
+					],
+					"connected_to": [],
+					"default_value": null,
+					"index": 2,
+					"options": {
+						"valid_values": null,
+						"range": null,
+						"step": null,
+						"enforce_schema": true,
+						"enforce_generic_value_type": null
+					}
+				},
+				"hx9wwi75cg0onnsuqkc7wm6a": {
+					"id": "hx9wwi75cg0onnsuqkc7wm6a",
+					"name": "message",
+					"friendly_name": "Message",
+					"description": "6180511842624845624",
+					"pin_type": "Input",
+					"data_type": "String",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [],
+					"default_value": [
+						34,
+						34
+					],
+					"index": 3,
+					"options": null
+				},
+				"gact6d0lsba6btd54nmoidwv": {
+					"id": "gact6d0lsba6btd54nmoidwv",
+					"name": "history_out",
+					"friendly_name": "History",
+					"description": "10849793966614783503",
+					"pin_type": "Output",
+					"data_type": "Struct",
+					"schema": "17638850536523711416",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [
+						"jmir8uml12c64dotl0lm09u4"
+					],
+					"default_value": null,
+					"index": 2,
+					"options": null
+				},
+				"qhittpwlthj7abliet9c1w1x": {
+					"id": "qhittpwlthj7abliet9c1w1x",
+					"name": "exec_out",
+					"friendly_name": "Output",
+					"description": "5874588604662946312",
+					"pin_type": "Output",
+					"data_type": "Execution",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [
+						"awo2g09rxm865xnvcq1gu03h"
+					],
+					"default_value": null,
+					"index": 1,
+					"options": null
+				},
+				"z6o9npjhh2e8qimvrcg4lpd0": {
+					"id": "z6o9npjhh2e8qimvrcg4lpd0",
+					"name": "exec_in",
+					"friendly_name": "Input",
+					"description": "4586845553155246922",
+					"pin_type": "Input",
+					"data_type": "Execution",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [
+						"u8vdkakvixrfmwje0g494480"
+					],
+					"connected_to": [],
+					"default_value": null,
+					"index": 1,
+					"options": null
+				}
+			},
+			"start": null,
+			"icon": "/flow/icons/history-set.svg",
+			"comment": null,
+			"long_running": null,
+			"error": null,
+			"docs": null,
+			"event_callback": null,
+			"layer": null
+		},
+		"mec4gt47k8d6l0eo9q6ptei3": {
+			"id": "mec4gt47k8d6l0eo9q6ptei3",
+			"name": "open_local_db",
+			"friendly_name": "Open Database",
+			"description": "11998930749331024930",
+			"coordinates": [
+				333.5885,
+				573.4548,
+				0
+			],
+			"category": "Database/Local",
+			"scores": null,
+			"pins": {
+				"o6wbav35opo6kz0yen91w4ay": {
+					"id": "o6wbav35opo6kz0yen91w4ay",
+					"name": "exec_in",
+					"friendly_name": "Input",
+					"description": "16248035215404677707",
+					"pin_type": "Input",
+					"data_type": "Execution",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [
+						"sq6fghjb351tc0z4e08tiuv2"
+					],
+					"connected_to": [],
+					"default_value": null,
+					"index": 1,
+					"options": null
+				},
+				"vvh6a3n3g1vy39nxed9xtetq": {
+					"id": "vvh6a3n3g1vy39nxed9xtetq",
+					"name": "database",
+					"friendly_name": "Database",
+					"description": "14986188454544509619",
+					"pin_type": "Output",
+					"data_type": "Struct",
+					"schema": "15906716300171297521",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [
+						"nt54dohrivgurnum6db8iazp"
+					],
+					"default_value": null,
+					"index": 2,
+					"options": null
+				},
+				"zk29ofdo620o42lnbg5ovu13": {
+					"id": "zk29ofdo620o42lnbg5ovu13",
+					"name": "name",
+					"friendly_name": "Table Name",
+					"description": "5410850115455643583",
+					"pin_type": "Input",
+					"data_type": "String",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [],
+					"default_value": [
+						34,
+						69,
+						109,
+						112,
+						108,
+						111,
+						121,
+						101,
+						101,
+						115,
+						34
+					],
+					"index": 2,
+					"options": null
+				},
+				"x5yh97keopjcm01s3xsamiyy": {
+					"id": "x5yh97keopjcm01s3xsamiyy",
+					"name": "exec_out",
+					"friendly_name": "Created Database",
+					"description": "9028674275353546188",
+					"pin_type": "Output",
+					"data_type": "Execution",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [
+						"xjnodd5yror4itj4c374g0ry"
+					],
+					"default_value": null,
+					"index": 1,
+					"options": null
+				}
+			},
+			"start": null,
+			"icon": "/flow/icons/database.svg",
+			"comment": null,
+			"long_running": null,
+			"error": null,
+			"docs": null,
+			"event_callback": null,
+			"layer": null
+		},
+		"bqusecgbpoune54abeyha79x": {
+			"id": "bqusecgbpoune54abeyha79x",
+			"name": "events_simple",
+			"friendly_name": "Website Loaded",
+			"description": "129103383686177732",
+			"coordinates": [
+				384.59998,
+				228.62198,
+				0
+			],
+			"category": "Events",
+			"scores": null,
+			"pins": {
+				"im8lx3hvsdaausqu0dwtkjxd": {
+					"id": "im8lx3hvsdaausqu0dwtkjxd",
+					"name": "exec_out",
+					"friendly_name": "Output",
+					"description": "140223827731367972",
+					"pin_type": "Output",
+					"data_type": "Execution",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [
+						"nokqqodrqoy8h8awwrlkc03g"
+					],
+					"default_value": null,
+					"index": 1,
+					"options": null
+				}
+			},
+			"start": true,
+			"icon": "/flow/icons/event.svg",
+			"comment": null,
+			"long_running": null,
+			"error": null,
+			"docs": null,
+			"event_callback": null,
+			"layer": null
+		},
+		"ps8ftc1igq6tkv1e41np4bie": {
+			"id": "ps8ftc1igq6tkv1e41np4bie",
+			"name": "ai_generative_find_model",
+			"friendly_name": "Find Model",
+			"description": "12283797523653035894",
+			"coordinates": [
+				870.5044,
+				506.40732,
+				0
+			],
+			"category": "AI/Generative",
+			"scores": null,
+			"pins": {
+				"zum9rhoqw6ns35dj4aqc3h9p": {
+					"id": "zum9rhoqw6ns35dj4aqc3h9p",
+					"name": "preferences",
+					"friendly_name": "Preferences",
+					"description": "13346641605951789810",
+					"pin_type": "Input",
+					"data_type": "Struct",
+					"schema": "10099332349796830324",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [],
+					"default_value": [
+						123,
+						34,
+						99,
+						111,
+						100,
+						105,
+						110,
+						103,
+						95,
+						119,
+						101,
+						105,
+						103,
+						104,
+						116,
+						34,
+						58,
+						110,
+						117,
+						108,
+						108,
+						44,
+						34,
+						99,
+						111,
+						115,
+						116,
+						95,
+						119,
+						101,
+						105,
+						103,
+						104,
+						116,
+						34,
+						58,
+						110,
+						117,
+						108,
+						108,
+						44,
+						34,
+						99,
+						114,
+						101,
+						97,
+						116,
+						105,
+						118,
+						105,
+						116,
+						121,
+						95,
+						119,
+						101,
+						105,
+						103,
+						104,
+						116,
+						34,
+						58,
+						110,
+						117,
+						108,
+						108,
+						44,
+						34,
+						102,
+						97,
+						99,
+						116,
+						117,
+						97,
+						108,
+						105,
+						116,
+						121,
+						95,
+						119,
+						101,
+						105,
+						103,
+						104,
+						116,
+						34,
+						58,
+						110,
+						117,
+						108,
+						108,
+						44,
+						34,
+						102,
+						117,
+						110,
+						99,
+						116,
+						105,
+						111,
+						110,
+						95,
+						99,
+						97,
+						108,
+						108,
+						105,
+						110,
+						103,
+						95,
+						119,
+						101,
+						105,
+						103,
+						104,
+						116,
+						34,
+						58,
+						110,
+						117,
+						108,
+						108,
+						44,
+						34,
+						109,
+						111,
+						100,
+						101,
+						108,
+						95,
+						104,
+						105,
+						110,
+						116,
+						34,
+						58,
+						110,
+						117,
+						108,
+						108,
+						44,
+						34,
+						109,
+						117,
+						108,
+						116,
+						105,
+						108,
+						105,
+						110,
+						103,
+						117,
+						97,
+						108,
+						105,
+						116,
+						121,
+						95,
+						119,
+						101,
+						105,
+						103,
+						104,
+						116,
+						34,
+						58,
+						110,
+						117,
+						108,
+						108,
+						44,
+						34,
+						111,
+						112,
+						101,
+						110,
+						110,
+						101,
+						115,
+						115,
+						95,
+						119,
+						101,
+						105,
+						103,
+						104,
+						116,
+						34,
+						58,
+						110,
+						117,
+						108,
+						108,
+						44,
+						34,
+						114,
+						101,
+						97,
+						115,
+						111,
+						110,
+						105,
+						110,
+						103,
+						95,
+						119,
+						101,
+						105,
+						103,
+						104,
+						116,
+						34,
+						58,
+						110,
+						117,
+						108,
+						108,
+						44,
+						34,
+						115,
+						97,
+						102,
+						101,
+						116,
+						121,
+						95,
+						119,
+						101,
+						105,
+						103,
+						104,
+						116,
+						34,
+						58,
+						110,
+						117,
+						108,
+						108,
+						44,
+						34,
+						115,
+						112,
+						101,
+						101,
+						100,
+						95,
+						119,
+						101,
+						105,
+						103,
+						104,
+						116,
+						34,
+						58,
+						110,
+						117,
+						108,
+						108,
+						125
+					],
+					"index": 2,
+					"options": {
+						"valid_values": null,
+						"range": null,
+						"step": null,
+						"enforce_schema": true,
+						"enforce_generic_value_type": null
+					}
+				},
+				"lcxzcd1xy22qliar7f54hdte": {
+					"id": "lcxzcd1xy22qliar7f54hdte",
+					"name": "exec_in",
+					"friendly_name": "Input",
+					"description": "5454119197816847421",
+					"pin_type": "Input",
+					"data_type": "Execution",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [
+						"lp51ximm0xvffy1mpjvywtez"
+					],
+					"connected_to": [],
+					"default_value": null,
+					"index": 1,
+					"options": null
+				},
+				"f73nh46da29sgw6753io5qn2": {
+					"id": "f73nh46da29sgw6753io5qn2",
+					"name": "model",
+					"friendly_name": "Model",
+					"description": "1316076864012178016",
+					"pin_type": "Output",
+					"data_type": "Struct",
+					"schema": "9466936283142343191",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [
+						"dqqvvbgahmwon5qdjw5fwx94"
+					],
+					"default_value": null,
+					"index": 2,
+					"options": null
+				},
+				"u8vdkakvixrfmwje0g494480": {
+					"id": "u8vdkakvixrfmwje0g494480",
+					"name": "exec_out",
+					"friendly_name": "Output",
+					"description": "1873557855867980067",
+					"pin_type": "Output",
+					"data_type": "Execution",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [
+						"z6o9npjhh2e8qimvrcg4lpd0"
+					],
+					"default_value": null,
+					"index": 1,
+					"options": null
+				}
+			},
+			"start": null,
+			"icon": "/flow/icons/find_model.svg",
+			"comment": "Just define the capabilities of the Model!",
+			"long_running": true,
+			"error": null,
+			"docs": null,
+			"event_callback": null,
+			"layer": null
+		},
+		"zvvqi3egtekgro6uvpjnp7bu": {
+			"id": "zvvqi3egtekgro6uvpjnp7bu",
+			"name": "reroute",
+			"friendly_name": "Reroute",
+			"description": "4831355782476522024",
+			"coordinates": [
+				705.3473,
+				626.1191,
+				0
+			],
+			"category": "Control",
+			"scores": null,
+			"pins": {
+				"dhe2s4ey6bpfilbn6idel4j3": {
+					"id": "dhe2s4ey6bpfilbn6idel4j3",
+					"name": "route_in",
+					"friendly_name": "In",
+					"description": "16248035215404677707",
+					"pin_type": "Input",
+					"data_type": "String",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [
+						"lts7w1lyqtk3o98y0afs47vn"
+					],
+					"connected_to": [],
+					"default_value": null,
+					"index": 1,
+					"options": null
+				},
+				"uq1bpmkdsadr1mrnn683a8io": {
+					"id": "uq1bpmkdsadr1mrnn683a8io",
+					"name": "route_out",
+					"friendly_name": "Out",
+					"description": "16248035215404677707",
+					"pin_type": "Output",
+					"data_type": "String",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [],
+					"default_value": null,
+					"index": 1,
+					"options": null
+				}
+			},
+			"start": null,
+			"icon": null,
+			"comment": "",
+			"long_running": null,
+			"error": null,
+			"docs": null,
+			"event_callback": null,
+			"layer": null
+		},
+		"z3o319ssjzb7ux1qm0fzm4j6": {
+			"id": "z3o319ssjzb7ux1qm0fzm4j6",
+			"name": "reroute",
+			"friendly_name": "Reroute",
+			"description": "4831355782476522024",
+			"coordinates": [
+				524.3879,
+				665.904,
+				0
+			],
+			"category": "Control",
+			"scores": null,
+			"pins": {
+				"fyfjma34g0wekdn4sneeks0v": {
+					"id": "fyfjma34g0wekdn4sneeks0v",
+					"name": "route_out",
+					"friendly_name": "Out",
+					"description": "16248035215404677707",
+					"pin_type": "Output",
+					"data_type": "Struct",
+					"schema": "15906716300171297521",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [],
+					"default_value": null,
+					"index": 1,
+					"options": null
+				},
+				"nt54dohrivgurnum6db8iazp": {
+					"id": "nt54dohrivgurnum6db8iazp",
+					"name": "route_in",
+					"friendly_name": "In",
+					"description": "16248035215404677707",
+					"pin_type": "Input",
+					"data_type": "Struct",
+					"schema": "15906716300171297521",
+					"value_type": "Normal",
+					"depends_on": [
+						"vvh6a3n3g1vy39nxed9xtetq"
+					],
+					"connected_to": [],
+					"default_value": null,
+					"index": 1,
+					"options": null
+				}
+			},
+			"start": null,
+			"icon": null,
+			"comment": null,
+			"long_running": null,
+			"error": null,
+			"docs": null,
+			"event_callback": null,
+			"layer": null
+		},
+		"v5t6lankzpkdauomqo7pmxb4": {
+			"id": "v5t6lankzpkdauomqo7pmxb4",
+			"name": "reroute",
+			"friendly_name": "Reroute",
+			"description": "4831355782476522024",
+			"coordinates": [
+				713.759,
+				565.329,
+				0
+			],
+			"category": "Control",
+			"scores": null,
+			"pins": {
+				"ryj0everm1jfq2e5xks3lhct": {
+					"id": "ryj0everm1jfq2e5xks3lhct",
+					"name": "route_in",
+					"friendly_name": "In",
+					"description": "16248035215404677707",
+					"pin_type": "Input",
+					"data_type": "Execution",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [
+						"ctvrvnx15xmqgyzsbqfv0hbg"
+					],
+					"connected_to": [],
+					"default_value": null,
+					"index": 1,
+					"options": null
+				},
+				"efl7pu1dl9v357nyfn2i6a62": {
+					"id": "efl7pu1dl9v357nyfn2i6a62",
+					"name": "route_out",
+					"friendly_name": "Out",
+					"description": "16248035215404677707",
+					"pin_type": "Output",
+					"data_type": "Execution",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [],
+					"default_value": null,
+					"index": 1,
+					"options": null
+				}
+			},
+			"start": null,
+			"icon": null,
+			"comment": null,
+			"long_running": null,
+			"error": null,
+			"docs": null,
+			"event_callback": null,
+			"layer": null
+		},
+		"hdzp480cqqzbmbguj37wypm1": {
+			"id": "hdzp480cqqzbmbguj37wypm1",
+			"name": "equal_string",
+			"friendly_name": "==",
+			"description": "3855092198470154848",
+			"coordinates": [
+				119.5596,
+				104.72942,
+				0
+			],
+			"category": "Utils/String",
+			"scores": null,
+			"pins": {
+				"ciuqv34pzvm6cke9hfxwxcky": {
+					"id": "ciuqv34pzvm6cke9hfxwxcky",
+					"name": "string",
+					"friendly_name": "String",
+					"description": "4703754200698941876",
+					"pin_type": "Input",
+					"data_type": "String",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [],
+					"default_value": [
+						34,
+						85,
+						115,
+						101,
+						114,
+						34
+					],
+					"index": 1,
+					"options": null
+				},
+				"jrlfhj9mbfu68cpc6amgyi4b": {
+					"id": "jrlfhj9mbfu68cpc6amgyi4b",
+					"name": "equal",
+					"friendly_name": "Is Equal?",
+					"description": "10624759169930469181",
+					"pin_type": "Output",
+					"data_type": "Boolean",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [
+						"jg5wqr6021g6qurye8ukyvam"
+					],
+					"default_value": null,
+					"index": 1,
+					"options": null
+				},
+				"xmd0cj649no6h3yjoi3yeezf": {
+					"id": "xmd0cj649no6h3yjoi3yeezf",
+					"name": "string",
+					"friendly_name": "String",
+					"description": "4703754200698941876",
+					"pin_type": "Input",
+					"data_type": "String",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [],
+					"default_value": [
+						34,
+						65,
+						108,
+						114,
+						101,
+						97,
+						100,
+						121,
+						32,
+						75,
+						110,
+						111,
+						119,
+						115,
+						32,
+						70,
+						108,
+						111,
+						119,
+						32,
+						76,
+						105,
+						107,
+						101,
+						34
+					],
+					"index": 2,
+					"options": null
+				}
+			},
+			"start": null,
+			"icon": "/flow/icons/string.svg",
+			"comment": "User Already Knows Flow Like?",
+			"long_running": null,
+			"error": null,
+			"docs": null,
+			"event_callback": null,
+			"layer": null
+		},
+		"h2hldwjc4xdzll134lop038x": {
+			"id": "h2hldwjc4xdzll134lop038x",
+			"name": "cuid",
+			"friendly_name": "CUID v2",
+			"description": "13151678174225174397",
+			"coordinates": [
+				515.86426,
+				573.4548,
+				0
+			],
+			"category": "Utils",
+			"scores": null,
+			"pins": {
+				"lts7w1lyqtk3o98y0afs47vn": {
+					"id": "lts7w1lyqtk3o98y0afs47vn",
+					"name": "cuid",
+					"friendly_name": "Cuid",
+					"description": "13501979199504189194",
+					"pin_type": "Output",
+					"data_type": "String",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [
+						"dhe2s4ey6bpfilbn6idel4j3"
+					],
+					"default_value": null,
+					"index": 2,
+					"options": null
+				},
+				"ctvrvnx15xmqgyzsbqfv0hbg": {
+					"id": "ctvrvnx15xmqgyzsbqfv0hbg",
+					"name": "exec_out",
+					"friendly_name": "Output",
+					"description": "16248035215404677707",
+					"pin_type": "Output",
+					"data_type": "Execution",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [
+						"ryj0everm1jfq2e5xks3lhct"
+					],
+					"default_value": null,
+					"index": 1,
+					"options": null
+				},
+				"xjnodd5yror4itj4c374g0ry": {
+					"id": "xjnodd5yror4itj4c374g0ry",
+					"name": "exec_in",
+					"friendly_name": "Input",
+					"description": "16248035215404677707",
+					"pin_type": "Input",
+					"data_type": "Execution",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [
+						"x5yh97keopjcm01s3xsamiyy"
+					],
+					"connected_to": [],
+					"default_value": null,
+					"index": 1,
+					"options": null
+				}
+			},
+			"start": null,
+			"icon": "/flow/icons/random.svg",
+			"comment": null,
+			"long_running": null,
+			"error": null,
+			"docs": null,
+			"event_callback": null,
+			"layer": null
+		},
+		"ueukpm0s0v6or3c1keqummi3": {
+			"id": "ueukpm0s0v6or3c1keqummi3",
+			"name": "events_simple",
+			"friendly_name": "[POST] Put Employee",
+			"description": "129103383686177732",
+			"coordinates": [
+				152.62411,
+				573.4548,
+				0
+			],
+			"category": "Events",
+			"scores": null,
+			"pins": {
+				"sq6fghjb351tc0z4e08tiuv2": {
+					"id": "sq6fghjb351tc0z4e08tiuv2",
+					"name": "exec_out",
+					"friendly_name": "Output",
+					"description": "140223827731367972",
+					"pin_type": "Output",
+					"data_type": "Execution",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [
+						"o6wbav35opo6kz0yen91w4ay"
+					],
+					"default_value": null,
+					"index": 1,
+					"options": null
+				}
+			},
+			"start": true,
+			"icon": "/flow/icons/event.svg",
+			"comment": null,
+			"long_running": null,
+			"error": null,
+			"docs": null,
+			"event_callback": null,
+			"layer": null
+		},
+		"ow8p5bucfy97nqqip2jp7kvk": {
+			"id": "ow8p5bucfy97nqqip2jp7kvk",
+			"name": "reroute",
+			"friendly_name": "Reroute",
+			"description": "4831355782476522024",
+			"coordinates": [
+				1071.9424,
+				591.92267,
+				0
+			],
+			"category": "Control",
+			"scores": null,
+			"pins": {
+				"sjj41vvfkduezrl7q3liel7p": {
+					"id": "sjj41vvfkduezrl7q3liel7p",
+					"name": "route_out",
+					"friendly_name": "Out",
+					"description": "16248035215404677707",
+					"pin_type": "Output",
+					"data_type": "Struct",
+					"schema": "9466936283142343191",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [
+						"utw6pey0x8phomwr7afrid7b"
+					],
+					"default_value": null,
+					"index": 1,
+					"options": null
+				},
+				"dqqvvbgahmwon5qdjw5fwx94": {
+					"id": "dqqvvbgahmwon5qdjw5fwx94",
+					"name": "route_in",
+					"friendly_name": "In",
+					"description": "16248035215404677707",
+					"pin_type": "Input",
+					"data_type": "Struct",
+					"schema": "9466936283142343191",
+					"value_type": "Normal",
+					"depends_on": [
+						"f73nh46da29sgw6753io5qn2"
+					],
+					"connected_to": [],
+					"default_value": null,
+					"index": 1,
+					"options": null
+				}
+			},
+			"start": null,
+			"icon": null,
+			"comment": null,
+			"long_running": null,
+			"error": null,
+			"docs": null,
+			"event_callback": null,
+			"layer": null
+		},
+		"m10pxih6a3emy9htl0ownozm": {
+			"id": "m10pxih6a3emy9htl0ownozm",
+			"name": "reroute",
+			"friendly_name": "Reroute",
+			"description": "4831355782476522024",
+			"coordinates": [
+				1203.828,
+				591.92267,
+				0
+			],
+			"category": "Control",
+			"scores": null,
+			"pins": {
+				"utw6pey0x8phomwr7afrid7b": {
+					"id": "utw6pey0x8phomwr7afrid7b",
+					"name": "route_in",
+					"friendly_name": "In",
+					"description": "16248035215404677707",
+					"pin_type": "Input",
+					"data_type": "Struct",
+					"schema": "9466936283142343191",
+					"value_type": "Normal",
+					"depends_on": [
+						"sjj41vvfkduezrl7q3liel7p"
+					],
+					"connected_to": [],
+					"default_value": null,
+					"index": 1,
+					"options": null
+				},
+				"aa68o8br2ihoeevgtly7dun0": {
+					"id": "aa68o8br2ihoeevgtly7dun0",
+					"name": "route_out",
+					"friendly_name": "Out",
+					"description": "16248035215404677707",
+					"pin_type": "Output",
+					"data_type": "Struct",
+					"schema": "9466936283142343191",
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [
+						"h1lk56ispbjfdszpzstbye4y"
+					],
+					"default_value": null,
+					"index": 1,
+					"options": null
+				}
+			},
+			"start": null,
+			"icon": null,
+			"comment": "",
+			"long_running": null,
+			"error": null,
+			"docs": null,
+			"event_callback": null,
+			"layer": null
+		},
+		"rfmnj5dmzoiswudxsf1kof35": {
+			"id": "rfmnj5dmzoiswudxsf1kof35",
+			"name": "reroute",
+			"friendly_name": "Reroute",
+			"description": "4831355782476522024",
+			"coordinates": [
+				764.7078,
+				565.329,
+				0
+			],
+			"category": "Control",
+			"scores": null,
+			"pins": {
+				"w98ohd2xv3ay37ikgznenjij": {
+					"id": "w98ohd2xv3ay37ikgznenjij",
+					"name": "route_out",
+					"friendly_name": "Out",
+					"description": "16248035215404677707",
+					"pin_type": "Output",
+					"data_type": "Execution",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [
+						"umldlzo9dkw5i59n7rq4dsun"
+					],
+					"default_value": null,
+					"index": 1,
+					"options": null
+				},
+				"zycuya5yv9qzig73pdaesm4f": {
+					"id": "zycuya5yv9qzig73pdaesm4f",
+					"name": "route_in",
+					"friendly_name": "In",
+					"description": "16248035215404677707",
+					"pin_type": "Input",
+					"data_type": "Execution",
+					"schema": null,
+					"value_type": "Normal",
+					"depends_on": [],
+					"connected_to": [],
+					"default_value": null,
+					"index": 1,
+					"options": null
+				}
+			},
+			"start": null,
+			"icon": null,
+			"comment": "",
+			"long_running": null,
+			"error": null,
+			"docs": null,
+			"event_callback": null,
+			"layer": null
 		}
-	],
-	"comments": [
-		{
-			"id": "j86h609pneilig61vo72lelb",
-			"author": "anonymous",
-			"content": "![smiling](/smiling.webp)",
-			"comment_type": "Text",
-			"timestamp": {
-				"secs_since_epoch": 0,
-				"nanos_since_epoch": 0
-			},
-			"coordinates": [1267.7242, 1063.8608, 0],
-			"width": 215,
-			"height": 215,
-			"color": "#ffffff00",
-			"z_index": 3
-		},
-		{
-			"id": "sx4lrx3ejmxzb900z60pfw67",
-			"author": "anonymous",
-			"content": "# Flow-Like\nThe Only Production-Ready Automation Suite for Enterprise Scale Workflows.",
-			"comment_type": "Text",
-			"timestamp": {
-				"secs_since_epoch": 0,
-				"nanos_since_epoch": 0
-			},
-			"coordinates": [404, 66, 0],
-			"width": 540,
-			"height": 227,
-			"color": "#e89048",
-			"z_index": null
-		},
-		{
-			"id": "v4mlmcwm3kz1xptesw2fq7l8",
-			"author": "anonymous",
-			"content": "## Integrating AI\nEasily integrate AI into your process!",
-			"comment_type": "Text",
-			"timestamp": {
-				"secs_since_epoch": 0,
-				"nanos_since_epoch": 0
-			},
-			"coordinates": [843.59186, 365.55652, 0],
-			"width": 780,
-			"height": 280,
-			"color": "#752c9e",
-			"z_index": 2
-		},
-		{
+	},
+	"variables": {
+		"ejbda5vo00ev3vzzq83q3uur": {
+			"id": "ejbda5vo00ev3vzzq83q3uur",
+			"name": "Embedding Models",
+			"category": null,
+			"description": null,
+			"default_value": [
+				91,
+				93
+			],
+			"data_type": "String",
+			"value_type": "HashSet",
+			"exposed": false,
+			"secret": false,
+			"editable": false
+		}
+	},
+	"comments": {
+		"jysk02zqsgitsulcumit6srp": {
 			"id": "jysk02zqsgitsulcumit6srp",
 			"author": "anonymous",
 			"content": "#### Links\n- [Download]()\n- [GitHub](https://github.com/TM9657/flow-like)\n- [Docs](https://docs.flow-like.com)",
@@ -830,28 +1705,18 @@
 				"secs_since_epoch": 0,
 				"nanos_since_epoch": 0
 			},
-			"coordinates": [811.9715, 213.00905, 0],
+			"coordinates": [
+				811.9715,
+				213.00905,
+				0
+			],
 			"width": 148,
 			"height": 103,
+			"layer": null,
 			"color": "#3f35db",
 			"z_index": 2
 		},
-		{
-			"id": "dqc31z6pufr94c4dw2hh29fh",
-			"author": "anonymous",
-			"content": "## Scalable and Fast\nNot just Agent Scripting...\n- Built in Rust, Easily Scaling to Thousands of Requests / s\n- Made for Enterprise Systems\n- Hosted Anywhere (On-Prem, Cloud, Device)\n- Integrating Release Best Practices (Canary, Best Practices, Transparent Logging)",
-			"comment_type": "Text",
-			"timestamp": {
-				"secs_since_epoch": 0,
-				"nanos_since_epoch": 0
-			},
-			"coordinates": [108.688416, 400.93393, 0],
-			"width": 573,
-			"height": 248,
-			"color": "#1b737a",
-			"z_index": null
-		},
-		{
+		"oya96qmsxodvhp1djsuv8enk": {
 			"id": "oya96qmsxodvhp1djsuv8enk",
 			"author": "anonymous",
 			"content": "### Features & Hosting\n\n| **Feature**              | **Personal** | **Enterprise** | **Enterprise (> 2500 Employees)** |\n| :---------------- | :------: | :------: | ----: |\n| **Pricing** |   Free   | Free | Contact Us |\n| **Hosting** |   PC & Cloud   | PC & Cloud | PC & Cloud |\n| **Features** |  All   | All | All |\n| **Support** |  Community   | Community | Professional |\n| **Custom Nodes & Trigger** | Difficult | Difficult | Easy |\n| **Parallel Workflows** | Unlimited | Unlimited | Unlimited (> 5000 / Small Node) |\n| **AI Models** | Local or Premium Plan | Local or Premium Plan | Self Hosted |\n\n#### Why is this so cheap and outperforming all Alternatives?\nWe care for good software. If you like it, contribute or consider a Premium Subscription..",
@@ -860,16 +1725,165 @@
 				"secs_since_epoch": 0,
 				"nanos_since_epoch": 0
 			},
-			"coordinates": [719.4675, 706.8148, 0],
+			"coordinates": [
+				719.4675,
+				706.8148,
+				0
+			],
 			"width": 684,
 			"height": 446,
+			"layer": null,
 			"color": "#7a1b56",
 			"z_index": null
+		},
+		"v4mlmcwm3kz1xptesw2fq7l8": {
+			"id": "v4mlmcwm3kz1xptesw2fq7l8",
+			"author": "anonymous",
+			"content": "## Integrating AI\nEasily integrate AI into your process!",
+			"comment_type": "Text",
+			"timestamp": {
+				"secs_since_epoch": 0,
+				"nanos_since_epoch": 0
+			},
+			"coordinates": [
+				843.59186,
+				365.55652,
+				0
+			],
+			"width": 780,
+			"height": 280,
+			"layer": null,
+			"color": "#752c9e",
+			"z_index": 2
+		},
+		"sx4lrx3ejmxzb900z60pfw67": {
+			"id": "sx4lrx3ejmxzb900z60pfw67",
+			"author": "anonymous",
+			"content": "# Flow-Like\nThe Only Production-Ready Automation Suite for Enterprise Scale Workflows.",
+			"comment_type": "Text",
+			"timestamp": {
+				"secs_since_epoch": 0,
+				"nanos_since_epoch": 0
+			},
+			"coordinates": [
+				404,
+				66,
+				0
+			],
+			"width": 540,
+			"height": 227,
+			"layer": null,
+			"color": "#e89048",
+			"z_index": null
+		},
+		"dqc31z6pufr94c4dw2hh29fh": {
+			"id": "dqc31z6pufr94c4dw2hh29fh",
+			"author": "anonymous",
+			"content": "## Scalable and Fast\nNot just Agent Scripting...\n- Built in Rust, Easily Scaling to Thousands of Requests / s\n- Made for Enterprise Systems\n- Hosted Anywhere (On-Prem, Cloud, Device)\n- Integrating Release Best Practices (Canary, Best Practices, Transparent Logging)",
+			"comment_type": "Text",
+			"timestamp": {
+				"secs_since_epoch": 0,
+				"nanos_since_epoch": 0
+			},
+			"coordinates": [
+				108.688416,
+				400.93393,
+				0
+			],
+			"width": 573,
+			"height": 248,
+			"layer": null,
+			"color": "#1b737a",
+			"z_index": null
+		},
+		"j86h609pneilig61vo72lelb": {
+			"id": "j86h609pneilig61vo72lelb",
+			"author": "anonymous",
+			"content": "![smiling](https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExMGtzZjNreWY1OXAzaWN1c2hnZ2twdmdjOXRhbXRqNWNkaHZuYnZwciZlcD12MV9naWZzX3NlYXJjaCZjdD1n/3NtY188QaxDdC/giphy.webp)",
+			"comment_type": "Text",
+			"timestamp": {
+				"secs_since_epoch": 0,
+				"nanos_since_epoch": 0
+			},
+			"coordinates": [
+				1267.7242,
+				1063.8608,
+				0
+			],
+			"width": 215,
+			"height": 215,
+			"layer": null,
+			"color": "#ffffff00",
+			"z_index": 3
 		}
-	],
-	"cursorPosition": {
-		"x": 1747.0321874600809,
-		"y": 1271.5176847498553
 	},
-	"layers": []
+	"viewport": [
+		0,
+		0,
+		0
+	],
+	"version": [
+		0,
+		0,
+		1
+	],
+	"stage": "Dev",
+	"log_level": "Debug",
+	"refs": {
+		"7386973974921172145": "ChatHistory",
+		"12283797523653035894": "Finds the best model based on certain selection criteria",
+		"13151678174225174397": "Generates a Collision Resistant Unique Identifier",
+		"17638850536523711416": "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"title\": \"History\",\n  \"type\": \"object\",\n  \"required\": [\n    \"messages\",\n    \"model\"\n  ],\n  \"properties\": {\n    \"model\": {\n      \"type\": \"string\"\n    },\n    \"messages\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"$ref\": \"#/definitions/HistoryMessage\"\n      }\n    },\n    \"stream\": {\n      \"type\": [\n        \"boolean\",\n        \"null\"\n      ]\n    },\n    \"stream_options\": {\n      \"anyOf\": [\n        {\n          \"$ref\": \"#/definitions/StreamOptions\"\n        },\n        {\n          \"type\": \"null\"\n        }\n      ]\n    },\n    \"max_completion_tokens\": {\n      \"type\": [\n        \"integer\",\n        \"null\"\n      ],\n      \"format\": \"uint32\",\n      \"minimum\": 0.0\n    },\n    \"top_p\": {\n      \"type\": [\n        \"number\",\n        \"null\"\n      ],\n      \"format\": \"float\"\n    },\n    \"temperature\": {\n      \"type\": [\n        \"number\",\n        \"null\"\n      ],\n      \"format\": \"float\"\n    },\n    \"seed\": {\n      \"type\": [\n        \"integer\",\n        \"null\"\n      ],\n      \"format\": \"uint32\",\n      \"minimum\": 0.0\n    },\n    \"presence_penalty\": {\n      \"type\": [\n        \"number\",\n        \"null\"\n      ],\n      \"format\": \"float\"\n    },\n    \"frequency_penalty\": {\n      \"type\": [\n        \"number\",\n        \"null\"\n      ],\n      \"format\": \"float\"\n    },\n    \"user\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ]\n    },\n    \"stop\": {\n      \"type\": [\n        \"array\",\n        \"null\"\n      ],\n      \"items\": {\n        \"type\": \"string\"\n      }\n    },\n    \"response_format\": {\n      \"anyOf\": [\n        {\n          \"$ref\": \"#/definitions/ResponseFormat\"\n        },\n        {\n          \"type\": \"null\"\n        }\n      ]\n    },\n    \"n\": {\n      \"type\": [\n        \"integer\",\n        \"null\"\n      ],\n      \"format\": \"uint32\",\n      \"minimum\": 0.0\n    },\n    \"tools\": {\n      \"type\": [\n        \"array\",\n        \"null\"\n      ],\n      \"items\": {\n        \"$ref\": \"#/definitions/Tool\"\n      }\n    },\n    \"tool_choice\": {\n      \"anyOf\": [\n        {\n          \"$ref\": \"#/definitions/ToolChoice\"\n        },\n        {\n          \"type\": \"null\"\n        }\n      ]\n    }\n  },\n  \"definitions\": {\n    \"HistoryMessage\": {\n      \"type\": \"object\",\n      \"required\": [\n        \"content\",\n        \"role\"\n      ],\n      \"properties\": {\n        \"role\": {\n          \"$ref\": \"#/definitions/Role\"\n        },\n        \"content\": {\n          \"$ref\": \"#/definitions/MessageContent\"\n        },\n        \"name\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"tool_calls\": {\n          \"type\": [\n            \"array\",\n            \"null\"\n          ],\n          \"items\": {\n            \"$ref\": \"#/definitions/ToolCall\"\n          }\n        },\n        \"tool_call_id\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        }\n      }\n    },\n    \"Role\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"system\",\n        \"user\",\n        \"assistant\",\n        \"function\",\n        \"tool\"\n      ]\n    },\n    \"MessageContent\": {\n      \"anyOf\": [\n        {\n          \"type\": \"string\"\n        },\n        {\n          \"type\": \"array\",\n          \"items\": {\n            \"$ref\": \"#/definitions/Content\"\n          }\n        }\n      ]\n    },\n    \"Content\": {\n      \"anyOf\": [\n        {\n          \"type\": \"object\",\n          \"required\": [\n            \"text\",\n            \"type\"\n          ],\n          \"properties\": {\n            \"type\": {\n              \"$ref\": \"#/definitions/ContentType\"\n            },\n            \"text\": {\n              \"type\": \"string\"\n            }\n          }\n        },\n        {\n          \"type\": \"object\",\n          \"required\": [\n            \"data\",\n            \"mime_type\",\n            \"type\"\n          ],\n          \"properties\": {\n            \"type\": {\n              \"$ref\": \"#/definitions/ContentType\"\n            },\n            \"data\": {\n              \"type\": \"string\"\n            },\n            \"mime_type\": {\n              \"type\": \"string\"\n            }\n          }\n        }\n      ]\n    },\n    \"ContentType\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"text\",\n        \"image_url\"\n      ]\n    },\n    \"ToolCall\": {\n      \"type\": \"object\",\n      \"required\": [\n        \"function\",\n        \"id\",\n        \"type\"\n      ],\n      \"properties\": {\n        \"id\": {\n          \"type\": \"string\"\n        },\n        \"type\": {\n          \"type\": \"string\"\n        },\n        \"function\": {\n          \"$ref\": \"#/definitions/ToolCallFunction\"\n        }\n      }\n    },\n    \"ToolCallFunction\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"name\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"arguments\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        }\n      }\n    },\n    \"StreamOptions\": {\n      \"type\": \"object\",\n      \"required\": [\n        \"include_usage\"\n      ],\n      \"properties\": {\n        \"include_usage\": {\n          \"type\": \"boolean\"\n        }\n      }\n    },\n    \"ResponseFormat\": {\n      \"anyOf\": [\n        {\n          \"type\": \"string\"\n        },\n        true\n      ]\n    },\n    \"Tool\": {\n      \"type\": \"object\",\n      \"required\": [\n        \"function\",\n        \"type\"\n      ],\n      \"properties\": {\n        \"type\": {\n          \"$ref\": \"#/definitions/ToolType\"\n        },\n        \"function\": {\n          \"$ref\": \"#/definitions/HistoryFunction\"\n        }\n      }\n    },\n    \"ToolType\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"function\"\n      ]\n    },\n    \"HistoryFunction\": {\n      \"type\": \"object\",\n      \"required\": [\n        \"name\",\n        \"parameters\"\n      ],\n      \"properties\": {\n        \"name\": {\n          \"type\": \"string\"\n        },\n        \"description\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"parameters\": {\n          \"$ref\": \"#/definitions/HistoryFunctionParameters\"\n        }\n      }\n    },\n    \"HistoryFunctionParameters\": {\n      \"type\": \"object\",\n      \"required\": [\n        \"type\"\n      ],\n      \"properties\": {\n        \"type\": {\n          \"$ref\": \"#/definitions/HistoryJSONSchemaType\"\n        },\n        \"properties\": {\n          \"type\": [\n            \"object\",\n            \"null\"\n          ],\n          \"additionalProperties\": {\n            \"$ref\": \"#/definitions/HistoryJSONSchemaDefine\"\n          }\n        },\n        \"required\": {\n          \"type\": [\n            \"array\",\n            \"null\"\n          ],\n          \"items\": {\n            \"type\": \"string\"\n          }\n        }\n      }\n    },\n    \"HistoryJSONSchemaType\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"object\",\n        \"number\",\n        \"string\",\n        \"array\",\n        \"null\",\n        \"boolean\"\n      ]\n    },\n    \"HistoryJSONSchemaDefine\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"type\": {\n          \"anyOf\": [\n            {\n              \"$ref\": \"#/definitions/HistoryJSONSchemaType\"\n            },\n            {\n              \"type\": \"null\"\n            }\n          ]\n        },\n        \"description\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"enum_values\": {\n          \"type\": [\n            \"array\",\n            \"null\"\n          ],\n          \"items\": {\n            \"type\": \"string\"\n          }\n        },\n        \"properties\": {\n          \"type\": [\n            \"object\",\n            \"null\"\n          ],\n          \"additionalProperties\": {\n            \"$ref\": \"#/definitions/HistoryJSONSchemaDefine\"\n          }\n        },\n        \"required\": {\n          \"type\": [\n            \"array\",\n            \"null\"\n          ],\n          \"items\": {\n            \"type\": \"string\"\n          }\n        },\n        \"items\": {\n          \"anyOf\": [\n            {\n              \"$ref\": \"#/definitions/HistoryJSONSchemaDefine\"\n            },\n            {\n              \"type\": \"null\"\n            }\n          ]\n        }\n      }\n    },\n    \"ToolChoice\": {\n      \"anyOf\": [\n        {\n          \"type\": \"null\"\n        },\n        {\n          \"type\": \"null\"\n        },\n        {\n          \"type\": \"null\"\n        },\n        {\n          \"type\": \"object\",\n          \"required\": [\n            \"function\",\n            \"type\"\n          ],\n          \"properties\": {\n            \"type\": {\n              \"$ref\": \"#/definitions/ToolType\"\n            },\n            \"function\": {\n              \"$ref\": \"#/definitions/HistoryFunction\"\n            }\n          }\n        }\n      ]\n    }\n  }\n}",
+		"16248035215404677707": "",
+		"14986188454544509619": "Database Connection Reference",
+		"4831355782476522024": "Control Flow Node",
+		"14248494543013154112": "Resulting Model Output",
+		"13346641605951789810": "Preferences for the model",
+		"1873557855867980067": "Done",
+		"10819820416658184077": "The flow to follow if the condition is false",
+		"5454119197816847421": "Trigger Pin",
+		"16020318270070404108": "Sets the system prompt message in a ChatHistory",
+		"5874588604662946312": "Done with the Execution",
+		"15906716300171297521": "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"title\": \"NodeDBConnection\",\n  \"type\": \"object\",\n  \"required\": [\n    \"cache_key\"\n  ],\n  \"properties\": {\n    \"cache_key\": {\n      \"type\": \"string\"\n    }\n  }\n}",
+		"17578778484962692026": "Pushes a response to the chat",
+		"4586845553155246922": "Initiate Execution",
+		"4703754200698941876": "Input",
+		"3261409588290310934": "Chat History",
+		"18370806395568600871": "Creates a ChatHistory struct",
+		"13082297289417109326": "Model",
+		"129103383686177732": "A simple event without input or output",
+		"13501979199504189194": "Generated CUID",
+		"12714623100737772828": "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"title\": \"Response\",\n  \"type\": \"object\",\n  \"required\": [\n    \"choices\",\n    \"usage\"\n  ],\n  \"properties\": {\n    \"id\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ]\n    },\n    \"choices\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"$ref\": \"#/definitions/Choice\"\n      }\n    },\n    \"created\": {\n      \"type\": [\n        \"integer\",\n        \"null\"\n      ],\n      \"format\": \"uint64\",\n      \"minimum\": 0.0\n    },\n    \"model\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ]\n    },\n    \"service_tier\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ]\n    },\n    \"system_fingerprint\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ]\n    },\n    \"object\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ]\n    },\n    \"usage\": {\n      \"$ref\": \"#/definitions/Usage\"\n    }\n  },\n  \"definitions\": {\n    \"Choice\": {\n      \"type\": \"object\",\n      \"required\": [\n        \"finish_reason\",\n        \"index\",\n        \"message\"\n      ],\n      \"properties\": {\n        \"index\": {\n          \"type\": \"integer\",\n          \"format\": \"int32\"\n        },\n        \"finish_reason\": {\n          \"type\": \"string\"\n        },\n        \"message\": {\n          \"$ref\": \"#/definitions/ResponseMessage\"\n        },\n        \"logprobs\": {\n          \"anyOf\": [\n            {\n              \"$ref\": \"#/definitions/LogProbs\"\n            },\n            {\n              \"type\": \"null\"\n            }\n          ]\n        }\n      }\n    },\n    \"ResponseMessage\": {\n      \"type\": \"object\",\n      \"required\": [\n        \"role\"\n      ],\n      \"properties\": {\n        \"role\": {\n          \"type\": \"string\"\n        },\n        \"content\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"refusal\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"tool_calls\": {\n          \"default\": [],\n          \"type\": \"array\",\n          \"items\": {\n            \"$ref\": \"#/definitions/FunctionCall\"\n          }\n        }\n      }\n    },\n    \"FunctionCall\": {\n      \"type\": \"object\",\n      \"required\": [\n        \"function\",\n        \"id\"\n      ],\n      \"properties\": {\n        \"index\": {\n          \"type\": [\n            \"integer\",\n            \"null\"\n          ],\n          \"format\": \"int32\"\n        },\n        \"id\": {\n          \"type\": \"string\"\n        },\n        \"type\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"function\": {\n          \"$ref\": \"#/definitions/ResponseFunction\"\n        }\n      }\n    },\n    \"ResponseFunction\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"name\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"arguments\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        }\n      }\n    },\n    \"LogProbs\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"content\": {\n          \"type\": [\n            \"array\",\n            \"null\"\n          ],\n          \"items\": {\n            \"$ref\": \"#/definitions/TokenLogProbs\"\n          }\n        },\n        \"refusal\": {\n          \"type\": [\n            \"array\",\n            \"null\"\n          ],\n          \"items\": {\n            \"$ref\": \"#/definitions/TokenLogProbs\"\n          }\n        }\n      }\n    },\n    \"TokenLogProbs\": {\n      \"type\": \"object\",\n      \"required\": [\n        \"logprob\",\n        \"token\"\n      ],\n      \"properties\": {\n        \"token\": {\n          \"type\": \"string\"\n        },\n        \"logprob\": {\n          \"type\": \"number\",\n          \"format\": \"double\"\n        },\n        \"bytes\": {\n          \"type\": [\n            \"array\",\n            \"null\"\n          ],\n          \"items\": {\n            \"type\": \"integer\",\n            \"format\": \"uint8\",\n            \"minimum\": 0.0\n          }\n        },\n        \"top_logprobs\": {\n          \"type\": [\n            \"array\",\n            \"null\"\n          ],\n          \"items\": {\n            \"$ref\": \"#/definitions/TopLogProbs\"\n          }\n        }\n      }\n    },\n    \"TopLogProbs\": {\n      \"type\": \"object\",\n      \"required\": [\n        \"logprob\",\n        \"token\"\n      ],\n      \"properties\": {\n        \"token\": {\n          \"type\": \"string\"\n        },\n        \"logprob\": {\n          \"type\": \"number\",\n          \"format\": \"double\"\n        },\n        \"bytes\": {\n          \"type\": [\n            \"array\",\n            \"null\"\n          ],\n          \"items\": {\n            \"type\": \"integer\",\n            \"format\": \"uint8\",\n            \"minimum\": 0.0\n          }\n        }\n      }\n    },\n    \"Usage\": {\n      \"type\": \"object\",\n      \"required\": [\n        \"completion_tokens\",\n        \"prompt_tokens\",\n        \"total_tokens\"\n      ],\n      \"properties\": {\n        \"completion_tokens\": {\n          \"type\": \"integer\",\n          \"format\": \"uint32\",\n          \"minimum\": 0.0\n        },\n        \"prompt_tokens\": {\n          \"type\": \"integer\",\n          \"format\": \"uint32\",\n          \"minimum\": 0.0\n        },\n        \"total_tokens\": {\n          \"type\": \"integer\",\n          \"format\": \"uint32\",\n          \"minimum\": 0.0\n        },\n        \"prompt_tokens_details\": {\n          \"anyOf\": [\n            {\n              \"$ref\": \"#/definitions/PromptTokenDetails\"\n            },\n            {\n              \"type\": \"null\"\n            }\n          ]\n        },\n        \"completion_tokens_details\": {\n          \"anyOf\": [\n            {\n              \"$ref\": \"#/definitions/CompletionTokenDetails\"\n            },\n            {\n              \"type\": \"null\"\n            }\n          ]\n        }\n      }\n    },\n    \"PromptTokenDetails\": {\n      \"type\": \"object\",\n      \"required\": [\n        \"audio_tokens\",\n        \"cached_tokens\"\n      ],\n      \"properties\": {\n        \"cached_tokens\": {\n          \"type\": \"integer\",\n          \"format\": \"uint32\",\n          \"minimum\": 0.0\n        },\n        \"audio_tokens\": {\n          \"type\": \"integer\",\n          \"format\": \"uint32\",\n          \"minimum\": 0.0\n        }\n      }\n    },\n    \"CompletionTokenDetails\": {\n      \"type\": \"object\",\n      \"required\": [\n        \"accepted_prediction_tokens\",\n        \"audio_tokens\",\n        \"reasoning_tokens\",\n        \"rejected_prediction_tokens\"\n      ],\n      \"properties\": {\n        \"accepted_prediction_tokens\": {\n          \"type\": \"integer\",\n          \"format\": \"uint32\",\n          \"minimum\": 0.0\n        },\n        \"audio_tokens\": {\n          \"type\": \"integer\",\n          \"format\": \"uint32\",\n          \"minimum\": 0.0\n        },\n        \"reasoning_tokens\": {\n          \"type\": \"integer\",\n          \"format\": \"uint32\",\n          \"minimum\": 0.0\n        },\n        \"rejected_prediction_tokens\": {\n          \"type\": \"integer\",\n          \"format\": \"uint32\",\n          \"minimum\": 0.0\n        }\n      }\n    }\n  }\n}",
+		"6180511842624845624": "System Prompt Message",
+		"15586502907263183237": "Chat Response",
+		"10099332349796830324": "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"title\": \"BitModelPreference\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"cost_weight\": {\n      \"type\": [\n        \"number\",\n        \"null\"\n      ],\n      \"format\": \"float\"\n    },\n    \"speed_weight\": {\n      \"type\": [\n        \"number\",\n        \"null\"\n      ],\n      \"format\": \"float\"\n    },\n    \"reasoning_weight\": {\n      \"type\": [\n        \"number\",\n        \"null\"\n      ],\n      \"format\": \"float\"\n    },\n    \"creativity_weight\": {\n      \"type\": [\n        \"number\",\n        \"null\"\n      ],\n      \"format\": \"float\"\n    },\n    \"factuality_weight\": {\n      \"type\": [\n        \"number\",\n        \"null\"\n      ],\n      \"format\": \"float\"\n    },\n    \"function_calling_weight\": {\n      \"type\": [\n        \"number\",\n        \"null\"\n      ],\n      \"format\": \"float\"\n    },\n    \"safety_weight\": {\n      \"type\": [\n        \"number\",\n        \"null\"\n      ],\n      \"format\": \"float\"\n    },\n    \"openness_weight\": {\n      \"type\": [\n        \"number\",\n        \"null\"\n      ],\n      \"format\": \"float\"\n    },\n    \"multilinguality_weight\": {\n      \"type\": [\n        \"number\",\n        \"null\"\n      ],\n      \"format\": \"float\"\n    },\n    \"coding_weight\": {\n      \"type\": [\n        \"number\",\n        \"null\"\n      ],\n      \"format\": \"float\"\n    },\n    \"model_hint\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ]\n    }\n  }\n}",
+		"6153330616312726365": "OR operation between all boolean inputs",
+		"5425691739547396196": "The condition to evaluate",
+		"3379686640035609460": "Input Pin for OR Operation",
+		"11998930749331024930": "Open a local database",
+		"7247578861291942550": "Invokes the Model",
+		"16140371220437556509": "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"title\": \"ResponseChunk\",\n  \"type\": \"object\",\n  \"required\": [\n    \"choices\",\n    \"id\"\n  ],\n  \"properties\": {\n    \"id\": {\n      \"type\": \"string\"\n    },\n    \"choices\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"$ref\": \"#/definitions/ResponseChunkChoice\"\n      }\n    },\n    \"created\": {\n      \"type\": [\n        \"integer\",\n        \"null\"\n      ],\n      \"format\": \"uint64\",\n      \"minimum\": 0.0\n    },\n    \"model\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ]\n    },\n    \"service_tier\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ]\n    },\n    \"system_fingerprint\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ]\n    },\n    \"usage\": {\n      \"anyOf\": [\n        {\n          \"$ref\": \"#/definitions/Usage\"\n        },\n        {\n          \"type\": \"null\"\n        }\n      ]\n    },\n    \"x_prefill_progress\": {\n      \"type\": [\n        \"number\",\n        \"null\"\n      ],\n      \"format\": \"float\"\n    }\n  },\n  \"definitions\": {\n    \"ResponseChunkChoice\": {\n      \"type\": \"object\",\n      \"required\": [\n        \"index\"\n      ],\n      \"properties\": {\n        \"index\": {\n          \"type\": \"integer\",\n          \"format\": \"int32\"\n        },\n        \"delta\": {\n          \"anyOf\": [\n            {\n              \"$ref\": \"#/definitions/Delta\"\n            },\n            {\n              \"type\": \"null\"\n            }\n          ]\n        },\n        \"finish_reason\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"logprobs\": {\n          \"anyOf\": [\n            {\n              \"$ref\": \"#/definitions/LogProbs\"\n            },\n            {\n              \"type\": \"null\"\n            }\n          ]\n        }\n      }\n    },\n    \"Delta\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"role\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"content\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"tool_calls\": {\n          \"type\": [\n            \"array\",\n            \"null\"\n          ],\n          \"items\": {\n            \"$ref\": \"#/definitions/FunctionCall\"\n          }\n        },\n        \"refusal\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        }\n      }\n    },\n    \"FunctionCall\": {\n      \"type\": \"object\",\n      \"required\": [\n        \"function\",\n        \"id\"\n      ],\n      \"properties\": {\n        \"index\": {\n          \"type\": [\n            \"integer\",\n            \"null\"\n          ],\n          \"format\": \"int32\"\n        },\n        \"id\": {\n          \"type\": \"string\"\n        },\n        \"type\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"function\": {\n          \"$ref\": \"#/definitions/ResponseFunction\"\n        }\n      }\n    },\n    \"ResponseFunction\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"name\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        },\n        \"arguments\": {\n          \"type\": [\n            \"string\",\n            \"null\"\n          ]\n        }\n      }\n    },\n    \"LogProbs\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"content\": {\n          \"type\": [\n            \"array\",\n            \"null\"\n          ],\n          \"items\": {\n            \"$ref\": \"#/definitions/TokenLogProbs\"\n          }\n        },\n        \"refusal\": {\n          \"type\": [\n            \"array\",\n            \"null\"\n          ],\n          \"items\": {\n            \"$ref\": \"#/definitions/TokenLogProbs\"\n          }\n        }\n      }\n    },\n    \"TokenLogProbs\": {\n      \"type\": \"object\",\n      \"required\": [\n        \"logprob\",\n        \"token\"\n      ],\n      \"properties\": {\n        \"token\": {\n          \"type\": \"string\"\n        },\n        \"logprob\": {\n          \"type\": \"number\",\n          \"format\": \"double\"\n        },\n        \"bytes\": {\n          \"type\": [\n            \"array\",\n            \"null\"\n          ],\n          \"items\": {\n            \"type\": \"integer\",\n            \"format\": \"uint8\",\n            \"minimum\": 0.0\n          }\n        },\n        \"top_logprobs\": {\n          \"type\": [\n            \"array\",\n            \"null\"\n          ],\n          \"items\": {\n            \"$ref\": \"#/definitions/TopLogProbs\"\n          }\n        }\n      }\n    },\n    \"TopLogProbs\": {\n      \"type\": \"object\",\n      \"required\": [\n        \"logprob\",\n        \"token\"\n      ],\n      \"properties\": {\n        \"token\": {\n          \"type\": \"string\"\n        },\n        \"logprob\": {\n          \"type\": \"number\",\n          \"format\": \"double\"\n        },\n        \"bytes\": {\n          \"type\": [\n            \"array\",\n            \"null\"\n          ],\n          \"items\": {\n            \"type\": \"integer\",\n            \"format\": \"uint8\",\n            \"minimum\": 0.0\n          }\n        }\n      }\n    },\n    \"Usage\": {\n      \"type\": \"object\",\n      \"required\": [\n        \"completion_tokens\",\n        \"prompt_tokens\",\n        \"total_tokens\"\n      ],\n      \"properties\": {\n        \"completion_tokens\": {\n          \"type\": \"integer\",\n          \"format\": \"uint32\",\n          \"minimum\": 0.0\n        },\n        \"prompt_tokens\": {\n          \"type\": \"integer\",\n          \"format\": \"uint32\",\n          \"minimum\": 0.0\n        },\n        \"total_tokens\": {\n          \"type\": \"integer\",\n          \"format\": \"uint32\",\n          \"minimum\": 0.0\n        },\n        \"prompt_tokens_details\": {\n          \"anyOf\": [\n            {\n              \"$ref\": \"#/definitions/PromptTokenDetails\"\n            },\n            {\n              \"type\": \"null\"\n            }\n          ]\n        },\n        \"completion_tokens_details\": {\n          \"anyOf\": [\n            {\n              \"$ref\": \"#/definitions/CompletionTokenDetails\"\n            },\n            {\n              \"type\": \"null\"\n            }\n          ]\n        }\n      }\n    },\n    \"PromptTokenDetails\": {\n      \"type\": \"object\",\n      \"required\": [\n        \"audio_tokens\",\n        \"cached_tokens\"\n      ],\n      \"properties\": {\n        \"cached_tokens\": {\n          \"type\": \"integer\",\n          \"format\": \"uint32\",\n          \"minimum\": 0.0\n        },\n        \"audio_tokens\": {\n          \"type\": \"integer\",\n          \"format\": \"uint32\",\n          \"minimum\": 0.0\n        }\n      }\n    },\n    \"CompletionTokenDetails\": {\n      \"type\": \"object\",\n      \"required\": [\n        \"accepted_prediction_tokens\",\n        \"audio_tokens\",\n        \"reasoning_tokens\",\n        \"rejected_prediction_tokens\"\n      ],\n      \"properties\": {\n        \"accepted_prediction_tokens\": {\n          \"type\": \"integer\",\n          \"format\": \"uint32\",\n          \"minimum\": 0.0\n        },\n        \"audio_tokens\": {\n          \"type\": \"integer\",\n          \"format\": \"uint32\",\n          \"minimum\": 0.0\n        },\n        \"reasoning_tokens\": {\n          \"type\": \"integer\",\n          \"format\": \"uint32\",\n          \"minimum\": 0.0\n        },\n        \"rejected_prediction_tokens\": {\n          \"type\": \"integer\",\n          \"format\": \"uint32\",\n          \"minimum\": 0.0\n        }\n      }\n    }\n  }\n}",
+		"17904190770306764727": "Branches the flow based on a condition",
+		"5410850115455643583": "Name of the Table",
+		"10624759169930469181": "Are the strings equal?",
+		"1316076864012178016": "The selected model",
+		"9028674275353546188": "Done Creating Database",
+		"4629351131899522477": "Triggers on Streaming Output",
+		"5057784261055115532": "Boolean Or operation",
+		"3855092198470154848": "Compares two Strings",
+		"5263826465754033912": "The flow to follow if the condition is true",
+		"140223827731367972": "Starting an event",
+		"16647092055928900552": "Model Name",
+		"10849793966614783503": "Updated ChatHistory",
+		"9466936283142343191": "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"title\": \"Bit\",\n  \"type\": \"object\",\n  \"required\": [\n    \"authors\",\n    \"created\",\n    \"dependencies\",\n    \"dependency_tree_hash\",\n    \"hash\",\n    \"hub\",\n    \"icon\",\n    \"id\",\n    \"license\",\n    \"meta\",\n    \"parameters\",\n    \"type\",\n    \"updated\",\n    \"version\"\n  ],\n  \"properties\": {\n    \"id\": {\n      \"type\": \"string\"\n    },\n    \"type\": {\n      \"$ref\": \"#/definitions/BitTypes\"\n    },\n    \"meta\": {\n      \"type\": \"object\",\n      \"additionalProperties\": {\n        \"$ref\": \"#/definitions/BitMeta\"\n      }\n    },\n    \"authors\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    },\n    \"repository\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ]\n    },\n    \"download_link\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ]\n    },\n    \"file_name\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ]\n    },\n    \"hash\": {\n      \"type\": \"string\"\n    },\n    \"size\": {\n      \"type\": [\n        \"integer\",\n        \"null\"\n      ],\n      \"format\": \"uint64\",\n      \"minimum\": 0.0\n    },\n    \"hub\": {\n      \"type\": \"string\"\n    },\n    \"parameters\": true,\n    \"icon\": {\n      \"type\": \"string\"\n    },\n    \"version\": {\n      \"type\": \"string\"\n    },\n    \"license\": {\n      \"type\": \"string\"\n    },\n    \"dependencies\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"array\",\n        \"items\": [\n          {\n            \"type\": \"string\"\n          },\n          {\n            \"type\": \"string\"\n          }\n        ],\n        \"maxItems\": 2,\n        \"minItems\": 2\n      }\n    },\n    \"dependency_tree_hash\": {\n      \"type\": \"string\"\n    },\n    \"created\": {\n      \"type\": \"string\"\n    },\n    \"updated\": {\n      \"type\": \"string\"\n    }\n  },\n  \"definitions\": {\n    \"BitTypes\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"Llm\",\n        \"Vlm\",\n        \"Embedding\",\n        \"ImageEmbedding\",\n        \"File\",\n        \"Media\",\n        \"Template\",\n        \"Tokenizer\",\n        \"TokenizerConfig\",\n        \"SpecialTokensMap\",\n        \"Config\",\n        \"Course\",\n        \"PreprocessorConfig\",\n        \"Projection\",\n        \"Project\",\n        \"Board\",\n        \"Other\"\n      ]\n    },\n    \"BitMeta\": {\n      \"type\": \"object\",\n      \"required\": [\n        \"description\",\n        \"long_description\",\n        \"name\",\n        \"tags\",\n        \"use_case\"\n      ],\n      \"properties\": {\n        \"name\": {\n          \"type\": \"string\"\n        },\n        \"description\": {\n          \"type\": \"string\"\n        },\n        \"long_description\": {\n          \"type\": \"string\"\n        },\n        \"tags\": {\n          \"type\": \"array\",\n          \"items\": {\n            \"type\": \"string\"\n          }\n        },\n        \"use_case\": {\n          \"type\": \"string\"\n        }\n      }\n    }\n  }\n}"
+	},
+	"layers": {},
+	"created_at": {
+		"secs_since_epoch": 1746992340,
+		"nanos_since_epoch": 379628000
+	},
+	"updated_at": {
+		"secs_since_epoch": 1746995421,
+		"nanos_since_epoch": 685376000
+	}
 }
