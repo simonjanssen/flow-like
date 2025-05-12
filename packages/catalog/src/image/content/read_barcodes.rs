@@ -4,7 +4,7 @@ use flow_like::{
     flow::{
         pin::Pin,
         board::Board,
-        execution::context::ExecutionContext,
+        execution::{LogLevel, context::ExecutionContext},
         node::{Node, NodeLogic},
         pin::PinOptions,
         variable::VariableType,
@@ -13,8 +13,7 @@ use flow_like::{
 };
 use flow_like_types::{
     anyhow, async_trait, json::json,
-    rxing::{helpers, BarcodeFormat, RXingResult, DecodeHints},
-    Ok, Error
+    rxing::{helpers, BarcodeFormat, RXingResult, DecodeHints, Exceptions::NotFoundException},
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -83,10 +82,6 @@ impl NodeLogic for ReadBarcodesNode {
             .set_schema::<NodeImage>()
             .set_options(PinOptions::new().set_enforce_schema(true).build());
 
-        
-        node.add_input_pin("multiple", "Multiple?", "Detect Multiple Codes in Image", VariableType::Boolean)
-            .set_default_value(Some(json!(true)));
-
         node.add_input_pin("filter", "Filter?", "Filter for Certain Code Type", VariableType::Boolean)
             .set_default_value(Some(json!(false)));
 
@@ -104,7 +99,6 @@ impl NodeLogic for ReadBarcodesNode {
         context.deactivate_exec_pin("exec_out").await?;
 
         // fetch inputs
-        let multiple: bool = context.evaluate_pin("multiple").await?;
         let apply_filter: bool = context.evaluate_pin("filter").await?;
         let node_img: NodeImage = context.evaluate_pin("image_in").await?;
 
@@ -121,28 +115,36 @@ impl NodeLogic for ReadBarcodesNode {
         };
 
         // detect + decode (bar)codes
-        let results_rxing = match (multiple, apply_filter) {
+        let results_rxing = match apply_filter {
             // many codes & many types (potentially expensive)
-            (true, false) => {
-                helpers::detect_multiple_in_luma(img_vec, w, h)?
+            true => {
+                match helpers::detect_multiple_in_luma(img_vec, w, h) {
+                    Ok(results) => results,
+                    Err(NotFoundException(_)) => {
+                        context.log_message("No Codes Detected / Decoded!", LogLevel::Warn);
+                        vec![]
+                    },
+                    Err(_) => {
+                        return Err(anyhow!("Unknown Decoder Error"))
+                    }
+                }
             },
             // many codes & single type
-            (true, true) => {
+            false => {
                 let mut hints = DecodeHints::default();
                 let format_str: String = context.evaluate_pin("format").await?;
                 let bc_type = BarcodeFormat::from(format_str);
                 hints.PossibleFormats = Some(HashSet::from([bc_type]));
-                helpers::detect_multiple_in_luma_with_hints(img_vec, w, h, &mut hints)?
-            },
-            // one code & one type
-            (false, true) => {
-                let format_str: String = context.evaluate_pin("format").await?;
-                let bc_type = BarcodeFormat::from(format_str);
-                vec![helpers::detect_in_luma_filtered(img_vec, w, h, Some(bc_type))?]
-            },
-            // one code & many types
-            (false, false) => {
-                vec![helpers::detect_in_luma(img_vec, w, h, None)?]
+                match helpers::detect_multiple_in_luma_with_hints(img_vec, w, h, &mut hints) {
+                    Ok(results) => results,
+                    Err(NotFoundException(_)) => {
+                        context.log_message("No Codes Detected / Decoded!", LogLevel::Warn);
+                        vec![]
+                    },
+                    Err(_) => {
+                        return Err(anyhow!("Unknown Decoder Error"))
+                    }
+                }
             },
         };
 
