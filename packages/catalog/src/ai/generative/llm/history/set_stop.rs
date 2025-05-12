@@ -27,7 +27,7 @@ impl NodeLogic for SetHistoryStopWordsNode {
             "Sets the stop_words attribute in a ChatHistory",
             "AI/Generative/History",
         );
-        node.add_icon("/flow/icons/history-stop-words.svg");
+        node.add_icon("/flow/icons/history.svg");
 
         node.add_input_pin(
             "exec_in",

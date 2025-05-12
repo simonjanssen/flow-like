@@ -8,11 +8,7 @@
 			"name": "control_branch",
 			"friendly_name": "Branch",
 			"description": "17904190770306764727",
-			"coordinates": [
-				576.5167,
-				178.93364,
-				0
-			],
+			"coordinates": [576.5167, 178.93364, 0],
 			"category": "Control",
 			"scores": null,
 			"pins": {
@@ -26,9 +22,7 @@
 					"schema": null,
 					"value_type": "Normal",
 					"depends_on": [],
-					"connected_to": [
-						"v1vkmm6wz52uxdqtnyzwcwts"
-					],
+					"connected_to": ["v1vkmm6wz52uxdqtnyzwcwts"],
 					"default_value": null,
 					"index": 1,
 					"options": null
@@ -43,9 +37,7 @@
 					"schema": null,
 					"value_type": "Normal",
 					"depends_on": [],
-					"connected_to": [
-						"umldlzo9dkw5i59n7rq4dsun"
-					],
+					"connected_to": ["umldlzo9dkw5i59n7rq4dsun"],
 					"default_value": null,
 					"index": 2,
 					"options": null
@@ -59,16 +51,9 @@
 					"data_type": "Boolean",
 					"schema": null,
 					"value_type": "Normal",
-					"depends_on": [
-						"jrlfhj9mbfu68cpc6amgyi4b"
-					],
+					"depends_on": ["jrlfhj9mbfu68cpc6amgyi4b"],
 					"connected_to": [],
-					"default_value": [
-						116,
-						114,
-						117,
-						101
-					],
+					"default_value": [116, 114, 117, 101],
 					"index": 2,
 					"options": null
 				},
@@ -81,9 +66,7 @@
 					"data_type": "Execution",
 					"schema": null,
 					"value_type": "Normal",
-					"depends_on": [
-						"im8lx3hvsdaausqu0dwtkjxd"
-					],
+					"depends_on": ["im8lx3hvsdaausqu0dwtkjxd"],
 					"connected_to": [],
 					"default_value": null,
 					"index": 1,
@@ -104,11 +87,7 @@
 			"name": "ai_generative_invoke",
 			"friendly_name": "Invoke Model",
 			"description": "7247578861291942550",
-			"coordinates": [
-				1243.055,
-				506.22443,
-				0
-			],
+			"coordinates": [1243.055, 506.22443, 0],
 			"category": "AI/Generative",
 			"scores": null,
 			"pins": {
@@ -157,9 +136,7 @@
 					"data_type": "Struct",
 					"schema": "17638850536523711416",
 					"value_type": "Normal",
-					"depends_on": [
-						"gact6d0lsba6btd54nmoidwv"
-					],
+					"depends_on": ["gact6d0lsba6btd54nmoidwv"],
 					"connected_to": [],
 					"default_value": null,
 					"index": 3,
@@ -180,9 +157,7 @@
 					"data_type": "Execution",
 					"schema": null,
 					"value_type": "Normal",
-					"depends_on": [
-						"qhittpwlthj7abliet9c1w1x"
-					],
+					"depends_on": ["qhittpwlthj7abliet9c1w1x"],
 					"connected_to": [],
 					"default_value": null,
 					"index": 1,
@@ -197,9 +172,7 @@
 					"data_type": "Struct",
 					"schema": "9466936283142343191",
 					"value_type": "Normal",
-					"depends_on": [
-						"aa68o8br2ihoeevgtly7dun0"
-					],
+					"depends_on": ["aa68o8br2ihoeevgtly7dun0"],
 					"connected_to": [],
 					"default_value": null,
 					"index": 2,
@@ -221,9 +194,7 @@
 					"schema": "12714623100737772828",
 					"value_type": "Normal",
 					"depends_on": [],
-					"connected_to": [
-						"jl76wqarf24aytqm2igsq222"
-					],
+					"connected_to": ["jl76wqarf24aytqm2igsq222"],
 					"default_value": null,
 					"index": 4,
 					"options": {
@@ -244,9 +215,7 @@
 					"schema": null,
 					"value_type": "Normal",
 					"depends_on": [],
-					"connected_to": [
-						"ajsmg6v9fov1prtp8uxw6p3a"
-					],
+					"connected_to": ["ajsmg6v9fov1prtp8uxw6p3a"],
 					"default_value": null,
 					"index": 3,
 					"options": null
@@ -266,11 +235,7 @@
 			"name": "reroute",
 			"friendly_name": "Reroute",
 			"description": "4831355782476522024",
-			"coordinates": [
-				805.3197,
-				527.8632,
-				0
-			],
+			"coordinates": [805.3197, 527.8632, 0],
 			"category": "Control",
 			"scores": null,
 			"pins": {
@@ -302,9 +267,7 @@
 					"schema": null,
 					"value_type": "Normal",
 					"depends_on": [],
-					"connected_to": [
-						"lcxzcd1xy22qliar7f54hdte"
-					],
+					"connected_to": ["lcxzcd1xy22qliar7f54hdte"],
 					"default_value": null,
 					"index": 1,
 					"options": null
@@ -324,11 +287,7 @@
 			"name": "events_chat_push_response",
 			"friendly_name": "Push Response",
 			"description": "17578778484962692026",
-			"coordinates": [
-				1452.7396,
-				573.4223,
-				0
-			],
+			"coordinates": [1452.7396, 573.4223, 0],
 			"category": "Events/Chat",
 			"scores": null,
 			"pins": {
@@ -356,9 +315,7 @@
 					"data_type": "Struct",
 					"schema": "12714623100737772828",
 					"value_type": "Normal",
-					"depends_on": [
-						"cahom112p2n6wlngijqw0ede"
-					],
+					"depends_on": ["cahom112p2n6wlngijqw0ede"],
 					"connected_to": [],
 					"default_value": null,
 					"index": 2,
@@ -379,9 +336,7 @@
 					"data_type": "Execution",
 					"schema": null,
 					"value_type": "Normal",
-					"depends_on": [
-						"pyr30g44rylcw48suo5ui0m9"
-					],
+					"depends_on": ["pyr30g44rylcw48suo5ui0m9"],
 					"connected_to": [],
 					"default_value": null,
 					"index": 1,
@@ -402,11 +357,7 @@
 			"name": "reroute",
 			"friendly_name": "Reroute",
 			"description": "4831355782476522024",
-			"coordinates": [
-				801.3913,
-				230.22194,
-				0
-			],
+			"coordinates": [801.3913, 230.22194, 0],
 			"category": "Control",
 			"scores": null,
 			"pins": {
@@ -434,9 +385,7 @@
 					"data_type": "Execution",
 					"schema": null,
 					"value_type": "Normal",
-					"depends_on": [
-						"dkq6p9r8lco3hf2ut3lqn82t"
-					],
+					"depends_on": ["dkq6p9r8lco3hf2ut3lqn82t"],
 					"connected_to": [],
 					"default_value": null,
 					"index": 1,
@@ -457,11 +406,7 @@
 			"name": "ai_generative_make_history",
 			"friendly_name": "Make History",
 			"description": "18370806395568600871",
-			"coordinates": [
-				870.5044,
-				582.10895,
-				0
-			],
+			"coordinates": [870.5044, 582.10895, 0],
 			"category": "AI/Generative/History",
 			"scores": null,
 			"pins": {
@@ -475,9 +420,7 @@
 					"schema": "17638850536523711416",
 					"value_type": "Normal",
 					"depends_on": [],
-					"connected_to": [
-						"lvesjq7uksuknrbd4nfl5xbu"
-					],
+					"connected_to": ["lvesjq7uksuknrbd4nfl5xbu"],
 					"default_value": null,
 					"index": 1,
 					"options": {
@@ -499,10 +442,7 @@
 					"value_type": "Normal",
 					"depends_on": [],
 					"connected_to": [],
-					"default_value": [
-						34,
-						34
-					],
+					"default_value": [34, 34],
 					"index": 1,
 					"options": null
 				}
@@ -521,11 +461,7 @@
 			"name": "ai_generative_set_system_prompt_message",
 			"friendly_name": "Set System Message",
 			"description": "16020318270070404108",
-			"coordinates": [
-				1071.2064,
-				506.40735,
-				0
-			],
+			"coordinates": [1071.2064, 506.40735, 0],
 			"category": "AI/Generative/History",
 			"scores": null,
 			"pins": {
@@ -538,9 +474,7 @@
 					"data_type": "Struct",
 					"schema": "17638850536523711416",
 					"value_type": "Normal",
-					"depends_on": [
-						"s9r92igepm03lc01fa13ydq2"
-					],
+					"depends_on": ["s9r92igepm03lc01fa13ydq2"],
 					"connected_to": [],
 					"default_value": null,
 					"index": 2,
@@ -563,10 +497,7 @@
 					"value_type": "Normal",
 					"depends_on": [],
 					"connected_to": [],
-					"default_value": [
-						34,
-						34
-					],
+					"default_value": [34, 34],
 					"index": 3,
 					"options": null
 				},
@@ -580,9 +511,7 @@
 					"schema": "17638850536523711416",
 					"value_type": "Normal",
 					"depends_on": [],
-					"connected_to": [
-						"jmir8uml12c64dotl0lm09u4"
-					],
+					"connected_to": ["jmir8uml12c64dotl0lm09u4"],
 					"default_value": null,
 					"index": 2,
 					"options": null
@@ -597,9 +526,7 @@
 					"schema": null,
 					"value_type": "Normal",
 					"depends_on": [],
-					"connected_to": [
-						"awo2g09rxm865xnvcq1gu03h"
-					],
+					"connected_to": ["awo2g09rxm865xnvcq1gu03h"],
 					"default_value": null,
 					"index": 1,
 					"options": null
@@ -613,9 +540,7 @@
 					"data_type": "Execution",
 					"schema": null,
 					"value_type": "Normal",
-					"depends_on": [
-						"u8vdkakvixrfmwje0g494480"
-					],
+					"depends_on": ["u8vdkakvixrfmwje0g494480"],
 					"connected_to": [],
 					"default_value": null,
 					"index": 1,
@@ -636,11 +561,7 @@
 			"name": "open_local_db",
 			"friendly_name": "Open Database",
 			"description": "11998930749331024930",
-			"coordinates": [
-				333.5885,
-				573.4548,
-				0
-			],
+			"coordinates": [333.5885, 573.4548, 0],
 			"category": "Database/Local",
 			"scores": null,
 			"pins": {
@@ -653,9 +574,7 @@
 					"data_type": "Execution",
 					"schema": null,
 					"value_type": "Normal",
-					"depends_on": [
-						"sq6fghjb351tc0z4e08tiuv2"
-					],
+					"depends_on": ["sq6fghjb351tc0z4e08tiuv2"],
 					"connected_to": [],
 					"default_value": null,
 					"index": 1,
@@ -671,9 +590,7 @@
 					"schema": "15906716300171297521",
 					"value_type": "Normal",
 					"depends_on": [],
-					"connected_to": [
-						"nt54dohrivgurnum6db8iazp"
-					],
+					"connected_to": ["nt54dohrivgurnum6db8iazp"],
 					"default_value": null,
 					"index": 2,
 					"options": null
@@ -689,19 +606,7 @@
 					"value_type": "Normal",
 					"depends_on": [],
 					"connected_to": [],
-					"default_value": [
-						34,
-						69,
-						109,
-						112,
-						108,
-						111,
-						121,
-						101,
-						101,
-						115,
-						34
-					],
+					"default_value": [34, 69, 109, 112, 108, 111, 121, 101, 101, 115, 34],
 					"index": 2,
 					"options": null
 				},
@@ -715,9 +620,7 @@
 					"schema": null,
 					"value_type": "Normal",
 					"depends_on": [],
-					"connected_to": [
-						"xjnodd5yror4itj4c374g0ry"
-					],
+					"connected_to": ["xjnodd5yror4itj4c374g0ry"],
 					"default_value": null,
 					"index": 1,
 					"options": null
@@ -737,11 +640,7 @@
 			"name": "events_simple",
 			"friendly_name": "Website Loaded",
 			"description": "129103383686177732",
-			"coordinates": [
-				384.59998,
-				228.62198,
-				0
-			],
+			"coordinates": [384.59998, 228.62198, 0],
 			"category": "Events",
 			"scores": null,
 			"pins": {
@@ -755,9 +654,7 @@
 					"schema": null,
 					"value_type": "Normal",
 					"depends_on": [],
-					"connected_to": [
-						"nokqqodrqoy8h8awwrlkc03g"
-					],
+					"connected_to": ["nokqqodrqoy8h8awwrlkc03g"],
 					"default_value": null,
 					"index": 1,
 					"options": null
@@ -777,11 +674,7 @@
 			"name": "ai_generative_find_model",
 			"friendly_name": "Find Model",
 			"description": "12283797523653035894",
-			"coordinates": [
-				870.5044,
-				506.40732,
-				0
-			],
+			"coordinates": [870.5044, 506.40732, 0],
 			"category": "AI/Generative",
 			"scores": null,
 			"pins": {
@@ -797,264 +690,25 @@
 					"depends_on": [],
 					"connected_to": [],
 					"default_value": [
-						123,
-						34,
-						99,
-						111,
-						100,
-						105,
-						110,
-						103,
-						95,
-						119,
-						101,
-						105,
-						103,
-						104,
-						116,
-						34,
-						58,
-						110,
-						117,
-						108,
-						108,
-						44,
-						34,
-						99,
-						111,
-						115,
-						116,
-						95,
-						119,
-						101,
-						105,
-						103,
-						104,
-						116,
-						34,
-						58,
-						110,
-						117,
-						108,
-						108,
-						44,
-						34,
-						99,
-						114,
-						101,
-						97,
-						116,
-						105,
-						118,
-						105,
-						116,
-						121,
-						95,
-						119,
-						101,
-						105,
-						103,
-						104,
-						116,
-						34,
-						58,
-						110,
-						117,
-						108,
-						108,
-						44,
-						34,
-						102,
-						97,
-						99,
-						116,
-						117,
-						97,
-						108,
-						105,
-						116,
-						121,
-						95,
-						119,
-						101,
-						105,
-						103,
-						104,
-						116,
-						34,
-						58,
-						110,
-						117,
-						108,
-						108,
-						44,
-						34,
-						102,
-						117,
-						110,
-						99,
-						116,
-						105,
-						111,
-						110,
-						95,
-						99,
-						97,
-						108,
-						108,
-						105,
-						110,
-						103,
-						95,
-						119,
-						101,
-						105,
-						103,
-						104,
-						116,
-						34,
-						58,
-						110,
-						117,
-						108,
-						108,
-						44,
-						34,
-						109,
-						111,
-						100,
-						101,
-						108,
-						95,
-						104,
-						105,
-						110,
-						116,
-						34,
-						58,
-						110,
-						117,
-						108,
-						108,
-						44,
-						34,
-						109,
-						117,
-						108,
-						116,
-						105,
-						108,
-						105,
-						110,
-						103,
-						117,
-						97,
-						108,
-						105,
-						116,
-						121,
-						95,
-						119,
-						101,
-						105,
-						103,
-						104,
-						116,
-						34,
-						58,
-						110,
-						117,
-						108,
-						108,
-						44,
-						34,
-						111,
-						112,
-						101,
-						110,
-						110,
-						101,
-						115,
-						115,
-						95,
-						119,
-						101,
-						105,
-						103,
-						104,
-						116,
-						34,
-						58,
-						110,
-						117,
-						108,
-						108,
-						44,
-						34,
-						114,
-						101,
-						97,
-						115,
-						111,
-						110,
-						105,
-						110,
-						103,
-						95,
-						119,
-						101,
-						105,
-						103,
-						104,
-						116,
-						34,
-						58,
-						110,
-						117,
-						108,
-						108,
-						44,
-						34,
-						115,
-						97,
-						102,
-						101,
-						116,
-						121,
-						95,
-						119,
-						101,
-						105,
-						103,
-						104,
-						116,
-						34,
-						58,
-						110,
-						117,
-						108,
-						108,
-						44,
-						34,
-						115,
-						112,
-						101,
-						101,
-						100,
-						95,
-						119,
-						101,
-						105,
-						103,
-						104,
-						116,
-						34,
-						58,
-						110,
-						117,
-						108,
-						108,
-						125
+						123, 34, 99, 111, 100, 105, 110, 103, 95, 119, 101, 105, 103, 104,
+						116, 34, 58, 110, 117, 108, 108, 44, 34, 99, 111, 115, 116, 95, 119,
+						101, 105, 103, 104, 116, 34, 58, 110, 117, 108, 108, 44, 34, 99,
+						114, 101, 97, 116, 105, 118, 105, 116, 121, 95, 119, 101, 105, 103,
+						104, 116, 34, 58, 110, 117, 108, 108, 44, 34, 102, 97, 99, 116, 117,
+						97, 108, 105, 116, 121, 95, 119, 101, 105, 103, 104, 116, 34, 58,
+						110, 117, 108, 108, 44, 34, 102, 117, 110, 99, 116, 105, 111, 110,
+						95, 99, 97, 108, 108, 105, 110, 103, 95, 119, 101, 105, 103, 104,
+						116, 34, 58, 110, 117, 108, 108, 44, 34, 109, 111, 100, 101, 108,
+						95, 104, 105, 110, 116, 34, 58, 110, 117, 108, 108, 44, 34, 109,
+						117, 108, 116, 105, 108, 105, 110, 103, 117, 97, 108, 105, 116, 121,
+						95, 119, 101, 105, 103, 104, 116, 34, 58, 110, 117, 108, 108, 44,
+						34, 111, 112, 101, 110, 110, 101, 115, 115, 95, 119, 101, 105, 103,
+						104, 116, 34, 58, 110, 117, 108, 108, 44, 34, 114, 101, 97, 115,
+						111, 110, 105, 110, 103, 95, 119, 101, 105, 103, 104, 116, 34, 58,
+						110, 117, 108, 108, 44, 34, 115, 97, 102, 101, 116, 121, 95, 119,
+						101, 105, 103, 104, 116, 34, 58, 110, 117, 108, 108, 44, 34, 115,
+						112, 101, 101, 100, 95, 119, 101, 105, 103, 104, 116, 34, 58, 110,
+						117, 108, 108, 125
 					],
 					"index": 2,
 					"options": {
@@ -1074,9 +728,7 @@
 					"data_type": "Execution",
 					"schema": null,
 					"value_type": "Normal",
-					"depends_on": [
-						"lp51ximm0xvffy1mpjvywtez"
-					],
+					"depends_on": ["lp51ximm0xvffy1mpjvywtez"],
 					"connected_to": [],
 					"default_value": null,
 					"index": 1,
@@ -1092,9 +744,7 @@
 					"schema": "9466936283142343191",
 					"value_type": "Normal",
 					"depends_on": [],
-					"connected_to": [
-						"dqqvvbgahmwon5qdjw5fwx94"
-					],
+					"connected_to": ["dqqvvbgahmwon5qdjw5fwx94"],
 					"default_value": null,
 					"index": 2,
 					"options": null
@@ -1109,9 +759,7 @@
 					"schema": null,
 					"value_type": "Normal",
 					"depends_on": [],
-					"connected_to": [
-						"z6o9npjhh2e8qimvrcg4lpd0"
-					],
+					"connected_to": ["z6o9npjhh2e8qimvrcg4lpd0"],
 					"default_value": null,
 					"index": 1,
 					"options": null
@@ -1131,11 +779,7 @@
 			"name": "reroute",
 			"friendly_name": "Reroute",
 			"description": "4831355782476522024",
-			"coordinates": [
-				705.3473,
-				626.1191,
-				0
-			],
+			"coordinates": [705.3473, 626.1191, 0],
 			"category": "Control",
 			"scores": null,
 			"pins": {
@@ -1148,9 +792,7 @@
 					"data_type": "String",
 					"schema": null,
 					"value_type": "Normal",
-					"depends_on": [
-						"lts7w1lyqtk3o98y0afs47vn"
-					],
+					"depends_on": ["lts7w1lyqtk3o98y0afs47vn"],
 					"connected_to": [],
 					"default_value": null,
 					"index": 1,
@@ -1186,11 +828,7 @@
 			"name": "reroute",
 			"friendly_name": "Reroute",
 			"description": "4831355782476522024",
-			"coordinates": [
-				524.3879,
-				665.904,
-				0
-			],
+			"coordinates": [524.3879, 665.904, 0],
 			"category": "Control",
 			"scores": null,
 			"pins": {
@@ -1218,9 +856,7 @@
 					"data_type": "Struct",
 					"schema": "15906716300171297521",
 					"value_type": "Normal",
-					"depends_on": [
-						"vvh6a3n3g1vy39nxed9xtetq"
-					],
+					"depends_on": ["vvh6a3n3g1vy39nxed9xtetq"],
 					"connected_to": [],
 					"default_value": null,
 					"index": 1,
@@ -1241,11 +877,7 @@
 			"name": "reroute",
 			"friendly_name": "Reroute",
 			"description": "4831355782476522024",
-			"coordinates": [
-				713.759,
-				565.329,
-				0
-			],
+			"coordinates": [713.759, 565.329, 0],
 			"category": "Control",
 			"scores": null,
 			"pins": {
@@ -1258,9 +890,7 @@
 					"data_type": "Execution",
 					"schema": null,
 					"value_type": "Normal",
-					"depends_on": [
-						"ctvrvnx15xmqgyzsbqfv0hbg"
-					],
+					"depends_on": ["ctvrvnx15xmqgyzsbqfv0hbg"],
 					"connected_to": [],
 					"default_value": null,
 					"index": 1,
@@ -1296,11 +926,7 @@
 			"name": "equal_string",
 			"friendly_name": "==",
 			"description": "3855092198470154848",
-			"coordinates": [
-				119.5596,
-				104.72942,
-				0
-			],
+			"coordinates": [119.5596, 104.72942, 0],
 			"category": "Utils/String",
 			"scores": null,
 			"pins": {
@@ -1315,14 +941,7 @@
 					"value_type": "Normal",
 					"depends_on": [],
 					"connected_to": [],
-					"default_value": [
-						34,
-						85,
-						115,
-						101,
-						114,
-						34
-					],
+					"default_value": [34, 85, 115, 101, 114, 34],
 					"index": 1,
 					"options": null
 				},
@@ -1336,9 +955,7 @@
 					"schema": null,
 					"value_type": "Normal",
 					"depends_on": [],
-					"connected_to": [
-						"jg5wqr6021g6qurye8ukyvam"
-					],
+					"connected_to": ["jg5wqr6021g6qurye8ukyvam"],
 					"default_value": null,
 					"index": 1,
 					"options": null
@@ -1355,31 +972,8 @@
 					"depends_on": [],
 					"connected_to": [],
 					"default_value": [
-						34,
-						65,
-						108,
-						114,
-						101,
-						97,
-						100,
-						121,
-						32,
-						75,
-						110,
-						111,
-						119,
-						115,
-						32,
-						70,
-						108,
-						111,
-						119,
-						32,
-						76,
-						105,
-						107,
-						101,
-						34
+						34, 65, 108, 114, 101, 97, 100, 121, 32, 75, 110, 111, 119, 115, 32,
+						70, 108, 111, 119, 32, 76, 105, 107, 101, 34
 					],
 					"index": 2,
 					"options": null
@@ -1399,11 +993,7 @@
 			"name": "cuid",
 			"friendly_name": "CUID v2",
 			"description": "13151678174225174397",
-			"coordinates": [
-				515.86426,
-				573.4548,
-				0
-			],
+			"coordinates": [515.86426, 573.4548, 0],
 			"category": "Utils",
 			"scores": null,
 			"pins": {
@@ -1417,9 +1007,7 @@
 					"schema": null,
 					"value_type": "Normal",
 					"depends_on": [],
-					"connected_to": [
-						"dhe2s4ey6bpfilbn6idel4j3"
-					],
+					"connected_to": ["dhe2s4ey6bpfilbn6idel4j3"],
 					"default_value": null,
 					"index": 2,
 					"options": null
@@ -1434,9 +1022,7 @@
 					"schema": null,
 					"value_type": "Normal",
 					"depends_on": [],
-					"connected_to": [
-						"ryj0everm1jfq2e5xks3lhct"
-					],
+					"connected_to": ["ryj0everm1jfq2e5xks3lhct"],
 					"default_value": null,
 					"index": 1,
 					"options": null
@@ -1450,9 +1036,7 @@
 					"data_type": "Execution",
 					"schema": null,
 					"value_type": "Normal",
-					"depends_on": [
-						"x5yh97keopjcm01s3xsamiyy"
-					],
+					"depends_on": ["x5yh97keopjcm01s3xsamiyy"],
 					"connected_to": [],
 					"default_value": null,
 					"index": 1,
@@ -1473,11 +1057,7 @@
 			"name": "events_simple",
 			"friendly_name": "[POST] Put Employee",
 			"description": "129103383686177732",
-			"coordinates": [
-				152.62411,
-				573.4548,
-				0
-			],
+			"coordinates": [152.62411, 573.4548, 0],
 			"category": "Events",
 			"scores": null,
 			"pins": {
@@ -1491,9 +1071,7 @@
 					"schema": null,
 					"value_type": "Normal",
 					"depends_on": [],
-					"connected_to": [
-						"o6wbav35opo6kz0yen91w4ay"
-					],
+					"connected_to": ["o6wbav35opo6kz0yen91w4ay"],
 					"default_value": null,
 					"index": 1,
 					"options": null
@@ -1513,11 +1091,7 @@
 			"name": "reroute",
 			"friendly_name": "Reroute",
 			"description": "4831355782476522024",
-			"coordinates": [
-				1071.9424,
-				591.92267,
-				0
-			],
+			"coordinates": [1071.9424, 591.92267, 0],
 			"category": "Control",
 			"scores": null,
 			"pins": {
@@ -1531,9 +1105,7 @@
 					"schema": "9466936283142343191",
 					"value_type": "Normal",
 					"depends_on": [],
-					"connected_to": [
-						"utw6pey0x8phomwr7afrid7b"
-					],
+					"connected_to": ["utw6pey0x8phomwr7afrid7b"],
 					"default_value": null,
 					"index": 1,
 					"options": null
@@ -1547,9 +1119,7 @@
 					"data_type": "Struct",
 					"schema": "9466936283142343191",
 					"value_type": "Normal",
-					"depends_on": [
-						"f73nh46da29sgw6753io5qn2"
-					],
+					"depends_on": ["f73nh46da29sgw6753io5qn2"],
 					"connected_to": [],
 					"default_value": null,
 					"index": 1,
@@ -1570,11 +1140,7 @@
 			"name": "reroute",
 			"friendly_name": "Reroute",
 			"description": "4831355782476522024",
-			"coordinates": [
-				1203.828,
-				591.92267,
-				0
-			],
+			"coordinates": [1203.828, 591.92267, 0],
 			"category": "Control",
 			"scores": null,
 			"pins": {
@@ -1587,9 +1153,7 @@
 					"data_type": "Struct",
 					"schema": "9466936283142343191",
 					"value_type": "Normal",
-					"depends_on": [
-						"sjj41vvfkduezrl7q3liel7p"
-					],
+					"depends_on": ["sjj41vvfkduezrl7q3liel7p"],
 					"connected_to": [],
 					"default_value": null,
 					"index": 1,
@@ -1605,9 +1169,7 @@
 					"schema": "9466936283142343191",
 					"value_type": "Normal",
 					"depends_on": [],
-					"connected_to": [
-						"h1lk56ispbjfdszpzstbye4y"
-					],
+					"connected_to": ["h1lk56ispbjfdszpzstbye4y"],
 					"default_value": null,
 					"index": 1,
 					"options": null
@@ -1627,11 +1189,7 @@
 			"name": "reroute",
 			"friendly_name": "Reroute",
 			"description": "4831355782476522024",
-			"coordinates": [
-				764.7078,
-				565.329,
-				0
-			],
+			"coordinates": [764.7078, 565.329, 0],
 			"category": "Control",
 			"scores": null,
 			"pins": {
@@ -1645,9 +1203,7 @@
 					"schema": null,
 					"value_type": "Normal",
 					"depends_on": [],
-					"connected_to": [
-						"umldlzo9dkw5i59n7rq4dsun"
-					],
+					"connected_to": ["umldlzo9dkw5i59n7rq4dsun"],
 					"default_value": null,
 					"index": 1,
 					"options": null
@@ -1684,10 +1240,7 @@
 			"name": "Embedding Models",
 			"category": null,
 			"description": null,
-			"default_value": [
-				91,
-				93
-			],
+			"default_value": [91, 93],
 			"data_type": "String",
 			"value_type": "HashSet",
 			"exposed": false,
@@ -1705,11 +1258,7 @@
 				"secs_since_epoch": 0,
 				"nanos_since_epoch": 0
 			},
-			"coordinates": [
-				811.9715,
-				213.00905,
-				0
-			],
+			"coordinates": [811.9715, 213.00905, 0],
 			"width": 148,
 			"height": 103,
 			"layer": null,
@@ -1725,11 +1274,7 @@
 				"secs_since_epoch": 0,
 				"nanos_since_epoch": 0
 			},
-			"coordinates": [
-				719.4675,
-				706.8148,
-				0
-			],
+			"coordinates": [719.4675, 706.8148, 0],
 			"width": 684,
 			"height": 446,
 			"layer": null,
@@ -1745,11 +1290,7 @@
 				"secs_since_epoch": 0,
 				"nanos_since_epoch": 0
 			},
-			"coordinates": [
-				843.59186,
-				365.55652,
-				0
-			],
+			"coordinates": [843.59186, 365.55652, 0],
 			"width": 780,
 			"height": 280,
 			"layer": null,
@@ -1765,11 +1306,7 @@
 				"secs_since_epoch": 0,
 				"nanos_since_epoch": 0
 			},
-			"coordinates": [
-				404,
-				66,
-				0
-			],
+			"coordinates": [404, 66, 0],
 			"width": 540,
 			"height": 227,
 			"layer": null,
@@ -1785,11 +1322,7 @@
 				"secs_since_epoch": 0,
 				"nanos_since_epoch": 0
 			},
-			"coordinates": [
-				108.688416,
-				400.93393,
-				0
-			],
+			"coordinates": [108.688416, 400.93393, 0],
 			"width": 573,
 			"height": 248,
 			"layer": null,
@@ -1805,11 +1338,7 @@
 				"secs_since_epoch": 0,
 				"nanos_since_epoch": 0
 			},
-			"coordinates": [
-				1267.7242,
-				1063.8608,
-				0
-			],
+			"coordinates": [1267.7242, 1063.8608, 0],
 			"width": 215,
 			"height": 215,
 			"layer": null,
@@ -1817,16 +1346,8 @@
 			"z_index": 3
 		}
 	},
-	"viewport": [
-		0,
-		0,
-		0
-	],
-	"version": [
-		0,
-		0,
-		1
-	],
+	"viewport": [0, 0, 0],
+	"version": [0, 0, 1],
 	"stage": "Dev",
 	"log_level": "Debug",
 	"refs": {

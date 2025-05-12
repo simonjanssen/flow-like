@@ -234,7 +234,6 @@ export function EmptyBackendProvider({
 			enableSystem
 			disableTransitionOnChange
 		>
-
 			<PersistQueryClientProvider
 				client={queryClient}
 				persistOptions={{
