@@ -332,65 +332,74 @@ impl NodeLogic for ObjectDetectionNode {
         // fetch cached 
         let node_img: NodeImage = context.evaluate_pin("image_in").await?;
         let img = node_img.get_image(context).await?;
-        let img_guard = img.lock().await;
-
+        
         let node_session: NodeOnnxSession = context.evaluate_pin("model").await?;
         let session = node_session.get_session(context).await?;
-        let session_guard = session.lock().await;
-
-        // dynamically fetch input/output array names from onnx session
-        let input_name = match session_guard.inputs.get(0) {
-            Some(input_name) => &input_name.name,
-            _ => "images"
-        };
-        let output_name = match session_guard.outputs.get(0) {
-            Some(output_name) => &output_name.name,
-            _ => "output0"
-        };
         let dt = t0.elapsed();
         context.log_message(&format!("[init node]: {:?}", dt), LogLevel::Debug);
         
         // prepare ONNX-model input
         let t0 = Instant::now();
-        let arr = img_to_arr(&img_guard)?;
-        context.log_message(&format!("input array: {:?}", arr.shape()), LogLevel::Debug);
-        let inputs = match inputs![input_name => arr.view()] {
-            Ok(mapping) => Ok(mapping),
-            Err(_) => Err(anyhow!("failed to prepare onnx model input")),
-        }?;
-        let dt = t0.elapsed();
-        context.log_message(&format!("[preprocessing]: {:?}", dt), LogLevel::Debug);
-
+        let (arr, target_width, target_height) = {
+            let img_guard = img.lock().await;
+            let (width, height) = (img_guard.width() as f32, img_guard.height() as f32);
+            let arr = img_to_arr(&img_guard)?;
+            (arr, width, height)
+        };
+        
         // run inference
-        let t0 = Instant::now();
-        let outputs = session_guard.run(inputs)?;
-        let arr_out = outputs[output_name].try_extract_tensor::<f32>()?;
-        context.log_message(&format!("output array: {:?}", arr_out.shape()), LogLevel::Debug);
-        let dt = t0.elapsed();
-        context.log_message(&format!("[inference]: {:?}", dt), LogLevel::Debug);
-        
-        // postprocessing
-        let t0 = Instant::now();
-        let view_candidates = arr_out.slice(s![0, 4.., ..]);
-        context.log_message(&format!("view candidates: {:?}", arr_out.shape()), LogLevel::Debug);
+        let candidates_image = {
+            let session_guard = session.lock().await;
 
-        // determine candidates for which the max over all class conf is > conf_thres
-        let mask_candidates: Vec<bool> = view_candidates
-            .axis_iter(Axis(1))
-            .map(|col| col.iter().cloned().fold(f32::NEG_INFINITY, f32::max) > conf_thres)
-            .collect();
-        context.log_message(&format!("mask_candidates: {:?}", mask_candidates.len()), LogLevel::Debug);
+            // dynamically fetch input/output array names from onnx session
+            let input_name = match session_guard.inputs.get(0) {
+                Some(input_name) => &input_name.name,
+                _ => "images"
+            };
+            let output_name = match session_guard.outputs.get(0) {
+                Some(output_name) => &output_name.name,
+                _ => "output0"
+            };
 
-        // get candidate rows
-        let idx_candidates: Vec<usize> = mask_candidates.iter()
-            .enumerate()
-            .filter_map(|(i, &keep)| if keep { Some(i) } else { None } )
-            .collect();
-        context.log_message(&format!("idx_candidates: {:?}", idx_candidates.len()), LogLevel::Debug);
+            context.log_message(&format!("input array: {:?}", arr.shape()), LogLevel::Debug);
+            let inputs = match inputs![input_name => arr.view()] {
+                Ok(mapping) => Ok(mapping),
+                Err(_) => Err(anyhow!("failed to prepare onnx model input")),
+            }?;
+            let dt = t0.elapsed();
+            context.log_message(&format!("[preprocessing]: {:?}", dt), LogLevel::Debug);
+
+            let t0 = Instant::now();
+            let outputs = session_guard.run(inputs)?;
+            let arr_out = outputs[output_name].try_extract_tensor::<f32>()?;
+            context.log_message(&format!("output array: {:?}", arr_out.shape()), LogLevel::Debug);
+            let dt = t0.elapsed();
+            context.log_message(&format!("[inference]: {:?}", dt), LogLevel::Debug);
         
-        // select candidates = all detections with at least one class conf > conf_thres
-        let candidates_image = arr_out.select(Axis(2), &idx_candidates).squeeze();  // todo: handle batch processing
-        context.log_message(&format!("candidates_image: {:?}", candidates_image.shape()), LogLevel::Debug);
+            // postprocessing
+            let t0 = Instant::now();
+            let view_candidates = arr_out.slice(s![0, 4.., ..]);
+            context.log_message(&format!("view candidates: {:?}", arr_out.shape()), LogLevel::Debug);
+
+            // determine candidates for which the max over all class conf is > conf_thres
+            let mask_candidates: Vec<bool> = view_candidates
+                .axis_iter(Axis(1))
+                .map(|col| col.iter().cloned().fold(f32::NEG_INFINITY, f32::max) > conf_thres)
+                .collect();
+            context.log_message(&format!("mask_candidates: {:?}", mask_candidates.len()), LogLevel::Debug);
+
+            // get candidate rows
+            let idx_candidates: Vec<usize> = mask_candidates.iter()
+                .enumerate()
+                .filter_map(|(i, &keep)| if keep { Some(i) } else { None } )
+                .collect();
+            context.log_message(&format!("idx_candidates: {:?}", idx_candidates.len()), LogLevel::Debug);
+            
+            // select candidates = all detections with at least one class conf > conf_thres
+            let candidates_image = arr_out.select(Axis(2), &idx_candidates).squeeze();  // todo: handle batch processing
+            context.log_message(&format!("candidates_image: {:?}", candidates_image.shape()), LogLevel::Debug);
+            candidates_image
+        };
 
         // extract bboxes from output vectors
         let mut bboxes: Vec<BoundingBox> = Vec::with_capacity(candidates_image.len_of(Axis(1)));
@@ -408,9 +417,8 @@ impl NodeLogic for ObjectDetectionNode {
 
         // scale boxes to original input image dims
         let (base_w, base_h) = (640., 640.);
-        let (target_w, target_h) = (img_guard.width() as f32, img_guard.height() as f32);
-        let scale_w = target_w / base_w;
-        let scale_h = target_h / base_h;
+        let scale_w = target_width / base_w;
+        let scale_h = target_height / base_h;
         for bbox in &mut bboxes {
             bbox.scale(scale_w, scale_h);
         }

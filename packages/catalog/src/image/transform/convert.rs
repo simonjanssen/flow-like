@@ -101,10 +101,6 @@ impl NodeLogic for ConvertImageNode {
             node_img = node_img.copy_image(context).await?;
         }
         let img = node_img.get_image(context).await?;
-        let mut img_guard = img.lock().await;
-
-        // determine input and target color type
-        let color = img_guard.color();
         let target = match pixel_type.as_str() {
             "RGB" => ColorType::Rgba8,
             "RGBA" => ColorType::Rgba8,
@@ -113,18 +109,24 @@ impl NodeLogic for ConvertImageNode {
             _ => return Err(anyhow!("Unknown Target Color Type!")),
         };
 
-        // apply color conversion (if different)
-        if color != target {
-            let img_converted = match target {
-                ColorType::Rgb8 => DynamicImage::ImageRgb8(img_guard.to_rgb8()),
-                ColorType::Rgba8 => DynamicImage::ImageRgba8(img_guard.to_rgba8()),
-                ColorType::L8 => DynamicImage::ImageLuma8(img_guard.to_luma8()),
-                ColorType::La8 => DynamicImage::ImageLumaA8(img_guard.to_luma_alpha8()),
-                _ => return Err(anyhow!("Unknown Color Type!")),
-            };
-            *img_guard = img_converted;
+        // convert color
+        {
+            let mut img_guard = img.lock().await;
+            // determine input and target color type
+            let color = img_guard.color();
+            // apply color conversion (if different)
+            if color != target {
+                let img_converted = match target {
+                    ColorType::Rgb8 => DynamicImage::ImageRgb8(img_guard.to_rgb8()),
+                    ColorType::Rgba8 => DynamicImage::ImageRgba8(img_guard.to_rgba8()),
+                    ColorType::L8 => DynamicImage::ImageLuma8(img_guard.to_luma8()),
+                    ColorType::La8 => DynamicImage::ImageLumaA8(img_guard.to_luma_alpha8()),
+                    _ => return Err(anyhow!("Unknown Color Type!")),
+                };
+                *img_guard = img_converted;
+            }
         }
-
+        
         // set outputs
         context.set_pin_value("image_out", json!(node_img)).await?;
         context.activate_exec_pin("exec_out").await?;

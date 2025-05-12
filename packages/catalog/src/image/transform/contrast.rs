@@ -79,12 +79,14 @@ impl NodeLogic for ContrastImageNode {
             node_img = node_img.copy_image(context).await?;
         }
         let img = node_img.get_image(context).await?;
-        let mut img_guard = img.lock().await;
 
         // adjust contrast
-        let img_contrast = img_guard.adjust_contrast(contrast);
-        *img_guard = img_contrast;
-
+        {
+            let mut img_guard = img.lock().await;
+            let img_contrast = img_guard.adjust_contrast(contrast);
+            *img_guard = img_contrast;
+        }
+        
         // set outputs
         context.set_pin_value("image_out", json!(node_img)).await?;
         context.activate_exec_pin("exec_out").await?;

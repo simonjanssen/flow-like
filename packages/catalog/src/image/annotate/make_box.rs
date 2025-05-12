@@ -85,13 +85,6 @@ impl NodeLogic for MakeBoxNode {
         );
 
         node.add_input_pin(
-            "x1",
-            "x1",
-            "Left",
-            VariableType::Integer,
-        );
-
-        node.add_input_pin(
             "y1",
             "y1",
             "Top",

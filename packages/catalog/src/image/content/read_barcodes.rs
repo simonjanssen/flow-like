@@ -110,12 +110,15 @@ impl NodeLogic for ReadBarcodesNode {
 
         // prepare image
         let img = node_img.get_image(context).await?;
-        let img_guard = img.lock().await;
-        let (w, h) = (img_guard.width(), img_guard.height());
-        let img_vec = img_guard
-            .clone()
-            .into_luma8()  // decoding works best with grayscale images
-            .to_vec();
+        let (img_vec, w, h) = {
+            let img_guard = img.lock().await;
+            let (w, h) = (img_guard.width(), img_guard.height());
+            let img_vec = img_guard
+                .clone()
+                .into_luma8()  // decoding works best with grayscale images
+                .to_vec();
+            (img_vec, w, h)
+        };
 
         // detect + decode (bar)codes
         let results_rxing = match (multiple, apply_filter) {

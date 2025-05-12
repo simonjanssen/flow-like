@@ -82,11 +82,13 @@ impl NodeLogic for CropImageNode {
         let img = node_img.get_image(context).await?;
 
         // crop image
-        let mut img_guard = img.lock().await;
-        let (x, y, w, h) = bbox.x1y1wh();
-        let img_cropped = img_guard.crop_imm(x, y, w, h);
-        *img_guard = img_cropped;
-
+        {
+            let mut img_guard = img.lock().await;
+            let (x, y, w, h) = bbox.x1y1wh();
+            let img_cropped = img_guard.crop_imm(x, y, w, h);
+            *img_guard = img_cropped;
+        }
+        
         // set outputs
         context.set_pin_value("image_out", json!(node_img)).await?;
         context.activate_exec_pin("exec_out").await?;

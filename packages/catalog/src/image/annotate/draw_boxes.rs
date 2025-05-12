@@ -124,9 +124,11 @@ impl NodeLogic for DrawBoxesNode {
         let img = node_img.get_image(context).await?;
 
         // annotate image
-        let mut img_guard = img.lock().await;
-        let img_annotated = draw_bboxes(img_guard.clone(), &bboxes)?;
-        *img_guard = img_annotated;
+        {
+            let mut img_guard = img.lock().await;
+            let img_annotated = draw_bboxes(img_guard.clone(), &bboxes)?;
+            *img_guard = img_annotated;
+        }
         
         // set outputs
         context.set_pin_value("image_out", json!(node_img)).await?;
