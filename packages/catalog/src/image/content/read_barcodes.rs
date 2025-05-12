@@ -117,7 +117,7 @@ impl NodeLogic for ReadBarcodesNode {
         // detect + decode (bar)codes
         let results_rxing = match apply_filter {
             // many codes & many types (potentially expensive)
-            true => {
+            false => {
                 match helpers::detect_multiple_in_luma(img_vec, w, h) {
                     Ok(results) => results,
                     Err(NotFoundException(_)) => {
@@ -130,7 +130,7 @@ impl NodeLogic for ReadBarcodesNode {
                 }
             },
             // many codes & single type
-            false => {
+            true => {
                 let mut hints = DecodeHints::default();
                 let format_str: String = context.evaluate_pin("format").await?;
                 let bc_type = BarcodeFormat::from(format_str);
