@@ -618,7 +618,7 @@
 						}
 					},
 					"start": null,
-					"icon": "/flow/icons/history-set.svg",
+					"icon": "/flow/icons/history.svg",
 					"comment": null,
 					"long_running": null,
 					"error": null,
