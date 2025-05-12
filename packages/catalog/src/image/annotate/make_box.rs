@@ -81,28 +81,28 @@ impl NodeLogic for MakeBoxNode {
             "x1",
             "x1",
             "Left",
-            VariableType::Integer,
+            VariableType::Float,
         );
 
         node.add_input_pin(
             "y1",
             "y1",
             "Top",
-            VariableType::Integer,
+            VariableType::Float,
         );
 
         node.add_input_pin(
             "x2",
             "x2",
             "Right",
-            VariableType::Integer,
+            VariableType::Float,
         );
 
         node.add_input_pin(
             "y2",
             "y2",
             "Bottom",
-            VariableType::Integer,
+            VariableType::Float,
         );
 
         // outputs
@@ -123,20 +123,20 @@ impl NodeLogic for MakeBoxNode {
         let score: f32 = context.evaluate_pin("score").await?;
         let bbox = match definition.as_str() {
             "xyxy" => {
-                let x1: i32 = context.evaluate_pin("x1").await?;
-                let y1: i32 = context.evaluate_pin("y1").await?;
-                let x2: i32 = context.evaluate_pin("x2").await?;
-                let y2: i32 = context.evaluate_pin("y2").await?;
-                BoundingBox { x1: x1 as f32, y1: y1 as f32, x2: x2 as f32, y2: y2 as f32, score, class_idx }
+                let x1: f32 = context.evaluate_pin("x1").await?;
+                let y1: f32 = context.evaluate_pin("y1").await?;
+                let x2: f32 = context.evaluate_pin("x2").await?;
+                let y2: f32 = context.evaluate_pin("y2").await?;
+                BoundingBox { x1, y1, x2, y2, score, class_idx }
             },
             "x1y1wh" => {
-                let x1: i32 = context.evaluate_pin("x1").await?;
-                let y1: i32 = context.evaluate_pin("y1").await?;
-                let w: i32 = context.evaluate_pin("w").await?;
-                let h: i32 = context.evaluate_pin("h").await?;
+                let x1: f32 = context.evaluate_pin("x1").await?;
+                let y1: f32 = context.evaluate_pin("y1").await?;
+                let w: f32 = context.evaluate_pin("w").await?;
+                let h: f32 = context.evaluate_pin("h").await?;
                 let x2 = x1 + w;
                 let y2 = y1 + h;
-                BoundingBox { x1: x1 as f32, y1: y1 as f32, x2: x2 as f32, y2: y2 as f32, score, class_idx }
+                BoundingBox { x1, y1, x2, y2, score, class_idx }
             },
             _ => return Err(anyhow!("Invalid Bounding Box Definition"))
         };
