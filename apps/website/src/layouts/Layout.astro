@@ -1,7 +1,9 @@
 ---
 import "@tm9657/flow-like-ui/globals.css";
 import { Header } from "../components/header";
+import { Footer } from "../components/footer";
 ---
+
 <!doctype html>
 <html lang="en">
 	<head>
@@ -10,10 +12,34 @@ import { Header } from "../components/header";
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
 		<title>Flow-Like | Enterprise Automation</title>
+		<meta name="description" content="Enterprise-grade workflow automation built for scale." />
+		<meta name="robots" content="index, follow" />
+
+		<meta property="og:title" content="Flow-Like | Enterprise Automation" />
+		<meta
+			property="og:description"
+			content="Enterprise-grade workflow automation built for scale."
+		/>
+		<meta property="og:image" content="/og.webp" />
+		<meta property="og:image:type" content="image/webp" />
+		<meta property="og:image:width" content="1600" />
+		<meta property="og:image:height" content="900" />
+
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta
+			name="twitter:title"
+			content="Flow-Like | Enterprise Automation"
+		/>
+		<meta
+			name="twitter:description"
+			content="Enterprise-grade workflow automation built for scale."
+		/>
+		<meta name="twitter:image" content="/og.webp" />
 	</head>
 	<body>
 		<Header/>
 		<slot />
+		<Footer />
 	</body>
 </html>
 
