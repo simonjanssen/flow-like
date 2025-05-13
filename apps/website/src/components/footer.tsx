@@ -1,7 +1,3 @@
-import { Button } from "@tm9657/flow-like-ui";
-import { BsDiscord, BsTwitterX } from "react-icons/bs";
-import { LuBookMarked } from "react-icons/lu";
-import { VscGithubInverted } from "react-icons/vsc";
 
 export function Footer() {
 	return (
