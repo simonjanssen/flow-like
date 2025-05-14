@@ -44,7 +44,7 @@ async fn construct_storage(
         .read()
         .await
         .stores
-        .project_store
+        .app_storage_store
         .clone()
         .ok_or(anyhow!("Project store not found"))?;
     let mut base_path = Path::from("apps").child(app_id).child("upload");

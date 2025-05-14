@@ -12,6 +12,7 @@ import {
 	type InternalNode,
 	type IsValidConnection,
 	MiniMap,
+	type Node,
 	type OnEdgesChange,
 	type OnNodesChange,
 	ReactFlow,
@@ -20,6 +21,7 @@ import {
 	applyNodeChanges,
 	reconnectEdge,
 	useEdgesState,
+	useKeyPress,
 	useNodesState,
 	useReactFlow,
 } from "@xyflow/react";
@@ -31,13 +33,13 @@ import {
 	PlayCircleIcon,
 	Redo2Icon,
 	ScrollIcon,
+	SquareChevronUpIcon,
 	Undo2Icon,
 	VariableIcon,
 	XIcon,
 } from "lucide-react";
 import MiniSearch from "minisearch";
 import { useTheme } from "next-themes";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ImperativePanelHandle } from "react-resizable-panels";
@@ -56,11 +58,10 @@ import {
 	ResizablePanel,
 	ResizablePanelGroup,
 } from "../../components/ui/resizable";
-import { useInvalidateInvoke, useInvoke } from "../../hooks/use-invoke";
+import { useInvoke } from "../../hooks/use-invoke";
 import {
 	type IGenericCommand,
 	type ILogMetadata,
-	IValueType,
 	addNodeCommand,
 	connectPinsCommand,
 	disconnectPinsCommand,
@@ -80,8 +81,6 @@ import { toastError, toastSuccess } from "../../lib/messages";
 import {
 	type IComment,
 	ICommentType,
-	IExecutionStage,
-	ILogLevel,
 	type IVariable,
 } from "../../lib/schema/flow/board";
 import { type INode, IVariableType } from "../../lib/schema/flow/node";
@@ -91,32 +90,25 @@ import { convertJsonToUint8Array } from "../../lib/uint8";
 import { useBackend } from "../../state/backend-state";
 import { useFlowBoardParentState } from "../../state/flow-board-parent-state";
 import { useRunExecutionStore } from "../../state/run-execution-state";
-import {
-	Button,
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-	Input,
-	Label,
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-	Separator,
-	Textarea,
-} from "../ui";
-import { FlowBreadCrumb } from "./flow-breadcrumb";
+import { BoardMeta } from "./board-meta";
 import { useUndoRedo } from "./flow-history";
 import { FlowRuns } from "./flow-runs";
 import { LayerNode } from "./layer-node";
+
+function hexToRgba(hex: string, alpha = 0.3): string {
+	let c = hex.replace("#", "");
+	if (c.length === 3) c = c[0] + c[0] + c[1] + c[1] + c[2] + c[2];
+	const num = Number.parseInt(c, 16);
+	const r = (num >> 16) & 255;
+	const g = (num >> 8) & 255;
+	const b = num & 255;
+	return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 export function FlowBoard({
 	appId,
 	boardId,
 }: Readonly<{ appId: string; boardId: string }>) {
-	const invalidate = useInvalidateInvoke();
 	const { pushCommand, pushCommands, redo, undo } = useUndoRedo(appId, boardId);
 	const router = useRouter();
 	const backend = useBackend();
@@ -127,19 +119,25 @@ export function FlowBoard({
 	const { refetchLogs, setCurrentMetadata, currentMetadata } =
 		useLogAggregation();
 	const flowRef = useRef<any>(null);
-
+	const [version, setVersion] = useState<[number, number, number]>();
 	const flowPanelRef = useRef<ImperativePanelHandle>(null);
 	const logPanelRef = useRef<ImperativePanelHandle>(null);
 	const varPanelRef = useRef<ImperativePanelHandle>(null);
 	const runsPanelRef = useRef<ImperativePanelHandle>(null);
 
+	const shiftPressed = useKeyPress("Shift");
+
 	const { resolvedTheme } = useTheme();
 
 	const catalog: UseQueryResult<INode[]> = useInvoke(backend.getCatalog, []);
-	const board = useInvoke(backend.getBoard, [appId, boardId], boardId !== "");
-	const openBoards = useInvoke(backend.getOpenBoards, []);
+	const board = useInvoke(
+		backend.getBoard,
+		[appId, boardId, version],
+		boardId !== "",
+	);
 	const currentProfile = useInvoke(backend.getSettingsProfile, []);
 	const { addRun, removeRun, pushUpdate } = useRunExecutionStore();
+	const { screenToFlowPosition } = useReactFlow();
 
 	const [nodes, setNodes] = useNodesState<any>([]);
 	const [edges, setEdges] = useEdgesState<any>([]);
@@ -147,16 +145,10 @@ export function FlowBoard({
 	const [droppedPin, setDroppedPin] = useState<IPin | undefined>(undefined);
 	const [clickPosition, setClickPosition] = useState({ x: 0, y: 0 });
 	const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-	const [pinCache, setPinCache] = useState<Map<string, [IPin, INode]>>(
+	const [pinCache, setPinCache] = useState<Map<string, [IPin, INode, boolean]>>(
 		new Map(),
 	);
 	const [editBoard, setEditBoard] = useState(false);
-	const [boardMeta, setBoardMeta] = useState({
-		name: "",
-		description: "",
-		stage: "Dev",
-		logLevel: "Debug",
-	});
 	const [currentLayer, setCurrentLayer] = useState<string | undefined>();
 	const [layerPath, setLayerPath] = useState<string | undefined>();
 	const colorMode = useMemo(
@@ -174,23 +166,31 @@ export function FlowBoard({
 
 	const executeCommand = useCallback(
 		async (command: IGenericCommand, append = false): Promise<any> => {
+			if (typeof version !== "undefined") {
+				toastError("Cannot change old version", <XIcon />);
+				return;
+			}
 			const result = await backend.executeCommand(appId, boardId, command);
 			await pushCommand(result, append);
 			await board.refetch();
 			return result;
 		},
-		[board.refetch],
+		[board.refetch, appId, boardId, backend, pushCommand, version],
 	);
 
 	const executeCommands = useCallback(
 		async (commands: IGenericCommand[]) => {
+			if (typeof version !== "undefined") {
+				toastError("Cannot change old version", <XIcon />);
+				return;
+			}
 			if (commands.length === 0) return;
 			const result = await backend.executeCommands(appId, boardId, commands);
 			await pushCommands(result);
 			await board.refetch();
 			return result;
 		},
-		[board.refetch],
+		[board.refetch, appId, boardId, backend, pushCommands, version],
 	);
 
 	useEffect(() => {
@@ -254,6 +254,20 @@ export function FlowBoard({
 		[currentLayer, setCurrentLayer, setLayerPath, layerPath],
 	);
 
+	const popLayer = useCallback(() => {
+		if (!layerPath) return;
+		const segments = layerPath.split("/");
+		if (segments.length === 1) {
+			setLayerPath(undefined);
+			setCurrentLayer(undefined);
+			return;
+		}
+		const newPath = segments.slice(0, -1).join("/");
+		setLayerPath(newPath);
+		const segment = newPath.split("/").pop();
+		setCurrentLayer(segment);
+	}, [currentLayer, setCurrentLayer, setLayerPath]);
+
 	const executeBoard = useCallback(
 		async (node: INode, payload?: object) => {
 			let added = false;
@@ -296,6 +310,10 @@ export function FlowBoard({
 
 	const handlePasteCB = useCallback(
 		async (event: ClipboardEvent) => {
+			if (typeof version !== "undefined") {
+				toastError("Cannot change old version", <XIcon />);
+				return;
+			}
 			const currentCursorPosition = screenToFlowPosition({
 				x: mousePosition.x,
 				y: mousePosition.y,
@@ -308,7 +326,7 @@ export function FlowBoard({
 				currentLayer,
 			);
 		},
-		[boardId, mousePosition, executeCommand, currentLayer],
+		[boardId, mousePosition, executeCommand, currentLayer, version],
 	);
 
 	const handleCopyCB = useCallback(
@@ -343,6 +361,10 @@ export function FlowBoard({
 			) {
 				event.preventDefault();
 				event.stopPropagation();
+				if (typeof version !== "undefined") {
+					toastError("Cannot change old version", <XIcon />);
+					return;
+				}
 				const stack = await undo();
 				if (stack) await backend.undoBoard(appId, boardId, stack);
 				toastSuccess("Undo", <Undo2Icon className="w-4 h-4" />);
@@ -354,6 +376,10 @@ export function FlowBoard({
 			if ((event.metaKey || event.ctrlKey) && event.key === "y") {
 				event.preventDefault();
 				event.stopPropagation();
+				if (typeof version !== "undefined") {
+					toastError("Cannot change old version", <XIcon />);
+					return;
+				}
 				const stack = await redo();
 				if (stack) await backend.redoBoard(appId, boardId, stack);
 				toastSuccess("Redo", <Redo2Icon className="w-4 h-4" />);
@@ -368,6 +394,10 @@ export function FlowBoard({
 			) {
 				event.preventDefault();
 				event.stopPropagation();
+				if (typeof version !== "undefined") {
+					toastError("Cannot change old version", <XIcon />);
+					return;
+				}
 				const node = catalog.data?.find(
 					(node) => node.name === "control_branch",
 				);
@@ -385,6 +415,10 @@ export function FlowBoard({
 			) {
 				event.preventDefault();
 				event.stopPropagation();
+				if (typeof version !== "undefined") {
+					toastError("Cannot change old version", <XIcon />);
+					return;
+				}
 				const node = catalog.data?.find(
 					(node) => node.name === "control_for_each",
 				);
@@ -401,6 +435,10 @@ export function FlowBoard({
 			) {
 				event.preventDefault();
 				event.stopPropagation();
+				if (typeof version !== "undefined") {
+					toastError("Cannot change old version", <XIcon />);
+					return;
+				}
 				const node = catalog.data?.find((node) => node.name === "log_info");
 				if (!node) return;
 				await placeNodeShortcut(node);
@@ -415,13 +453,17 @@ export function FlowBoard({
 			) {
 				event.preventDefault();
 				event.stopPropagation();
+				if (typeof version !== "undefined") {
+					toastError("Cannot change old version", <XIcon />);
+					return;
+				}
 				const node = catalog.data?.find((node) => node.name === "reroute");
 				if (!node) return;
 				await placeNodeShortcut(node);
 				await board.refetch();
 			}
 		},
-		[boardId, board, backend],
+		[boardId, board, backend, version],
 	);
 
 	const placeNode = useCallback(
@@ -497,7 +539,14 @@ export function FlowBoard({
 				await executeCommand(command);
 			}
 		},
-		[clickPosition, boardId, droppedPin, board.data?.refs, currentLayer],
+		[
+			clickPosition,
+			boardId,
+			droppedPin,
+			board.data?.refs,
+			currentLayer,
+			screenToFlowPosition,
+		],
 	);
 
 	const handleDrop = useCallback(
@@ -582,12 +631,6 @@ export function FlowBoard({
 		setNodes(parsed.nodes);
 		setEdges(parsed.edges);
 		setPinCache(new Map(parsed.cache));
-		setBoardMeta({
-			name: board.data.name,
-			description: board.data.description,
-			stage: board.data.stage,
-			logLevel: board.data.log_level,
-		});
 	}, [board.data, currentLayer]);
 
 	const miniSearch = useMemo(
@@ -634,7 +677,6 @@ export function FlowBoard({
 		}),
 		[],
 	);
-	const { screenToFlowPosition } = useReactFlow();
 
 	const onConnect = useCallback(
 		(params: any) =>
@@ -947,126 +989,72 @@ export function FlowBoard({
 		await executeCommand(command);
 	}, [currentLayer, clickPosition, executeCommand]);
 
+	const onNodeDrag = useCallback(
+		(event: any, node: Node, nodes: Node[]) => {
+			if (shiftPressed) {
+				nodes.forEach((node) => {
+					if (node.type === "layerNode") {
+						const layerData = node.data.layer as ILayer;
+						const diffX = Math.abs(node.position.x - layerData.coordinates[0]);
+						const diffY = Math.abs(node.position.y - layerData.coordinates[1]);
+						if (diffX > diffY) {
+							node.position.y = layerData.coordinates[1];
+							return;
+						}
+						node.position.x = layerData.coordinates[0];
+						return;
+					}
+
+					if (node.type === "commentNode") {
+						const commentData = node.data.comment as IComment;
+						const diffX = Math.abs(
+							node.position.x - commentData.coordinates[0],
+						);
+						const diffY = Math.abs(
+							node.position.y - commentData.coordinates[1],
+						);
+						if (diffX > diffY) {
+							node.position.y = commentData.coordinates[1];
+							return;
+						}
+						node.position.x = commentData.coordinates[0];
+						return;
+					}
+
+					if (node.type === "node") {
+						const nodeData = node.data.node as INode;
+						if (!nodeData.coordinates) return;
+						const diffX = Math.abs(node.position.x - nodeData.coordinates[0]);
+						const diffY = Math.abs(node.position.y - nodeData.coordinates[1]);
+						if (diffX > diffY) {
+							node.position.y = nodeData.coordinates[1];
+							return;
+						}
+						node.position.x = nodeData.coordinates[0];
+					}
+				});
+			}
+		},
+		[shiftPressed],
+	);
+
 	return (
 		<div className="min-h-dvh h-dvh max-h-dvh w-full flex-1 flex-grow">
-			<div className="absolute top-0 left-0 z-50 mt-2 px-2">
-				<FlowBreadCrumb
-					currentPath={layerPath}
-					layers={board.data?.layers}
-					onAdjustPath={(path) => {
-						setLayerPath(path);
-						const segment = path?.split("/").pop();
-						setCurrentLayer(segment);
-					}}
-				/>
-			</div>
-			<div className="flex items-center justify-center absolute translate-x-[-50%] left-[50dvw] top-5 z-40">
-				<Dialog
-					open={editBoard}
-					onOpenChange={async (open) => {
-						if (open) return;
-						await backend.updateBoardMeta(
-							appId,
-							boardId,
-							boardMeta.name,
-							boardMeta.description,
-							boardMeta.logLevel as ILogLevel,
-							boardMeta.stage as IExecutionStage,
-						);
-						await openBoards.refetch();
-						setEditBoard(false);
-					}}
-				>
-					<DialogContent>
-						<DialogHeader>
-							<DialogTitle>Edit Board Metadata</DialogTitle>
-							<DialogDescription>
-								Give your Board a name and Description for future use!
-							</DialogDescription>
-						</DialogHeader>
-						<Separator />
-						<div className="grid w-full max-w-sm items-center gap-1.5">
-							<Label htmlFor="name">Name</Label>
-							<Input
-								value={boardMeta.name}
-								onChange={(e) =>
-									setBoardMeta((old) => ({ ...old, name: e.target.value }))
-								}
-								type="text"
-								id="name"
-								placeholder="Name"
-							/>
-						</div>
-						<div className="grid w-full max-w-sm items-center gap-1.5">
-							<Label htmlFor="description">Description</Label>
-							<Textarea
-								value={boardMeta.description}
-								onChange={(e) =>
-									setBoardMeta((old) => ({
-										...old,
-										description: e.target.value,
-									}))
-								}
-								id="description"
-								placeholder="Description"
-							/>
-						</div>
-						<div className="grid w-full max-w-sm items-center gap-1.5">
-							<Label htmlFor="stage">Stage</Label>
-							<Select
-								value={boardMeta.stage}
-								onValueChange={(e) =>
-									setBoardMeta((old) => ({
-										...old,
-										stage: e as IExecutionStage,
-									}))
-								}
-							>
-								<SelectTrigger id="stage" className="w-full max-w-sm">
-									<SelectValue placeholder="Stage" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value={IExecutionStage.Dev}>
-										Development
-									</SelectItem>
-									<SelectItem value={IExecutionStage.Int}>
-										Integration
-									</SelectItem>
-									<SelectItem value={IExecutionStage.QA}>QA</SelectItem>
-									<SelectItem value={IExecutionStage.PreProd}>
-										Pre-Production
-									</SelectItem>
-									<SelectItem value={IExecutionStage.Prod}>
-										Production
-									</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
-						<div className="grid w-full max-w-sm items-center gap-1.5">
-							<Label htmlFor="stage">Log Level</Label>
-							<Select
-								value={boardMeta.logLevel}
-								onValueChange={(e) =>
-									setBoardMeta((old) => ({ ...old, logLevel: e as ILogLevel }))
-								}
-							>
-								<SelectTrigger id="stage" className="w-full max-w-sm">
-									<SelectValue placeholder="Stage" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value={ILogLevel.Debug}>Debug</SelectItem>
-									<SelectItem value={ILogLevel.Info}>Info</SelectItem>
-									<SelectItem value={ILogLevel.Warn}>Warning</SelectItem>
-									<SelectItem value={ILogLevel.Error}>Error</SelectItem>
-									<SelectItem value={ILogLevel.Fatal}>Fatal</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
-					</DialogContent>
-				</Dialog>
+			<div className="flex items-center justify-center absolute translate-x-[-50%] mt-5 left-[50dvw] z-40">
+				{board.data && editBoard && (
+					<BoardMeta
+						appId={appId}
+						board={board.data}
+						boardId={boardId}
+						closeMeta={() => setEditBoard(false)}
+						version={version}
+						selectVersion={(version) => setVersion(version)}
+					/>
+				)}
 				<FlowDock
 					items={[
-						...(typeof parentRegister.boardParents[boardId] === "string"
+						...(typeof parentRegister.boardParents[boardId] === "string" &&
+						!currentLayer
 							? [
 									{
 										icon: <ArrowBigLeftDashIcon />,
@@ -1087,13 +1075,14 @@ export function FlowBoard({
 						},
 						{
 							icon: <NotebookPenIcon />,
-							title: "Rename Board",
+							title: "Manage Board",
 							onClick: async () => {
 								setEditBoard(true);
 							},
 						},
 						{
 							icon: <HistoryIcon />,
+							separator: "left",
 							title: "Run History",
 							onClick: async () => {
 								toggleRunHistory();
@@ -1110,11 +1099,25 @@ export function FlowBoard({
 									},
 								]
 							: ([] as any)),
+						...(currentLayer
+							? [
+									{
+										icon: <SquareChevronUpIcon />,
+										title: "Layer Up",
+										separator: "left",
+										highlight: true,
+										onClick: async () => {
+											popLayer();
+										},
+									},
+								]
+							: []),
 					]}
 				/>
 			</div>
 			<ResizablePanelGroup direction="horizontal">
 				<ResizablePanel
+					className="z-50 bg-background"
 					autoSave="flow-variables"
 					defaultSize={0}
 					collapsible={true}
@@ -1171,55 +1174,33 @@ export function FlowBoard({
 									className={`w-full h-full relative ${isOver && "border-green-400 border-2 z-10"}`}
 									ref={setNodeRef}
 								>
-									<div className="absolute top-0 left-0 p-1 z-40 flex flex-row items-center gap-1 mt-10">
-										{openBoards.data?.map(([appId, boardLoadId, boardName]) => (
-											<Link
-												key={boardLoadId}
-												className={`flex flex-row items-center gap-2 border p-1 px-2 bg-background rounded-md hover:bg-card ${boardLoadId === boardId ? "bg-card" : ""}`}
-												href={`/flow?id=${boardLoadId}&app=${appId}`}
-											>
-												<small>{boardName}</small>
-												<Button
-													size={"icon"}
-													className="w-4 h-4"
-													onClick={async (e) => {
-														e.preventDefault();
-														e.stopPropagation();
-														await backend.closeBoard(boardLoadId);
-														if (boardLoadId === boardId) {
-															const nextBoard = openBoards.data?.find(
-																([id]) => id !== boardId,
-															);
-															if (nextBoard) {
-																await openBoards.refetch();
-																router.push(
-																	`/flow?id=${nextBoard[1]}&app=${nextBoard[0]}`,
-																);
-																return;
-															}
-															router.push("/");
-															await openBoards.refetch();
-														}
-													}}
-												>
-													<XIcon className="w-3 h-3" />
-												</Button>
-											</Link>
-										))}
-									</div>
+									{currentLayer && (
+										<h2 className="absolute bottom-0 left-0 z-10 ml-16 mb-10 text-muted pointer-events-none select-none">
+											{board.data?.layers[currentLayer]?.name}
+										</h2>
+									)}
+									{version && (
+										<h3 className="absolute top-0 mr-2 mt-2 right-0 z-10 text-muted pointer-events-none select-none">
+											Version {version[0]}.{version[1]}.{version[2]} - Read-Only
+										</h3>
+									)}
 									<ReactFlow
 										suppressHydrationWarning
 										onContextMenu={onContextMenuCB}
+										nodesDraggable={typeof version === "undefined"}
+										nodesConnectable={typeof version === "undefined"}
 										ref={flowRef}
 										colorMode={colorMode}
 										nodes={nodes}
 										nodeTypes={nodeTypes}
 										edges={edges}
-										maxZoom={5}
+										maxZoom={3}
+										minZoom={0.1}
 										onNodeDoubleClick={onNodeDoubleClick}
 										onNodesChange={onNodesChangeIntercept}
 										onEdgesChange={onEdgesChange}
 										onNodeDragStop={onNodeDragStop}
+										onNodeDrag={onNodeDrag}
 										isValidConnection={isValidConnectionCB}
 										onConnect={onConnect}
 										onReconnect={onReconnect}
@@ -1233,10 +1214,50 @@ export function FlowBoard({
 										proOptions={{ hideAttribution: true }}
 									>
 										<Controls />
-										<MiniMap />
+										<MiniMap
+											pannable
+											zoomable
+											nodeColor={(node) => {
+												if (node.type === "layerNode")
+													return "hsl(var(--foreground) / 0.5)";
+
+												if (node.type === "node") {
+													const nodeData: INode = node.data.node as INode;
+													if (nodeData.event_callback)
+														return "hsl(var(--primary/ 0.8))";
+													if (nodeData.start) return "hsl(var(--primary/ 0.8))";
+													if (
+														!Object.values(nodeData.pins).find(
+															(pin) =>
+																pin.data_type === IVariableType.Execution,
+														)
+													)
+														return "hsl(var(--tertiary)/ 0.8)";
+													return "hsl(var(--muted))";
+												}
+												if (node.type === "commentNode") {
+													const commentData: IComment = node.data
+														.comment as IComment;
+													let color =
+														commentData.color ?? "hsl(var(--muted)/ 0.3)";
+
+													if (color.startsWith("#")) {
+														color = hexToRgba(color, 0.3);
+													}
+													return color;
+												}
+												return "hsl(var(--primary)/ 0.6)";
+											}}
+										/>
 										<Background
-											variant={BackgroundVariant.Dots}
+											variant={
+												currentLayer
+													? BackgroundVariant.Lines
+													: BackgroundVariant.Dots
+											}
+											color={currentLayer && "hsl(var(--muted) / 0.3)"}
 											gap={12}
+											// bgColor={currentLayer && "hsl(var(--background))"}
 											size={1}
 										/>
 									</ReactFlow>
@@ -1260,6 +1281,7 @@ export function FlowBoard({
 						</ResizablePanel>
 						<ResizableHandle withHandle />
 						<ResizablePanel
+							className="z-50"
 							hidden={!currentMetadata}
 							ref={logPanelRef}
 							defaultSize={0}
@@ -1273,6 +1295,7 @@ export function FlowBoard({
 				</ResizablePanel>
 				<ResizableHandle withHandle />
 				<ResizablePanel
+					className="z-50"
 					autoSave="flow-runs"
 					defaultSize={0}
 					collapsible={true}
@@ -1285,6 +1308,8 @@ export function FlowBoard({
 							nodes={board.data.nodes}
 							appId={appId}
 							boardId={boardId}
+							version={board.data.version as [number, number, number]}
+							onVersionChange={setVersion}
 						/>
 					)}
 				</ResizablePanel>

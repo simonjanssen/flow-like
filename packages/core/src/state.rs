@@ -32,7 +32,8 @@ use flow_like_model_provider::provider::ModelProviderConfiguration;
 pub struct FlowLikeStores {
     pub bits_store: Option<FlowLikeStore>,
     pub user_store: Option<FlowLikeStore>,
-    pub project_store: Option<FlowLikeStore>,
+    pub app_storage_store: Option<FlowLikeStore>,
+    pub app_meta_store: Option<FlowLikeStore>,
     pub temporary_store: Option<FlowLikeStore>,
     pub log_store: Option<FlowLikeStore>,
 }
@@ -57,8 +58,12 @@ impl FlowLikeConfig {
         }
     }
 
-    pub fn register_project_store(&mut self, store: FlowLikeStore) {
-        self.stores.project_store = Some(store);
+    pub fn register_app_storage_store(&mut self, store: FlowLikeStore) {
+        self.stores.app_storage_store = Some(store);
+    }
+
+    pub fn register_app_meta_store(&mut self, store: FlowLikeStore) {
+        self.stores.app_meta_store = Some(store);
     }
 
     pub fn register_user_store(&mut self, store: FlowLikeStore) {
@@ -309,8 +314,18 @@ impl FlowLikeState {
     }
 
     #[cfg(feature = "flow-runtime")]
-    pub fn get_board(&self, board_id: &str) -> flow_like_types::Result<Arc<Mutex<Board>>> {
-        let board = self.board_registry.try_get(board_id);
+    pub fn get_board(
+        &self,
+        board_id: &str,
+        version: Option<(u32, u32, u32)>,
+    ) -> flow_like_types::Result<Arc<Mutex<Board>>> {
+        let key = if let Some(version) = version {
+            format!("{}-{}-{}-{}", board_id, version.0, version.1, version.2)
+        } else {
+            board_id.to_string()
+        };
+
+        let board = self.board_registry.try_get(&key);
 
         match board.try_unwrap() {
             Some(board) => Ok(board.clone()),
@@ -338,9 +353,14 @@ impl FlowLikeState {
         &self,
         board_id: &str,
         board: Arc<Mutex<Board>>,
+        version: Option<(u32, u32, u32)>,
     ) -> flow_like_types::Result<()> {
-        self.board_registry
-            .insert(board_id.to_string(), board.clone());
+        let key = if let Some(version) = version {
+            format!("{}-{}-{}-{}", board_id, version.0, version.1, version.2)
+        } else {
+            board_id.to_string()
+        };
+        self.board_registry.insert(key, board.clone());
         Ok(())
     }
 
@@ -439,7 +459,7 @@ impl FlowLikeState {
     }
 
     #[inline]
-    pub async fn project_store(
+    pub async fn project_storage_store(
         state: &Arc<Mutex<FlowLikeState>>,
     ) -> flow_like_types::Result<FlowLikeStore> {
         state
@@ -449,7 +469,23 @@ impl FlowLikeState {
             .read()
             .await
             .stores
-            .project_store
+            .app_storage_store
+            .clone()
+            .ok_or(flow_like_types::anyhow!("No project store"))
+    }
+
+    #[inline]
+    pub async fn project_meta_store(
+        state: &Arc<Mutex<FlowLikeState>>,
+    ) -> flow_like_types::Result<FlowLikeStore> {
+        state
+            .lock()
+            .await
+            .config
+            .read()
+            .await
+            .stores
+            .app_meta_store
             .clone()
             .ok_or(flow_like_types::anyhow!("No project store"))
     }

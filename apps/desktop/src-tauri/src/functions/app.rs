@@ -74,7 +74,7 @@ pub async fn create_app(
 
     if template == "blank" {
         let board = new_app.create_board(None).await?;
-        let board = new_app.open_board(board, Some(false)).await?;
+        let board = new_app.open_board(board, Some(false), None).await?;
         let mut variable = Variable::new(
             "Embedding Models",
             flow_like::flow::variable::VariableType::String,
@@ -120,7 +120,7 @@ pub async fn create_app_board(
         .boards
         .first()
         .ok_or(TauriFunctionError::new("No boards found"))?;
-    let board = app.open_board(board.clone(), Some(false)).await?;
+    let board = app.open_board(board.clone(), Some(false), None).await?;
     let board = board.lock().await;
     let (_var_id, variable) = board
         .variables
@@ -131,7 +131,7 @@ pub async fn create_app_board(
     drop(board);
 
     let board_id = app.create_board(None).await?;
-    let board = app.open_board(board_id, Some(false)).await?;
+    let board = app.open_board(board_id, Some(false), None).await?;
     app.save().await?;
 
     let mut board = board.lock().await;
@@ -173,15 +173,18 @@ pub async fn get_app_size(
     app_handle: AppHandle,
     app_id: String,
 ) -> Result<usize, TauriFunctionError> {
-    let store = TauriFlowLikeState::get_project_store(&app_handle).await?;
+    let content_store = TauriFlowLikeState::get_project_storage_store(&app_handle).await?;
     let path = Path::from("apps").child(app_id);
 
-    let mut locations = store.list(Some(&path)).map_ok(|m| m.location).boxed();
+    let mut locations = content_store
+        .list(Some(&path))
+        .map_ok(|m| m.location)
+        .boxed();
     let mut size = 0;
 
     while let Some(location) = locations.next().await {
         if let Ok(location) = location {
-            if let Ok(meta) = store.head(&location).await {
+            if let Ok(meta) = content_store.head(&location).await {
                 size += meta.size;
             }
         }
@@ -196,7 +199,7 @@ pub async fn delete_app(app_handle: AppHandle, app_id: String) -> Result<(), Tau
         return Err(TauriFunctionError::new("App ID is empty"));
     };
 
-    let store = TauriFlowLikeState::get_project_store(&app_handle).await?;
+    let store = TauriFlowLikeState::get_project_storage_store(&app_handle).await?;
     let settings = TauriSettingsState::construct(&app_handle).await?;
 
     let mut settings = settings.lock().await;
@@ -227,7 +230,7 @@ pub async fn get_app_boards(
     let mut boards = vec![];
     if let Ok(app) = App::load(app_id, flow_like_state).await {
         for board_id in app.boards.iter() {
-            let board = app.open_board(board_id.clone(), Some(false)).await;
+            let board = app.open_board(board_id.clone(), Some(false), None).await;
             if let Ok(board) = board {
                 boards.push(board.lock().await.clone());
             }
@@ -247,7 +250,9 @@ pub async fn get_app_board(
     let flow_like_state = TauriFlowLikeState::construct(&app_handle).await?;
 
     if let Ok(app) = App::load(app_id, flow_like_state).await {
-        let board = app.open_board(board_id, Some(push_to_registry)).await?;
+        let board = app
+            .open_board(board_id, Some(push_to_registry), None)
+            .await?;
         return Ok(board.lock().await.clone());
     }
 
@@ -265,7 +270,7 @@ pub async fn set_app_config(
     let flow_like_state = TauriFlowLikeState::construct(&app_handle).await?;
 
     if let Ok(app) = App::load(app_id, flow_like_state).await {
-        let board = app.open_board(board_id, Some(true)).await?;
+        let board = app.open_board(board_id, Some(true), None).await?;
         let mut board = board.lock().await;
         if let Some(variable) = board.variables.get_mut(&variable_id) {
             variable.default_value = Some(serde_json::to_vec(&default_value).unwrap());

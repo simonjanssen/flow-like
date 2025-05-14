@@ -28,7 +28,7 @@ impl NodeLogic for SetSystemPromptMessageNode {
             "Sets the system prompt message in a ChatHistory",
             "AI/Generative/History",
         );
-        node.add_icon("/flow/icons/history-set.svg");
+        node.add_icon("/flow/icons/history.svg");
 
         node.add_input_pin(
             "exec_in",

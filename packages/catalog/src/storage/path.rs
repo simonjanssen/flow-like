@@ -127,7 +127,7 @@ impl FlowPath {
 
         let store = exec_context
             .stores
-            .project_store
+            .app_storage_store
             .clone()
             .ok_or(anyhow!("Failed to get Project Store"))?;
 
@@ -160,7 +160,7 @@ impl FlowPath {
 
         let store = exec_context
             .stores
-            .project_store
+            .app_storage_store
             .clone()
             .ok_or(anyhow!("Failed to get Project Store"))?;
 
@@ -193,7 +193,7 @@ impl FlowPath {
 
         let store = exec_context
             .stores
-            .project_store
+            .temporary_store
             .clone()
             .ok_or(anyhow!("Failed to get Project Store"))?;
 

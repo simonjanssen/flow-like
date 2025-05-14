@@ -7,6 +7,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
+pub mod annotate;
 pub mod content;
 pub mod metadata;
 pub mod transform;
@@ -88,12 +89,10 @@ impl NodeImage {
 }
 
 pub async fn register_functions() -> Vec<Arc<dyn NodeLogic>> {
-    let nodes: Vec<Arc<dyn NodeLogic>> = vec![
-        Arc::new(metadata::dims::ImageDimsNode::default()),
-        Arc::new(content::read_from_path::ReadImagePathNode::default()),
-        Arc::new(content::read_from_url::ReadImageFromUrlNode::default()),
-        Arc::new(content::write_to_path::WriteImageNode::default()),
-        Arc::new(transform::resize::ResizeImageNode::default()),
-    ];
+    let mut nodes: Vec<Arc<dyn NodeLogic>> =
+        vec![Arc::new(metadata::dims::ImageDimsNode::default())];
+    nodes.extend(annotate::register_functions().await);
+    nodes.extend(content::register_functions().await);
+    nodes.extend(transform::register_functions().await);
     nodes
 }

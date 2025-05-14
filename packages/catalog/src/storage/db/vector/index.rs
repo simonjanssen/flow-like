@@ -44,13 +44,20 @@ impl NodeLogic for IndexLocalDatabaseNode {
 
         node.add_input_pin("column", "Column", "Column to Index", VariableType::String)
             .set_default_value(Some(json!("")));
-        node.add_input_pin(
-            "fts",
-            "Full-Text Search?",
-            "Is this index meant for full text search?",
-            VariableType::Boolean,
-        )
-        .set_default_value(Some(json!(false)));
+        node.add_input_pin("type", "Type", "Index Type to build", VariableType::String)
+            .set_options(
+                PinOptions::new()
+                    .set_valid_values(vec![
+                        "BTREE".to_string(),
+                        "BITMAP".to_string(),
+                        "LABEL LIST".to_string(),
+                        "FULL TEXT".to_string(),
+                        "VECTOR".to_string(),
+                        "AUTO".to_string(),
+                    ])
+                    .build(),
+            )
+            .set_default_value(Some(json!("AUTO")));
 
         node.add_output_pin(
             "exec_out",
@@ -72,6 +79,8 @@ impl NodeLogic for IndexLocalDatabaseNode {
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
         context.activate_exec_pin("failed").await?;
         context.deactivate_exec_pin("exec_out").await?;
+
+        let index_type: String = context.evaluate_pin("type").await?;
         let database: NodeDBConnection = context.evaluate_pin("database").await?;
         let database = database
             .load(context, &database.cache_key)
@@ -80,8 +89,7 @@ impl NodeLogic for IndexLocalDatabaseNode {
             .clone();
         let database = database.read().await;
         let column: String = context.evaluate_pin("column").await?;
-        let fts: bool = context.evaluate_pin("fts").await?;
-        let result = database.index(&column, fts).await;
+        let result = database.index(&column, Some(&index_type)).await;
         if result.is_ok() {
             context.deactivate_exec_pin("failed").await?;
             context.activate_exec_pin("exec_out").await?;

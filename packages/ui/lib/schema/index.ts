@@ -28,6 +28,13 @@ export {
 	ILogLevel,
 	type ISystemTime,
 } from "./flow/board";
+export type {
+	IRelease,
+	IReleaseNotes,
+	ICanaryRelease,
+} from "./flow/release";
+export { IVersionType } from "./flow/version-type";
+export type { ICanary } from "./flow/canary";
 export {
 	type IPin,
 	IPinType,

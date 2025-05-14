@@ -10,6 +10,7 @@ pub async fn register_functions() -> Vec<Arc<dyn NodeLogic>> {
         Arc::new(db::vector::vector_search::VectorSearchLocalDatabaseNode::default()),
         Arc::new(db::vector::insert::InsertLocalDatabaseNode::default()),
         Arc::new(db::vector::insert::BatchInsertLocalDatabaseNode::default()),
+        Arc::new(db::vector::insert::BatchInsertCSVLocalDatabaseNode::default()),
         Arc::new(db::vector::upsert::UpsertLocalDatabaseNode::default()),
         Arc::new(db::vector::upsert::BatchUpsertLocalDatabaseNode::default()),
         Arc::new(db::vector::purge::PurgeLocalDatabaseNode::default()),

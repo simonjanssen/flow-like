@@ -1,11 +1,13 @@
 pub mod array;
 pub mod bool;
+pub mod csv;
 pub mod cuid;
 pub mod env;
 pub mod float;
 pub mod int;
 pub mod json;
 pub mod math;
+pub mod md;
 pub mod set;
 pub mod string;
 pub mod types;
@@ -27,6 +29,8 @@ pub async fn register_functions() -> Vec<Arc<dyn NodeLogic>> {
     registry.append(&mut vector::register_functions().await);
     registry.append(&mut float::register_functions().await);
     registry.append(&mut int::register_functions().await);
+    registry.append(&mut csv::register_functions().await);
+    registry.append(&mut md::register_functions().await);
     registry.push(Arc::new(math::eval::EvalNode::default()));
     registry
 }

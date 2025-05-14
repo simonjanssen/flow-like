@@ -7,7 +7,7 @@ use crate::{
         board::ExecutionStage,
         node::{Node, NodeState},
         pin::PinType,
-        utils::evaluate_pin_value,
+        utils::{evaluate_pin_value, evaluate_pin_value_reference},
         variable::{Variable, VariableType},
     },
     profile::Profile,
@@ -31,6 +31,7 @@ use std::{
 #[derive(Clone)]
 pub struct ExecutionContextCache {
     pub stores: FlowLikeStores,
+    pub app_id: String,
     pub board_dir: Path,
     pub board_id: String,
     pub node_id: String,
@@ -43,12 +44,13 @@ impl ExecutionContextCache {
         state: &Arc<Mutex<FlowLikeState>>,
         node_id: &str,
     ) -> Option<Self> {
-        let (board_dir, board_id, sub) = match run.upgrade() {
+        let (app_id, board_dir, board_id, sub) = match run.upgrade() {
             Some(run) => {
                 let run = run.lock().await;
+                let app_id = run.app_id.clone();
                 let board = &run.board;
                 let sub = run.sub.clone();
-                (board.board_dir.clone(), board.id.clone(), sub)
+                (app_id, board.board_dir.clone(), board.id.clone(), sub)
             }
             None => return None,
         };
@@ -57,6 +59,7 @@ impl ExecutionContextCache {
 
         Some(ExecutionContextCache {
             stores,
+            app_id,
             board_dir,
             board_id,
             node_id: node_id.to_string(),
@@ -68,7 +71,7 @@ impl ExecutionContextCache {
         let base = Path::from("users")
             .child(self.sub.clone())
             .child("apps")
-            .child(self.board_id.clone());
+            .child(self.app_id.clone());
         if !node {
             return Ok(base);
         }
@@ -77,10 +80,9 @@ impl ExecutionContextCache {
     }
 
     pub fn get_cache(&self, node: bool) -> flow_like_types::Result<Path> {
-        let base = Path::from("temp")
-            .child(self.sub.clone())
+        let base = Path::from("tmp")
             .child("apps")
-            .child(self.board_id.clone());
+            .child(self.app_id.clone());
 
         if !node {
             return Ok(base);
@@ -344,6 +346,15 @@ impl ExecutionContext {
         let pin = self.get_pin_by_name(name).await?;
         let value = evaluate_pin_value(pin).await?;
         let value = from_value(value)?;
+        Ok(value)
+    }
+
+    pub async fn evaluate_pin_to_ref(
+        &self,
+        name: &str,
+    ) -> flow_like_types::Result<Arc<Mutex<Value>>> {
+        let pin = self.get_pin_by_name(name).await?;
+        let value = evaluate_pin_value_reference(&Some(pin)).await?;
         Ok(value)
     }
 

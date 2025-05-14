@@ -16,6 +16,7 @@ import type {
 	INode,
 	IProfile,
 	IRunPayload,
+	IVersionType,
 } from "../lib";
 import type { ISettingsProfile } from "../types";
 
@@ -24,7 +25,20 @@ export interface IBackendState {
 	getApp(appId: string): Promise<IApp>;
 	getBoards(appId: string): Promise<IBoard[]>;
 	getCatalog(): Promise<INode[]>;
-	getBoard(appId: string, boardId: string): Promise<IBoard>;
+	getBoard(
+		appId: string,
+		boardId: string,
+		version?: [number, number, number],
+	): Promise<IBoard>;
+	createBoardVersion(
+		appId: string,
+		boardId: string,
+		versionType: IVersionType,
+	): Promise<[number, number, number]>;
+	getBoardVersions(
+		appId: string,
+		boardId: string,
+	): Promise<[number, number, number][]>;
 	// [AppId, BoardId, BoardName]
 	getOpenBoards(): Promise<[string, string, string][]>;
 	getBoardSettings(): Promise<"straight" | "step" | "simpleBezier">;

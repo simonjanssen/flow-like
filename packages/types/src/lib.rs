@@ -59,4 +59,6 @@ pub use rand;
 pub mod intercom;
 pub mod utils;
 pub use image;
+pub use imageproc;
 pub use minijinja;
+pub use rxing;

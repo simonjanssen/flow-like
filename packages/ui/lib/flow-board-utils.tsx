@@ -113,7 +113,7 @@ function deserializeNode(node: ISerializedNode): INode {
 
 export function isValidConnection(
 	connection: any,
-	cache: Map<string, [IPin, INode]>,
+	cache: Map<string, [IPin, INode, boolean]>,
 	refs: { [key: string]: string },
 ) {
 	const [sourcePin, sourceNode] = cache.get(connection.sourceHandle) || [];
@@ -217,7 +217,7 @@ export function parseBoard(
 ) {
 	const nodes: any[] = [];
 	const edges: any[] = [];
-	const cache = new Map<string, [IPin, INode]>();
+	const cache = new Map<string, [IPin, INode, boolean]>();
 	const oldNodesMap = new Map<string, any>();
 	const oldEdgesMap = new Map<string, any>();
 
@@ -230,10 +230,10 @@ export function parseBoard(
 	}
 
 	for (const node of Object.values(board.nodes)) {
-		for (const pin of Object.values(node.pins)) {
-			cache.set(pin.id, [pin, node]);
-		}
 		const nodeLayer = (node.layer ?? "") === "" ? undefined : node.layer;
+		for (const pin of Object.values(node.pins)) {
+			cache.set(pin.id, [pin, node, nodeLayer === currentLayer]);
+		}
 		if (nodeLayer !== currentLayer) continue;
 		const hash = hashNode(node);
 		const oldNode = oldNodesMap.get(hash);
@@ -267,66 +267,74 @@ export function parseBoard(
 	}
 
 	const activeLayer = new Set();
-	for (const layer of Object.values(board.layers)) {
-		const parentLayer =
-			(layer.parent_id ?? "") === "" ? undefined : layer.parent_id;
-		if (parentLayer !== currentLayer) continue;
+	if (board.layers)
+		for (const layer of Object.values(board.layers)) {
+			const parentLayer =
+				(layer.parent_id ?? "") === "" ? undefined : layer.parent_id;
+			if (parentLayer !== currentLayer) continue;
 
-		const lookup: Record<string, INode> = {};
-		for (const pin of Object.values(layer.pins)) {
-			const [_, node] = cache.get(pin.id) || [];
-			if (node) lookup[pin.id] = node;
+			const lookup: Record<string, INode> = {};
+			if (layer.pins)
+				for (const pin of Object.values(layer.pins)) {
+					const [_, node] = cache.get(pin.id) || [];
+					if (node) lookup[pin.id] = node;
+				}
+
+			activeLayer.add(layer.id);
+			nodes.push({
+				id: layer.id,
+				type: "layerNode",
+				position: { x: layer.coordinates[0], y: layer.coordinates[1] },
+				zIndex: 19,
+				data: {
+					label: layer.id,
+					boardId: board.id,
+					appId: appId,
+					layer: layer,
+					pinLookup: lookup,
+					pushLayer: async (layer: ILayer) => {
+						pushLayer(layer);
+					},
+					onLayerUpdate: async (layer: ILayer) => {
+						const command = upsertLayerCommand({
+							current_layer: currentLayer,
+							layer: layer,
+							node_ids: [],
+						});
+						await executeCommand(command, false);
+					},
+					onLayerRemove: async (layer: ILayer, preserve_nodes: boolean) => {
+						const command = removeLayerCommand({
+							layer,
+							child_layers: [],
+							layer_nodes: [],
+							layers: [],
+							nodes: [],
+							preserve_nodes,
+						});
+						await executeCommand(command, false);
+					},
+				},
+				selected: selected.has(layer.id),
+			});
 		}
 
-		activeLayer.add(layer.id);
-		nodes.push({
-			id: layer.id,
-			type: "layerNode",
-			position: { x: layer.coordinates[0], y: layer.coordinates[1] },
-			zIndex: 19,
-			data: {
-				label: layer.id,
-				boardId: board.id,
-				appId: appId,
-				layer: layer,
-				pinLookup: lookup,
-				pushLayer: async (layer: ILayer) => {
-					pushLayer(layer);
-				},
-				onLayerUpdate: async (layer: ILayer) => {
-					const command = upsertLayerCommand({
-						current_layer: currentLayer,
-						layer: layer,
-						node_ids: [],
-					});
-					await executeCommand(command, false);
-				},
-				onLayerRemove: async (layer: ILayer, preserve_nodes: boolean) => {
-					const command = removeLayerCommand({
-						layer,
-						child_layers: [],
-						layer_nodes: [],
-						layers: [],
-						nodes: [],
-						preserve_nodes,
-					});
-					await executeCommand(command, false);
-				},
-			},
-			selected: selected.has(layer.id),
-		});
-	}
-
-	for (const [pin, node] of cache.values()) {
+	for (const [pin, node, visible] of cache.values()) {
 		if (pin.connected_to.length === 0) continue;
 
 		for (const connectedTo of pin.connected_to) {
-			const [conntectedPin, connectedNode] = cache.get(connectedTo) || [];
+			const [conntectedPin, connectedNode, connectedVisible] =
+				cache.get(connectedTo) || [];
+			if (!visible && !connectedVisible) continue;
 			if (!conntectedPin || !connectedNode) continue;
 
 			const edge = oldEdgesMap.get(`${pin.id}-${connectedTo}`);
 
-			if (edge) {
+			if (
+				edge &&
+				edge.data.fromLayer === node.layer &&
+				edge.data.toLayer === connectedNode.layer
+			) {
 				edges.push(edge);
 				continue;
 			}
@@ -337,20 +345,25 @@ export function parseBoard(
 			const connectedNodeId = activeLayer.has(connectedNode.layer ?? "")
 				? connectedNode.layer
 				: connectedNode.id;
-			edges.push({
-				id: `${pin.id}-${connectedTo}`,
-				source: sourceNode,
-				sourceHandle: pin.id,
-				zIndex: 18,
-				animated: pin.data_type !== "Execution",
-				reconnectable: true,
-				target: connectedNodeId,
-				targetHandle: conntectedPin.id,
-				style: { stroke: typeToColor(pin.data_type) },
-				type: connectionMode ?? "simplebezier",
-				data_type: pin.data_type,
-				selected: selected.has(`${pin.id}-${connectedTo}`),
-			});
+			if (pin.id && conntectedPin.id)
+				edges.push({
+					id: `${pin.id}-${conntectedPin.id}`,
+					source: sourceNode,
+					sourceHandle: pin.id,
+					zIndex: 18,
+					data: {
+						fromLayer: node.layer,
+						toLayer: connectedNode.layer,
+					},
+					animated: pin.data_type !== "Execution",
+					reconnectable: true,
+					target: connectedNodeId,
+					targetHandle: conntectedPin.id,
+					style: { stroke: typeToColor(pin.data_type) },
+					type: connectionMode ?? "simplebezier",
+					data_type: pin.data_type,
+					selected: selected.has(`${pin.id}-${connectedTo}`),
+				});
 		}
 	}
 

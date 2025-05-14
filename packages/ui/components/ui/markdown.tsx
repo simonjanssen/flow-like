@@ -80,5 +80,9 @@ export function MarkdownComponent({ content }: Readonly<{ content: string }>) {
 		],
 	});
 
-	return <Suspense>{markdown}</Suspense>;
+	return (
+		<Suspense>
+			<div className="md-wrapper">{markdown}</div>
+		</Suspense>
+	);
 }

@@ -31,6 +31,7 @@ pub struct App {
 
     pub bits: Vec<String>,
     pub boards: Vec<String>,
+    pub releases: Vec<String>,
 
     pub updated_at: SystemTime,
     pub created_at: SystemTime,
@@ -49,6 +50,7 @@ impl Clone for App {
             authors: self.authors.clone(),
             boards: self.boards.clone(),
             bits: self.bits.clone(),
+            releases: self.releases.clone(),
             updated_at: self.updated_at,
             created_at: self.created_at,
             app_state: self.app_state.clone(),
@@ -75,10 +77,10 @@ impl App {
             authors: vec![],
             bits,
             boards: vec![],
+            releases: vec![],
             updated_at: SystemTime::now(),
             created_at: SystemTime::now(),
             frontend: None,
-
             app_state: Some(app_state.clone()),
         };
 
@@ -91,7 +93,9 @@ impl App {
     ) -> flow_like_types::Result<Self> {
         let storage_root = Path::from("apps").child(id.clone());
 
-        let store = FlowLikeState::project_store(&app_state).await?.as_generic();
+        let store = FlowLikeState::project_meta_store(&app_state)
+            .await?
+            .as_generic();
 
         let vault: flow_like_types::proto::App =
             from_compressed(store, storage_root.child("manifest.app")).await?;
@@ -116,7 +120,7 @@ impl App {
 
     pub async fn boards_configured(&self) -> bool {
         for board_id in &self.boards {
-            let board = self.open_board(board_id.clone(), Some(false)).await;
+            let board = self.open_board(board_id.clone(), Some(false), None).await;
             if let Ok(board) = board {
                 let vars = board
                     .lock()
@@ -140,10 +144,11 @@ impl App {
         &self,
         board_id: String,
         register: Option<bool>,
+        version: Option<(u32, u32, u32)>,
     ) -> flow_like_types::Result<Arc<Mutex<Board>>> {
         let storage_root = Path::from("apps").child(self.id.clone());
         if let Some(app_state) = &self.app_state {
-            let board = app_state.lock().await.get_board(&board_id);
+            let board = app_state.lock().await.get_board(&board_id, version);
 
             if let Ok(board) = board {
                 return Ok(board);
@@ -155,7 +160,7 @@ impl App {
             .clone()
             .ok_or(flow_like_types::anyhow!("App state not found"))?;
 
-        let board = Board::load(storage_root, &board_id, state).await?;
+        let board = Board::load(storage_root, &board_id, state, version).await?;
         let board_ref = Arc::new(Mutex::new(board));
         let register = register.unwrap_or(false);
         if register {
@@ -163,7 +168,7 @@ impl App {
                 app_state
                     .lock()
                     .await
-                    .register_board(&board_id, board_ref.clone())?;
+                    .register_board(&board_id, board_ref.clone(), version)?;
             }
         }
 
@@ -171,25 +176,22 @@ impl App {
     }
 
     pub async fn delete_board(&mut self, board_id: &str) -> flow_like_types::Result<()> {
-        let board_index = self
-            .boards
-            .iter()
-            .position(|x| x == board_id)
-            .ok_or(flow_like_types::anyhow!("Board not found"))?;
-        let board_id = self.boards.remove(board_index);
+        self.boards.retain(|b| b != board_id);
         let board_dir = Path::from("apps")
             .child(self.id.clone())
-            .child(format!("{}.board", board_id.clone()));
+            .child(format!("{}.board", board_id));
 
         let state = self
             .app_state
             .clone()
             .ok_or(flow_like_types::anyhow!("App state not found"))?;
-        let store = FlowLikeState::project_store(&state).await?.as_generic();
+        let store = FlowLikeState::project_meta_store(&state)
+            .await?
+            .as_generic();
         store.delete(&board_dir).await?;
 
         if let Some(app_state) = &self.app_state {
-            app_state.lock().await.remove_board(&board_id)?;
+            app_state.lock().await.remove_board(board_id)?;
         }
 
         self.updated_at = SystemTime::now();
@@ -198,14 +200,16 @@ impl App {
 
     pub async fn save(&self) -> flow_like_types::Result<()> {
         if let Some(app_state) = &self.app_state {
-            let store = FlowLikeState::project_store(app_state).await?.as_generic();
+            let store = FlowLikeState::project_meta_store(app_state)
+                .await?
+                .as_generic();
 
             let board_refs = {
                 let guard = app_state.lock().await;
                 let mut refs = Vec::with_capacity(self.boards.len());
 
                 for board_id in &self.boards {
-                    if let Ok(board) = guard.get_board(board_id) {
+                    if let Ok(board) = guard.get_board(board_id, None) {
                         refs.push(board.clone());
                     }
                 }
@@ -222,7 +226,9 @@ impl App {
             .app_state
             .clone()
             .ok_or(flow_like_types::anyhow!("App state not found"))?;
-        let store = FlowLikeState::project_store(&store).await?.as_generic();
+        let store = FlowLikeState::project_meta_store(&store)
+            .await?
+            .as_generic();
 
         let manifest_path = Path::from("apps")
             .child(self.id.clone())
@@ -246,7 +252,7 @@ mod tests {
 
     async fn flow_state() -> Arc<Mutex<crate::state::FlowLikeState>> {
         let mut config: FlowLikeConfig = FlowLikeConfig::new();
-        config.register_project_store(FlowLikeStore::Other(Arc::new(
+        config.register_app_meta_store(FlowLikeStore::Other(Arc::new(
             flow_like_storage::object_store::memory::InMemory::new(),
         )));
         let (http_client, _refetch_rx) = HTTPClient::new();
@@ -262,6 +268,7 @@ mod tests {
             authors: vec!["author1".to_string(), "author2".to_string()],
             boards: vec!["board1".to_string(), "board2".to_string()],
             bits: vec!["bit1".to_string(), "bit2".to_string()],
+            releases: vec!["release1".to_string(), "release2".to_string()],
             updated_at: std::time::SystemTime::now(),
             created_at: std::time::SystemTime::now(),
             app_state: Some(flow_state().await),

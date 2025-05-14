@@ -14,11 +14,8 @@ import {
 } from "lucide-react";
 import { memo, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useInvoke } from "../../hooks";
 import {
-	type IBoard,
 	ILogLevel,
-	type ILogMetadata,
 	type INode,
 	formatDuration,
 	formatRelativeTime,
@@ -50,14 +47,18 @@ const FlowRunsComponent = ({
 	appId,
 	boardId,
 	nodes,
+	version,
 	executeBoard,
+	onVersionChange,
 }: {
 	appId: string;
 	boardId: string;
 	nodes: {
 		[key: string]: INode;
 	};
+	version: [number, number, number];
 	executeBoard: (node: INode, payload?: object) => Promise<void>;
+	onVersionChange: (version?: [number, number, number]) => void;
 }) => {
 	const backend = useBackend();
 	const {
@@ -239,16 +240,34 @@ const FlowRunsComponent = ({
 						onClick={() => {
 							if (currentMetadata?.run_id === run.run_id) {
 								setCurrentMetadata(undefined);
+								onVersionChange(undefined);
 								return;
 							}
 
 							setCurrentMetadata(run);
+							onVersionChange(
+								run.version === "v" + version.join("-")
+									? undefined
+									: (run.version.replace("v", "").split("-").map(Number) as [
+											number,
+											number,
+											number,
+										]),
+							);
 						}}
 					>
 						<div className="flex flex-col gap-2 items-start justify-center">
-							<small className="leading-none">
-								{nodes[run.node_id]?.friendly_name ?? "Deleted Event"}
-							</small>
+							<div className="flex flex-row gap-2 items-center">
+								<small className="leading-none">
+									{nodes[run.node_id]?.friendly_name ?? "Deleted Event"}
+								</small>
+								<small className="text-muted-foreground">
+									{run.version === "v" + version.join("-")
+										? "Latest"
+										: `${run.version}`}
+								</small>
+							</div>
+
 							<small className="text-muted-foreground leading-none">
 								{formatRelativeTime(
 									{
@@ -264,6 +283,7 @@ const FlowRunsComponent = ({
 								<small className="text-muted-foreground">
 									{formatDuration(Math.abs(run.end - run.start))}
 								</small>
+
 								<div>
 									{logLevelFromNumber(run.log_level) === ILogLevel.Debug && (
 										<CheckCircle2Icon className="w-3 h-3 text-green-500" />

@@ -32,7 +32,7 @@ impl NodeLogic for ResizeImageNode {
             "Resize Image",
             "Image/Transform",
         );
-        node.add_icon("/flow/icons/dir.svg");
+        node.add_icon("/flow/icons/image.svg");
 
         // inputs
         node.add_input_pin(

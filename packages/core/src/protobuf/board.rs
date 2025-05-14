@@ -103,9 +103,9 @@ impl ToProto<flow_like_types::proto::Board> for Board {
             viewport_x: self.viewport.0,
             viewport_y: self.viewport.1,
             viewport_zoom: self.viewport.2,
-            version_major: self.version.0 as u32,
-            version_minor: self.version.1 as u32,
-            version_patch: self.version.2 as u32,
+            version_major: self.version.0,
+            version_minor: self.version.1,
+            version_patch: self.version.2,
             stage: self.stage.to_proto(),
             log_level: self.log_level.to_proto(),
             refs: self.refs.clone(),
@@ -138,9 +138,9 @@ impl FromProto<flow_like_types::proto::Board> for Board {
                 .collect(),
             viewport: (proto.viewport_x, proto.viewport_y, proto.viewport_zoom),
             version: (
-                proto.version_major as u8,
-                proto.version_minor as u8,
-                proto.version_patch as u8,
+                proto.version_major,
+                proto.version_minor,
+                proto.version_patch,
             ),
             layers: proto
                 .layers

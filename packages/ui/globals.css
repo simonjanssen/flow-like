@@ -224,6 +224,22 @@
 		line-height: 1.75rem;
 	}
 
+	.md-wrapper {
+		a {
+			text-decoration: underline;
+		}
+
+		ol {
+			padding-left: 1.5rem;
+			list-style: decimal;
+		}
+
+		ul {
+			list-style: disc;
+			padding-left: 1.5rem;
+		}
+	}
+
 	.invisible-scroll::-webkit-scrollbar {
 		display: none;
 	}
@@ -305,4 +321,7 @@
 		background-color: hsl(var(--destructive) / 0.1);
 		color: hsl(var(--destructive-foreground));
 	}
+}
+.react-flow__nodesselection-rect {
+	display: none;
 }

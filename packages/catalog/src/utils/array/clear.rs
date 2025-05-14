@@ -46,7 +46,6 @@ impl NodeLogic for ClearArrayNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        let _array_in: Vec<Value> = context.evaluate_pin("array_in").await?; // We read it to keep the pin active, but don't need it
         let array_out: Vec<Value> = Vec::new();
 
         context.set_pin_value("array_out", json!(array_out)).await?;

@@ -227,7 +227,7 @@ mod tests {
         let current_dir = temp_dir.path().to_path_buf();
         let store = LocalObjectStore::new(current_dir).unwrap();
         let store = Arc::new(store);
-        config.register_project_store(FlowLikeStore::Local(store.clone()));
+        config.register_app_storage_store(FlowLikeStore::Local(store.clone()));
         config.register_bits_store(FlowLikeStore::Local(store));
         let (http_client, _refetch_rx) = HTTPClient::new();
         let flow_like_state = crate::state::FlowLikeState::new(config, http_client);

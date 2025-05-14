@@ -36,7 +36,11 @@ pub fn run() {
         LocalObjectStore::new(settings_state.user_dir.clone()).unwrap(),
     )));
 
-    config.register_project_store(FlowLikeStore::Local(Arc::new(
+    config.register_app_storage_store(FlowLikeStore::Local(Arc::new(
+        LocalObjectStore::new(project_dir.clone()).unwrap(),
+    )));
+
+    config.register_app_meta_store(FlowLikeStore::Local(Arc::new(
         LocalObjectStore::new(project_dir.clone()).unwrap(),
     )));
 
@@ -249,6 +253,8 @@ pub fn run() {
             functions::flow::storage::storage_to_fullpath,
             functions::flow::catalog::get_catalog,
             functions::flow::board::create_board,
+            functions::flow::board::create_board_version,
+            functions::flow::board::get_board_versions,
             functions::flow::board::close_board,
             functions::flow::board::get_board,
             functions::flow::board::get_open_boards,

@@ -6,12 +6,10 @@ import { type Node, type NodeProps, useReactFlow } from "@xyflow/react";
 import {
 	AlignCenterVerticalIcon,
 	AlignEndVerticalIcon,
-	AlignHorizontalSpaceAroundIcon,
 	AlignStartVerticalIcon,
 	AlignVerticalJustifyCenterIcon,
 	AlignVerticalJustifyEndIcon,
 	AlignVerticalJustifyStartIcon,
-	AlignVerticalSpaceAroundIcon,
 	BanIcon,
 	CircleXIcon,
 	ClockIcon,
@@ -47,6 +45,7 @@ import {
 	ILogLevel,
 	IPinType,
 	IValueType,
+	moveNodeCommand,
 	removeNodeCommand,
 	updateNodeCommand,
 	upsertLayerCommand,
@@ -884,7 +883,7 @@ function FlowNode(props: NodeProps<FlowNode>) {
 				props.data.boardId,
 			]);
 		},
-		[backend, flow],
+		[props.data.node, invalidate, pushCommands, flow, backend],
 	);
 
 	const deleteNodes = useCallback(async () => {
@@ -906,7 +905,73 @@ function FlowNode(props: NodeProps<FlowNode>) {
 		setIsOpen(false);
 		await pushCommands(result);
 		await invalidate(backend.getBoard, [props.data.appId, props.data.boardId]);
-	}, [backend, invalidate, props.data.node]);
+	}, [props.data.node, invalidate, pushCommands, flow, backend]);
+
+	const orderNodes = useCallback(
+		async (type: "align" | "justify", dir: "start" | "end" | "center") => {
+			const selectedNodes = flow.getNodes().filter((node) => node.selected);
+			if (selectedNodes.length <= 1) return;
+
+			let start = Number.POSITIVE_INFINITY;
+			let end = Number.NEGATIVE_INFINITY;
+
+			selectedNodes.forEach((node) => {
+				start = Math.min(
+					start,
+					type === "align" ? node.position.x : node.position.y,
+				);
+				end = Math.max(
+					end,
+					type === "align" ? node.position.x : node.position.y,
+				);
+			});
+
+			if (
+				start === Number.POSITIVE_INFINITY ||
+				end === Number.NEGATIVE_INFINITY
+			)
+				return;
+
+			const center = (start + end) / 2;
+
+			const commands = selectedNodes.map((node) => {
+				return moveNodeCommand({
+					node_id: node.id,
+					from_coordinates: [node.position.x, node.position.y, 0],
+					to_coordinates: [
+						type === "align"
+							? dir === "start"
+								? start
+								: dir === "end"
+									? end
+									: center
+							: node.position.x,
+						type === "align"
+							? node.position.y
+							: dir === "start"
+								? start
+								: dir === "end"
+									? end
+									: center,
+						0,
+					],
+				});
+			});
+
+			const result = await backend.executeCommands(
+				props.data.appId,
+				props.data.boardId,
+				commands,
+			);
+
+			pushCommands(result);
+			await invalidate(backend.getBoard, [
+				props.data.appId,
+				props.data.boardId,
+			]);
+		},
+		[props.data.node, invalidate, pushCommands, flow, backend],
+	);
 
 	if (isOpen || isHovered) {
 		return (
@@ -991,28 +1056,24 @@ function FlowNode(props: NodeProps<FlowNode>) {
 									</div>
 								</ContextMenuSubTrigger>
 								<ContextMenuSubContent>
-									<ContextMenuItem>
+									<ContextMenuItem onClick={() => orderNodes("align", "start")}>
 										<div className="flex flex-row items-center gap-2 text-nowrap">
 											<AlignStartVerticalIcon className="w-4 h-4" />
 											Start
 										</div>
 									</ContextMenuItem>
-									<ContextMenuItem>
+									<ContextMenuItem
+										onClick={() => orderNodes("align", "center")}
+									>
 										<div className="flex flex-row items-center gap-2 text-nowrap">
 											<AlignCenterVerticalIcon className="w-4 h-4" />
 											Center
 										</div>
 									</ContextMenuItem>
-									<ContextMenuItem>
+									<ContextMenuItem onClick={() => orderNodes("align", "end")}>
 										<div className="flex flex-row items-center gap-2 text-nowrap">
 											<AlignEndVerticalIcon className="w-4 h-4" />
 											End
-										</div>
-									</ContextMenuItem>
-									<ContextMenuItem>
-										<div className="flex flex-row items-center gap-2 text-nowrap">
-											<AlignHorizontalSpaceAroundIcon className="w-4 h-4" />
-											Space Around
 										</div>
 									</ContextMenuItem>
 								</ContextMenuSubContent>
@@ -1027,28 +1088,26 @@ function FlowNode(props: NodeProps<FlowNode>) {
 									</div>
 								</ContextMenuSubTrigger>
 								<ContextMenuSubContent>
-									<ContextMenuItem>
+									<ContextMenuItem
+										onClick={() => orderNodes("justify", "start")}
+									>
 										<div className="flex flex-row items-center gap-2 text-nowrap">
 											<AlignVerticalJustifyStartIcon className="w-4 h-4" />
 											Start
 										</div>
 									</ContextMenuItem>
-									<ContextMenuItem>
+									<ContextMenuItem
+										onClick={() => orderNodes("justify", "center")}
+									>
 										<div className="flex flex-row items-center gap-2 text-nowrap">
 											<AlignVerticalJustifyCenterIcon className="w-4 h-4" />
 											Center
 										</div>
 									</ContextMenuItem>
-									<ContextMenuItem>
+									<ContextMenuItem onClick={() => orderNodes("justify", "end")}>
 										<div className="flex flex-row items-center gap-2 text-nowrap">
 											<AlignVerticalJustifyEndIcon className="w-4 h-4" />
 											End
-										</div>
-									</ContextMenuItem>
-									<ContextMenuItem>
-										<div className="flex flex-row items-center gap-2 text-nowrap">
-											<AlignVerticalSpaceAroundIcon className="w-4 h-4" />
-											Space Around
 										</div>
 									</ContextMenuItem>
 								</ContextMenuSubContent>

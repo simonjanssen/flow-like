@@ -9,6 +9,7 @@
 		"created_at",
 		"id",
 		"meta",
+		"releases",
 		"updated_at"
 	],
 	"properties": {
@@ -34,6 +35,12 @@
 			}
 		},
 		"boards": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			}
+		},
+		"releases": {
 			"type": "array",
 			"items": {
 				"type": "string"
