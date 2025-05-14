@@ -23,11 +23,19 @@ pub struct NodeOnnxSession {
     pub session_ref: String,
 }
 
+pub struct SessionWithMeta {
+    pub session: Session,
+    pub input_name: String,
+    pub input_width: u32,
+    pub input_height: u32,
+    pub output_name: String,
+}
+
 /// ONNX Runtime Session Wrapper
 pub struct NodeOnnxSessionWrapper {
     /// Shared Mutable ONNX Runtime Session
     /// Todo: we might not need a Mutex?
-    pub session: Arc<Mutex<Session>>,
+    pub session: Arc<Mutex<SessionWithMeta>>,
 }
 
 impl Cacheable for NodeOnnxSessionWrapper {
@@ -41,7 +49,7 @@ impl Cacheable for NodeOnnxSessionWrapper {
 
 impl NodeOnnxSession {
     /// Push new ONNX Runtime Session to Execution Context
-    pub async fn new(ctx: &mut ExecutionContext, session: Session) -> Self {
+    pub async fn new(ctx: &mut ExecutionContext, session: SessionWithMeta) -> Self {
         let id = create_id();
         let session_ref = Arc::new(Mutex::new(session));
         let wrapper = NodeOnnxSessionWrapper {
@@ -91,7 +99,10 @@ impl NodeOnnxSession {
     // }
 
     /// Fetch ONNX Runtime Session from Cached Runtime Context
-    pub async fn get_session(&self, ctx: &mut ExecutionContext) -> Result<Arc<Mutex<Session>>> {
+    pub async fn get_session(
+        &self,
+        ctx: &mut ExecutionContext,
+    ) -> Result<Arc<Mutex<SessionWithMeta>>> {
         let session = ctx
             .cache
             .read()

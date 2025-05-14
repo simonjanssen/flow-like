@@ -25,8 +25,7 @@ use std::time::Instant;
 /// # Load DynamicImage as Array4
 /// Resulting normalized 4-dim array has shape [B, C, W, H] (batch size, channels, width, height)
 /// ONNX detection model requires Array4-shaped, 0..1 normalized input
-fn img_to_arr(img: &DynamicImage, dim: Option<(u32, u32)>) -> Result<Array4<f32>, Error> {
-    let (width, height) = dim.unwrap_or((640, 640));
+fn img_to_arr(img: &DynamicImage, width: u32, height: u32) -> Result<Array4<f32>, Error> {
     let buf_u8 = img
         .resize_exact(width, height, FilterType::Triangle)
         .to_rgb8()
@@ -37,7 +36,6 @@ fn img_to_arr(img: &DynamicImage, dim: Option<(u32, u32)>) -> Result<Array4<f32>
     let arr4 = Array3::from_shape_vec((height as usize, width as usize, 3), buf_f32)?
         .permuted_axes([2, 0, 1])
         .insert_axis(Axis(0));
-
     Ok(arr4)
 }
 
@@ -240,22 +238,6 @@ impl NodeLogic for ObjectDetectionNode {
             .set_schema::<NodeImage>()
             .set_options(PinOptions::new().set_enforce_schema(true).build());
 
-        node.add_input_pin(
-            "resize_w",
-            "Resize W",
-            "Resize Image Width",
-            VariableType::Integer,
-        )
-        .set_default_value(Some(json!(640)));
-
-        node.add_input_pin(
-            "resize_h",
-            "Resize H",
-            "Resize Image Height",
-            VariableType::Integer,
-        )
-        .set_default_value(Some(json!(640)));
-
         node.add_input_pin("conf", "Conf", "Confidence Threshold", VariableType::Float)
             .set_options(PinOptions::new().set_range((0., 1.)).build())
             .set_default_value(Some(json!(0.25)));
@@ -307,9 +289,6 @@ impl NodeLogic for ObjectDetectionNode {
         let iou_thres: f32 = context.evaluate_pin("iou").await?;
         let max_detect: u32 = context.evaluate_pin("max").await?;
 
-        let resize_w: u32 = context.evaluate_pin("resize_w").await?;
-        let resize_h: u32 = context.evaluate_pin("resize_h").await?;
-
         // fetch cached
         let node_img: NodeImage = context.evaluate_pin("image_in").await?;
         let img = node_img.get_image(context).await?;
@@ -319,44 +298,36 @@ impl NodeLogic for ObjectDetectionNode {
         let dt = t0.elapsed();
         context.log_message(&format!("[init node]: {:?}", dt), LogLevel::Debug);
 
-        // prepare ONNX-model input
-        let t0 = Instant::now();
-        let (arr, target_width, target_height) = {
-            let img_guard = img.lock().await;
-            let (width, height) = (img_guard.width() as f32, img_guard.height() as f32);
-            let arr = img_to_arr(&img_guard, Some((resize_w, resize_h)))?;
-            (arr, width, height)
-        };
-
         // run inference
-        let candidates_image = {
+        let (candidates_image, img_width, img_height, input_width, input_height) = {
             let session_guard = session.lock().await;
 
-            // dynamically fetch input/output array names from onnx session
-            let input_name = match session_guard.inputs.first() {
-                Some(input_name) => &input_name.name,
-                _ => "images",
-            };
-            let output_name = match session_guard.outputs.first() {
-                Some(output_name) => &output_name.name,
-                _ => "output0",
-            };
+            // prepare ONNX-model input
+            let input_width = session_guard.input_width;
+            let input_height = session_guard.input_height;
+
+            let t0 = Instant::now();
+            let (arr, img_width, img_height) = {
+                let img_guard = img.lock().await;
+                let (img_width, img_height) = (img_guard.width() as f32, img_guard.height() as f32);
+                let arr = img_to_arr(&img_guard, input_width, input_height)?;
+                (arr, img_width, img_height)
+            }; // drop img_guard
 
             context.log_message(&format!("input array: {:?}", arr.shape()), LogLevel::Debug);
-            let inputs = match inputs![input_name => arr.view()] {
+            let inputs = match inputs![&session_guard.input_name => arr.view()] {
                 Ok(mapping) => Ok(mapping),
-                Err(_) => Err(anyhow!("failed to prepare onnx model input")),
+                Err(_) => Err(anyhow!(
+                    "Failed to put input image into ONNX model input tensor"
+                )),
             }?;
             let dt = t0.elapsed();
             context.log_message(&format!("[preprocessing]: {:?}", dt), LogLevel::Debug);
 
             let t0 = Instant::now();
-            let outputs = session_guard.run(inputs)?;
-            let arr_out = outputs[output_name].try_extract_tensor::<f32>()?;
-            context.log_message(
-                &format!("output array: {:?}", arr_out.shape()),
-                LogLevel::Debug,
-            );
+            let outputs = session_guard.session.run(inputs)?;
+            let arr_out =
+                outputs[session_guard.output_name.as_str()].try_extract_tensor::<f32>()?;
             let dt = t0.elapsed();
             context.log_message(&format!("[inference]: {:?}", dt), LogLevel::Debug);
 
@@ -395,10 +366,19 @@ impl NodeLogic for ObjectDetectionNode {
                 &format!("candidates_image: {:?}", candidates_image.shape()),
                 LogLevel::Debug,
             );
-            candidates_image
-        };
+            let dt = t0.elapsed();
+            context.log_message(&format!("[output processing]: {:?}", dt), LogLevel::Debug);
+            (
+                candidates_image,
+                img_width,
+                img_height,
+                input_width,
+                input_height,
+            )
+        }; // drop ONNX session guard
 
         // extract bboxes from output vectors
+        let t0 = Instant::now();
         let mut bboxes: Vec<BoundingBox> = Vec::with_capacity(candidates_image.len_of(Axis(1)));
         for candidate in candidates_image.axis_iter(Axis(1)) {
             //println!("\tshape for candidate {:?}: {:?}", idx_candidate, candidate.shape());
@@ -416,15 +396,18 @@ impl NodeLogic for ObjectDetectionNode {
         );
 
         // scale boxes to original input image dims
-        let (base_w, base_h) = (resize_w as f32, resize_h as f32);
-        let scale_w = target_width / base_w;
-        let scale_h = target_height / base_h;
+        let (base_w, base_h) = (input_width as f32, input_height as f32);
+        let scale_w = img_width / base_w;
+        let scale_h = img_height / base_h;
         for bbox in &mut bboxes {
             bbox.scale(scale_w, scale_h);
         }
 
         let dt = t0.elapsed();
-        context.log_message(&format!("[postprocessing]: {:?}", dt), LogLevel::Debug);
+        context.log_message(
+            &format!("[non-maxima suppression]: {:?}", dt),
+            LogLevel::Debug,
+        );
 
         // set outputs
         context.set_pin_value("bboxes", json!(bboxes)).await?;
