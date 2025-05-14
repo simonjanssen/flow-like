@@ -81,7 +81,6 @@ impl ExecutionContextCache {
 
     pub fn get_cache(&self, node: bool) -> flow_like_types::Result<Path> {
         let base = Path::from("tmp")
-            .child(self.sub.clone())
             .child("apps")
             .child(self.app_id.clone());
 
