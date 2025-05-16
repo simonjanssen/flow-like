@@ -12,14 +12,16 @@ pub struct MoveNodeCommand {
     pub node_id: String,
     pub from_coordinates: Option<(f32, f32, f32)>,
     pub to_coordinates: (f32, f32, f32),
+    pub current_layer: Option<String>,
 }
 
 impl MoveNodeCommand {
-    pub fn new(node_id: String, to_coordinates: (f32, f32, f32)) -> Self {
+    pub fn new(node_id: String, to_coordinates: (f32, f32, f32), current_layer: Option<String>) -> Self {
         MoveNodeCommand {
             node_id,
             from_coordinates: None,
             to_coordinates,
+            current_layer,
         }
     }
 }
@@ -98,8 +100,29 @@ impl Command for MoveNodeCommand {
             return Ok(());
         }
 
+        let current_layer = self.current_layer.clone().unwrap_or("".to_string());
+        let mutable_layer = board.layers.get_mut(&current_layer);
+
         if let Some(node) = board.nodes.get_mut(&self.node_id) {
             self.from_coordinates = node.coordinates;
+            let node_layer = node.layer.clone().unwrap_or("".to_string());
+
+            if node_layer != current_layer {
+                if let Some(layer) = mutable_layer {
+                    match layer.nodes.get_mut(&self.node_id) {
+                        Some(node) => {
+                            node.coordinates = Some(self.to_coordinates);
+                        }
+                        None => {
+                            let mut new_node = node.clone();
+                            new_node.coordinates = Some(self.to_coordinates);
+                            layer.nodes.insert(node.id.clone(), new_node);
+                        }
+                    }
+                }
+                return Ok(());
+            }
+
             node.coordinates = Some(self.to_coordinates);
             return Ok(());
         }
@@ -137,6 +160,27 @@ impl Command for MoveNodeCommand {
 
         if let Some(node) = board.nodes.get_mut(&self.node_id) {
             if let Some(from_coordinates) = self.from_coordinates {
+
+                let node_layer = node.layer.clone().unwrap_or("".to_string());
+                let current_layer = self.current_layer.clone().unwrap_or("".to_string());
+                let mutable_layer = board.layers.get_mut(&current_layer);
+
+                if node_layer != current_layer {
+                    if let Some(layer) = mutable_layer {
+                        match layer.nodes.get_mut(&self.node_id) {
+                            Some(node) => {
+                                node.coordinates = Some(from_coordinates);
+                            }
+                            None => {
+                                let mut new_node = node.clone();
+                                new_node.coordinates = Some(from_coordinates);
+                                layer.nodes.insert(node.id.clone(), new_node);
+                            }
+                        }
+                    }
+                    return Ok(());
+                }
+
                 node.coordinates = Some(from_coordinates);
             }
             return Ok(());

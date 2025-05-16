@@ -128,6 +128,7 @@ const FlowRunsComponent = ({
 						id: nodeId,
 					},
 				],
+				duration: 500
 			});
 		},
 		[fitView],

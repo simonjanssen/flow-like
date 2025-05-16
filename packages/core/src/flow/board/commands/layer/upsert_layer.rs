@@ -38,7 +38,9 @@ impl Command for UpsertLayerCommand {
         _state: Arc<Mutex<FlowLikeState>>,
     ) -> flow_like_types::Result<()> {
         let nodes_set: HashSet<String> = HashSet::from_iter(self.node_ids.iter().cloned());
-        println!("Layer: {:?}", &self.layer);
+
+        let mut added_coordinates = (0.0, 0.0, 0.0);
+        let mut total_coordinates = 0;
 
         self.layer.parent_id = self.current_layer.clone();
         self.old_layer = board
@@ -48,19 +50,49 @@ impl Command for UpsertLayerCommand {
         for node in board.nodes.values_mut() {
             if nodes_set.contains(&node.id) {
                 node.layer = Some(self.layer.id.clone());
+                total_coordinates = total_coordinates + 1;
+                let coordinates = node.coordinates.clone().unwrap_or((0.0, 0.0, 0.0));
+                added_coordinates = (
+                    added_coordinates.0 + coordinates.0,
+                    added_coordinates.1 + coordinates.1,
+                    added_coordinates.2 + coordinates.2,
+                );
             }
         }
 
         for comment in board.comments.values_mut() {
             if nodes_set.contains(&comment.id) {
                 comment.layer = Some(self.layer.id.clone());
+                total_coordinates = total_coordinates + 1;
+                added_coordinates = (
+                    added_coordinates.0 + comment.coordinates.0,
+                    added_coordinates.1 + comment.coordinates.1,
+                    added_coordinates.2 + comment.coordinates.2,
+                );
             }
         }
 
         for layer in board.layers.values_mut() {
             if nodes_set.contains(&layer.id) {
                 layer.parent_id = Some(self.layer.id.clone());
+                total_coordinates = total_coordinates + 1;
+                added_coordinates = (
+                    added_coordinates.0 + layer.coordinates.0,
+                    added_coordinates.1 + layer.coordinates.1,
+                    added_coordinates.2 + layer.coordinates.2,
+                );
             }
+        }
+
+
+        if self.old_layer.is_none() {
+            let center_position = (
+                added_coordinates.0 / total_coordinates as f32,
+                added_coordinates.1 / total_coordinates as f32,
+                added_coordinates.2 / total_coordinates as f32,
+            );
+
+            self.layer.coordinates = center_position;
         }
 
         board.fix_pins_set_layer();

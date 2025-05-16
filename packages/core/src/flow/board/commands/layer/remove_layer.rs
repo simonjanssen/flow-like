@@ -90,6 +90,14 @@ impl Command for RemoveLayerCommand {
                 }
             }
 
+            // reparent comments
+            for comment in board.comments.values_mut() {
+                if comment.layer == target {
+                    comment.layer = parent.clone();
+                    self.layer_nodes.insert(comment.id.clone());
+                }
+            }
+
             // reparent child layers
             for layer in board.layers.values_mut() {
                 if layer.parent_id == target {

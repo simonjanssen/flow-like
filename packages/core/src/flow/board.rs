@@ -1,7 +1,7 @@
 use super::{
     execution::LogLevel,
     node::{Node, NodeLogic},
-    pin::Pin,
+    pin::{Pin, PinType},
     variable::Variable,
 };
 use crate::{
@@ -279,6 +279,14 @@ impl Board {
             }
         }
 
+        let mut old_pins = HashMap::with_capacity(pins.len());
+
+        for (layer_id, layer) in self.layers.iter_mut() {
+            for (pin_id, pin) in layer.pins.drain() {
+                old_pins.insert(format!("{}-{}", layer_id, pin_id), pin);
+            }
+        }
+
         let mut node_pins_to_remove = HashMap::new();
         let mut node_pins_connected_to_remove = HashMap::new();
         let mut node_pins_depends_on_remove = HashMap::new();
@@ -305,7 +313,13 @@ impl Board {
                                 if let Some(layer) = &node.layer {
                                     if let Some(layer) = self.layers.get_mut(layer) {
                                         if !layer.pins.contains_key(&pin.id) {
-                                            layer.pins.insert(pin.id.clone(), pin.clone());
+                                            if let Some(old_pin) = old_pins.remove(&format!("{}-{}", layer.id, pin.id)) {
+                                                layer.pins.insert(pin.id.clone(), old_pin);
+                                            } else {
+                                                let mut new_pin = pin.clone();
+                                                new_pin.index = layer.pins.iter().filter(|(_, p)| p.pin_type == new_pin.pin_type).count() as u16;
+                                                layer.pins.insert(pin.id.clone(), new_pin);
+                                            }
                                         }
                                     }
                                 }
@@ -337,7 +351,13 @@ impl Board {
                                 if let Some(layer) = &node.layer {
                                     if let Some(layer) = self.layers.get_mut(layer) {
                                         if !layer.pins.contains_key(&pin.id) {
-                                            layer.pins.insert(pin.id.clone(), pin.clone());
+                                            if let Some(old_pin) = old_pins.remove(&format!("{}-{}", layer.id, pin.id)) {
+                                                layer.pins.insert(pin.id.clone(), old_pin);
+                                            } else {
+                                                let mut new_pin = pin.clone();
+                                                new_pin.index = layer.pins.iter().filter(|(_, p)| p.pin_type == new_pin.pin_type).count() as u16;
+                                                layer.pins.insert(pin.id.clone(), new_pin);
+                                            }
                                         }
                                     }
                                 }

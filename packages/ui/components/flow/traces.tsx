@@ -166,6 +166,7 @@ export function Traces({
 								id: nodeId,
 							},
 						],
+						duration: 500,
 					});
 				}}
 			/>

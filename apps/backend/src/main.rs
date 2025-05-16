@@ -11,6 +11,8 @@ use tracing_subscriber::prelude::*;
 mod error;
 mod routes;
 mod state;
+mod entity;
+
 
 #[tokio::main]
 async fn main() {
