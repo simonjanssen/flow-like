@@ -919,9 +919,9 @@ function FlowNode(props: NodeProps<FlowNode>) {
 			let end = Number.NEGATIVE_INFINITY;
 
 			selectedNodes.forEach((node) => {
-				if(!node.data.ghost) {
-					let nodeData = node.data.node as INode;
-					if(nodeData?.layer) currentLayer = nodeData.layer;
+				if (!node.data.ghost) {
+					const nodeData = node.data.node as INode;
+					if (nodeData?.layer) currentLayer = nodeData.layer;
 				}
 				start = Math.min(
 					start,

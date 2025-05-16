@@ -18,7 +18,7 @@ import {
 	Separator,
 } from "../../ui";
 
-export function DateArrayVariable({
+export function DateSetVariable({
 	variable,
 	onChange,
 }: Readonly<{ variable: IVariable; onChange: (v: IVariable) => void }>) {
@@ -59,7 +59,7 @@ export function DateArrayVariable({
 		const updated = [...parsedTimes, newSys];
 		onChange({
 			...variable,
-			default_value: convertJsonToUint8Array(updated),
+			default_value: convertJsonToUint8Array(Array.from(new Set(updated))),
 		});
 	}, [newDate, newTime, parsedTimes, variable, onChange]);
 
@@ -68,7 +68,7 @@ export function DateArrayVariable({
 			const updated = parsedTimes.filter((_, i) => i !== idx);
 			onChange({
 				...variable,
-				default_value: convertJsonToUint8Array(updated),
+				default_value: convertJsonToUint8Array(Array.from(new Set(updated))),
 			});
 		},
 		[parsedTimes, variable, onChange],

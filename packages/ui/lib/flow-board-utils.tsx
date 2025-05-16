@@ -325,26 +325,31 @@ export function parseBoard(
 		if (pin.connected_to.length === 0) continue;
 
 		for (const connectedTo of pin.connected_to) {
-			const shadowNodes = new Map()
+			const shadowNodes = new Map();
 			const [conntectedPin, connectedNode, connectedVisible] =
 				cache.get(connectedTo) || [];
 			const connectedLayer = board.layers[connectedNode?.layer ?? ""];
 			if (!visible && !connectedVisible) continue;
 			if (!conntectedPin || !connectedNode) continue;
 
-			if ((visible !== connectedVisible) && ((connectedLayer?.parent_id ?? "") !== (currentLayer ?? ""))) {
-				if(!visible && node.layer === currentLayerRef.parent_id) {
+			if (
+				visible !== connectedVisible &&
+				(connectedLayer?.parent_id ?? "") !== (currentLayer ?? "")
+			) {
+				if (!visible && node.layer === currentLayerRef.parent_id) {
 					let coordinates = node.coordinates ?? [0, 0, 0];
 
-					if(currentLayerRef?.nodes[node.id]) {
-						coordinates = currentLayerRef.nodes[node.id]?.coordinates ?? [0, 0, 0];
+					if (currentLayerRef?.nodes[node.id]) {
+						coordinates = currentLayerRef.nodes[node.id]?.coordinates ?? [
+							0, 0, 0,
+						];
 					}
 
 					nodes.push({
 						id: node.id,
 						type: "node",
 						deletable: false,
-						style: {opacity: 0.5},
+						style: { opacity: 0.5 },
 						zIndex: 20,
 						position: {
 							x: coordinates?.[0] ?? 0,
@@ -365,13 +370,16 @@ export function parseBoard(
 						},
 						selected: selected.has(node.id),
 					});
-					shadowNodes.set(node.id, node)
-				}
-				else if(!connectedVisible && connectedNode.layer === currentLayerRef.parent_id) {
+					shadowNodes.set(node.id, node);
+				} else if (
+					!connectedVisible &&
+					connectedNode.layer === currentLayerRef.parent_id
+				) {
 					let coordinates = connectedNode.coordinates ?? [0, 0, 0];
 
-					if(currentLayerRef?.nodes[connectedNode.id]) {
-						coordinates = currentLayerRef.nodes[connectedNode.id]?.coordinates ?? [0, 0, 0];
+					if (currentLayerRef?.nodes[connectedNode.id]) {
+						coordinates = currentLayerRef.nodes[connectedNode.id]
+							?.coordinates ?? [0, 0, 0];
 					}
 
 					nodes.push({
@@ -379,7 +387,7 @@ export function parseBoard(
 						type: "node",
 						zIndex: 20,
 						deletable: false,
-						style: {opacity: 0.5},
+						style: { opacity: 0.5 },
 						position: {
 							x: coordinates?.[0] ?? 0,
 							y: coordinates?.[1] ?? 0,
@@ -399,7 +407,7 @@ export function parseBoard(
 						},
 						selected: selected.has(connectedNode.id),
 					});
-					shadowNodes.set(connectedNode.id, connectedNode)
+					shadowNodes.set(connectedNode.id, connectedNode);
 				}
 			}
 
@@ -415,12 +423,18 @@ export function parseBoard(
 				continue;
 			}
 
-			const sourceNode = shadowNodes.has(node.id) ? node.id : (activeLayer.has(node.layer ?? "")
-				? node.layer
-				: node.id);
-			const connectedNodeId = shadowNodes.has(connectedNode.id) ? connectedNode.id : (activeLayer.has(connectedNode.layer ?? "")
-				? connectedNode.layer
-				: connectedNode.id);
+			const sourceNode = shadowNodes.has(node.id)
+				? node.id
+				: activeLayer.has(node.layer ?? "")
+					? node.layer
+					: node.id;
+
+			const connectedNodeId = shadowNodes.has(connectedNode.id)
+				? connectedNode.id
+				: activeLayer.has(connectedNode.layer ?? "")
+					? connectedNode.layer
+					: connectedNode.id;
+
 			if (pin.id && conntectedPin.id)
 				edges.push({
 					id: `${pin.id}-${conntectedPin.id}`,

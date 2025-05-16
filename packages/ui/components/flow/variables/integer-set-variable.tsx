@@ -8,37 +8,43 @@ import {
 } from "../../../lib/uint8";
 import { Button, Separator } from "../../ui";
 
-export function StringArrayVariable({
+export function IntegerSetVariable({
 	variable,
 	onChange,
 }: Readonly<{ variable: IVariable; onChange: (variable: IVariable) => void }>) {
 	const [newValue, setNewValue] = useState("");
 
 	// parse once per render
-	const values = useMemo<string[]>(() => {
+	const values = useMemo<number[]>(() => {
 		const parsed = parseUint8ArrayToJson(variable.default_value);
-		return Array.isArray(parsed) ? parsed : [];
+		if (!Array.isArray(parsed)) return [];
+		return parsed.map((v) => {
+			const n = Number.parseInt(String(v), 10);
+			return isNaN(n) ? 0 : n;
+		});
 	}, [variable.default_value]);
 
-	// add a new item
+	// add a new integer
 	const handleAdd = useCallback(() => {
 		const trimmed = newValue.trim();
 		if (!trimmed) return;
-		const updated = [...values, trimmed];
+		const num = Number.parseInt(trimmed, 10);
+		if (isNaN(num)) return;
+		const updated = [...values, num];
 		onChange({
 			...variable,
-			default_value: convertJsonToUint8Array(updated),
+			default_value: convertJsonToUint8Array(Array.from(new Set(updated))),
 		});
 		setNewValue("");
 	}, [newValue, values, onChange, variable]);
 
-	// remove an item by index
+	// remove by index
 	const handleRemove = useCallback(
 		(index: number) => {
 			const updated = values.filter((_, i) => i !== index);
 			onChange({
 				...variable,
-				default_value: convertJsonToUint8Array(updated),
+				default_value: convertJsonToUint8Array(Array.from(new Set(updated))),
 			});
 		},
 		[values, onChange, variable],
@@ -51,14 +57,15 @@ export function StringArrayVariable({
 					value={newValue}
 					onChange={(e) => setNewValue(e.target.value)}
 					onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-					type={variable.secret ? "password" : "text"}
-					placeholder="Default Value"
+					type={variable.secret ? "password" : "number"}
+					placeholder="Add integer"
+					step={1}
 				/>
 				<Button
 					size="icon"
 					variant="default"
 					onClick={handleAdd}
-					disabled={!newValue.trim()}
+					disabled={newValue.trim() === ""}
 				>
 					<PlusCircleIcon className="w-4 h-4" />
 				</Button>
