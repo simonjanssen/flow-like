@@ -94,7 +94,7 @@ impl NodeLogic for LoopNode {
                 .set_value(flow_like_types::Value::from(i))
                 .await;
             for node in connected.iter() {
-                let mut sub_context = context.create_sub_context(&node).await;
+                let mut sub_context = context.create_sub_context(node).await;
                 let run = InternalNode::trigger(&mut sub_context, &mut None, true).await;
                 sub_context.end_trace();
                 context.push_sub_context(sub_context);

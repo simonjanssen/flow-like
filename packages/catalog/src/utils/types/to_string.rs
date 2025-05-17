@@ -50,7 +50,7 @@ impl NodeLogic for ToStringNode {
 
         let value: String = {
             let guard = string.as_ref().lock().await;
-            let v: &flow_like_types::Value = &*guard;
+            let v: &flow_like_types::Value = &guard;
 
             let s: String = match v {
                 Value::String(inner) => inner.clone(),
