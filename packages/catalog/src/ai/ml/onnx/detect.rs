@@ -11,7 +11,7 @@ use flow_like::{
 };
 use flow_like_types::{
     Error, JsonSchema, Result, anyhow, async_trait,
-    image::{DynamicImage, imageops::FilterType},
+    image::{DynamicImage, imageops::FilterType, GenericImageView},
     json::{Deserialize, Serialize, json},
 };
 
@@ -26,13 +26,22 @@ use std::time::Instant;
 /// Resulting normalized 4-dim array has shape [B, C, W, H] (batch size, channels, width, height)
 /// ONNX detection model requires Array4-shaped, 0..1 normalized input
 fn img_to_arr(img: &DynamicImage, width: u32, height: u32) -> Result<Array4<f32>, Error> {
-    let buf_u8 = img
-        .resize_exact(width, height, FilterType::Triangle)
-        .to_rgb8()
-        .into_raw();
 
+    let (img_width, img_height) = img.dimensions();
+
+    let buf_u8 = if (img_width == width) && (img_height == height) {
+        img.to_rgb8().into_raw()
+    } else {
+        img
+            .resize_exact(width, height, FilterType::Triangle)
+            .into_rgb8()
+            .into_raw()
+    };
+
+    // to float tensor
     let buf_f32: Vec<f32> = buf_u8.into_iter().map(|v| (v as f32) / 255.0).collect();
 
+    // expand into 4dim array
     let arr4 = Array3::from_shape_vec((height as usize, width as usize, 3), buf_f32)?
         .permuted_axes([2, 0, 1])
         .insert_axis(Axis(0));
@@ -58,6 +67,7 @@ pub struct BoundingBox {
     pub y2: f32, // bottom
     pub score: f32,
     pub class_idx: i32,
+    pub class_name: Option<String>
 }
 
 impl BoundingBox {
@@ -129,6 +139,7 @@ impl BoundingBox {
             y2,
             score: conf,
             class_idx: class_idx as i32,
+            class_name: None,
         }
     }
 
@@ -167,6 +178,7 @@ fn nms(boxes: &[BoundingBox], iou_threshold: f32) -> Vec<BoundingBox> {
                 y2: bbox.y2 + class_offset,
                 score: bbox.score,
                 class_idx: bbox.class_idx, // Keep class_idx the same
+                class_name: None,
             };
             (shifted_bbox, i) // Keep track of the original index
         })
@@ -373,7 +385,7 @@ impl NodeLogic for ObjectDetectionNode {
                 img_width,
                 img_height,
                 input_width,
-                input_height,
+                input_height
             )
         }; // drop ONNX session guard
 
@@ -381,7 +393,6 @@ impl NodeLogic for ObjectDetectionNode {
         let t0 = Instant::now();
         let mut bboxes: Vec<BoundingBox> = Vec::with_capacity(candidates_image.len_of(Axis(1)));
         for candidate in candidates_image.axis_iter(Axis(1)) {
-            //println!("\tshape for candidate {:?}: {:?}", idx_candidate, candidate.shape());
             let bbox = BoundingBox::from_array(candidate.to_shape(candidate.len()).unwrap().view());
             bboxes.push(bbox);
         }

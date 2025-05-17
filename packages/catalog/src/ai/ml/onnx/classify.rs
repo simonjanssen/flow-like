@@ -43,54 +43,64 @@ fn img_to_arr(
     mean: &[f32; 3],
     std: &[f32; 3],
 ) -> Result<Array4<f32>, Error> {
-    let arr_width_f = arr_width as f32;
-    let arr_height_f = arr_height as f32;
-
-    // determine resize dims such that when we crop in the following step we get an arr_width x arr_height cutout
-    let resize_width = arr_width_f / crop_pct;
-    let resize_height = arr_height_f / crop_pct;
-    println!("{:?}, {:?}", resize_width, resize_height);
 
     let (img_width, img_height) = img.dimensions();
 
-    // match smaller edge of image to target resize dimension
-    let resize_width = if img_width > img_height {
-        resize_width * (img_width as f32 / img_height as f32)
-    } else {
-        resize_width
-    };
-
-    let resize_height = if img_height > img_width {
-        resize_height * (img_height as f32 / img_width as f32)
-    } else {
-        resize_height
-    };
-
-    // top-left corner of center crop box
-    let x = (resize_width - arr_width_f) / 2.0;
-    let y = (resize_height - arr_height_f) / 2.0;
-
     // first resize, then crop a centered square from resized such that cropped/resized = crop_pct and cropped = ONNX input shape
-    let buf_u8 = img
-        .resize(
-            resize_width as u32,
-            resize_height as u32,
-            FilterType::CatmullRom,
-        ) // pytorch default bicubic
-        .crop_imm(x as u32, y as u32, arr_width, arr_height)
-        .to_rgb8()
-        .into_raw();
+    let buf_u8 = if (img_width == arr_width) && (img_height == arr_height) && crop_pct > 0.999 {
+        // allow users to do resizing and cropping outside this node
+        img.to_rgb8().into_raw()
+    } else {
+        let arr_width_f = arr_width as f32;
+        let arr_height_f = arr_height as f32;
 
-    // normalize image
-    let mut buf_f32 = Vec::with_capacity(buf_u8.len());
-    for (i, &v) in buf_u8.iter().enumerate() {
-        let channel = i % 3; // select channel
-        let norm_val = (((v as f32) / 255.0) - mean[channel]) / std[channel]; // channel-aware normalization
-        buf_f32.push(norm_val);
+        // determine resize dims such that when we crop in the following step we get an arr_width x arr_height cutout
+        let resize_width = arr_width_f / crop_pct;
+        let resize_height = arr_height_f / crop_pct;
+        println!("{:?}, {:?}", resize_width, resize_height);
+
+        // match smaller edge of image to target resize dimension
+        let resize_width = if img_width > img_height {
+            resize_width * (img_width as f32 / img_height as f32)
+        } else {
+            resize_width
+        };
+
+        let resize_height = if img_height > img_width {
+            resize_height * (img_height as f32 / img_width as f32)
+        } else {
+            resize_height
+        };
+
+        // top-left corner of center crop box
+        let x = (resize_width - arr_width_f) / 2.0;
+        let y = (resize_height - arr_height_f) / 2.0;
+
+        let img_cropped = img
+            .resize(
+                resize_width as u32,
+                resize_height as u32,
+                FilterType::CatmullRom,
+            ) // pytorch default bicubic
+            .crop_imm(x as u32, y as u32, arr_width, arr_height);
+
+        img_cropped.into_rgb8().into_raw()
+    };
+
+    // to float tensor
+    let buf_f32: Vec<f32> = buf_u8.iter().map(|&v| (v as f32) / 255.0).collect();
+    let arr3 = Array3::from_shape_vec((arr_height as usize, arr_width as usize, 3), buf_f32)?;
+
+    // normalize per channel
+    let mut arr3 = arr3; // make mutable
+    for c in 0..3 {
+        arr3.slice_mut(s![.., .., c]).map_inplace(|x| {
+            *x = (*x - mean[c]) / std[c];
+        });
     }
 
-    // reshape to 3d-array
-    let arr4 = Array3::from_shape_vec((arr_height as usize, arr_width as usize, 3), buf_f32)?
+    // expand into 4dim array
+    let arr4 = arr3
         .permuted_axes([2, 0, 1])
         .insert_axis(Axis(0));
     Ok(arr4)
