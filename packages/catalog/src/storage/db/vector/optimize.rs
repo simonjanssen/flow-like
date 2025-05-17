@@ -57,18 +57,10 @@ impl NodeLogic for OptimizeLocalDatabaseNode {
             VariableType::Execution,
         );
 
-        node.add_output_pin(
-            "failed",
-            "Failed Optimization",
-            "Triggered if the Ingest failed",
-            VariableType::Execution,
-        );
-
         return node;
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        context.activate_exec_pin("failed").await?;
         context.deactivate_exec_pin("exec_out").await?;
         let database: NodeDBConnection = context.evaluate_pin("database").await?;
         let database = database
@@ -78,12 +70,9 @@ impl NodeLogic for OptimizeLocalDatabaseNode {
             .clone();
         let database = database.read().await;
         let keep_versions: bool = context.evaluate_pin("keep_versions").await?;
-        let result = database.optimize(keep_versions).await;
+        database.optimize(keep_versions).await?;
 
-        if result.is_ok() {
-            context.deactivate_exec_pin("failed").await?;
-            context.activate_exec_pin("exec_out").await?;
-        }
+        context.activate_exec_pin("exec_out").await?;
 
         Ok(())
     }

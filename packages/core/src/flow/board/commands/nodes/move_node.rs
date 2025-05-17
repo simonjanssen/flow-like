@@ -16,7 +16,11 @@ pub struct MoveNodeCommand {
 }
 
 impl MoveNodeCommand {
-    pub fn new(node_id: String, to_coordinates: (f32, f32, f32), current_layer: Option<String>) -> Self {
+    pub fn new(
+        node_id: String,
+        to_coordinates: (f32, f32, f32),
+        current_layer: Option<String>,
+    ) -> Self {
         MoveNodeCommand {
             node_id,
             from_coordinates: None,
@@ -160,7 +164,6 @@ impl Command for MoveNodeCommand {
 
         if let Some(node) = board.nodes.get_mut(&self.node_id) {
             if let Some(from_coordinates) = self.from_coordinates {
-
                 let node_layer = node.layer.clone().unwrap_or("".to_string());
                 let current_layer = self.current_layer.clone().unwrap_or("".to_string());
                 let mutable_layer = board.layers.get_mut(&current_layer);

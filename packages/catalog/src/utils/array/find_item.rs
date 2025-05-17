@@ -56,17 +56,25 @@ impl NodeLogic for FindItemInArrayNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        let array_in: Vec<Value> = context.evaluate_pin("array_in").await?;
-        let item: Value = context.evaluate_pin("item").await?;
+        context.deactivate_exec_pin("exec_out").await?;
 
-        let mut index = -1;
+        let array_in = context.evaluate_pin_to_ref("array_in").await?;
+        let item: Value = context.evaluate_pin("item").await?;
         let mut found = false;
 
-        for (i, val) in array_in.iter().enumerate() {
-            if val == &item {
-                index = i as i64; // Cast to i64 to handle -1
-                found = true;
-                break;
+        let mut index = -1;
+
+        {
+            let array_in = array_in.as_ref().lock().await;
+
+            if let Some(array) = array_in.as_array() {
+                for (i, value) in array.iter().enumerate() {
+                    if value == &item {
+                        found = true;
+                        index = i as i32;
+                        break;
+                    }
+                }
             }
         }
 

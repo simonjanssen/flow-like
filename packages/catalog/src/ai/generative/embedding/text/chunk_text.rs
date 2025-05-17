@@ -8,7 +8,7 @@ use flow_like::{
     },
     state::FlowLikeState,
 };
-use flow_like_types::{anyhow, async_trait, json::json};
+use flow_like_types::{anyhow, async_trait, bail, json::json};
 
 #[derive(Default)]
 pub struct ChunkText {}
@@ -89,19 +89,11 @@ impl NodeLogic for ChunkText {
         )
         .set_value_type(ValueType::Array);
 
-        node.add_output_pin(
-            "failed",
-            "Failed",
-            "Failed to embed the query",
-            VariableType::Execution,
-        );
-
         return node;
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
         context.deactivate_exec_pin("exec_out").await?;
-        context.activate_exec_pin("failed").await?;
 
         let text: String = context.evaluate_pin("text").await?;
         let model: CachedEmbeddingModel = context.evaluate_pin("model").await?;
@@ -111,8 +103,7 @@ impl NodeLogic for ChunkText {
 
         let cached_model = context.get_cache(&model.cache_key).await;
         if cached_model.is_none() {
-            context.log_message("Model not found in cache", LogLevel::Error);
-            return Ok(());
+            bail!("Model not found in cache");
         }
 
         let cached_model = cached_model.unwrap();
@@ -142,7 +133,6 @@ impl NodeLogic for ChunkText {
 
         context.set_pin_value("chunks", json!(chunks)).await?;
         context.activate_exec_pin("exec_out").await?;
-        context.deactivate_exec_pin("failed").await?;
 
         Ok(())
     }

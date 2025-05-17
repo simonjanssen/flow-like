@@ -52,18 +52,10 @@ impl NodeLogic for UpsertLocalDatabaseNode {
             VariableType::Execution,
         );
 
-        node.add_output_pin(
-            "failed",
-            "Failed Upsert",
-            "Triggered if the Upsert failed",
-            VariableType::Execution,
-        );
-
         return node;
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        context.activate_exec_pin("failed").await?;
         context.deactivate_exec_pin("exec_out").await?;
 
         let database: NodeDBConnection = context.evaluate_pin("database").await?;
@@ -76,12 +68,9 @@ impl NodeLogic for UpsertLocalDatabaseNode {
         let id_row: String = context.evaluate_pin("id_row").await?;
         let value: Value = context.evaluate_pin("value").await?;
         let value = vec![value];
-        let results = database.upsert(value, id_row).await;
+        database.upsert(value, id_row).await?;
 
-        if results.is_ok() {
-            context.deactivate_exec_pin("failed").await?;
-            context.activate_exec_pin("exec_out").await?;
-        }
+        context.activate_exec_pin("exec_out").await?;
 
         Ok(())
     }
@@ -128,18 +117,10 @@ impl NodeLogic for BatchUpsertLocalDatabaseNode {
             VariableType::Execution,
         );
 
-        node.add_output_pin(
-            "failed",
-            "Failed Upsert",
-            "Triggered if the Upsert failed",
-            VariableType::Execution,
-        );
-
         return node;
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        context.activate_exec_pin("failed").await?;
         context.deactivate_exec_pin("exec_out").await?;
 
         let database: NodeDBConnection = context.evaluate_pin("database").await?;
@@ -151,12 +132,9 @@ impl NodeLogic for BatchUpsertLocalDatabaseNode {
         let mut database = database.write().await;
         let value: Vec<Value> = context.evaluate_pin("value").await?;
         let id_row: String = context.evaluate_pin("id_row").await?;
-        let results = database.upsert(value, id_row).await;
+        database.upsert(value, id_row).await?;
 
-        if results.is_ok() {
-            context.deactivate_exec_pin("failed").await?;
-            context.activate_exec_pin("exec_out").await?;
-        }
+        context.activate_exec_pin("exec_out").await?;
 
         Ok(())
     }

@@ -54,18 +54,10 @@ impl NodeLogic for PathFromStorageDirNode {
         )
         .set_default_value(Some(json!(false)));
 
-        node.add_output_pin(
-            "failed",
-            "Failed",
-            "Not possible, for example on server, certain directories are not accessible",
-            VariableType::Execution,
-        );
-
         return node;
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        context.activate_exec_pin("failed").await?;
         context.deactivate_exec_pin("exec_out").await?;
 
         let node_scope: bool = context.evaluate_pin("node_scope").await?;
@@ -74,7 +66,6 @@ impl NodeLogic for PathFromStorageDirNode {
         context.set_pin_value("path", json!(path)).await?;
 
         context.activate_exec_pin("exec_out").await?;
-        context.deactivate_exec_pin("failed").await?;
         Ok(())
     }
 }

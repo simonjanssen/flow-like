@@ -154,6 +154,24 @@ impl NodeLogic for SwitchOnBitNode {
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
         let bit: Bit = context.evaluate_pin("bit").await?;
 
+        context.deactivate_exec_pin("llm").await?;
+        context.deactivate_exec_pin("vlm").await?;
+        context.deactivate_exec_pin("embedding").await?;
+        context.deactivate_exec_pin("image_embedding").await?;
+        context.deactivate_exec_pin("file").await?;
+        context.deactivate_exec_pin("media").await?;
+        context.deactivate_exec_pin("template").await?;
+        context.deactivate_exec_pin("tokenizer").await?;
+        context.deactivate_exec_pin("tokenizer_config").await?;
+        context.deactivate_exec_pin("special_tokens_map").await?;
+        context.deactivate_exec_pin("config").await?;
+        context.deactivate_exec_pin("course").await?;
+        context.deactivate_exec_pin("preprocessor_config").await?;
+        context.deactivate_exec_pin("projection").await?;
+        context.deactivate_exec_pin("project").await?;
+        context.deactivate_exec_pin("board").await?;
+        context.deactivate_exec_pin("other").await?;
+
         context.set_pin_value("bit_out", json!(bit)).await?;
 
         let output_pin = match bit.bit_type {

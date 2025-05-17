@@ -116,6 +116,8 @@ impl NodeLogic for CreateLocalDatabaseNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
+        context.deactivate_exec_pin("exec_out").await?;
+
         let table: String = context.evaluate_pin("name").await?;
         let cache_key = format!("db_{}", table);
         let cache_set = context.cache.read().await.contains_key(&cache_key);

@@ -54,6 +54,8 @@ impl NodeLogic for SetStructFieldNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
+        context.deactivate_exec_pin("exec_out").await?;
+
         let mut old_struct = context
             .evaluate_pin::<HashMap<String, flow_like_types::Value>>("struct_in")
             .await?;

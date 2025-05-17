@@ -59,6 +59,9 @@ impl NodeLogic for BranchNode {
         let true_pin = context.get_pin_by_name("true").await?;
         let false_pin = context.get_pin_by_name("false").await?;
 
+        context.deactivate_exec_pin_ref(&true_pin).await?;
+        context.deactivate_exec_pin_ref(&false_pin).await?;
+
         if condition {
             context.activate_exec_pin_ref(&true_pin).await?;
             context.deactivate_exec_pin_ref(&false_pin).await?;

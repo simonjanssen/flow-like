@@ -69,6 +69,8 @@ impl NodeLogic for PushContentNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
+        context.deactivate_exec_pin("exec_out").await?;
+
         let mut message: HistoryMessage = context.evaluate_pin("message").await?;
         let content_type: String = context.evaluate_pin("type").await?;
 

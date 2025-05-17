@@ -74,6 +74,8 @@ impl NodeLogic for SetHistoryResponseFormatNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
+        context.deactivate_exec_pin("exec_out").await?;
+
         let mut history: History = context.evaluate_pin("history").await?;
         let response_format: Value = context.evaluate_pin("response_format").await?;
 

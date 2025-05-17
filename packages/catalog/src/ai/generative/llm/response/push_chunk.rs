@@ -74,6 +74,8 @@ impl NodeLogic for PushChunkNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
+        context.deactivate_exec_pin("exec_out").await?;
+
         let mut response: Response = context.evaluate_pin("response").await?;
         let chunk: ResponseChunk = context.evaluate_pin("chunk").await?;
 

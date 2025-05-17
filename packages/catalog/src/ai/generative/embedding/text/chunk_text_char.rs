@@ -80,19 +80,11 @@ impl NodeLogic for ChunkTextChar {
         )
         .set_value_type(ValueType::Array);
 
-        node.add_output_pin(
-            "failed",
-            "Failed",
-            "Failed to embed the query",
-            VariableType::Execution,
-        );
-
         return node;
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
         context.deactivate_exec_pin("exec_out").await?;
-        context.activate_exec_pin("failed").await?;
 
         let text: String = context.evaluate_pin("text").await?;
         let capacity: i64 = context.evaluate_pin("capacity").await?;
@@ -117,7 +109,6 @@ impl NodeLogic for ChunkTextChar {
 
         context.set_pin_value("chunks", json!(chunks)).await?;
         context.activate_exec_pin("exec_out").await?;
-        context.deactivate_exec_pin("failed").await?;
 
         Ok(())
     }

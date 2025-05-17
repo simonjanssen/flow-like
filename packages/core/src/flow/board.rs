@@ -313,11 +313,18 @@ impl Board {
                                 if let Some(layer) = &node.layer {
                                     if let Some(layer) = self.layers.get_mut(layer) {
                                         if !layer.pins.contains_key(&pin.id) {
-                                            if let Some(old_pin) = old_pins.remove(&format!("{}-{}", layer.id, pin.id)) {
+                                            if let Some(old_pin) =
+                                                old_pins.remove(&format!("{}-{}", layer.id, pin.id))
+                                            {
                                                 layer.pins.insert(pin.id.clone(), old_pin);
                                             } else {
                                                 let mut new_pin = pin.clone();
-                                                new_pin.index = layer.pins.iter().filter(|(_, p)| p.pin_type == new_pin.pin_type).count() as u16;
+                                                new_pin.index = layer
+                                                    .pins
+                                                    .iter()
+                                                    .filter(|(_, p)| p.pin_type == new_pin.pin_type)
+                                                    .count()
+                                                    as u16;
                                                 layer.pins.insert(pin.id.clone(), new_pin);
                                             }
                                         }
@@ -351,11 +358,18 @@ impl Board {
                                 if let Some(layer) = &node.layer {
                                     if let Some(layer) = self.layers.get_mut(layer) {
                                         if !layer.pins.contains_key(&pin.id) {
-                                            if let Some(old_pin) = old_pins.remove(&format!("{}-{}", layer.id, pin.id)) {
+                                            if let Some(old_pin) =
+                                                old_pins.remove(&format!("{}-{}", layer.id, pin.id))
+                                            {
                                                 layer.pins.insert(pin.id.clone(), old_pin);
                                             } else {
                                                 let mut new_pin = pin.clone();
-                                                new_pin.index = layer.pins.iter().filter(|(_, p)| p.pin_type == new_pin.pin_type).count() as u16;
+                                                new_pin.index = layer
+                                                    .pins
+                                                    .iter()
+                                                    .filter(|(_, p)| p.pin_type == new_pin.pin_type)
+                                                    .count()
+                                                    as u16;
                                                 layer.pins.insert(pin.id.clone(), new_pin);
                                             }
                                         }

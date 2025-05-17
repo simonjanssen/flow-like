@@ -8,7 +8,7 @@ use flow_like::{
     },
     state::FlowLikeState,
 };
-use flow_like_types::{anyhow, async_trait, json::json};
+use flow_like_types::{anyhow, async_trait, bail, json::json};
 
 #[derive(Default)]
 pub struct EmbedDocumentNode {}
@@ -70,27 +70,18 @@ impl NodeLogic for EmbedDocumentNode {
         )
         .set_value_type(ValueType::Array);
 
-        node.add_output_pin(
-            "failed",
-            "Failed",
-            "Failed to embed the query",
-            VariableType::Execution,
-        );
-
         return node;
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
         context.deactivate_exec_pin("exec_out").await?;
-        context.activate_exec_pin("failed").await?;
 
         let query_string: String = context.evaluate_pin("query_string").await?;
         let model: CachedEmbeddingModel = context.evaluate_pin("model").await?;
 
         let cached_model = context.get_cache(&model.cache_key).await;
         if cached_model.is_none() {
-            context.log_message("Model not found in cache", LogLevel::Error);
-            return Ok(());
+            bail!("Model not found in cache");
         }
 
         let cached_model = cached_model.unwrap();
@@ -115,16 +106,14 @@ impl NodeLogic for EmbedDocumentNode {
         }
 
         if embeddings.len() <= 0 {
-            context.log_message("Failed to embed the query", LogLevel::Error);
-            return Ok(());
+            bail!("Failed to embed the query");
         }
 
         context
             .set_pin_value("vector", json!(embeddings[0]))
             .await?;
-        context.activate_exec_pin("exec_out").await?;
-        context.deactivate_exec_pin("failed").await?;
 
+        context.activate_exec_pin("exec_out").await?;
         Ok(())
     }
 }

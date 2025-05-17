@@ -60,6 +60,8 @@ impl NodeLogic for PushResponseNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
+        context.deactivate_exec_pin("exec_out").await?;
+
         let response: Response = context.evaluate_pin("response").await?;
         let cached_response = CachedChatResponse::load(context).await?;
         let current = {

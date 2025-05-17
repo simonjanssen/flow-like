@@ -50,18 +50,10 @@ impl NodeLogic for HashFileNode {
 
         node.add_output_pin("hash", "Hash", "Output Hash", VariableType::String);
 
-        node.add_output_pin(
-            "failed",
-            "Failed",
-            "Failed to hash the file",
-            VariableType::Execution,
-        );
-
         return node;
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        context.activate_exec_pin("failed").await?;
         context.deactivate_exec_pin("exec_out").await?;
         let path: FlowPath = context.evaluate_pin("path").await?;
 
@@ -70,7 +62,6 @@ impl NodeLogic for HashFileNode {
         let hash = store.hash(&path.path).await?;
 
         context.set_pin_value("hash", json!(hash)).await?;
-        context.deactivate_exec_pin("failed").await?;
         context.activate_exec_pin("exec_out").await?;
 
         Ok(())
