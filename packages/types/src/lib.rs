@@ -62,3 +62,4 @@ pub use image;
 pub use imageproc;
 pub use minijinja;
 pub use rxing;
+pub use ab_glyph;
