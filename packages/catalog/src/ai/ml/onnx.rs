@@ -62,42 +62,6 @@ impl NodeOnnxSession {
         NodeOnnxSession { session_ref: id }
     }
 
-    /// ONNX Sessions don't implement copy trait
-    /// We just need an immut reference to session for execution
-    /// So get_session should be sufficient
-    // pub async fn copy_session(&self, ctx: &mut ExecutionContext) -> Result<Self> {
-    //     let session = ctx
-    //         .cache
-    //         .read()
-    //         .await
-    //         .get(&self.session_ref)
-    //         .cloned()
-    //         .ok_or_else(|| flow_like_types::anyhow!("ONNX session not found in cache!"))?;
-
-    //     let session_wrapper = session
-    //         .as_any()
-    //         .downcast_ref::<NodeOnnxSessionWrapper>()
-    //         .ok_or_else(|| flow_like_types::anyhow!("Could not downcast to NodeOnnxSessionWrapper!"))?;
-
-    //     let session = session_wrapper
-    //         .session
-    //         .lock()
-    //         .await
-    //         .clone();
-    //     let new_id = create_id();
-    //     let new_session_ref = Arc::new(Mutex::new(session.clone()));
-    //     let new_wrapper = NodeOnnxSessionWrapper {
-    //         session: new_session_ref.clone(),
-    //     };
-    //     ctx
-    //         .cache
-    //         .write()
-    //         .await
-    //         .insert(new_id.clone(), Arc::new(new_wrapper));
-    //     let new_session = NodeOnnxSession { session_ref: new_id };
-    //     Ok(new_session)
-    // }
-
     /// Fetch ONNX Runtime Session from Cached Runtime Context
     pub async fn get_session(
         &self,
@@ -126,6 +90,7 @@ pub async fn register_functions() -> Vec<Arc<dyn NodeLogic>> {
     let nodes: Vec<Arc<dyn NodeLogic>> = vec![
         Arc::new(load::LoadOnnxNode::default()),
         Arc::new(detect::ObjectDetectionNode::default()),
+        Arc::new(classify::ImageClassificationNode::default()),
     ];
     nodes
 }
