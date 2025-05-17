@@ -5,7 +5,7 @@ use flow_like_model_provider::ml::ort::session::Session;
 use flow_like_types::{Cacheable, Result, create_id, sync::Mutex};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 /// ONNX Image Classification Nodes
 pub mod classify;
@@ -29,6 +29,7 @@ pub struct SessionWithMeta {
     pub input_width: u32,
     pub input_height: u32,
     pub output_name: String,
+    pub classes: Option<HashMap<i32, String>>,
 }
 
 /// ONNX Runtime Session Wrapper

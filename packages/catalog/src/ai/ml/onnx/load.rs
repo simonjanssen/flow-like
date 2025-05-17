@@ -13,7 +13,6 @@ use flow_like::{
     state::FlowLikeState,
 };
 use flow_like_types::{Error, Result, anyhow, async_trait, json::json};
-
 use flow_like_model_provider::ml::ort::session::Session;
 
 /// Determine input-tensor name and shape to resize our images accordingly
@@ -82,7 +81,7 @@ impl NodeLogic for LoadOnnxNode {
             VariableType::Execution,
         );
 
-        node.add_input_pin("path", "Path", "FlowPath", VariableType::Struct)
+        node.add_input_pin("path", "Path", "Path ONNX File", VariableType::Struct)
             .set_schema::<FlowPath>()
             .set_options(PinOptions::new().set_enforce_schema(true).build());
 
@@ -139,6 +138,7 @@ impl NodeLogic for LoadOnnxNode {
             input_width,
             input_height,
             output_name,
+            classes: None,
         };
         let node_session = NodeOnnxSession::new(context, session_with_meta).await;
 
