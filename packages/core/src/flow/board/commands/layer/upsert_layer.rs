@@ -50,8 +50,8 @@ impl Command for UpsertLayerCommand {
         for node in board.nodes.values_mut() {
             if nodes_set.contains(&node.id) {
                 node.layer = Some(self.layer.id.clone());
-                total_coordinates = total_coordinates + 1;
-                let coordinates = node.coordinates.clone().unwrap_or((0.0, 0.0, 0.0));
+                total_coordinates += 1;
+                let coordinates = node.coordinates.unwrap_or((0.0, 0.0, 0.0));
                 added_coordinates = (
                     added_coordinates.0 + coordinates.0,
                     added_coordinates.1 + coordinates.1,
@@ -63,7 +63,7 @@ impl Command for UpsertLayerCommand {
         for comment in board.comments.values_mut() {
             if nodes_set.contains(&comment.id) {
                 comment.layer = Some(self.layer.id.clone());
-                total_coordinates = total_coordinates + 1;
+                total_coordinates += 1;
                 added_coordinates = (
                     added_coordinates.0 + comment.coordinates.0,
                     added_coordinates.1 + comment.coordinates.1,
@@ -75,7 +75,7 @@ impl Command for UpsertLayerCommand {
         for layer in board.layers.values_mut() {
             if nodes_set.contains(&layer.id) {
                 layer.parent_id = Some(self.layer.id.clone());
-                total_coordinates = total_coordinates + 1;
+                total_coordinates += 1;
                 added_coordinates = (
                     added_coordinates.0 + layer.coordinates.0,
                     added_coordinates.1 + layer.coordinates.1,

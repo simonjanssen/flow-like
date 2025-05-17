@@ -1,4 +1,3 @@
-use crate::entity::user;
 use crate::error::AppError;
 use crate::state::AppState;
 use axum::extract::State;

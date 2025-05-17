@@ -1,7 +1,7 @@
 use super::{
     execution::LogLevel,
     node::{Node, NodeLogic},
-    pin::{Pin, PinType},
+    pin::Pin,
     variable::Variable,
 };
 use crate::{
