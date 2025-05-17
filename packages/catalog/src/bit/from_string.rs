@@ -1,13 +1,13 @@
 use flow_like::{
     bit::Bit,
     flow::{
-        execution::{LogLevel, context::ExecutionContext},
+        execution::context::ExecutionContext,
         node::{Node, NodeLogic},
         variable::VariableType,
     },
     state::FlowLikeState,
 };
-use flow_like_types::{async_trait, json::json};
+use flow_like_types::{async_trait, bail, json::json};
 
 #[derive(Default)]
 pub struct BitFromStringNode {}
@@ -48,18 +48,10 @@ impl NodeLogic for BitFromStringNode {
         node.add_output_pin("output_bit", "Bit", "Output Bit", VariableType::Struct)
             .set_schema::<Bit>();
 
-        node.add_output_pin(
-            "failed",
-            "Failed Loading",
-            "Failed to load the bit",
-            VariableType::Execution,
-        );
-
         return node;
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        context.activate_exec_pin("failed").await?;
         context.deactivate_exec_pin("exec_out").await?;
         let bit_id: String = context.evaluate_pin("bit_id").await?;
         let http_client = context.app_state.lock().await.http_client.clone();
@@ -67,13 +59,11 @@ impl NodeLogic for BitFromStringNode {
 
         if let Ok(bit) = bit {
             context.set_pin_value("output_bit", json!(bit)).await?;
-            context.deactivate_exec_pin("failed").await?;
             context.activate_exec_pin("exec_out").await?;
             return Ok(());
         }
 
         let err = bit.err().unwrap();
-        context.log_message(&format!("Bit not found: {}", err), LogLevel::Error);
-        Ok(())
+        bail!("Bit not found: {}", err);
     }
 }

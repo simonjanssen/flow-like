@@ -57,18 +57,10 @@ impl NodeLogic for WriteBytesNode {
             VariableType::Execution,
         );
 
-        node.add_output_pin(
-            "failed",
-            "Failed",
-            "Triggered if writing the file fails",
-            VariableType::Execution,
-        );
-
         return node;
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        context.activate_exec_pin("failed").await?;
         context.deactivate_exec_pin("exec_out").await?;
 
         let path: FlowPath = context.evaluate_pin("path").await?;
@@ -81,7 +73,6 @@ impl NodeLogic for WriteBytesNode {
 
         store.put(&path.path, payload).await?;
 
-        context.deactivate_exec_pin("failed").await?;
         context.activate_exec_pin("exec_out").await?;
 
         Ok(())

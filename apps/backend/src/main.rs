@@ -8,6 +8,7 @@ use std::{
     time::Duration,
 };
 use tracing_subscriber::prelude::*;
+mod entity;
 mod error;
 mod routes;
 mod state;

@@ -72,6 +72,8 @@ impl NodeLogic for SetVariable {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
+        context.deactivate_exec_pin("exec_out").await?;
+
         let var_ref: String = context.evaluate_pin("var_ref").await?;
         let value = context.evaluate_pin::<Value>("value_in").await?;
 

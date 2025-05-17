@@ -63,6 +63,8 @@ impl NodeLogic for ExtendArrayNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
+        context.deactivate_exec_pin("exec_out").await?;
+
         let array_in: Vec<Value> = context.evaluate_pin("array_in").await?;
         let value: Vec<Value> = context.evaluate_pin("values").await?;
         let mut array_out = array_in.clone();

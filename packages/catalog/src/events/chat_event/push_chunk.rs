@@ -60,6 +60,7 @@ impl NodeLogic for PushChunkNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
+        context.deactivate_exec_pin("exec_out").await?;
         let chunk: ResponseChunk = context.evaluate_pin("chunk").await?;
         let cached_response = CachedChatResponse::load(context).await?;
         {

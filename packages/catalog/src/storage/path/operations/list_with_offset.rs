@@ -60,13 +60,6 @@ impl NodeLogic for ListWithOffsetNode {
             VariableType::Execution,
         );
 
-        node.add_output_pin(
-            "failed",
-            "Failed",
-            "Failed to list the paths",
-            VariableType::Execution,
-        );
-
         node.add_output_pin("paths", "Paths", "Output Paths", VariableType::Struct)
             .set_schema::<FlowPath>()
             .set_value_type(ValueType::Array);
@@ -75,7 +68,6 @@ impl NodeLogic for ListWithOffsetNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        context.activate_exec_pin("failed").await?;
         context.deactivate_exec_pin("exec_out").await?;
         let original_prefix: FlowPath = context.evaluate_pin("prefix").await?;
         let original_offset: FlowPath = context.evaluate_pin("offset").await?;
@@ -102,7 +94,6 @@ impl NodeLogic for ListWithOffsetNode {
             .collect::<Vec<FlowPath>>();
 
         context.set_pin_value("paths", json!(paths)).await?;
-        context.deactivate_exec_pin("failed").await?;
         context.activate_exec_pin("exec_out").await?;
 
         Ok(())

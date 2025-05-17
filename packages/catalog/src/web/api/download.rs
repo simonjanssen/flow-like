@@ -64,18 +64,12 @@ impl NodeLogic for HttpDownloadNode {
             "Execution if the request succeeds",
             VariableType::Execution,
         );
-        node.add_output_pin(
-            "exec_error",
-            "Error",
-            "Execution if the request fails",
-            VariableType::Execution,
-        );
+
         node
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
         context.deactivate_exec_pin("exec_success").await?;
-        context.activate_exec_pin("exec_error").await?;
 
         let request: HttpRequest = context.evaluate_pin("request").await?;
         let flow_path: FlowPath = context.evaluate_pin("flow_path").await?;
@@ -85,7 +79,6 @@ impl NodeLogic for HttpDownloadNode {
             .download_to_path(&client, &flow_path, context)
             .await?;
 
-        context.deactivate_exec_pin("exec_error").await?;
         context.activate_exec_pin("exec_success").await?;
 
         Ok(())

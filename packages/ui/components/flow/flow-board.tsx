@@ -932,13 +932,14 @@ export function FlowBoard({
 				const command = moveNodeCommand({
 					node_id: node.id,
 					to_coordinates: [node.position.x, node.position.y, 0],
+					current_layer: currentLayer,
 				});
 
 				commands.push(command);
 			}
 			await executeCommands(commands);
 		},
-		[boardId, executeCommands],
+		[boardId, executeCommands, currentLayer],
 	);
 
 	const isValidConnectionCB = useCallback(

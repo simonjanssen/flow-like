@@ -45,12 +45,21 @@ impl NodeLogic for ToStringNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        let string: Value = context.evaluate_pin("value").await?;
+        let string = context.evaluate_pin_to_ref("value").await?;
         let pretty = context.evaluate_pin::<bool>("pretty").await?;
-        let value: String = if pretty {
-            flow_like_types::json::to_string_pretty(&string)?
-        } else {
-            flow_like_types::json::to_string(&string)?
+
+        let value: String = {
+            let guard = string.as_ref().lock().await;
+            let v: &flow_like_types::Value = &guard;
+
+            let s: String = match v {
+                Value::String(inner) => inner.clone(),
+                Value::Bool(b) => b.to_string(),
+                Value::Number(n) => n.to_string(),
+                _ if pretty => flow_like_types::json::to_string_pretty(v)?,
+                _ => flow_like_types::json::to_string(v)?,
+            };
+            s
         };
         context
             .set_pin_value("string", flow_like_types::json::json!(value))

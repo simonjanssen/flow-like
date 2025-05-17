@@ -8,7 +8,7 @@ import {
 } from "../../../lib/uint8";
 import { Button, Separator } from "../../ui";
 
-export function StringArrayVariable({
+export function StringSetVariable({
 	variable,
 	onChange,
 }: Readonly<{ variable: IVariable; onChange: (variable: IVariable) => void }>) {
@@ -27,7 +27,7 @@ export function StringArrayVariable({
 		const updated = [...values, trimmed];
 		onChange({
 			...variable,
-			default_value: convertJsonToUint8Array(updated),
+			default_value: convertJsonToUint8Array(Array.from(new Set(updated))),
 		});
 		setNewValue("");
 	}, [newValue, values, onChange, variable]);
@@ -38,7 +38,7 @@ export function StringArrayVariable({
 			const updated = values.filter((_, i) => i !== index);
 			onChange({
 				...variable,
-				default_value: convertJsonToUint8Array(updated),
+				default_value: convertJsonToUint8Array(Array.from(new Set(updated))),
 			});
 		},
 		[values, onChange, variable],

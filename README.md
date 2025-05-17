@@ -53,8 +53,6 @@ Flow-Like is a powerful and flexible automation suite designed to handle enterpr
 
 ## 🚀 Getting Started
 
-*(This section would typically include instructions on how to install, configure, and run Flow-Like for the first time. You can add details specific to your project here.)*
-
 Example:
 1.  Clone the repository: `git clone https://github.com/TM9657/flow-like`
 2.  Navigate to the project directory: `cd flow-like`

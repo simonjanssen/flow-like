@@ -5,15 +5,22 @@ import {
 	IVariableType,
 } from "../../../lib/schema/flow/variable";
 import { BoolArrayVariable } from "./bool-array-variable";
+import { BoolSetVariable } from "./bool-set-variable";
 import { BoolVariable } from "./bool-variable";
 import { DateArrayVariable } from "./date-array-variable";
+import { DateSetVariable } from "./date-set-variable";
 import { DateVariable } from "./date-variable";
 import { FloatArrayVariable } from "./float-array-variable";
+import { FloatSetVariable } from "./float-set-variable";
 import { FloatVariable } from "./float-variable";
 import { IntegerArrayVariable } from "./integer-array-variable";
+import { IntegerSetVariable } from "./integer-set-variable";
 import { IntegerVariable } from "./integer-variable";
+import { PathbufArrayVariable } from "./pathbuf-array-variable";
+import { PathbufSetVariable } from "./pathbuf-set-variable";
 import { PathbufVariable } from "./pathbuf-variable";
 import { StringArrayVariable } from "./string-array-variable";
+import { StringSetVariable } from "./string-set-variable";
 import { StringVariable } from "./string-variable";
 
 export function VariablesMenuEdit({
@@ -55,6 +62,18 @@ export function VariablesMenuEdit({
 	}
 
 	if (
+		variable.data_type === IVariableType.String &&
+		variable.value_type === IValueType.HashSet
+	) {
+		return (
+			<StringSetVariable
+				variable={intermediateValue}
+				onChange={setIntermediateValue}
+			/>
+		);
+	}
+
+	if (
 		variable.data_type === IVariableType.Boolean &&
 		variable.value_type === IValueType.Normal
 	) {
@@ -72,6 +91,18 @@ export function VariablesMenuEdit({
 	) {
 		return (
 			<BoolArrayVariable
+				variable={intermediateValue}
+				onChange={setIntermediateValue}
+			/>
+		);
+	}
+
+	if (
+		variable.data_type === IVariableType.Boolean &&
+		variable.value_type === IValueType.HashSet
+	) {
+		return (
+			<BoolSetVariable
 				variable={intermediateValue}
 				onChange={setIntermediateValue}
 			/>
@@ -103,6 +134,18 @@ export function VariablesMenuEdit({
 	}
 
 	if (
+		variable.data_type === IVariableType.Date &&
+		variable.value_type === IValueType.HashSet
+	) {
+		return (
+			<DateSetVariable
+				variable={intermediateValue}
+				onChange={setIntermediateValue}
+			/>
+		);
+	}
+
+	if (
 		variable.data_type === IVariableType.Float &&
 		variable.value_type === IValueType.Normal
 	) {
@@ -120,6 +163,18 @@ export function VariablesMenuEdit({
 	) {
 		return (
 			<FloatArrayVariable
+				variable={intermediateValue}
+				onChange={setIntermediateValue}
+			/>
+		);
+	}
+
+	if (
+		variable.data_type === IVariableType.Float &&
+		variable.value_type === IValueType.HashSet
+	) {
+		return (
+			<FloatSetVariable
 				variable={intermediateValue}
 				onChange={setIntermediateValue}
 			/>
@@ -151,11 +206,47 @@ export function VariablesMenuEdit({
 	}
 
 	if (
+		variable.data_type === IVariableType.Integer &&
+		variable.value_type === IValueType.HashSet
+	) {
+		return (
+			<IntegerSetVariable
+				variable={intermediateValue}
+				onChange={setIntermediateValue}
+			/>
+		);
+	}
+
+	if (
 		variable.data_type === IVariableType.PathBuf &&
 		variable.value_type === IValueType.Normal
 	) {
 		return (
 			<PathbufVariable
+				variable={intermediateValue}
+				onChange={setIntermediateValue}
+			/>
+		);
+	}
+
+	if (
+		variable.data_type === IVariableType.PathBuf &&
+		variable.value_type === IValueType.Array
+	) {
+		return (
+			<PathbufArrayVariable
+				variable={intermediateValue}
+				onChange={setIntermediateValue}
+			/>
+		);
+	}
+
+	if (
+		variable.data_type === IVariableType.PathBuf &&
+		variable.value_type === IValueType.HashSet
+	) {
+		return (
+			<PathbufSetVariable
 				variable={intermediateValue}
 				onChange={setIntermediateValue}
 			/>

@@ -14,20 +14,23 @@ use flow_like::{
 use flow_like_storage::object_store::PutPayload;
 use flow_like_types::{
     Bytes, anyhow, async_trait,
-    image::codecs::{
-        avif::AvifEncoder,
-        bmp::BmpEncoder,
-        farbfeld::FarbfeldEncoder,
-        gif::GifEncoder,
-        hdr::HdrEncoder,
-        ico::IcoEncoder,
-        jpeg::JpegEncoder,
-        openexr::OpenExrEncoder,
-        png::{CompressionType, FilterType, PngEncoder},
-        pnm::PnmEncoder,
-        qoi::QoiEncoder,
-        tga::TgaEncoder,
-        webp::WebPEncoder,
+    image::{
+        DynamicImage,
+        codecs::{
+            avif::AvifEncoder,
+            bmp::BmpEncoder,
+            farbfeld::FarbfeldEncoder,
+            gif::GifEncoder,
+            hdr::HdrEncoder,
+            ico::IcoEncoder,
+            jpeg::JpegEncoder,
+            openexr::OpenExrEncoder,
+            png::{CompressionType, FilterType, PngEncoder},
+            pnm::PnmEncoder,
+            qoi::QoiEncoder,
+            tga::TgaEncoder,
+            webp::WebPEncoder,
+        },
     },
     json::json,
 };
@@ -149,7 +152,9 @@ impl NodeLogic for WriteImageNode {
             "JPEG" => {
                 let quality: u8 = context.evaluate_pin("quality").await?;
                 let encoder = JpegEncoder::new_with_quality(&mut encoded, quality);
-                img.write_with_encoder(encoder)?;
+                let rgb_img = DynamicImage::ImageRgb8(img.to_rgb8());
+
+                rgb_img.write_with_encoder(encoder)?;
             }
             "PNG" => {
                 let compression_type: String = context.evaluate_pin("compression_type").await?;
@@ -201,7 +206,9 @@ impl NodeLogic for WriteImageNode {
             }
             "PNM" => {
                 let encoder = PnmEncoder::new(&mut encoded);
-                img.write_with_encoder(encoder)?;
+                let rgb_img = DynamicImage::ImageRgb8(img.to_rgb8());
+
+                rgb_img.write_with_encoder(encoder)?;
             }
             "QOI" => {
                 let encoder = QoiEncoder::new(&mut encoded);
@@ -217,7 +224,9 @@ impl NodeLogic for WriteImageNode {
             }
             "HDR" => {
                 let encoder = HdrEncoder::new(&mut encoded);
-                img.write_with_encoder(encoder)?;
+                let rgb_img = DynamicImage::ImageRgb8(img.to_rgb8());
+
+                rgb_img.write_with_encoder(encoder)?;
             }
             "OpenExr" => {
                 let encoder = OpenExrEncoder::new(&mut encoded);

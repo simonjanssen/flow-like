@@ -9,7 +9,7 @@ import {
 } from "../../../lib/uint8";
 import { Button, Separator } from "../../ui";
 
-export function BoolArrayVariable({
+export function BoolSetVariable({
 	variable,
 	onChange,
 }: Readonly<{ variable: IVariable; onChange: (variable: IVariable) => void }>) {
@@ -25,7 +25,7 @@ export function BoolArrayVariable({
 		const updated = [...currentArray, newValue];
 		onChange({
 			...variable,
-			default_value: convertJsonToUint8Array(updated),
+			default_value: convertJsonToUint8Array(Array.from(new Set(updated))),
 		});
 		setNewValue(false);
 	};
@@ -35,7 +35,7 @@ export function BoolArrayVariable({
 		updated.splice(idx, 1);
 		onChange({
 			...variable,
-			default_value: convertJsonToUint8Array(updated),
+			default_value: convertJsonToUint8Array(Array.from(new Set(updated))),
 		});
 	};
 
@@ -68,7 +68,9 @@ export function BoolArrayVariable({
 								updated[idx] = v;
 								onChange({
 									...variable,
-									default_value: convertJsonToUint8Array(updated),
+									default_value: convertJsonToUint8Array(
+										Array.from(new Set(updated)),
+									),
 								});
 							}}
 							id={`item-${idx}`}

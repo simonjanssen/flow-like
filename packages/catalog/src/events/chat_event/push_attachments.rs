@@ -60,6 +60,8 @@ impl NodeLogic for PushAttachmentsNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
+        context.deactivate_exec_pin("exec_out").await?;
+
         let attachments: Vec<Attachment> = context.evaluate_pin("attachments").await?;
         let cached_response = CachedChatResponse::load(context).await?;
         {

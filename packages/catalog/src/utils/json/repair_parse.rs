@@ -1,6 +1,6 @@
 use flow_like::{
     flow::{
-        execution::{LogLevel, context::ExecutionContext},
+        execution::context::ExecutionContext,
         node::{Node, NodeLogic},
         variable::VariableType,
     },
@@ -58,32 +58,17 @@ impl NodeLogic for RepairParseNode {
             VariableType::Struct,
         );
 
-        node.add_output_pin(
-            "failed",
-            "Failed",
-            "Execution continues if parsing fails",
-            VariableType::Execution,
-        );
-
         return node;
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
         context.deactivate_exec_pin("exec_out").await?;
-        context.activate_exec_pin("failed").await?;
 
         let json_string: String = context.evaluate_pin("json_string").await?;
 
-        match parse_malformed_json(&json_string) {
-            Ok(value) => {
-                context.set_pin_value("result", value).await?;
-                context.activate_exec_pin("exec_out").await?;
-                context.deactivate_exec_pin("failed").await?;
-            }
-            Err(err) => {
-                context.log_message(&format!("Failed to parse JSON: {}", err), LogLevel::Error);
-            }
-        }
+        let json = parse_malformed_json(&json_string)?;
+        context.set_pin_value("result", json).await?;
+        context.activate_exec_pin("exec_out").await?;
 
         Ok(())
     }

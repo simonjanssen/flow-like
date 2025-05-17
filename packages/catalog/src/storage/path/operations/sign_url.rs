@@ -1,7 +1,7 @@
 use crate::storage::path::FlowPath;
 use flow_like::{
     flow::{
-        execution::{LogLevel, context::ExecutionContext},
+        execution::context::ExecutionContext,
         node::{Node, NodeLogic},
         pin::PinOptions,
         variable::VariableType,
@@ -83,18 +83,10 @@ impl NodeLogic for SignUrlNode {
             VariableType::String,
         );
 
-        node.add_output_pin(
-            "failed",
-            "Failed",
-            "Triggered if the signing process fails",
-            VariableType::Execution,
-        );
-
         return node;
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        context.activate_exec_pin("failed").await?;
         context.deactivate_exec_pin("exec_out").await?;
 
         let path: FlowPath = context.evaluate_pin("path").await?;
@@ -106,23 +98,12 @@ impl NodeLogic for SignUrlNode {
         let signed_url = path
             .store
             .sign(&method, &path.path, Duration::from_secs(expiration as u64))
-            .await;
+            .await?;
 
-        match signed_url {
-            Ok(url) => {
-                context
-                    .set_pin_value("signed_url", json!(url.to_string()))
-                    .await?;
-                context.deactivate_exec_pin("failed").await?;
-                context.activate_exec_pin("exec_out").await?;
-            }
-            Err(e) => {
-                context.log_message(
-                    &format!("Failed to generate signed URL: {}", e),
-                    LogLevel::Error,
-                );
-            }
-        }
+        context
+            .set_pin_value("signed_url", json!(signed_url.to_string()))
+            .await?;
+        context.activate_exec_pin("exec_out").await?;
 
         Ok(())
     }

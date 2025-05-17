@@ -58,17 +58,10 @@ impl NodeLogic for HeadNode {
         node.add_output_pin("size", "Size", "Size", VariableType::Integer);
         node.add_output_pin("version", "Version", "Version", VariableType::String);
 
-        node.add_output_pin(
-            "failed",
-            "Failed",
-            "Failed to get the metadata",
-            VariableType::Execution,
-        );
         return node;
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        context.activate_exec_pin("failed").await?;
         context.deactivate_exec_pin("exec_out").await?;
         let path: FlowPath = context.evaluate_pin("path").await?;
 
@@ -90,7 +83,6 @@ impl NodeLogic for HeadNode {
             .set_pin_value("version", json!(metadata.version.unwrap_or_default()))
             .await?;
 
-        context.deactivate_exec_pin("failed").await?;
         context.activate_exec_pin("exec_out").await?;
 
         Ok(())

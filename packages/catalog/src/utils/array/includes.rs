@@ -53,10 +53,23 @@ impl NodeLogic for ArrayIncludesNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        let array_in: Vec<Value> = context.evaluate_pin("array_in").await?;
+        let array_in = context.evaluate_pin_to_ref("array_in").await?;
         let value: Value = context.evaluate_pin("value").await?;
 
-        let includes = array_in.contains(&value);
+        let mut includes = false;
+
+        {
+            let array_in = array_in.as_ref().lock().await;
+
+            if let Some(array) = array_in.as_array() {
+                for item in array.iter() {
+                    if item == &value {
+                        includes = true;
+                        break;
+                    }
+                }
+            }
+        }
 
         context.set_pin_value("includes", json!(includes)).await?;
         Ok(())

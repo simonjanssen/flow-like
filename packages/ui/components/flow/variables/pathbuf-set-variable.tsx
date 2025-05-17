@@ -12,7 +12,7 @@ import { cn } from "../../../lib/utils";
 import { useBackend } from "../../../state/backend-state";
 import { Separator } from "../../ui";
 
-export function PathbufArrayVariable({
+export function PathbufSetVariable({
 	variable,
 	onChange,
 }: Readonly<{ variable: IVariable; onChange: (variable: IVariable) => void }>) {
@@ -46,7 +46,7 @@ export function PathbufArrayVariable({
 		const updated = [...items, finalPath];
 		onChange({
 			...variable,
-			default_value: convertJsonToUint8Array(updated),
+			default_value: convertJsonToUint8Array(Array.from(new Set(updated))),
 		});
 	}, [backend, isFolder, items, onChange, variable]);
 
@@ -55,7 +55,7 @@ export function PathbufArrayVariable({
 			const updated = items.filter((_, i) => i !== idx);
 			onChange({
 				...variable,
-				default_value: convertJsonToUint8Array(updated),
+				default_value: convertJsonToUint8Array(Array.from(new Set(updated))),
 			});
 		},
 		[items, onChange, variable],
