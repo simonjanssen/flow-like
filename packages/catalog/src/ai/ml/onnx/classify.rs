@@ -43,7 +43,6 @@ fn img_to_arr(
     mean: &[f32; 3],
     std: &[f32; 3],
 ) -> Result<Array4<f32>, Error> {
-
     let (img_width, img_height) = img.dimensions();
 
     // first resize, then crop a centered square from resized such that cropped/resized = crop_pct and cropped = ONNX input shape
@@ -100,9 +99,7 @@ fn img_to_arr(
     }
 
     // expand into 4dim array
-    let arr4 = arr3
-        .permuted_axes([2, 0, 1])
-        .insert_axis(Axis(0));
+    let arr4 = arr3.permuted_axes([2, 0, 1]).insert_axis(Axis(0));
     Ok(arr4)
 }
 
@@ -234,15 +231,15 @@ impl NodeLogic for ImageClassificationNode {
             let arr_in = {
                 let img = node_img.get_image(context).await?;
                 let img_guard = img.lock().await;
-                let arr = img_to_arr(
+
+                img_to_arr(
                     &img_guard,
                     session_guard.input_width,
                     session_guard.input_height,
                     crop_pct,
                     mean,
                     std,
-                )?;
-                arr
+                )?
             }; // drop img_guard
 
             let inputs = match inputs![&session_guard.input_name => arr_in.view()] {

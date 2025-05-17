@@ -11,7 +11,7 @@ use flow_like::{
 };
 use flow_like_types::{
     Error, JsonSchema, Result, anyhow, async_trait,
-    image::{DynamicImage, imageops::FilterType, GenericImageView},
+    image::{DynamicImage, GenericImageView, imageops::FilterType},
     json::{Deserialize, Serialize, json},
 };
 
@@ -26,14 +26,12 @@ use std::time::Instant;
 /// Resulting normalized 4-dim array has shape [B, C, W, H] (batch size, channels, width, height)
 /// ONNX detection model requires Array4-shaped, 0..1 normalized input
 fn img_to_arr(img: &DynamicImage, width: u32, height: u32) -> Result<Array4<f32>, Error> {
-
     let (img_width, img_height) = img.dimensions();
 
     let buf_u8 = if (img_width == width) && (img_height == height) {
         img.to_rgb8().into_raw()
     } else {
-        img
-            .resize_exact(width, height, FilterType::Triangle)
+        img.resize_exact(width, height, FilterType::Triangle)
             .into_rgb8()
             .into_raw()
     };
@@ -67,7 +65,7 @@ pub struct BoundingBox {
     pub y2: f32, // bottom
     pub score: f32,
     pub class_idx: i32,
-    pub class_name: Option<String>
+    pub class_name: Option<String>,
 }
 
 impl BoundingBox {
@@ -385,7 +383,7 @@ impl NodeLogic for ObjectDetectionNode {
                 img_width,
                 img_height,
                 input_width,
-                input_height
+                input_height,
             )
         }; // drop ONNX session guard
 

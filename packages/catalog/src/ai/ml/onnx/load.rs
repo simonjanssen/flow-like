@@ -12,8 +12,8 @@ use flow_like::{
     },
     state::FlowLikeState,
 };
-use flow_like_types::{Error, Result, anyhow, async_trait, json::json};
 use flow_like_model_provider::ml::ort::session::Session;
+use flow_like_types::{Error, Result, anyhow, async_trait, json::json};
 
 /// Determine input-tensor name and shape to resize our images accordingly
 /// For simplicity, we are assuming that the first tensor is the image-related one.
@@ -39,7 +39,7 @@ fn determine_onnx_output(session: &Session) -> Result<String, Error> {
         if let Some(dims) = output.output_type.tensor_dimensions() {
             let d = dims.len();
             if d > 1 {
-                let (w, h) = (dims[d - 2], dims[d - 1]);
+                //let (w, h) = (dims[d - 2], dims[d - 1]);
                 return Ok(String::from(&output.name));
             }
         }

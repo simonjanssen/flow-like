@@ -58,8 +58,8 @@ pub mod sync {
 pub use rand;
 pub mod intercom;
 pub mod utils;
+pub use ab_glyph;
 pub use image;
 pub use imageproc;
 pub use minijinja;
 pub use rxing;
-pub use ab_glyph;
