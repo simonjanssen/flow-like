@@ -44,10 +44,10 @@ jobs:
           echo "CERT_ID=$CERT_ID" >> $GITHUB_ENV
           echo "Certificate imported."
 
-      # - name: setup node
-      #   uses: actions/setup-node@v4
-      #   with:
-      #     node-version: lts/*
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
 
       # - name: Install Protoc
       #   uses: arduino/setup-protoc@v3
