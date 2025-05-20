@@ -492,7 +492,7 @@ mod tests {
             .collect::<Result<_, _>>()?;
 
         db.upsert(json_records, "id".to_string()).await?;
-        db.index("name", Some("FULL_TEXT")).await?;
+        db.index("name", Some("FULL TEXT")).await?;
 
         let search_results: Vec<Value> = db.fts_search("Alice", None, 10, 0).await?;
 
