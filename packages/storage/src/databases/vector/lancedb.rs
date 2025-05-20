@@ -6,6 +6,7 @@ use futures::TryStreamExt;
 use lancedb::index::scalar::BTreeIndexBuilder;
 use lancedb::index::scalar::BitmapIndexBuilder;
 use lancedb::index::scalar::LabelListIndexBuilder;
+use lancedb::query::QueryExecutionOptions;
 use lancedb::{
     Connection, Table, connect,
     index::{
@@ -179,7 +180,7 @@ impl VectorStore for LanceDBVectorStore {
             query = query.only_if(filter);
         }
 
-        let result = query.execute_hybrid().await?;
+        let result = query.execute_hybrid(QueryExecutionOptions::default()).await?;
         let result = result.try_collect::<Vec<_>>().await.ok();
         let result = record_batches_to_vec(result)?;
         Ok(result)

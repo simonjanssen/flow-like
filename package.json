@@ -5,6 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"dev:desktop": "bun run --cwd ./apps/desktop dev:all",
+		"dev:desktop:win": "bun run --cwd ./apps/desktop dev:all:win",
 		"dev:backend": "bun run --cwd ./apps/backend dev",
 		"dev:embedded": "bun run --cwd ./apps/embedded dev",
 		"dev:website": "bun run --cwd ./apps/website dev",
@@ -18,7 +19,7 @@
 		"deploy:website:force": "bun run --cwd ./apps/website deploy:force",
 		"deploy:docs": "bun run --cwd ./apps/docs deploy",
 		"deploy:docs:force": "bun run --cwd ./apps/docs deploy:force",
-		"postinstall": "cargo install cargo-license cargo-watch systemfd",
+		"postinstall": "cargo install cargo-license cargo-watch systemfd --locked",
 		"version": "npm version patch -m \"Increment version to %s\"",
 		"bloat": "cargo bloat --release -n 10",
 		"bench": "cargo bench",

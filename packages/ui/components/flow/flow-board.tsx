@@ -1040,7 +1040,7 @@ export function FlowBoard({
 	);
 
 	return (
-		<div className="min-h-dvh h-dvh max-h-dvh w-full flex-1 flex-grow">
+		<div className="min-h-dvh h-dvh max-h-dvh w-full flex-1 flex-grow flex-col">
 			<div className="flex items-center justify-center absolute translate-x-[-50%] mt-5 left-[50dvw] z-40">
 				{board.data && editBoard && (
 					<BoardMeta
@@ -1116,7 +1116,7 @@ export function FlowBoard({
 					]}
 				/>
 			</div>
-			<ResizablePanelGroup direction="horizontal">
+			<ResizablePanelGroup direction="horizontal" className="flex flex-grow min-h-dvh h-dvh">
 				<ResizablePanel
 					className="z-50 bg-background"
 					autoSave="flow-variables"
@@ -1131,7 +1131,7 @@ export function FlowBoard({
 				</ResizablePanel>
 				<ResizableHandle withHandle />
 				<ResizablePanel autoSave="flow-main-container">
-					<ResizablePanelGroup direction="vertical">
+					<ResizablePanelGroup direction="vertical" className="h-full flex flex-grow">
 						<ResizablePanel autoSave="flow-main" ref={flowPanelRef}>
 							<FlowContextMenu
 								droppedPin={droppedPin}

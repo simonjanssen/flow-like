@@ -13,8 +13,8 @@ readme = "README.md"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
-name = "flow_like_dekstop_lib"
-crate-type = ["lib", "cdylib", "staticlib"]
+name = "flow_like_desktop_lib"
+crate-type = ["lib", "cdylib"]
 
 [build-dependencies]
 tauri-build = { version = "2.1.1", features = [] }

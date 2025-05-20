@@ -53,20 +53,6 @@ pub fn info() {
     }
 }
 
-pub fn get_vram() -> flow_like_types::Result<u64> {
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
-    let mut vram = 0;
-    // Enumerate all available adapters (which represent the graphics devices)
-    let adapters = instance.enumerate_adapters(wgpu::Backends::PRIMARY);
-
-    for adapter in adapters {
-        let limits = adapter.limits();
-        vram = std::cmp::max(vram, limits.max_buffer_size);
-    }
-
-    Ok(vram)
-}
-
 pub fn get_ram() -> flow_like_types::Result<u64> {
     let mut sys = System::new_all();
     sys.refresh_all();
