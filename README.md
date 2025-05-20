@@ -65,3 +65,5 @@ We welcome contributions from the community! Whether it's bug reports, feature s
 ---
 
 *We care for good software. If you like it, contribute or consider a Premium Subscription.*
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FTM9657%2Fflow-like.svg?type=large&issueType=license)](https://app.fossa.com/projects/git%2Bgithub.com%2FTM9657%2Fflow-like?ref=badge_large&issueType=license)

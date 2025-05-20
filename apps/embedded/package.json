@@ -12,7 +12,7 @@
 		"@tm9657/flow-like-ui": "workspace:*",
 		"@xyflow/react": "^12.5.5",
 		"comlink": "^4.4.2",
-		"next": "15.2.4",
+		"next": "15.3.2",
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0"
 	},
