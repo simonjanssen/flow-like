@@ -1,6 +1,6 @@
 name: 'Setup Environment'
 description: 'Sets up the environment for building the project, including dependencies, caches, and tools.'
- 
+
 inputs:
   repo-token:
     description: 'GitHub token'
@@ -36,7 +36,7 @@ runs:
       with:
         path: |
           ~/.bun
-        key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
+        key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
         restore-keys: ${{ runner.os }}-bun-
 
     - name: Cache cargo registry
