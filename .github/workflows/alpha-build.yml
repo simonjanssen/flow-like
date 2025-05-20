@@ -73,7 +73,7 @@ jobs:
 
       - name: check llamafile
         run: |
-          if [ ! -f "./src-tauri/bin/llamafiler" ]; then
+          if [ ! -f "./apps/desktop/src-tauri/bin/llamafiler" ]; then
             echo "Llamafile not downloaded successfully"
             exit 1
           fi
