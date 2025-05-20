@@ -1,7 +1,6 @@
 import { Button } from "@tm9657/flow-like-ui";
-import { BsDiscord, BsTwitterX } from "react-icons/bs";
+import { BsDiscord, BsTwitterX, BsGithub } from "react-icons/bs";
 import { LuBookMarked } from "react-icons/lu";
-import { VscGithubInverted } from "react-icons/vsc";
 
 export function Header() {
 	return (
@@ -17,7 +16,7 @@ export function Header() {
 					rel="noreferrer"
 				>
 					<Button variant={"outline"} size={"icon"}>
-						<VscGithubInverted width={5} height={5} className="w-5 h-5" />
+						<BsGithub width={5} height={5} className="w-5 h-5" />
 					</Button>
 				</a>
 				<a href="https://x.com/tm9657" target="_blank" rel="noreferrer">
