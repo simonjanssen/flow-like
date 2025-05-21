@@ -1,4 +1,3 @@
-use exif::{Reader, Tag, Value};
 use id3::TagLike;
 use ignore::WalkBuilder;
 use pdf::file::FileOptions;
@@ -154,90 +153,6 @@ impl FileMetadata {
     }
 
     fn from_img(&mut self) -> Self {
-        if let Ok(file) = fs::File::open(&self.file_path) {
-            let mut buf_reader = std::io::BufReader::new(file);
-            let exif_reader = Reader::new().read_from_container(&mut buf_reader).ok();
-            if exif_reader.is_none() {
-                return self.clone();
-            }
-
-            let exif_reader = exif_reader.unwrap();
-            for field in exif_reader.fields() {
-                match field.tag {
-                    Tag::Artist => {
-                        self.author = field
-                            .display_value()
-                            .with_unit(&exif_reader)
-                            .to_string()
-                            .into()
-                    }
-                    Tag::ImageWidth => {
-                        if let Some(width) = field.value.get_uint(0) {
-                            self.resolution =
-                                Some((width, self.resolution.map(|(_, h)| h).unwrap_or(0)));
-                        }
-                    }
-                    Tag::ImageLength => {
-                        if let Some(height) = field.value.get_uint(0) {
-                            self.resolution =
-                                Some((self.resolution.map(|(w, _)| w).unwrap_or(0), height));
-                        }
-                    }
-                    Tag::GPSLatitude => {
-                        println!("Latitude: {:?}", field.value);
-                        if let Value::Rational(rational) = &field.value {
-                            if let Some(lat) = rational.first() {
-                                let latitude = lat.to_f64();
-                                self.location = Some((
-                                    latitude,
-                                    self.location.map(|(_, lon)| lon).unwrap_or(0.0),
-                                ));
-                            }
-                        }
-                    }
-                    Tag::GPSLongitude => {
-                        println!("Longitude: {:?}", field.value);
-                        if let Value::Rational(rational) = &field.value {
-                            if let Some(lon) = rational.first() {
-                                let longitude = lon.to_f64();
-                                self.location = Some((
-                                    self.location.map(|(lat, _)| lat).unwrap_or(0.0),
-                                    longitude,
-                                ));
-                            }
-                        }
-                    }
-                    Tag::Model => {
-                        if let Value::Ascii(model) = &field.value {
-                            if let Some(model_str) = model
-                                .first()
-                                .and_then(|s| String::from_utf8(s.clone()).ok())
-                            {
-                                self.camera_model = Some(model_str);
-                            }
-                        }
-                    }
-                    Tag::Make => {
-                        if let Value::Ascii(make) = &field.value {
-                            if let Some(make_str) =
-                                make.first().and_then(|s| String::from_utf8(s.clone()).ok())
-                            {
-                                self.camera_make = Some(make_str);
-                            }
-                        }
-                    }
-                    Tag::Orientation => {
-                        if let Value::Short(orientation) = &field.value {
-                            if let Some(&orientation_value) = orientation.first() {
-                                self.orientation = Some(orientation_value);
-                            }
-                        }
-                    }
-                    _ => {}
-                };
-            }
-        }
-
         self.clone()
     }
 
