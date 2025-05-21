@@ -12,6 +12,7 @@
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/244d2db2a84f4e79b64d984639a2b18f)](https://app.codacy.com/gh/TM9657/flow-like/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 ![Discord](https://img.shields.io/discord/673169081704120334)
 ![GitHub package.json version](https://img.shields.io/github/package-json/v/TM9657/flow-like)
+[![FOSSA Status](https://app.fossa.com/api/projects/custom%2B49014%2Fflow-like.svg?type=small)](https://app.fossa.com/projects/custom%2B49014%2Fflow-like?ref=badge_small)
 
 </div>
 
@@ -65,5 +66,3 @@ We welcome contributions from the community! Whether it's bug reports, feature s
 ---
 
 *We care for good software. If you like it, contribute or consider a Premium Subscription.*
-
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FTM9657%2Fflow-like.svg?type=large&issueType=license)](https://app.fossa.com/projects/git%2Bgithub.com%2FTM9657%2Fflow-like?ref=badge_large&issueType=license)
