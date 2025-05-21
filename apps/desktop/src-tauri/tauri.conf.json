@@ -1,7 +1,7 @@
 {
 	"productName": "Flow Like",
 	"version": "0.0.0",
-	"identifier": "de.good-co.btns",
+	"identifier": "com.flow-like.app",
 	"build": {
 		"beforeDevCommand": "bun run dev",
 		"devUrl": "http://localhost:3000",
