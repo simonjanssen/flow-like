@@ -14,7 +14,7 @@ jobs:
       matrix:
         include:
           - platform: "macos-latest"
-            args: "--target aarch64-apple-darwin"
+            args: "--target aarch64-apple-darwin --verbose"
 
     runs-on: ${{ matrix.platform }}
     env:
@@ -83,11 +83,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_SIGNING_IDENTITY: ${{ env.CERT_ID }}
         with:
           tagName: alpha-v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
           releaseName: "Flow Like - Alpha v__VERSION__"
-          releaseBody: "See the assets to download this version and install."
+          releaseBody: "Alpha release for testing purposes. Please do not distribute."
           releaseDraft: true
           prerelease: false
           projectPath: "./apps/desktop"
