@@ -15,7 +15,7 @@ jobs:
         include:
           # - platform: "macos-latest"
             # args: "--target aarch64-apple-darwin --verbose"
-          - platform: "ubuntu-latest"
+          - platform: "ubuntu-latest-arm"
             args: ""
 
     runs-on: ${{ matrix.platform }}
