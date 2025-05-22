@@ -8,6 +8,7 @@ import { Bit, Download, type IDownloadProgress } from "../../lib/bit/bit";
 import type { IBit } from "../../lib/schema/bit/bit";
 import { humanFileSize } from "../../lib/utils";
 import { useBackend } from "../../state/backend-state";
+import { useDownloadManager } from "../../state/download-manager";
 import type { ISettingsProfile } from "../../types";
 import { Avatar, AvatarFallback, AvatarImage } from "./avatar";
 import { Badge } from "./badge";
@@ -19,7 +20,6 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "./dropdown-menu";
-import { useDownloadManager } from "../../state/download-manager";
 
 export function BitCard({
 	bit,
@@ -42,10 +42,10 @@ export function BitCard({
 	async function downloadBit(bit: IBit) {
 		console.dir(bit);
 		await download(bit, (dl) => {
-			setProgress(dl.progress() * 100)
+			setProgress(dl.progress() * 100);
 		});
 		await isInstalled.refetch();
-		setProgress(undefined)
+		setProgress(undefined);
 	}
 
 	async function toggleDownload() {
@@ -98,14 +98,7 @@ export function BitCard({
 						}
 						header={
 							<div>
-								{progress && (
-										<Progress
-											className="mb-2"
-											value={
-												progress
-											}
-										/>
-									)}
+								{progress && <Progress className="mb-2" value={progress} />}
 								<div className="flex flex-row items-center justify-between">
 									<div className="rounded-full w-14 h-14 flex items-center">
 										<Avatar className="border">

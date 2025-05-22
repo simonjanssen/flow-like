@@ -1,5 +1,5 @@
 import { Button } from "@tm9657/flow-like-ui";
-import { BsDiscord, BsTwitterX, BsGithub } from "react-icons/bs";
+import { BsDiscord, BsGithub, BsTwitterX } from "react-icons/bs";
 import { LuBookMarked } from "react-icons/lu";
 
 export function Header() {

@@ -5,7 +5,11 @@ import type { IBackendState } from "./backend-state";
 export class DownloadManager {
 	private readonly downloads = new Map<string, Download>();
 
-	public async download(backend: IBackendState, bit: IBit, cb?: (dl: Download) => void): Promise<IBit[]> {
+	public async download(
+		backend: IBackendState,
+		bit: IBit,
+		cb?: (dl: Download) => void,
+	): Promise<IBit[]> {
 		const pack = Bit.fromObject(bit);
 		pack.setBackend(backend);
 		const bits = await pack.download((dl) => {
@@ -98,7 +102,7 @@ export const useDownloadManager = create<IDownloadManager>((set, get) => ({
 	setDownloadBackend: (backend: IBackendState) => set({ backend }),
 	download: async (bit: IBit, cb?: (dl: Download) => void) => {
 		const { manager, backend } = get();
-		console.dir(backend)
+		console.dir(backend);
 		return await manager.download(backend, bit, cb);
 	},
 }));

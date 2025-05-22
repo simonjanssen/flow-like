@@ -141,7 +141,6 @@ export function FlowBoard({
 
 	const [nodes, setNodes] = useNodesState<any>([]);
 	const [edges, setEdges] = useEdgesState<any>([]);
-	const [filteredNodes, setFilteredNodes] = useState<INode[]>([]);
 	const [droppedPin, setDroppedPin] = useState<IPin | undefined>(undefined);
 	const [clickPosition, setClickPosition] = useState({ x: 0, y: 0 });
 	const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -633,41 +632,6 @@ export function FlowBoard({
 		setPinCache(new Map(parsed.cache));
 	}, [board.data, currentLayer]);
 
-	const miniSearch = useMemo(
-		() =>
-			new MiniSearch({
-				fields: [
-					"name",
-					"friendly_name",
-					"category",
-					"description",
-					"pin_in_names",
-					"pin_out_names",
-				],
-				storeFields: ["id"],
-			}),
-		[],
-	);
-
-	useEffect(() => {
-		if (!catalog.data) return;
-		miniSearch.removeAll();
-		miniSearch.addAll(
-			catalog.data.map((node) => ({
-				...node,
-				pin_in_names: Object.values(node.pins)
-					.filter((pin) => pin.pin_type === "Input")
-					.map((pin) => pin.name)
-					.join(" "),
-				pin_out_names: Object.values(node.pins)
-					.filter((pin) => pin.pin_type === "Output")
-					.map((pin) => pin.name)
-					.join(" "),
-			})),
-		);
-		setFilteredNodes(catalog.data);
-	}, [catalog.data]);
-
 	const nodeTypes = useMemo(
 		() => ({
 			flowNode: FlowNode,
@@ -1116,7 +1080,10 @@ export function FlowBoard({
 					]}
 				/>
 			</div>
-			<ResizablePanelGroup direction="horizontal" className="flex flex-grow min-h-dvh h-dvh">
+			<ResizablePanelGroup
+				direction="horizontal"
+				className="flex flex-grow min-h-dvh h-dvh"
+			>
 				<ResizablePanel
 					className="z-50 bg-background"
 					autoSave="flow-variables"
@@ -1131,44 +1098,19 @@ export function FlowBoard({
 				</ResizablePanel>
 				<ResizableHandle withHandle />
 				<ResizablePanel autoSave="flow-main-container">
-					<ResizablePanelGroup direction="vertical" className="h-full flex flex-grow">
+					<ResizablePanelGroup
+						direction="vertical"
+						className="h-full flex flex-grow"
+					>
 						<ResizablePanel autoSave="flow-main" ref={flowPanelRef}>
 							<FlowContextMenu
 								droppedPin={droppedPin}
 								onCommentPlace={onCommentPlace}
 								refs={board.data?.refs || {}}
 								onClose={() => setDroppedPin(undefined)}
-								nodes={filteredNodes.toSorted((a, b) =>
-									a.friendly_name.localeCompare(b.friendly_name),
-								)}
+								nodes={catalog.data ?? []}
 								onNodePlace={async (node) => {
 									await placeNode(node);
-								}}
-								onFilterSearch={(filter) => {
-									if (filter === "") {
-										setFilteredNodes(catalog.data || []);
-										return;
-									}
-
-									const search = miniSearch.search(filter, {
-										prefix: true,
-										fuzzy: 0.2,
-										boost: {
-											name: 1,
-											friendly_name: 2,
-											category: 0.5,
-											description: 0.5,
-											pin_in_names: 0.5,
-											pin_out_names: 0.5,
-										},
-									});
-
-									const ids: Set<string> = new Set(
-										search.map((node: any) => node.id),
-									);
-									setFilteredNodes(
-										catalog.data?.filter((node) => ids.has(node.id)) || [],
-									);
 								}}
 							>
 								<div
