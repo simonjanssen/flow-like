@@ -58,12 +58,22 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: check llamafile
+      - name: check llamafile (Linux/macOS)
+        if: runner.os == 'Linux' || runner.os == 'macOS'
+        shell: bash
         run: |
-          if [ ! -f "./src-tauri/bin/llamafiler" ]; then
+          if [ ! -f "./apps/desktop/src-tauri/bin/llamafiler" ]; then
             echo "Llamafile not downloaded successfully"
             exit 1
           fi
+
+      - name: check llamafile (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "./apps/desktop/src-tauri/bin/llamafiler")) {
+            Write-Error "Llamafile not downloaded successfully"
+          }
 
       - uses: tauri-apps/tauri-action@v0
         env:
