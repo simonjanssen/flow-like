@@ -61,6 +61,7 @@ export function FlowContextMenu({
 			],
 			storeFields: ["id"],
 			searchOptions: {
+				prefix: true,
 				fuzzy: true,
 				boost: {
 					name: 3,
