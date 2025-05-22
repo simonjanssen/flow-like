@@ -163,7 +163,7 @@ function FinalScreen({
 								});
 								toast("Created App 🎉");
 								await refresh();
-								router.push("/store/yours");
+								router.push("/library/apps");
 							}}
 						>
 							Finish

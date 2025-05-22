@@ -46,7 +46,10 @@ export default function Page() {
 		if (!app.data) return;
 		if (!boards.data) return;
 		boards.data?.forEach((board) => {
-			parentRegister?.addBoardParent(board.id, `/store/config/logic?id=${id}`);
+			parentRegister?.addBoardParent(
+				board.id,
+				`/library/config/logic?id=${id}`,
+			);
 		});
 	}, [boards.data, id]);
 

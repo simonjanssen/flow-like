@@ -36,7 +36,7 @@ export default function YoursPage() {
 					<h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
 						Apps
 					</h1>
-					<Link href={"/store/new"}>
+					<Link href={"/library/new"}>
 						<Button variant="default" className="ml-4">
 							<Plus className="mr-2 h-4 w-4" /> Create
 						</Button>
@@ -49,7 +49,7 @@ export default function YoursPage() {
 							action={{
 								label: "Create App",
 								onClick: () => {
-									router.push("/store/new");
+									router.push("/library/new");
 								},
 							}}
 							icons={[LayoutGridIcon, FilesIcon, LinkIcon]}
@@ -63,8 +63,8 @@ export default function YoursPage() {
 							(a, b) =>
 								a.updated_at.nanos_since_epoch - b.updated_at.nanos_since_epoch,
 						)
-						.map((vault, i) => {
-							return <App key={vault.id} app={vault} />;
+						.map((app, i) => {
+							return <App key={app.id} app={app} />;
 						})}
 				</div>
 			</div>
@@ -87,7 +87,7 @@ function App({ app }: Readonly<{ app: IApp }>) {
 		<button
 			type="button"
 			onClick={() => {
-				router.push(`/store/config?id=${app.id}`);
+				router.push(`/library/config?id=${app.id}`);
 			}}
 			className="relative p-3 min-h-[190px] max-h-[190px] min-w-[320px] max-w-[320px] flex flex-col justify-start rounded-md border bg-card text-card-foreground hover:border-primary shadow cursor-pointer"
 		>

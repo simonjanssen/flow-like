@@ -1,6 +1,6 @@
 "use client";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
-import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
+import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { StorageSystem } from "@tm9657/flow-like-ui";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
@@ -86,7 +86,7 @@ export default function Page() {
 				uploadFile={uploadFile}
 				updatePrefix={(prefix) => {
 					router.push(
-						`/store/config/storage?id=${id}&prefix=${encodeURIComponent(prefix)}`,
+						`/library/config/storage?id=${id}&prefix=${encodeURIComponent(prefix)}`,
 					);
 				}}
 				key={`${id}-${prefix}`}

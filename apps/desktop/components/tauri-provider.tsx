@@ -97,7 +97,10 @@ export class TauriBackend implements IBackendState {
 		let closed = false;
 
 		channel.onmessage = (events: IIntercomEvent[]) => {
-			if (closed) return;
+			if (closed) {
+				console.warn("Channel closed, ignoring events");
+				return;
+			}
 			if (cb) cb(events);
 		};
 

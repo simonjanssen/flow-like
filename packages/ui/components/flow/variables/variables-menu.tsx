@@ -407,8 +407,8 @@ export function Variable({
 						<Label htmlFor="exposed">Is Exposed?</Label>
 					</div>
 					<small className="text-[0.8rem] text-muted-foreground">
-						If you expose a variable the context (Vault, App, etc. will be able
-						to configure this)
+						If you expose a variable it will be visible in the configuration tab
+						of your App.
 					</small>
 				</div>
 				<div className="flex flex-col gap-1">

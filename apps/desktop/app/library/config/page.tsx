@@ -73,10 +73,10 @@ export default function Id() {
 		await invalidate(backend.getApps, []);
 	}
 
-	async function deleteVault() {
+	async function deleteApp() {
 		await invoke("delete_app", { appId: id });
 		await invalidate(backend.getApps, []);
-		router.push("/store/yours");
+		router.push("/library/apps");
 	}
 
 	return (
@@ -133,9 +133,9 @@ export default function Id() {
 			<Separator className="w-full my-4" />
 			<h3>Danger Zone</h3>
 			<VerificationDialog
-				dialog="You cannot undo this action. This will remove the Vault from your System!"
+				dialog="You cannot undo this action. This will remove the app from your System!"
 				onConfirm={async () => {
-					await deleteVault();
+					await deleteApp();
 				}}
 			>
 				<Button>Delete App</Button>

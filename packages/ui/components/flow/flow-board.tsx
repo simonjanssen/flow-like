@@ -304,7 +304,16 @@ export function FlowBoard({
 			await refetchLogs(backend);
 			setCurrentMetadata(runMeta);
 		},
-		[appId, boardId, backend, refetchLogs],
+		[
+			appId,
+			boardId,
+			backend,
+			refetchLogs,
+			pushUpdate,
+			addRun,
+			removeRun,
+			setCurrentMetadata,
+		],
 	);
 
 	const handlePasteCB = useCallback(

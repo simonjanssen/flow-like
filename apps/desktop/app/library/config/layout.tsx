@@ -21,7 +21,21 @@ import {
 	useInvoke,
 	useRunExecutionStore,
 } from "@tm9657/flow-like-ui";
-import { AlertTriangle, PlayCircleIcon, Vault } from "lucide-react";
+import {
+	AlertTriangle,
+	CableIcon,
+	ChartAreaIcon,
+	CogIcon,
+	DatabaseIcon,
+	FolderArchiveIcon,
+	FolderClosedIcon,
+	GlobeIcon,
+	LayoutGridIcon,
+	PlayCircleIcon,
+	Share2Icon,
+	SquarePenIcon,
+	WorkflowIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
@@ -87,15 +101,15 @@ export default function Id({
 	}
 
 	return (
-		<main className="lex min-h-screen max-h-screen overflow-hidden flex-col w-full p-4 px-6  flex">
+		<main className="lex min-h-screen max-h-screen overflow-hidden flex-col w-full p-4 px-6  flex bg-background">
 			<Breadcrumb>
 				<BreadcrumbList>
 					<BreadcrumbItem>
-						<BreadcrumbLink href="/">Home</BreadcrumbLink>
+						<BreadcrumbLink href="/library">Home</BreadcrumbLink>
 					</BreadcrumbItem>
 					<BreadcrumbSeparator />
 					<BreadcrumbItem>
-						<BreadcrumbLink href="/store/yours">Your Apps</BreadcrumbLink>
+						<BreadcrumbLink href="/library/apps">Your Apps</BreadcrumbLink>
 					</BreadcrumbItem>
 					<BreadcrumbSeparator />
 					<BreadcrumbItem>
@@ -105,7 +119,7 @@ export default function Id({
 			</Breadcrumb>
 			<div className="grid w-full gap-1 mt-2">
 				<div className="flex flex-row items-center gap-2">
-					<Vault />
+					<LayoutGridIcon />
 					<h1 className="text-3xl font-semibold flex flex-row items-center">
 						{app.data?.meta.en.name}
 					</h1>
@@ -136,93 +150,113 @@ export default function Id({
 			<div className="grid w-full items-start gap-6 md:grid-cols-[180px_1fr] lg:grid-cols-[250px_1fr] mt-8 h-full flex-grow overflow-hidden max-h-full">
 				<nav className="flex flex-col gap-4 text-sm text-muted-foreground border-r h-full max-h-full overflow-hidden">
 					<Link
-						href={`/store/config?id=${app.data?.id}`}
+						href={`/library/config?id=${app.data?.id}`}
 						className={
 							currentRoute.endsWith("/config")
-								? "font-semibold text-primary"
-								: ""
+								? "font-semibold text-primary flex flex-row items-center gap-1"
+								: "hover:text-primary flex flex-row items-center gap-1"
 						}
 					>
+						<SquarePenIcon className="w-4 h-4" />
 						General
 					</Link>
 					<Link
-						href={`/store/config/configuration?id=${app.data?.id}`}
+						href={`/library/config/configuration?id=${app.data?.id}`}
 						className={
 							currentRoute.endsWith("/configuration")
-								? "font-semibold text-primary"
-								: ""
+								? "font-semibold text-primary flex flex-row items-center gap-1"
+								: "hover:text-primary flex flex-row items-center gap-1"
 						}
 					>
+						<CogIcon className="w-4 h-4" />
 						Configuration
 					</Link>
 					<Link
-						href={`/store/config/logic?id=${app.data?.id}`}
+						href={`/library/config/logic?id=${app.data?.id}`}
 						className={
 							currentRoute.endsWith("/logic")
-								? "font-semibold text-primary"
-								: ""
+								? "font-semibold text-primary flex flex-row items-center gap-1"
+								: "hover:text-primary flex flex-row items-center gap-1"
 						}
 					>
+						<WorkflowIcon className="w-4 h-4" />
 						Logic
 					</Link>
 					<Link
-						href={`/store/config/storage?id=${app.data?.id}`}
+						href={`/library/config/events?id=${app.data?.id}`}
 						className={
-							currentRoute.endsWith("/storage")
-								? "font-semibold text-primary"
-								: ""
+							currentRoute.endsWith("/events")
+								? "font-semibold text-primary flex flex-row items-center gap-1"
+								: "hover:text-primary flex flex-row items-center gap-1"
 						}
 					>
+						<CableIcon className="w-4 h-4" />
+						Events
+					</Link>
+					<Link
+						href={`/library/config/storage?id=${app.data?.id}`}
+						className={
+							currentRoute.endsWith("/storage")
+								? "font-semibold text-primary flex flex-row items-center gap-1"
+								: "hover:text-primary flex flex-row items-center gap-1"
+						}
+					>
+						<FolderClosedIcon className="w-4 h-4" />
 						Storage
 					</Link>
 					<Link
-						href={`/store/config/explore?id=${app.data?.id}`}
+						href={`/library/config/explore?id=${app.data?.id}`}
 						className={
 							currentRoute.endsWith("/explore")
-								? "font-semibold text-primary"
-								: ""
+								? "font-semibold text-primary flex flex-row items-center gap-1"
+								: "hover:text-primary flex flex-row items-center gap-1"
 						}
 					>
+						<DatabaseIcon className="w-4 h-4" />
 						Explore Data
 					</Link>
 					<Link
-						href={`/store/config/analytics?id=${app.data?.id}`}
+						href={`/library/config/analytics?id=${app.data?.id}`}
 						className={
 							currentRoute.endsWith("/analytics")
-								? "font-semibold text-primary"
-								: ""
+								? "font-semibold text-primary flex flex-row items-center gap-1"
+								: "hover:text-primary flex flex-row items-center gap-1"
 						}
 					>
+						<ChartAreaIcon className="w-4 h-4" />
 						Analytics
 					</Link>
 					<Link
-						href={`/store/config/share?id=${app.data?.id}`}
+						href={`/library/config/share?id=${app.data?.id}`}
 						className={
 							currentRoute.endsWith("/share")
-								? "font-semibold text-primary"
-								: ""
+								? "font-semibold text-primary flex flex-row items-center gap-1"
+								: "hover:text-primary flex flex-row items-center gap-1"
 						}
 					>
+						<Share2Icon className="w-4 h-4" />
 						Share
 					</Link>
 					<Link
-						href={`/store/config/endpoints?id=${app.data?.id}`}
+						href={`/library/config/endpoints?id=${app.data?.id}`}
 						className={
 							currentRoute.endsWith("/endpoints")
-								? "font-semibold text-primary"
-								: ""
+								? "font-semibold text-primary flex flex-row items-center gap-1"
+								: "hover:text-primary flex flex-row items-center gap-1"
 						}
 					>
+						<GlobeIcon className="w-4 h-4" />
 						Endpoints
 					</Link>
 					<Link
-						href={`/store/config/export?id=${app.data?.id}`}
+						href={`/library/config/export?id=${app.data?.id}`}
 						className={
 							currentRoute.endsWith("/export")
-								? "font-semibold text-primary"
-								: ""
+								? "font-semibold text-primary flex flex-row items-center gap-1"
+								: "hover:text-primary flex flex-row items-center gap-1"
 						}
 					>
+						<FolderArchiveIcon className="w-4 h-4" />
 						Export / Import
 					</Link>
 					<Separator className="my-2 w-[95%]" />

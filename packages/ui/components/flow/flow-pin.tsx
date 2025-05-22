@@ -100,6 +100,10 @@ function FlowPinInnerComponent({
 		[pin.pin_type],
 	);
 
+	const refetchBoard = useCallback(async () => {
+		invalidate(backend.getBoard, [appId, boardId]);
+	}, [appId, boardId, backend, invalidate]);
+
 	const updateNode = useCallback(async () => {
 		if (defaultValue === undefined) return;
 		if (defaultValue === null) return;
@@ -123,7 +127,16 @@ function FlowPinInnerComponent({
 		);
 		await pushCommand(result, false);
 		await refetchBoard();
-	}, [pin.id, defaultValue, currentNode]);
+	}, [
+		pin.id,
+		defaultValue,
+		currentNode,
+		refetchBoard,
+		backend,
+		boardId,
+		node,
+		pushCommand,
+	]);
 
 	useEffect(() => {
 		updateNode();
@@ -132,10 +145,6 @@ function FlowPinInnerComponent({
 	useEffect(() => {
 		setDefaultValue(pin.default_value);
 	}, [pin]);
-
-	const refetchBoard = useCallback(async () => {
-		invalidate(backend.getBoard, [appId, boardId]);
-	}, [appId, boardId]);
 
 	const pinTypeProps = useMemo(
 		() => ({
