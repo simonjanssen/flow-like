@@ -64,5 +64,6 @@ Example:
 We welcome contributions from the community! Whether it's bug reports, feature suggestions, or code contributions, your help is appreciated. Please read our `CONTRIBUTING.md` file for guidelines on how to contribute.
 
 ---
-
 *We care for good software. If you like it, contribute or consider a Premium Subscription.*
+
+![Alt](https://repobeats.axiom.co/api/embed/6fe5df31b9a96f584f8898beb4457bd8aa3852f1.svg "Repobeats analytics image")
