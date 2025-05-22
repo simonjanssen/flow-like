@@ -61,18 +61,10 @@ impl NodeLogic for ListPathsNode {
             .set_schema::<FlowPath>()
             .set_value_type(ValueType::Array);
 
-        node.add_output_pin(
-            "failed",
-            "Failed",
-            "Failed to list the paths",
-            VariableType::Execution,
-        );
-
         return node;
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        context.activate_exec_pin("failed").await?;
         context.deactivate_exec_pin("exec_out").await?;
         let original_path: FlowPath = context.evaluate_pin("prefix").await?;
         let recursive: bool = context.evaluate_pin("recursive").await?;
@@ -103,7 +95,6 @@ impl NodeLogic for ListPathsNode {
             .collect::<Vec<FlowPath>>();
 
         context.set_pin_value("paths", json!(paths)).await?;
-        context.deactivate_exec_pin("failed").await?;
         context.activate_exec_pin("exec_out").await?;
         Ok(())
     }

@@ -25,7 +25,7 @@ impl State {
         let platform_config: PlatformConfig =
             serde_json::from_str(&config).expect("Failed to parse config file");
 
-        let jwks = reqwest::get(
+        let jwks = flow_like_types::reqwest::get(
             &platform_config
                 .authentication
                 .openid

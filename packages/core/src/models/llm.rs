@@ -1,6 +1,6 @@
 pub mod local;
 
-use crate::{bit::Bit, state::FlowLikeState, utils::device::get_vram};
+use crate::{bit::Bit, state::FlowLikeState};
 use flow_like_model_provider::llm::{ModelLogic, openai::OpenAIModel};
 use flow_like_types::{Result, sync::Mutex, tokio::time::interval};
 use local::LocalModel;
@@ -25,11 +25,10 @@ impl Default for ExecutionSettings {
 
 impl ExecutionSettings {
     pub fn new() -> Self {
-        let vram = get_vram().unwrap_or(0);
 
         Self {
-            gpu_mode: vram > 6_000_000_000,
-            max_context_size: if vram > 6_000_000_000 { 32_000 } else { 8192 },
+            gpu_mode: false,
+            max_context_size: 32_000,
         }
     }
 }

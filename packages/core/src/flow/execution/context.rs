@@ -80,9 +80,7 @@ impl ExecutionContextCache {
     }
 
     pub fn get_cache(&self, node: bool) -> flow_like_types::Result<Path> {
-        let base = Path::from("tmp")
-            .child("apps")
-            .child(self.app_id.clone());
+        let base = Path::from("tmp").child("apps").child(self.app_id.clone());
 
         if !node {
             return Ok(base);
@@ -354,7 +352,7 @@ impl ExecutionContext {
         name: &str,
     ) -> flow_like_types::Result<Arc<Mutex<Value>>> {
         let pin = self.get_pin_by_name(name).await?;
-        let value = evaluate_pin_value_reference(&Some(pin)).await?;
+        let value = evaluate_pin_value_reference(pin).await?;
         Ok(value)
     }
 

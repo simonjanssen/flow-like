@@ -59,7 +59,7 @@ impl Command for CopyPasteCommand {
             let state_guard = state.lock().await;
             state_guard.node_registry.read().await.node_registry.clone()
         };
-        let mut translated_connection = HashMap::new();
+        let mut translated_connection = HashMap::with_capacity(self.original_nodes.len());
         let mut intermediate_nodes = Vec::with_capacity(self.original_nodes.len());
         let offset = self.offset;
         let offset = self

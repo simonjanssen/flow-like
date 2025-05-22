@@ -51,6 +51,7 @@ impl NodeLogic for ParallelExecutionNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
+        context.deactivate_exec_pin("exec_done").await?;
         let exec_out_pins = context.get_pins_by_name("exec_out").await?;
         let use_threads: String = context.evaluate_pin("thread_model").await?;
         let use_threads = match use_threads.as_str() {

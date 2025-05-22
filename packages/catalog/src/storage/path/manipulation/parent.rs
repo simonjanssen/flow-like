@@ -57,19 +57,11 @@ impl NodeLogic for ParentNode {
         )
         .set_schema::<FlowPath>();
 
-        node.add_output_pin(
-            "failed",
-            "Failed",
-            "Failed to get Parent. Not available on some systems.",
-            VariableType::Execution,
-        );
-
         return node;
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
         context.deactivate_exec_pin("exec_out").await?;
-        context.activate_exec_pin("failed").await?;
         let path: FlowPath = context.evaluate_pin("path").await?;
 
         let mut path = path.to_runtime(context).await?;
@@ -83,7 +75,6 @@ impl NodeLogic for ParentNode {
         let path = path.serialize().await;
 
         context.set_pin_value("parent_path", json!(path)).await?;
-        context.deactivate_exec_pin("failed").await?;
         context.activate_exec_pin("exec_out").await?;
         Ok(())
     }

@@ -97,7 +97,10 @@ export class TauriBackend implements IBackendState {
 		let closed = false;
 
 		channel.onmessage = (events: IIntercomEvent[]) => {
-			if (closed) return;
+			if (closed) {
+				console.warn("Channel closed, ignoring events");
+				return;
+			}
 			if (cb) cb(events);
 		};
 
@@ -323,7 +326,9 @@ export class TauriBackend implements IBackendState {
 	}
 
 	async getBitsByCategory(type: IBitTypes): Promise<IBit[]> {
-		throw new Error("Method not implemented.");
+		return await invoke("get_bits_by_category", {
+			bitType: type,
+		});
 	}
 
 	async getBitSize(bit: IBit): Promise<number> {

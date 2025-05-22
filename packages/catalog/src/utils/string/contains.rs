@@ -47,10 +47,17 @@ impl NodeLogic for StringContainsNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        let string: String = context.evaluate_pin("string").await?;
+        let string = context.evaluate_pin_to_ref("string").await?;
         let substring: String = context.evaluate_pin("substring").await?;
 
-        let contains = string.contains(&substring);
+        let mut contains = false;
+
+        {
+            let string = string.as_ref().lock().await;
+            if let Some(string) = string.as_str() {
+                contains = string.contains(&substring);
+            }
+        }
 
         context.set_pin_value("contains", json!(contains)).await?;
         Ok(())

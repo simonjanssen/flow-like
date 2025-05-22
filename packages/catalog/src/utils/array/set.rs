@@ -8,7 +8,7 @@ use flow_like::{
     },
     state::FlowLikeState,
 };
-use flow_like_types::{Value, async_trait, json::json};
+use flow_like_types::{Value, async_trait, bail, json::json};
 use std::sync::Arc;
 
 #[derive(Default)]
@@ -50,18 +50,10 @@ impl NodeLogic for SetIndexArrayNode {
         )
         .set_value_type(ValueType::Array);
 
-        node.add_output_pin(
-            "failed",
-            "Failed Setting",
-            "Triggered if the Ingest failed",
-            VariableType::Execution,
-        );
-
         return node;
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        context.activate_exec_pin("failed").await?;
         context.deactivate_exec_pin("exec_out").await?;
         let array_in: Vec<Value> = context.evaluate_pin("array_in").await?;
         let index: usize = context.evaluate_pin("index").await?;
@@ -78,9 +70,9 @@ impl NodeLogic for SetIndexArrayNode {
         context.set_pin_value("array_out", json!(array_out)).await?;
 
         if success {
-            context.deactivate_exec_pin("failed").await?;
-            context.activate_exec_pin("exec_out").await?;
+            bail!("Index out of bounds");
         }
+        context.activate_exec_pin("exec_out").await?;
 
         Ok(())
     }

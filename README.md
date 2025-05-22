@@ -12,6 +12,7 @@
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/244d2db2a84f4e79b64d984639a2b18f)](https://app.codacy.com/gh/TM9657/flow-like/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 ![Discord](https://img.shields.io/discord/673169081704120334)
 ![GitHub package.json version](https://img.shields.io/github/package-json/v/TM9657/flow-like)
+[![FOSSA Status](https://app.fossa.com/api/projects/custom%2B49014%2Fflow-like.svg?type=small)](https://app.fossa.com/projects/custom%2B49014%2Fflow-like?ref=badge_small)
 
 </div>
 
@@ -52,8 +53,6 @@ Flow-Like is a powerful and flexible automation suite designed to handle enterpr
 * **Website:** [Link](https://flow-like.com)
 
 ## 🚀 Getting Started
-
-*(This section would typically include instructions on how to install, configure, and run Flow-Like for the first time. You can add details specific to your project here.)*
 
 Example:
 1.  Clone the repository: `git clone https://github.com/TM9657/flow-like`

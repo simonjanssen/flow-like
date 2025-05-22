@@ -1,14 +1,14 @@
 use crate::storage::path::FlowPath;
 use flow_like::{
     flow::{
-        execution::{LogLevel, context::ExecutionContext},
+        execution::context::ExecutionContext,
         node::{Node, NodeLogic},
         pin::{PinOptions, ValueType},
         variable::VariableType,
     },
     state::FlowLikeState,
 };
-use flow_like_types::{async_trait, json::json};
+use flow_like_types::{async_trait, bail, json::json};
 use std::time::Duration;
 
 #[derive(Default)]
@@ -85,18 +85,10 @@ impl NodeLogic for SignUrlsNode {
         )
         .set_value_type(ValueType::Array);
 
-        node.add_output_pin(
-            "failed",
-            "Failed",
-            "Triggered if the signing process fails",
-            VariableType::Execution,
-        );
-
         return node;
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        context.activate_exec_pin("failed").await?;
         context.deactivate_exec_pin("exec_out").await?;
 
         let paths: Vec<FlowPath> = context.evaluate_pin("paths").await?;
@@ -121,10 +113,7 @@ impl NodeLogic for SignUrlsNode {
                     signed_urls.push(url.to_string());
                 }
                 Err(e) => {
-                    context.log_message(
-                        &format!("Failed to generate signed URL: {}", e),
-                        LogLevel::Error,
-                    );
+                    bail!("Failed to generate signed URL: {}", e);
                 }
             }
         }
@@ -132,7 +121,6 @@ impl NodeLogic for SignUrlsNode {
         context
             .set_pin_value("signed_urls", json!(signed_urls))
             .await?;
-        context.deactivate_exec_pin("failed").await?;
         context.activate_exec_pin("exec_out").await?;
 
         Ok(())

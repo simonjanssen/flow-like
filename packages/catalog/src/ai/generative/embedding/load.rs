@@ -1,14 +1,14 @@
 use flow_like::{
     bit::{Bit, BitTypes},
     flow::{
-        execution::{LogLevel, context::ExecutionContext},
+        execution::context::ExecutionContext,
         node::{Node, NodeLogic},
         pin::PinOptions,
         variable::VariableType,
     },
     state::FlowLikeState,
 };
-use flow_like_types::{async_trait, json::json};
+use flow_like_types::{async_trait, bail, json::json};
 use std::sync::Arc;
 
 use super::{CachedEmbeddingModel, CachedEmbeddingModelObject};
@@ -60,24 +60,16 @@ impl NodeLogic for LoadModelNode {
 
         node.add_output_pin("model", "Model", "Model Out", VariableType::Struct)
             .set_schema::<CachedEmbeddingModel>();
-        node.add_output_pin(
-            "failed",
-            "Failed Loading",
-            "Failed loading the Model",
-            VariableType::Execution,
-        );
 
         return node;
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        let bit: Bit = context.evaluate_pin("bit").await?;
         context.deactivate_exec_pin("exec_out").await?;
-        context.activate_exec_pin("failed").await?;
+        let bit: Bit = context.evaluate_pin("bit").await?;
 
         if bit.bit_type != BitTypes::Embedding && bit.bit_type != BitTypes::ImageEmbedding {
-            context.log_message("Not an Embedding Model", LogLevel::Error);
-            return Ok(());
+            bail!("Not an Embedding Model");
         }
 
         let app_state = context.app_state.clone();
@@ -109,7 +101,7 @@ impl NodeLogic for LoadModelNode {
                 }
             }
             _ => {
-                return Ok(());
+                bail!("Unsupported Bit Type");
             }
         };
 
@@ -121,7 +113,6 @@ impl NodeLogic for LoadModelNode {
 
         context.set_pin_value("model", json!(model)).await?;
         context.activate_exec_pin("exec_out").await?;
-        context.deactivate_exec_pin("failed").await?;
 
         return Ok(());
     }

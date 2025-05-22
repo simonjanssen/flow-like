@@ -5,7 +5,7 @@ export default function Layout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<main className="flex min-h-screen flex-col w-full p-4 max-h-[100dvh] overflow-y-auto">
+		<main className="flex min-h-dvh flex-col w-full max-h-dvh h-dvh overflow-hidden p-4">
 			{children}
 		</main>
 	);

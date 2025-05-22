@@ -55,18 +55,10 @@ impl NodeLogic for PathBufToPathNode {
         node.add_output_pin("path", "Path", "Output Path", VariableType::Struct)
             .set_schema::<FlowPath>();
 
-        node.add_output_pin(
-            "failed",
-            "Failed",
-            "Not possible, for example on server, certain directories are not accessible",
-            VariableType::Execution,
-        );
-
         return node;
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        context.activate_exec_pin("failed").await?;
         context.deactivate_exec_pin("exec_out").await?;
 
         let pathbuf: PathBuf = context.evaluate_pin("pathbuf").await?;
@@ -75,7 +67,6 @@ impl NodeLogic for PathBufToPathNode {
         context.set_pin_value("path", json!(path)).await?;
 
         context.activate_exec_pin("exec_out").await?;
-        context.deactivate_exec_pin("failed").await?;
         Ok(())
     }
 }

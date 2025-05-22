@@ -53,13 +53,6 @@ impl NodeLogic for GetRangeNode {
             VariableType::Execution,
         );
 
-        node.add_output_pin(
-            "failed",
-            "Failed",
-            "Failed to get the range",
-            VariableType::Execution,
-        );
-
         node.add_output_pin("bytes", "Bytes", "Output Bytes", VariableType::Byte)
             .set_value_type(ValueType::Array);
 
@@ -67,7 +60,6 @@ impl NodeLogic for GetRangeNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        context.activate_exec_pin("failed").await?;
         context.deactivate_exec_pin("exec_out").await?;
         let path: FlowPath = context.evaluate_pin("path").await?;
         let from: i64 = context.evaluate_pin("from").await?;
@@ -79,7 +71,6 @@ impl NodeLogic for GetRangeNode {
         let bytes = generic_store.get_range(&path.path, range).await?;
         let bytes = bytes.to_vec();
         context.set_pin_value("bytes", json!(bytes)).await?;
-        context.deactivate_exec_pin("failed").await?;
         context.activate_exec_pin("exec_out").await?;
 
         Ok(())

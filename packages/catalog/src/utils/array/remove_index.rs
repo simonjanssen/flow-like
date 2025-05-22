@@ -8,7 +8,7 @@ use flow_like::{
     },
     state::FlowLikeState,
 };
-use flow_like_types::{Value, async_trait, json::json};
+use flow_like_types::{Value, async_trait, bail, json::json};
 use std::sync::Arc;
 
 #[derive(Default)]
@@ -48,18 +48,10 @@ impl NodeLogic for RemoveArrayIndexNode {
         )
         .set_value_type(ValueType::Array);
 
-        node.add_output_pin(
-            "failed",
-            "Failed Removal",
-            "Triggered if the Removal failed",
-            VariableType::Execution,
-        );
-
         return node;
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        context.activate_exec_pin("failed").await?;
         context.deactivate_exec_pin("exec_out").await?;
 
         let array_in: Vec<Value> = context.evaluate_pin("array_in").await?;
@@ -83,11 +75,10 @@ impl NodeLogic for RemoveArrayIndexNode {
 
         context.set_pin_value("array_out", json!(array_out)).await?;
 
-        if success {
-            context.deactivate_exec_pin("failed").await?;
-            context.activate_exec_pin("exec_out").await?;
+        if !success {
+            bail!("Index out of bounds");
         }
-
+        context.activate_exec_pin("exec_out").await?;
         Ok(())
     }
 

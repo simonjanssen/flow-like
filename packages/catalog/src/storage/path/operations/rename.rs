@@ -60,18 +60,10 @@ impl NodeLogic for RenameNode {
             VariableType::Execution,
         );
 
-        node.add_output_pin(
-            "failed",
-            "Failed",
-            "Failed to move the file",
-            VariableType::Execution,
-        );
-
         return node;
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        context.activate_exec_pin("failed").await?;
         context.deactivate_exec_pin("exec_out").await?;
         let from: FlowPath = context.evaluate_pin("from").await?;
         let to: FlowPath = context.evaluate_pin("to").await?;
@@ -89,7 +81,6 @@ impl NodeLogic for RenameNode {
                 .await?;
         }
 
-        context.deactivate_exec_pin("failed").await?;
         context.activate_exec_pin("exec_out").await?;
         Ok(())
     }

@@ -68,6 +68,8 @@ impl NodeLogic for SetSystemPromptMessageNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
+        context.deactivate_exec_pin("exec_out").await?;
+
         let mut history: History = context.evaluate_pin("history").await?;
         let new_message: String = context.evaluate_pin("message").await?;
 

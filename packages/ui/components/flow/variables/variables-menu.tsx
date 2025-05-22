@@ -1,6 +1,5 @@
 import { useDraggable } from "@dnd-kit/core";
 import { createId } from "@paralleldrive/cuid2";
-import { useDebounce } from "@uidotdev/usehooks";
 import {
 	CirclePlusIcon,
 	EllipsisVerticalIcon,
@@ -10,7 +9,7 @@ import {
 	ListIcon,
 	Trash2Icon,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Button } from "../../../components/ui/button";
 import {
 	DropdownMenu,
@@ -156,16 +155,20 @@ export function Variable({
 		onVariableChange(localVariable);
 	}, [localVariable, variable]);
 
-	function defaultValueFromType(variableType: IVariableType) {
-		if (variable.value_type === IValueType.Array) {
+	function defaultValueFromType(
+		valueType: IValueType,
+		variableType: IVariableType,
+	) {
+		if (valueType === IValueType.Array) {
+			console.log("Returning empty array");
 			return [];
 		}
 
-		if (variable.value_type === IValueType.HashSet) {
+		if (valueType === IValueType.HashSet) {
 			return new Set();
 		}
 
-		if (variable.value_type === IValueType.HashMap) {
+		if (valueType === IValueType.HashMap) {
 			return new Map();
 		}
 
@@ -208,6 +211,9 @@ export function Variable({
 						setLocalVariable((old) => ({
 							...old,
 							value_type: IValueType.Normal,
+							default_value: convertJsonToUint8Array(
+								defaultValueFromType(IValueType.Normal, old.data_type),
+							),
 						}));
 						e.stopPropagation();
 					}}
@@ -224,6 +230,9 @@ export function Variable({
 						setLocalVariable((old) => ({
 							...old,
 							value_type: IValueType.Array,
+							default_value: convertJsonToUint8Array(
+								defaultValueFromType(IValueType.Array, old.data_type),
+							),
 						}));
 						e.stopPropagation();
 					}}
@@ -240,6 +249,9 @@ export function Variable({
 						setLocalVariable((old) => ({
 							...old,
 							value_type: IValueType.HashSet,
+							default_value: convertJsonToUint8Array(
+								defaultValueFromType(IValueType.HashSet, old.data_type),
+							),
 						}));
 						e.stopPropagation();
 					}}
@@ -256,6 +268,9 @@ export function Variable({
 						setLocalVariable((old) => ({
 							...old,
 							value_type: IValueType.HashMap,
+							default_value: convertJsonToUint8Array(
+								defaultValueFromType(IValueType.HashMap, old.data_type),
+							),
 						}));
 						e.stopPropagation();
 					}}
@@ -356,7 +371,7 @@ export function Variable({
 								...old,
 								data_type: value as IVariableType,
 								default_value: convertJsonToUint8Array(
-									defaultValueFromType(value as IVariableType),
+									defaultValueFromType(old.value_type, value as IVariableType),
 								),
 							}))
 						}
@@ -392,8 +407,8 @@ export function Variable({
 						<Label htmlFor="exposed">Is Exposed?</Label>
 					</div>
 					<small className="text-[0.8rem] text-muted-foreground">
-						If you expose a variable the context (Vault, App, etc. will be able
-						to configure this)
+						If you expose a variable it will be visible in the configuration tab
+						of your App.
 					</small>
 				</div>
 				<div className="flex flex-col gap-1">
@@ -415,6 +430,7 @@ export function Variable({
 				<div className="flex flex-grow h-full flex-col max-h-full overflow-auto">
 					{!localVariable.exposed && (
 						<VariablesMenuEdit
+							key={`${localVariable.value_type} - ${localVariable.data_type}`}
 							variable={localVariable}
 							updateVariable={async (variable) =>
 								setLocalVariable((old) => ({

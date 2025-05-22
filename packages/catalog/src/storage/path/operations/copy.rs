@@ -53,19 +53,12 @@ impl NodeLogic for CopyNode {
             "Execution if copy succeeds",
             VariableType::Execution,
         );
-        node.add_output_pin(
-            "exec_out_failure",
-            "Failure",
-            "Execution if copy fails",
-            VariableType::Execution,
-        );
 
         return node;
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
         context.deactivate_exec_pin("exec_out").await?;
-        context.activate_exec_pin("exec_out_failure").await?;
 
         let from_path: FlowPath = context.evaluate_pin("from").await?;
         let to_path: FlowPath = context.evaluate_pin("to").await?;
@@ -102,7 +95,6 @@ impl NodeLogic for CopyNode {
         };
 
         context.activate_exec_pin("exec_out").await?;
-        context.deactivate_exec_pin("exec_out_failure").await?;
 
         Ok(())
     }

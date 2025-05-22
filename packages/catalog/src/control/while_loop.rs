@@ -76,6 +76,7 @@ impl NodeLogic for WhileLoopNode {
         let exec_item = context.get_pin_by_name("exec_out").await?;
         let iter = context.get_pin_by_name("iter").await?;
         let done = context.get_pin_by_name("done").await?;
+        context.deactivate_exec_pin_ref(&done).await?;
         let max_iter: u64 = context.evaluate_pin("max_iter").await?;
         let condition_pin = context.get_pin_by_name("condition").await?;
 

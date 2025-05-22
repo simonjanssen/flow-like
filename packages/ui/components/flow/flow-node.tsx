@@ -94,6 +94,8 @@ export type FlowNode = Node<
 		node: INode;
 		boardId: string;
 		appId: string;
+		transparent?: boolean;
+		ghost?: boolean;
 		onExecute: (node: INode, payload?: object) => Promise<void>;
 		onCopy: () => Promise<void>;
 	},
@@ -911,11 +913,16 @@ function FlowNode(props: NodeProps<FlowNode>) {
 		async (type: "align" | "justify", dir: "start" | "end" | "center") => {
 			const selectedNodes = flow.getNodes().filter((node) => node.selected);
 			if (selectedNodes.length <= 1) return;
+			let currentLayer: string | undefined = undefined;
 
 			let start = Number.POSITIVE_INFINITY;
 			let end = Number.NEGATIVE_INFINITY;
 
 			selectedNodes.forEach((node) => {
+				if (!node.data.ghost) {
+					const nodeData = node.data.node as INode;
+					if (nodeData?.layer) currentLayer = nodeData.layer;
+				}
 				start = Math.min(
 					start,
 					type === "align" ? node.position.x : node.position.y,
@@ -955,6 +962,7 @@ function FlowNode(props: NodeProps<FlowNode>) {
 									: center,
 						0,
 					],
+					current_layer: currentLayer,
 				});
 			});
 

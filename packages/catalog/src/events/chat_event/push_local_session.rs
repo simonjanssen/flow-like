@@ -56,6 +56,8 @@ impl NodeLogic for PushLocalSessionNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
+        context.deactivate_exec_pin("exec_out").await?;
+
         let session: Value = context
             .evaluate_pin("local_session")
             .await

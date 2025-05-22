@@ -56,6 +56,8 @@ impl NodeLogic for PushGlobalSessionNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
+        context.deactivate_exec_pin("exec_out").await?;
+
         let session: Value = context
             .evaluate_pin("global_session")
             .await

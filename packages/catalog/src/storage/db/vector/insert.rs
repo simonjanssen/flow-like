@@ -54,18 +54,10 @@ impl NodeLogic for InsertLocalDatabaseNode {
             VariableType::Execution,
         );
 
-        node.add_output_pin(
-            "failed",
-            "Failed Insert",
-            "Triggered if the Ingest failed",
-            VariableType::Execution,
-        );
-
         return node;
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        context.activate_exec_pin("failed").await?;
         context.deactivate_exec_pin("exec_out").await?;
         let database: NodeDBConnection = context.evaluate_pin("database").await?;
         let database = database
@@ -76,12 +68,9 @@ impl NodeLogic for InsertLocalDatabaseNode {
         let mut database = database.write().await;
         let value: Value = context.evaluate_pin("value").await?;
         let value = vec![value];
-        let results = database.insert(value).await;
+        database.insert(value).await?;
 
-        if results.is_ok() {
-            context.deactivate_exec_pin("failed").await?;
-            context.activate_exec_pin("exec_out").await?;
-        }
+        context.activate_exec_pin("exec_out").await?;
 
         Ok(())
     }
@@ -127,18 +116,10 @@ impl NodeLogic for BatchInsertLocalDatabaseNode {
             VariableType::Execution,
         );
 
-        node.add_output_pin(
-            "failed",
-            "Failed Insert",
-            "Triggered if the Ingest failed",
-            VariableType::Execution,
-        );
-
         return node;
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        context.activate_exec_pin("failed").await?;
         context.deactivate_exec_pin("exec_out").await?;
         let database: NodeDBConnection = context.evaluate_pin("database").await?;
         let database = database
@@ -148,13 +129,9 @@ impl NodeLogic for BatchInsertLocalDatabaseNode {
             .clone();
         let mut database = database.write().await;
         let value: Vec<Value> = context.evaluate_pin("value").await?;
-        let results = database.insert(value).await;
+        database.insert(value).await?;
 
-        if results.is_ok() {
-            context.deactivate_exec_pin("failed").await?;
-            context.activate_exec_pin("exec_out").await?;
-            return Ok(());
-        }
+        context.activate_exec_pin("exec_out").await?;
 
         Ok(())
     }
@@ -217,18 +194,10 @@ impl NodeLogic for BatchInsertCSVLocalDatabaseNode {
             VariableType::Execution,
         );
 
-        node.add_output_pin(
-            "failed",
-            "Failed Insert",
-            "Triggered if the Ingest failed",
-            VariableType::Execution,
-        );
-
         return node;
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        context.activate_exec_pin("failed").await?;
         context.deactivate_exec_pin("exec_out").await?;
         let database: NodeDBConnection = context.evaluate_pin("database").await?;
         let database = database
@@ -299,7 +268,6 @@ impl NodeLogic for BatchInsertCSVLocalDatabaseNode {
             }
         }
 
-        context.deactivate_exec_pin("failed").await?;
         context.activate_exec_pin("exec_out").await?;
         Ok(())
     }

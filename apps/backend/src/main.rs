@@ -8,11 +8,13 @@ use std::{
     time::Duration,
 };
 use tracing_subscriber::prelude::*;
+use flow_like_types::tokio;
+mod entity;
 mod error;
 mod routes;
 mod state;
 
-#[tokio::main]
+#[flow_like_types::tokio::main]
 async fn main() {
     dotenv().ok();
 
@@ -52,7 +54,7 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
-fn create_listener<A: ToSocketAddrs>(addr: A) -> io::Result<tokio::net::TcpListener> {
+fn create_listener<A: ToSocketAddrs>(addr: A) -> io::Result<flow_like_types::tokio::net::TcpListener> {
     let mut addrs = addr.to_socket_addrs()?;
     let addr = addrs.next().unwrap();
     let listener = match &addr {
@@ -68,6 +70,6 @@ fn create_listener<A: ToSocketAddrs>(addr: A) -> io::Result<tokio::net::TcpListe
     listener.listen(i32::MAX)?;
 
     let listener = std::net::TcpListener::from(listener);
-    let listener = tokio::net::TcpListener::from_std(listener)?;
+    let listener = flow_like_types::tokio::net::TcpListener::from_std(listener)?;
     Ok(listener)
 }

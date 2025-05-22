@@ -245,5 +245,7 @@ pub fn disconnect_pins(
 
     board.nodes.insert(from_node.id.clone(), from_node);
     board.nodes.insert(to_node.id.clone(), to_node);
+    board.fix_pins_set_layer();
+
     Ok(())
 }

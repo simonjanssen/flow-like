@@ -1,7 +1,6 @@
 pub mod cache;
 pub mod compression;
 pub mod device;
-pub mod dir;
 pub mod download;
 pub mod download_manager;
 pub mod execute;

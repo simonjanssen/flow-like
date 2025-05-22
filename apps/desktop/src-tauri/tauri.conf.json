@@ -1,7 +1,7 @@
 {
 	"productName": "Flow Like",
 	"version": "0.0.0",
-	"identifier": "de.good-co.btns",
+	"identifier": "com.flow-like.app",
 	"build": {
 		"beforeDevCommand": "bun run dev",
 		"devUrl": "http://localhost:3000",
@@ -32,6 +32,7 @@
 		}
 	},
 	"bundle": {
+		"createUpdaterArtifacts": true,
 		"fileAssociations": [
 			{
 				"ext": ["fl-app"],
@@ -61,7 +62,7 @@
 		},
 		"homepage": "https://flow-like.com",
 		"publisher": "TM9657 GmbH",
-		"licenseFile": "../LICENSE",
+		"licenseFile": "../../../LICENSE",
 		"active": true,
 		"targets": "all",
 		"icon": [
@@ -71,7 +72,7 @@
 			"icons/icon.icns",
 			"icons/icon.ico"
 		],
-		"externalBin": ["bin/llamafiler", "bin/pandoc"],
+		"externalBin": ["bin/llamafiler"],
 		"resources": ["assets/licenses.md"]
 	},
 	"plugins": {
@@ -80,6 +81,9 @@
 			"desktop": {
 				"schemes": ["flow-like-app", "fl-app"]
 			}
+		},
+		"updater": {
+		"pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDVDRjMwNDM0QTFFRDU2RTEKUldUaFZ1MmhOQVR6WE1wWktQeHE3SkFVc1VnMFk2aTBxUG85L0JyQ0ZrL2RvNnNKbElZQnJNbUwK"
 		}
 	}
 }

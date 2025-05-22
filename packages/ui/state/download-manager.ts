@@ -5,11 +5,18 @@ import type { IBackendState } from "./backend-state";
 export class DownloadManager {
 	private readonly downloads = new Map<string, Download>();
 
-	public async download(backend: IBackendState, bit: IBit): Promise<IBit[]> {
+	public async download(
+		backend: IBackendState,
+		bit: IBit,
+		cb?: (dl: Download) => void,
+	): Promise<IBit[]> {
 		const pack = Bit.fromObject(bit);
 		pack.setBackend(backend);
 		const bits = await pack.download((dl) => {
 			this.downloads.set(bit.hash, dl);
+			if (cb) {
+				cb(dl);
+			}
 		});
 		this.downloads.delete(bit.hash);
 		return bits;
@@ -86,15 +93,16 @@ interface IDownloadManager {
 	manager: DownloadManager;
 	backend: IBackendState;
 	setDownloadBackend: (backend: IBackendState) => void;
-	download: (bit: IBit) => Promise<IBit[]>;
+	download: (bit: IBit, cb?: (dl: Download) => void) => Promise<IBit[]>;
 }
 
 export const useDownloadManager = create<IDownloadManager>((set, get) => ({
 	manager: new DownloadManager(),
 	backend: {} as IBackendState,
 	setDownloadBackend: (backend: IBackendState) => set({ backend }),
-	download: async (bit: IBit) => {
+	download: async (bit: IBit, cb?: (dl: Download) => void) => {
 		const { manager, backend } = get();
-		return await manager.download(backend, bit);
+		console.dir(backend);
+		return await manager.download(backend, bit, cb);
 	},
 }));

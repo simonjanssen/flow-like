@@ -57,19 +57,12 @@ impl NodeLogic for DeleteNode {
             "Execution if deletion succeeds",
             VariableType::Execution,
         );
-        node.add_output_pin(
-            "exec_out_failure",
-            "Failure",
-            "Execution if deletion fails",
-            VariableType::Execution,
-        );
 
         return node;
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
         context.deactivate_exec_pin("exec_out").await?;
-        context.activate_exec_pin("exec_out_failure").await?;
 
         let path: FlowPath = context.evaluate_pin("path").await?;
         let recursive: bool = context.evaluate_pin("recursive").await?;
@@ -92,7 +85,6 @@ impl NodeLogic for DeleteNode {
         }
 
         context.activate_exec_pin("exec_out").await?;
-        context.deactivate_exec_pin("exec_out_failure").await?;
 
         Ok(())
     }

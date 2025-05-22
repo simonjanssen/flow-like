@@ -57,18 +57,10 @@ impl NodeLogic for ToBytesNode {
         )
         .set_value_type(ValueType::Array);
 
-        node.add_output_pin(
-            "failed",
-            "Failed",
-            "Called when the node fails",
-            VariableType::Execution,
-        );
-
         return node;
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        context.activate_exec_pin("failed").await?;
         context.deactivate_exec_pin("exec_out").await?;
         let response: HttpResponse = context.evaluate_pin("response").await?;
 
@@ -76,7 +68,6 @@ impl NodeLogic for ToBytesNode {
 
         context.set_pin_value("bytes", json!(bytes)).await?;
 
-        context.deactivate_exec_pin("failed").await?;
         context.activate_exec_pin("exec_out").await?;
         Ok(())
     }

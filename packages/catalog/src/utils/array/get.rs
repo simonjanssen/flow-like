@@ -60,15 +60,21 @@ impl NodeLogic for GetArrayElementNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        let array_in: Vec<Value> = context.evaluate_pin("array_in").await?;
+        let array_in = context.evaluate_pin_to_ref("array_in").await?;
         let index: i64 = context.evaluate_pin("index").await?;
 
         let mut success = false;
         let mut element = Value::Null;
 
-        if index >= 0 && index < array_in.len() as i64 {
-            element = array_in[index as usize].clone();
-            success = true;
+        {
+            let array_in = array_in.as_ref().lock().await;
+
+            if let Some(array) = array_in.as_array() {
+                if index >= 0 && index < array.len() as i64 {
+                    element = array[index as usize].clone();
+                    success = true;
+                }
+            }
         }
 
         context.set_pin_value("element", json!(element)).await?;

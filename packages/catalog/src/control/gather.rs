@@ -45,8 +45,8 @@ impl NodeLogic for GatherExecutionNode {
         context.deactivate_exec_pin("exec_done").await?;
         let input_pins = context.get_pins_by_name("exec_in").await?;
 
-        for pin in input_pins {
-            let value: bool = match context.evaluate_pin_ref(pin).await {
+        for pin in &input_pins {
+            let value: bool = match context.evaluate_pin_ref(pin.to_owned()).await {
                 Ok(value) => value,
                 Err(_) => {
                     // This means the pin is not set.
@@ -60,6 +60,9 @@ impl NodeLogic for GatherExecutionNode {
         }
 
         context.activate_exec_pin("exec_done").await?;
+        for pin in input_pins {
+            context.deactivate_exec_pin_ref(&pin).await?;
+        }
 
         return Ok(());
     }

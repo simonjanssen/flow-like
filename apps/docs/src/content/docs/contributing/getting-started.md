@@ -8,13 +8,14 @@ sidebar:
 Thank you for considering contributing to Flow-Like! This document outlines the guidelines and best practices for contributing to this mostly Tauri-based project. Our application leverages Rust for the backend (via Tauri) and [Next.js/Astro] for the frontend. To ensure consistency and quality, please follow the practices below when contributing.
 
 ## Getting Started
-1. Prerequisites: 
+1. Prerequisites:
     1. Install [Rust](https://www.rust-lang.org/tools/install)
     2. Install [Bun](https://bun.sh/docs/installation)
     3. [Tauri Prerequisites](https://v2.tauri.app/start/prerequisites/)
     4. Install Additional Dependencies (e.g Protobuf)
         - Linux: `protobuf-compiler, clang`
         - MacOS: `brew install protobuf`
+    5. [Optional on Linux] install `nvidia-cuda-toolkit`
 2. Fork the Repository: Fork the repository to your GitHub account and clone it locally.
 ```bash
 git clone https://github.com/your-username/flow-like.git

@@ -3,6 +3,7 @@ use crate::state::AppState;
 use axum::extract::State;
 use axum::Json;
 use axum::{routing::get, Router};
+use sea_orm::EntityTrait;
 use serde_json::json;
 use std::time::Instant;
 
@@ -21,7 +22,7 @@ async fn db_state_handler(
     state.ping().await?;
     let elapsed = now.elapsed();
     let response = Json(json!({
-        "rtt": elapsed.as_millis()
+        "rtt": elapsed.as_millis(),
     }));
     Ok(response)
 }

@@ -71,6 +71,8 @@ impl NodeLogic for VectorSearchLocalDatabaseNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
+        context.deactivate_exec_pin("exec_out").await?;
+
         let database: NodeDBConnection = context.evaluate_pin("database").await?;
         let vector: Vec<f64> = context.evaluate_pin("vector").await?;
         let filter: String = context.evaluate_pin("filter").await?;

@@ -1,5 +1,6 @@
 import { SquarePlusIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useMiniSearch } from "react-minisearch";
 import {
 	ContextMenu,
 	ContextMenuContent,
@@ -22,7 +23,6 @@ export function FlowContextMenu({
 	droppedPin,
 	onNodePlace,
 	onCommentPlace,
-	onFilterSearch,
 	onClose,
 }: Readonly<{
 	nodes: INode[];
@@ -30,16 +30,72 @@ export function FlowContextMenu({
 	children: React.ReactNode;
 	droppedPin?: IPin;
 	onNodePlace: (node: INode) => void;
-	onFilterSearch: (filter: string) => void;
 	onCommentPlace: () => void;
 	onClose: () => void;
 }>) {
+	const inputRef = useRef<HTMLInputElement>(null);
 	const [filter, setFilter] = useState("");
 	const [contextSensitive, setContextSensitive] = useState(true);
+	const sortedNodes = useMemo(() => {
+		if (!nodes) return [];
+		return nodes
+			.filter(
+				(node) => node.name !== "variable_set" && node.name !== "variable_get",
+			)
+			.toSorted((a, b) => {
+				if (a.friendly_name === b.friendly_name) {
+					return a.category.localeCompare(b.category);
+				}
+				return a.friendly_name.localeCompare(b.friendly_name);
+			});
+	}, [nodes]);
+	const { search, searchResults, addAllAsync, removeAll } =
+		useMiniSearch<INode>([], {
+			fields: [
+				"name",
+				"friendly_name",
+				"category",
+				"description",
+				"pin_in_names",
+				"pin_out_names",
+			],
+			storeFields: ["id"],
+			searchOptions: {
+				prefix: true,
+				fuzzy: true,
+				boost: {
+					name: 3,
+					friendly_name: 2,
+					category: 1.5,
+					description: 0.75,
+					pin_in_names: 1,
+					pin_out_names: 1,
+				},
+			},
+		});
 
 	useEffect(() => {
-		onFilterSearch(filter);
+		inputRef.current?.focus();
 	}, [filter]);
+
+	useEffect(() => {
+		removeAll();
+		(async () => {
+			if (!nodes) return;
+			const allNodes: INode[] = nodes.map((node) => {
+				return {
+					...node,
+					pin_in_names: Object.values(node.pins)
+						.filter((pin) => pin.pin_type === "Input")
+						.map((pin) => pin.friendly_name),
+					pin_out_names: Object.values(node.pins)
+						.filter((pin) => pin.pin_type === "Output")
+						.map((pin) => pin.friendly_name),
+				};
+			});
+			await addAllAsync(allNodes);
+		})();
+	}, [sortedNodes]);
 
 	return (
 		<ContextMenu
@@ -80,7 +136,7 @@ export function FlowContextMenu({
 					<ContextMenuItem
 						className="flex flex-row gap-1 items-center"
 						onClick={() => {
-							const node_ref = nodes.find(
+							const node_ref = sortedNodes.find(
 								(node) => node.name === "events_simple",
 							);
 							if (node_ref) onNodePlace(node_ref);
@@ -91,6 +147,7 @@ export function FlowContextMenu({
 					</ContextMenuItem>
 					<Separator className="my-1" />
 					<Input
+						ref={inputRef}
 						className="mb-1"
 						autoFocus
 						type="search"
@@ -98,23 +155,28 @@ export function FlowContextMenu({
 						value={filter}
 						onChange={(e) => {
 							setFilter(e.target.value);
+							search(e.target.value);
 						}}
 					/>
 				</div>
 				<div className="pr-1">
-					<ScrollArea className="h-52 w-[calc(20rem-0.5rem)] border rounded-md">
+					<ScrollArea
+						className="h-52 w-[calc(20rem-0.5rem)] border rounded-md"
+						onFocusCapture={() => {
+							if (inputRef.current && filter !== "") {
+								inputRef.current.focus();
+							}
+						}}
+					>
 						{nodes && (
 							<FlowContextMenuNodes
-								key={`${nodes.length}__root`}
 								items={
 									droppedPin && contextSensitive
 										? [
-												...nodes.filter((node) => {
-													if (
-														node.name === "variable_set" ||
-														node.name === "variable_get"
-													)
-														return false;
+												...(filter === ""
+													? sortedNodes
+													: (searchResults ?? [])
+												).filter((node) => {
 													const pins = Object.values(node.pins);
 													return pins.some((pin) => {
 														if (pin.pin_type === droppedPin.pin_type)
@@ -123,13 +185,7 @@ export function FlowContextMenu({
 													});
 												}),
 											]
-										: [
-												...nodes.filter(
-													(node) =>
-														node.name !== "variable_set" &&
-														node.name !== "variable_get",
-												),
-											]
+										: [...(filter === "" ? sortedNodes : (searchResults ?? []))]
 								}
 								filter={filter}
 								onNodePlace={async (node) => onNodePlace(node)}

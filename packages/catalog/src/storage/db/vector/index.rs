@@ -66,18 +66,10 @@ impl NodeLogic for IndexLocalDatabaseNode {
             VariableType::Execution,
         );
 
-        node.add_output_pin(
-            "failed",
-            "Failed Indexing",
-            "Failed to index the column",
-            VariableType::Execution,
-        );
-
         return node;
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        context.activate_exec_pin("failed").await?;
         context.deactivate_exec_pin("exec_out").await?;
 
         let index_type: String = context.evaluate_pin("type").await?;
@@ -89,12 +81,7 @@ impl NodeLogic for IndexLocalDatabaseNode {
             .clone();
         let database = database.read().await;
         let column: String = context.evaluate_pin("column").await?;
-        let result = database.index(&column, Some(&index_type)).await;
-        if result.is_ok() {
-            context.deactivate_exec_pin("failed").await?;
-            context.activate_exec_pin("exec_out").await?;
-            return Ok(());
-        }
+        database.index(&column, Some(&index_type)).await?;
         Ok(())
     }
 }

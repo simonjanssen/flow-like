@@ -252,6 +252,7 @@ export function parseBoard(
 					label: node.name,
 					node: node,
 					hash: hash,
+					ghost: false,
 					boardId: board.id,
 					appId: appId,
 					onExecute: async (node: INode, payload?: object) => {
@@ -319,19 +320,102 @@ export function parseBoard(
 			});
 		}
 
+	const currentLayerRef: ILayer | undefined = board.layers[currentLayer ?? ""];
 	for (const [pin, node, visible] of cache.values()) {
 		if (pin.connected_to.length === 0) continue;
 
 		for (const connectedTo of pin.connected_to) {
+			const shadowNodes = new Map();
 			const [conntectedPin, connectedNode, connectedVisible] =
 				cache.get(connectedTo) || [];
+			const connectedLayer = board.layers[connectedNode?.layer ?? ""];
 			if (!visible && !connectedVisible) continue;
 			if (!conntectedPin || !connectedNode) continue;
+
+			if (
+				visible !== connectedVisible &&
+				(connectedLayer?.parent_id ?? "") !== (currentLayer ?? "")
+			) {
+				if (!visible && node.layer === currentLayerRef.parent_id) {
+					let coordinates = node.coordinates ?? [0, 0, 0];
+
+					if (currentLayerRef?.nodes[node.id]) {
+						coordinates = currentLayerRef.nodes[node.id]?.coordinates ?? [
+							0, 0, 0,
+						];
+					}
+
+					nodes.push({
+						id: node.id,
+						type: "node",
+						deletable: false,
+						style: { opacity: 0.5 },
+						zIndex: 20,
+						position: {
+							x: coordinates?.[0] ?? 0,
+							y: coordinates?.[1] ?? 0,
+						},
+						data: {
+							label: node.name,
+							node: node,
+							boardId: board.id,
+							appId: appId,
+							ghost: true,
+							onExecute: async (node: INode, payload?: object) => {
+								await executeBoard(node, payload);
+							},
+							onCopy: async () => {
+								handleCopy();
+							},
+						},
+						selected: selected.has(node.id),
+					});
+					shadowNodes.set(node.id, node);
+				} else if (
+					!connectedVisible &&
+					connectedNode.layer === currentLayerRef.parent_id
+				) {
+					let coordinates = connectedNode.coordinates ?? [0, 0, 0];
+
+					if (currentLayerRef?.nodes[connectedNode.id]) {
+						coordinates = currentLayerRef.nodes[connectedNode.id]
+							?.coordinates ?? [0, 0, 0];
+					}
+
+					nodes.push({
+						id: connectedNode.id,
+						type: "node",
+						zIndex: 20,
+						deletable: false,
+						style: { opacity: 0.5 },
+						position: {
+							x: coordinates?.[0] ?? 0,
+							y: coordinates?.[1] ?? 0,
+						},
+						data: {
+							label: connectedNode.name,
+							node: connectedNode,
+							boardId: board.id,
+							appId: appId,
+							ghost: true,
+							onExecute: async (node: INode, payload?: object) => {
+								await executeBoard(node, payload);
+							},
+							onCopy: async () => {
+								handleCopy();
+							},
+						},
+						selected: selected.has(connectedNode.id),
+					});
+					shadowNodes.set(connectedNode.id, connectedNode);
+				}
+			}
 
 			const edge = oldEdgesMap.get(`${pin.id}-${connectedTo}`);
 
 			if (
 				edge &&
+				visible === connectedVisible &&
 				edge.data.fromLayer === node.layer &&
 				edge.data.toLayer === connectedNode.layer
 			) {
@@ -339,12 +423,18 @@ export function parseBoard(
 				continue;
 			}
 
-			const sourceNode = activeLayer.has(node.layer ?? "")
-				? node.layer
-				: node.id;
-			const connectedNodeId = activeLayer.has(connectedNode.layer ?? "")
-				? connectedNode.layer
-				: connectedNode.id;
+			const sourceNode = shadowNodes.has(node.id)
+				? node.id
+				: activeLayer.has(node.layer ?? "")
+					? node.layer
+					: node.id;
+
+			const connectedNodeId = shadowNodes.has(connectedNode.id)
+				? connectedNode.id
+				: activeLayer.has(connectedNode.layer ?? "")
+					? connectedNode.layer
+					: connectedNode.id;
+
 			if (pin.id && conntectedPin.id)
 				edges.push({
 					id: `${pin.id}-${conntectedPin.id}`,

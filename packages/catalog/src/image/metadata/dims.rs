@@ -55,7 +55,6 @@ impl NodeLogic for ImageDimsNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        // get inputs
         context.deactivate_exec_pin("exec_out").await?;
         let node_image: NodeImage = context.evaluate_pin("image_in").await?;
 

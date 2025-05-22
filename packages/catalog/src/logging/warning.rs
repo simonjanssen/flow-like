@@ -47,14 +47,15 @@ impl NodeLogic for WarningNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
+        let output = context.get_pin_by_name("exec_out").await?;
+        context.deactivate_exec_pin_ref(&output).await?;
+
         let should_toast = context.evaluate_pin::<bool>("toast").await?;
         let message = context.evaluate_pin::<String>("message").await?;
 
         if should_toast {
             context.toast_message(&message, ToastLevel::Warning).await?;
         }
-
-        let output = context.get_pin_by_name("exec_out").await?;
 
         context.log_message(&message, LogLevel::Warn);
         context.activate_exec_pin_ref(&output).await?;

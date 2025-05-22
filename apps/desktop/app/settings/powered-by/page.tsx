@@ -29,16 +29,6 @@ const poweredBy: {
 		},
 		href: "https://github.com/Mozilla-Ocho/llamafile",
 	},
-	{
-		name: "Pandoc",
-		description: "Universal document converter. ",
-		author: "John MacFarlane",
-		href: "https://pandoc.org/",
-		license: {
-			name: "GPL-2.0",
-			href: "https://github.com/jgm/pandoc/blob/main/COPYING.md",
-		},
-	},
 ];
 
 export default function PoweredByPage() {

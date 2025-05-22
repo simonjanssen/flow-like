@@ -72,6 +72,8 @@ impl NodeLogic for SetModelHintNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
+        context.deactivate_exec_pin("exec_out").await?;
+
         let mut preferences: BitModelPreference = context.evaluate_pin("preferences_in").await?;
         let model_hint: String = context.evaluate_pin("model_hint").await?;
 
