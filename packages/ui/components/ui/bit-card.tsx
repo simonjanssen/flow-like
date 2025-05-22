@@ -4,7 +4,7 @@ import { DownloadCloudIcon, PackageCheckIcon } from "lucide-react";
 import { useState } from "react";
 import { Progress } from "../../components/ui/progress";
 import { useInvoke } from "../../hooks/use-invoke";
-import { Bit, type IDownloadProgress } from "../../lib/bit/bit";
+import { Bit, Download, type IDownloadProgress } from "../../lib/bit/bit";
 import type { IBit } from "../../lib/schema/bit/bit";
 import { humanFileSize } from "../../lib/utils";
 import { useBackend } from "../../state/backend-state";
@@ -19,24 +19,16 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "./dropdown-menu";
+import { useDownloadManager } from "../../state/download-manager";
 
 export function BitCard({
 	bit,
 	wide = false,
 }: Readonly<{ bit: IBit; wide: boolean }>) {
 	const backend = useBackend();
-	const [progress, setProgress] = useState<{
-		active: boolean;
-		progress: IDownloadProgress;
-	}>({
-		active: false,
-		progress: {
-			downloaded: 0,
-			hash: "",
-			max: 0,
-			path: "",
-		},
-	});
+	const { download } = useDownloadManager();
+
+	const [progress, setProgress] = useState<undefined | number>();
 	const isInstalled: UseQueryResult<boolean> = useInvoke(
 		backend.isBitInstalled,
 		[bit],
@@ -47,31 +39,13 @@ export function BitCard({
 		[],
 	);
 
-	async function download(bit: IBit) {
-		const obj = Bit.fromObject(bit);
-		obj.setBackend(backend);
-		await obj.download((event) => {
-			setProgress((prev) => {
-				const total = event.total();
-				prev.progress = {
-					downloaded: Math.max(total.downloaded, total.max - 1),
-					hash: bit.hash,
-					max: total.max,
-					path: event.files().get(bit.hash)?.path ?? "",
-				};
-				return { ...prev };
-			});
+	async function downloadBit(bit: IBit) {
+		console.dir(bit);
+		await download(bit, (dl) => {
+			setProgress(dl.progress() * 100)
 		});
 		await isInstalled.refetch();
-		setProgress((prev) => {
-			prev.active = false;
-			prev.progress = {
-				...prev.progress,
-				downloaded: 0,
-				max: 0,
-			};
-			return { ...prev };
-		});
+		setProgress(undefined)
 	}
 
 	async function toggleDownload() {
@@ -82,12 +56,7 @@ export function BitCard({
 			return;
 		}
 
-		setProgress((prev) => {
-			prev.active = true;
-			return { ...prev };
-		});
-
-		await download(bit);
+		await downloadBit(bit);
 	}
 
 	return (
@@ -123,19 +92,17 @@ export function BitCard({
 							</div>
 						}
 						description={
-							<div className="overflow-scroll max-h-20 overflow-x-hidden overflow-y-auto">
+							<div className="max-h-20 overflow-x-hidden overflow-y-hidden line-clamp-5">
 								{bit.meta.en.description}
 							</div>
 						}
 						header={
 							<div>
-								{progress.progress.max > 0 &&
-									progress.progress.downloaded !== progress.progress.max && (
+								{progress && (
 										<Progress
 											className="mb-2"
 											value={
-												(100 * progress.progress.downloaded) /
-												progress.progress.max
+												progress
 											}
 										/>
 									)}
@@ -187,7 +154,7 @@ export function BitCard({
 									([hub, id]) => id === bit.id,
 								);
 								if (bitIndex === -1) {
-									await download(bit);
+									await downloadBit(bit);
 									await backend.addBit(bit, profile);
 									await currentProfile.refetch();
 									return;

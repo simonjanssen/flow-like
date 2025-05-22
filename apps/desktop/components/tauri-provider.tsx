@@ -323,7 +323,9 @@ export class TauriBackend implements IBackendState {
 	}
 
 	async getBitsByCategory(type: IBitTypes): Promise<IBit[]> {
-		throw new Error("Method not implemented.");
+		return await invoke("get_bits_by_category", {
+			bitType: type,
+		});
 	}
 
 	async getBitSize(bit: IBit): Promise<number> {
