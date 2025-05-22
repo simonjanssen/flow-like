@@ -7,7 +7,7 @@ Thank you for your interest in contributing to **Flow-Like**! We’re building t
 1. **Fork the Repository**: Click "Fork" on GitHub and clone your fork:
 
    ```bash
-   git clone https://github.com/TM9657/flow-like.git
+   git clone https://github.com/your-username/flow-like.git
    cd flow-like
    ```
 
