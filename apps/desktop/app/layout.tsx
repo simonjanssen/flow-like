@@ -17,6 +17,7 @@ import ToastProvider from "../components/toast-provider";
 import PostHogPageView from "./PostHogPageView";
 import { ReactScan } from "./ReactScanComponent";
 import { PHProvider } from "./provider";
+import { DesktopAuthProvider } from "../components/auth-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -32,40 +33,43 @@ export default function RootLayout({
 		<html lang="en" suppressHydrationWarning suppressContentEditableWarning>
 			{/* <ReactScan /> */}
 			<PHProvider>
-				<ReactFlowProvider>
-					<PersistQueryClientProvider
-						client={queryClient}
-						persistOptions={{
-							persister,
-						}}
-					>
-						<TooltipProvider>
-							<Toaster />
-							<body className={inter.className}>
-								<ToastProvider />
-								<TauriProvider>
-									<Suspense
-										fallback={
-											<div className="flex flex-1 justify-center items-center">
-												{"Loading..."}
-											</div>
-										}
-									>
-										<PostHogPageView />
-										<ThemeProvider
-											attribute="class"
-											defaultTheme="system"
-											enableSystem
-											disableTransitionOnChange
+				<DesktopAuthProvider>
+
+					<ReactFlowProvider>
+						<PersistQueryClientProvider
+							client={queryClient}
+							persistOptions={{
+								persister,
+							}}
+						>
+							<TooltipProvider>
+								<Toaster />
+								<body className={inter.className}>
+									<ToastProvider />
+									<TauriProvider>
+										<Suspense
+											fallback={
+												<div className="flex flex-1 justify-center items-center">
+													{"Loading..."}
+												</div>
+											}
 										>
-											<AppSidebar>{children}</AppSidebar>
-										</ThemeProvider>
-									</Suspense>
-								</TauriProvider>
-							</body>
-						</TooltipProvider>
-					</PersistQueryClientProvider>
-				</ReactFlowProvider>
+											<PostHogPageView />
+											<ThemeProvider
+												attribute="class"
+												defaultTheme="system"
+												enableSystem
+												disableTransitionOnChange
+											>
+												<AppSidebar>{children}</AppSidebar>
+											</ThemeProvider>
+										</Suspense>
+									</TauriProvider>
+								</body>
+							</TooltipProvider>
+						</PersistQueryClientProvider>
+					</ReactFlowProvider>
+				</DesktopAuthProvider>
 			</PHProvider>
 		</html>
 	);

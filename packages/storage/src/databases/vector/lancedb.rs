@@ -180,7 +180,9 @@ impl VectorStore for LanceDBVectorStore {
             query = query.only_if(filter);
         }
 
-        let result = query.execute_hybrid(QueryExecutionOptions::default()).await?;
+        let result = query
+            .execute_hybrid(QueryExecutionOptions::default())
+            .await?;
         let result = result.try_collect::<Vec<_>>().await.ok();
         let result = record_batches_to_vec(result)?;
         Ok(result)

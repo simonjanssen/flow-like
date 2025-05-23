@@ -2,10 +2,17 @@
 name = "backend"
 version = "0.1.0"
 edition = "2021"
+build = "build.rs"
+
+[build-dependencies]
+serde = { workspace = true, features = ["derive", "rc"] }
+serde_json.workspace = true
+flow-like-types = { path = "../../packages/types" }
+reqwest = { version = "0.12.15", features = ["blocking"] }
 
 [dependencies]
 axum = {version="0.8.4", features=["http2", "multipart"]}
-sea-orm = { version = "1.1.11", features = [ "sqlx-mysql", "sqlx-postgres", "sqlx-sqlite", "runtime-tokio-native-tls", "macros", "with-json" ] }
+sea-orm = { version = "1.1.11", features = [ "sqlx-mysql", "sqlx-postgres", "sqlx-sqlite", "runtime-tokio-native-tls", "macros", "with-json", "seaography" ] }
 serde = { workspace = true, features = ["derive", "rc"] }
 socket2 = "0.5.9"
 tower = "0.5.2"
@@ -23,6 +30,8 @@ sentry-tracing = "0.38.1"
 sentry = "0.38.1"
 sentry-tower = { version = "0.38.1", features = ["axum", "axum-matched-path"] }
 bytemuck = "1.23.0"
+tower-http = {version="0.6.4", features = ["full"]}
+chrono.workspace = true
 
 [profile.release]
 opt-level = 3

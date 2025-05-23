@@ -4,11 +4,12 @@ use axum::extract::State;
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Redirect};
 use axum::routing::post;
+use axum::Json;
 use axum::{http::Request, routing::get, Router};
 use hyper::Uri;
 
 use crate::error::AppError;
-use crate::state::AppState;
+use crate::state::{AppState, OpenIdConfig};
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -18,6 +19,22 @@ pub fn routes() -> Router<AppState> {
         .route("/token", post(proxy_token))
         .route("/userinfo", get(proxy_userinfo).post(proxy_userinfo))
         .route("/revoke", get(proxy_revoke).post(proxy_revoke))
+        .route("/openid", get(openid_config))
+}
+
+#[tracing::instrument]
+async fn openid_config(State(state): State<AppState>) -> Result<Json<OpenIdConfig>, AppError> {
+    let config = state
+        .platform_config
+        .authentication
+        .as_ref()
+        .unwrap()
+        .openid
+        .as_ref()
+        .unwrap()
+        .clone();
+
+    Ok(Json(config))
 }
 
 #[tracing::instrument]
@@ -26,10 +43,15 @@ async fn discovery(State(state): State<AppState>) -> Redirect {
         &state
             .platform_config
             .authentication
+            .as_ref()
+            .unwrap()
             .openid
             .as_ref()
             .unwrap()
-            .discovery_url,
+            .discovery_url
+            .clone()
+            .unwrap()
+            .clone(),
     )
 }
 
@@ -39,6 +61,8 @@ async fn jwks(State(state): State<AppState>) -> Redirect {
         &state
             .platform_config
             .authentication
+            .as_ref()
+            .unwrap()
             .openid
             .as_ref()
             .unwrap()
@@ -89,15 +113,19 @@ async fn proxy_request(
     let openid_config = state
         .platform_config
         .authentication
+        .as_ref()
+        .unwrap()
         .openid
         .as_ref()
         .ok_or(anyhow!("OpenID Configuration Error"))?;
 
+    let proxy = openid_config.proxy.clone().ok_or(anyhow!("Proxy Error"))?;
+
     let url = match endpoint {
-        "authorize" => openid_config.proxy.authorize.clone(),
-        "token" => openid_config.proxy.token.clone(),
-        "userinfo" => openid_config.proxy.userinfo.clone(),
-        "revoke" => openid_config.proxy.revoke.clone(),
+        "authorize" => proxy.authorize.clone(),
+        "token" => proxy.token.clone(),
+        "userinfo" => proxy.userinfo.clone(),
+        "revoke" => proxy.revoke.clone(),
         _ => return Err(AppError::from(anyhow!("Invalid endpoint"))),
     }
     .ok_or(anyhow!("Invalid endpoint"))?;

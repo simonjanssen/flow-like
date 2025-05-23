@@ -79,7 +79,7 @@
 		"deep-link": {
 			"mobile": [{ "host": "mobile.flow-like.com", "pathPrefix": ["/"] }],
 			"desktop": {
-				"schemes": ["flow-like-app", "fl-app"]
+				"schemes": ["flow-like"]
 			}
 		},
 		"updater": {

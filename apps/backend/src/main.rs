@@ -1,5 +1,6 @@
 use axum::{routing::get, Router};
 use dotenv::dotenv;
+use flow_like_types::tokio;
 use socket2::{Domain, Socket, Type};
 use std::{
     io,
@@ -7,10 +8,17 @@ use std::{
     sync::Arc,
     time::Duration,
 };
+use tower::ServiceBuilder;
+use tower_http::{
+    compression::{predicate::NotForContentType, CompressionLayer, DefaultPredicate, Predicate},
+    cors::CorsLayer,
+    decompression::RequestDecompressionLayer,
+};
 use tracing_subscriber::prelude::*;
-use flow_like_types::tokio;
+
 mod entity;
 mod error;
+mod middleware;
 mod routes;
 mod state;
 
@@ -42,8 +50,17 @@ async fn main() {
         .nest("/store", routes::store::routes(&state))
         .nest("/auth", routes::auth::routes())
         .with_state(state.clone())
-        .route("/version", get(|| async { "0.0.0" }));
-    let port = 3000;
+        .route("/version", get(|| async { "0.0.0" }))
+        .layer(CorsLayer::permissive())
+        .layer(
+            ServiceBuilder::new()
+                .layer(RequestDecompressionLayer::new())
+                .layer(CompressionLayer::new().compress_when(
+                    DefaultPredicate::new().and(NotForContentType::new("text/event-stream")),
+                )),
+        );
+
+    let port = 3210;
     let listener = match create_listener(format!("0.0.0.0:{}", port)) {
         Ok(listener) => listener,
         Err(err) => {
@@ -54,7 +71,9 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
-fn create_listener<A: ToSocketAddrs>(addr: A) -> io::Result<flow_like_types::tokio::net::TcpListener> {
+fn create_listener<A: ToSocketAddrs>(
+    addr: A,
+) -> io::Result<flow_like_types::tokio::net::TcpListener> {
     let mut addrs = addr.to_socket_addrs()?;
     let addr = addrs.next().unwrap();
     let listener = match &addr {

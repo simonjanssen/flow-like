@@ -658,6 +658,8 @@ dependencies = [
  "memchr",
  "pin-project-lite",
  "tokio",
+ "zstd",
+ "zstd-safe",
 ]
 
 [[package]]
@@ -1401,12 +1403,14 @@ dependencies = [
  "anyhow",
  "axum",
  "bytemuck",
+ "chrono",
  "dotenv",
  "flow-like",
  "flow-like-types",
  "hyper 1.6.0",
  "hyper-util",
  "jsonwebtoken",
+ "reqwest",
  "sea-orm",
  "sentry 0.38.1",
  "sentry-tower",
@@ -1415,6 +1419,7 @@ dependencies = [
  "serde_json",
  "socket2",
  "tower",
+ "tower-http",
  "tracing",
  "tracing-subscriber",
 ]
@@ -5140,6 +5145,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "21dec9db110f5f872ed9699c3ecf50cf16f423502706ba5c72462e28d3157573"
 
 [[package]]
+name = "http-range-header"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9171a2ea8a68358193d15dd5d70c1c10a2afc3e7e4c5bc92bc9f025cebd7359c"
+
+[[package]]
 name = "http-serde"
 version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5661,6 +5672,16 @@ name = "ipnet"
 version = "2.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "469fb0b9cefa57e3ef31275ee7cacb78f2fdca44e4765491884a2b119d4eb130"
+
+[[package]]
+name = "iri-string"
+version = "0.7.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dbc5ebe9c3a1a7a5127f920a418f7585e9e758e911d0466ed004f393b0e380b2"
+dependencies = [
+ "memchr",
+ "serde",
+]
 
 [[package]]
 name = "is-docker"
@@ -10140,6 +10161,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cac37512fde1f5b9ef71ec773cfabb90ad3b68c27e53131ff38763c247fcbb2d"
 dependencies = [
  "heck 0.5.0",
+ "proc-macro-crate 3.2.0",
  "proc-macro2",
  "quote",
  "sea-bae",
@@ -12555,6 +12577,37 @@ dependencies = [
  "tower-layer",
  "tower-service",
  "tracing",
+]
+
+[[package]]
+name = "tower-http"
+version = "0.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fdb0c213ca27a9f57ab69ddb290fd80d970922355b83ae380b395d3986b8a2e"
+dependencies = [
+ "async-compression",
+ "base64 0.22.1",
+ "bitflags 2.8.0",
+ "bytes",
+ "futures-core",
+ "futures-util",
+ "http 1.2.0",
+ "http-body 1.0.1",
+ "http-body-util",
+ "http-range-header",
+ "httpdate",
+ "iri-string",
+ "mime",
+ "mime_guess",
+ "percent-encoding",
+ "pin-project-lite",
+ "tokio",
+ "tokio-util",
+ "tower",
+ "tower-layer",
+ "tower-service",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]

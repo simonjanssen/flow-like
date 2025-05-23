@@ -207,6 +207,10 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .manage(state::TauriSettingsState(settings_state))
         .manage(state::TauriFlowLikeState(state_ref))
+        .on_page_load(|view, payload| {
+            let app_handle = view.app_handle();
+            println!("Page loaded: {}", payload.url());
+        })
         .invoke_handler(tauri::generate_handler![
             functions::file::get_path_meta,
             functions::ai::invoke::predict,

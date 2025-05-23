@@ -51,6 +51,7 @@ import {
 	useSidebar,
 } from "@tm9657/flow-like-ui";
 import type { ISettingsProfile } from "@tm9657/flow-like-ui/types";
+import { useAuth } from "react-oidc-context";
 import {
 	BadgeCheck,
 	Bell,
@@ -612,6 +613,7 @@ export function NavUser({
 	user?: IUser;
 }>) {
 	const { isMobile } = useSidebar();
+	const auth = useAuth()
 
 	return (
 		<SidebarMenu>
@@ -698,7 +700,7 @@ export function NavUser({
 							</>
 						)}
 						{!user && (
-							<DropdownMenuItem className="gap-2">
+							<DropdownMenuItem className="gap-2" onClick={async () => await auth.signinRedirect()}>
 								<LogInIcon className="size-4" />
 								Log in
 							</DropdownMenuItem>

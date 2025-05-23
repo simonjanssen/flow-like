@@ -14,9 +14,12 @@
     "apps/backend": {
       "name": "flow-like-backend",
       "version": "0.0.2",
+      "dependencies": {
+        "@prisma/client": "^6.8.2",
+      },
       "devDependencies": {
         "@types/node": "^22.10.10",
-        "prisma": "^6.2.1",
+        "prisma": "^6.8.2",
         "tsx": "^4.19.2",
         "typescript": "^5.7.3",
       },
@@ -82,6 +85,7 @@
         "minisearch": "^7.1.1",
         "next": "^15.3.2",
         "next-themes": "^0.4.4",
+        "oidc-client-ts": "^3.2.1",
         "posthog-js": "^1.205.0",
         "react": "^19.0.0",
         "react-canvas-confetti": "^2.0.7",
@@ -90,6 +94,7 @@
         "react-dom": "^19.0.0",
         "react-element-to-jsx-string": "^15.0.0",
         "react-i18next": "^15.4.0",
+        "react-oidc-context": "^3.3.0",
         "react-resizable-panels": "^2.1.7",
         "react-spinners": "^0.15.0",
         "react-virtualized": "^9.22.5",
@@ -816,6 +821,8 @@
     "@preact/signals": ["@preact/signals@1.3.2", "", { "dependencies": { "@preact/signals-core": "^1.7.0" }, "peerDependencies": { "preact": "10.x" } }, "sha512-naxcJgUJ6BTOROJ7C3QML7KvwKwCXQJYTc5L/b0eEsdYgPB6SxwoQ1vDGcS0Q7GVjAenVq/tXrybVdFShHYZWg=="],
 
     "@preact/signals-core": ["@preact/signals-core@1.8.0", "", {}, "sha512-OBvUsRZqNmjzCZXWLxkZfhcgT+Fk8DDcT/8vD6a1xhDemodyy87UJRJfASMuSD8FaAIeGgGm85ydXhm7lr4fyA=="],
+
+    "@prisma/client": ["@prisma/client@6.8.2", "", { "peerDependencies": { "prisma": "*", "typescript": ">=5.1.0" }, "optionalPeers": ["prisma", "typescript"] }, "sha512-5II+vbyzv4si6Yunwgkj0qT/iY0zyspttoDrL3R4BYgLdp42/d2C8xdi9vqkrYtKt9H32oFIukvyw3Koz5JoDg=="],
 
     "@prisma/config": ["@prisma/config@6.8.2", "", { "dependencies": { "jiti": "2.4.2" } }, "sha512-ZJY1fF4qRBPdLQ/60wxNtX+eu89c3AkYEcP7L3jkp0IPXCNphCYxikTg55kPJLDOG6P0X+QG5tCv6CmsBRZWFQ=="],
 
@@ -2317,6 +2324,8 @@
 
     "jsx-ast-utils": ["jsx-ast-utils@3.3.5", "", { "dependencies": { "array-includes": "^3.1.6", "array.prototype.flat": "^1.3.1", "object.assign": "^4.1.4", "object.values": "^1.1.6" } }, "sha512-ZZow9HBI5O6EPgSJLUb8n2NKgmVWTwCvHGwFuJlMjvLFqlGG6pjirPhtdsseaLZjSibD8eegzmYpUZwoIlj2cQ=="],
 
+    "jwt-decode": ["jwt-decode@4.0.0", "", {}, "sha512-+KJGIyHgkGuIq3IEBNftfhW/LfWhXUIY6OmyVWjliu5KH1y0fw7VQ8YndE2O4qZdMSd9SqbnC8GOcZEy0Om7sA=="],
+
     "katex": ["katex@0.16.22", "", { "dependencies": { "commander": "^8.3.0" }, "bin": { "katex": "cli.js" } }, "sha512-XCHRdUw4lf3SKBaJe4EvgqIuWwkPSo9XoeO8GjQW94Bp7TWv9hNhzZjZ+OH9yf1UmLygb7DIT5GSFQiyt16zYg=="],
 
     "keyv": ["keyv@4.5.4", "", { "dependencies": { "json-buffer": "3.0.1" } }, "sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw=="],
@@ -2629,6 +2638,8 @@
 
     "ohash": ["ohash@2.0.11", "", {}, "sha512-RdR9FQrFwNBNXAr4GixM8YaRZRJ5PUWbKYbE5eOsrwAjJW0q2REGcf79oYPsLyskQCZG1PLN+S/K1V00joZAoQ=="],
 
+    "oidc-client-ts": ["oidc-client-ts@3.2.1", "", { "dependencies": { "jwt-decode": "^4.0.0" } }, "sha512-hS5AJ5s/x4bXhHvNJT1v+GGvzHUwdRWqNQQbSrp10L1IRmzfRGKQ3VWN3dstJb+oF3WtAyKezwD2+dTEIyBiAA=="],
+
     "on-finished": ["on-finished@2.4.1", "", { "dependencies": { "ee-first": "1.1.1" } }, "sha512-oVlzkg3ENAhCk2zdv7IJwd/QUD4z2RxRwpkcGY8psCVcCYZNq4wYnVWALHM+brtuJjePWiYF/ClmuDr8Ch5+kg=="],
 
     "once": ["once@1.4.0", "", { "dependencies": { "wrappy": "1" } }, "sha512-lNaJgI+2Q5URQBkccEKHTQOPaXdUxnZZElQTZY0MFUAuaEqe1E+Nyvgdz/aIyNi6Z9MzO5dv1H8n58/GELp3+w=="],
@@ -2822,6 +2833,8 @@
     "react-lifecycles-compat": ["react-lifecycles-compat@3.0.4", "", {}, "sha512-fBASbA6LnOU9dOU2eW7aQ8xmYBSXUIWr+UmF9b1efZBazGNO+rcXT/icdKnYm2pTwcRylVUYwW7H1PHfLekVzA=="],
 
     "react-minisearch": ["react-minisearch@7.1.3", "", { "peerDependencies": { "minisearch": "^7.1.0", "react": "^16.8.0 || ^17.0.0 || ^18.0.0" } }, "sha512-nXW0xXvEJpnh98wFp3RxArGFngtXceMQg0plbZvLSpY9TkJos5CctNlv5jJMZEQLgR/v9mwol4DDWaQanOtnCA=="],
+
+    "react-oidc-context": ["react-oidc-context@3.3.0", "", { "peerDependencies": { "oidc-client-ts": "^3.1.0", "react": ">=16.14.0" } }, "sha512-302T/ma4AOVAxrHdYctDSKXjCq9KNHT564XEO2yOPxRfxEP58xa4nz+GQinNl8x7CnEXECSM5JEjQJk3Cr5BvA=="],
 
     "react-refresh": ["react-refresh@0.17.0", "", {}, "sha512-z6F7K9bV85EfseRCp2bzrpyQ0Gkw1uLoCel9XBVWPg/TjRj94SkJzUTGfOa4bs7iJvBWtQG0Wq7wnI0syw3EBQ=="],
 

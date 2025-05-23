@@ -1,14 +1,23 @@
+use anyhow::bail;
 use axum::body::Body;
+use flow_like_types::{Result, Value};
 use hyper_util::{
     client::legacy::{connect::HttpConnector, Client},
     rt::TokioExecutor,
 };
-use jsonwebtoken::{jwk::JwkSet, Algorithm, Validation};
+use jsonwebtoken::{
+    decode,
+    jwk::{AlgorithmParameters, JwkSet},
+    DecodingKey, Validation,
+};
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use serde::{Deserialize, Serialize};
-use std::{sync::Arc, time::Duration};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 pub type AppState = Arc<State>;
+
+const CONFIG: &str = include_str!("../api.config.json");
+const JWKS: &str = include_str!(concat!(env!("OUT_DIR"), "/jwks.json"));
 
 #[derive(Debug)]
 pub struct State {
@@ -20,24 +29,10 @@ pub struct State {
 
 impl State {
     pub async fn new() -> Self {
-        let config_path = std::path::PathBuf::from("./hub.config.json");
-        let config = std::fs::read_to_string(config_path).expect("Failed to read config file");
         let platform_config: PlatformConfig =
-            serde_json::from_str(&config).expect("Failed to parse config file");
+            serde_json::from_str(CONFIG).expect("Failed to parse config file");
 
-        let jwks = flow_like_types::reqwest::get(
-            &platform_config
-                .authentication
-                .openid
-                .as_ref()
-                .unwrap()
-                .jwks_url,
-        )
-        .await
-        .expect("Failed to fetch JWKS")
-        .json()
-        .await
-        .expect("Failed to parse JWKS");
+        let jwks = flow_like_types::json::from_str::<JwkSet>(JWKS).expect("Failed to parse JWKS");
 
         let db_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
         let mut opt = ConnectOptions::new(db_url.to_owned());
@@ -60,67 +55,66 @@ impl State {
             jwks,
         }
     }
+
+    pub fn validate_token(&self, token: &str) -> Result<HashMap<String, Value>> {
+        let header = jsonwebtoken::decode_header(token)?;
+        let Some(kid) = header.kid else {
+            return Err(anyhow::anyhow!("Missing kid in token header"));
+        };
+        let Some(jwk) = self.jwks.find(&kid) else {
+            return Err(anyhow::anyhow!("JWK not found for kid: {}", kid));
+        };
+        let alg = decoding_key_for_algorithm(&jwk.algorithm)?;
+        let mut validation = Validation::new(header.alg);
+        validation.validate_aud = false;
+        let decoded = decode::<HashMap<String, Value>>(token, &alg, &validation)?;
+        let claims = decoded.claims;
+        Ok(claims)
+    }
 }
 
-fn validation_from(alg: &str, issuer: &str) -> anyhow::Result<Validation> {
-    let mut validation = match alg {
-        "ES256" => Validation::new(Algorithm::ES256),
-        "ES384" => Validation::new(Algorithm::ES384),
-        "EdDSA" => Validation::new(Algorithm::EdDSA),
-        "HS256" => Validation::new(Algorithm::HS256),
-        "HS384" => Validation::new(Algorithm::HS384),
-        "HS512" => Validation::new(Algorithm::HS512),
-        "PS256" => Validation::new(Algorithm::PS256),
-        "PS384" => Validation::new(Algorithm::PS384),
-        "PS512" => Validation::new(Algorithm::PS512),
-        "RS256" => Validation::new(Algorithm::RS256),
-        "RS384" => Validation::new(Algorithm::RS384),
-        "RS512" => Validation::new(Algorithm::RS512),
-        _ => return Err(anyhow::anyhow!("Unsupported algorithm: {}", alg)),
-    };
-    validation.set_issuer(&[issuer]);
-    Ok(validation)
+fn decoding_key_for_algorithm(alg: &AlgorithmParameters) -> anyhow::Result<DecodingKey> {
+    let key = match alg {
+        AlgorithmParameters::RSA(rsa) => DecodingKey::from_rsa_components(&rsa.n, &rsa.e),
+        AlgorithmParameters::EllipticCurve(ec) => DecodingKey::from_ec_components(&ec.x, &ec.y),
+        AlgorithmParameters::OctetKeyPair(octet) => DecodingKey::from_ed_components(&octet.x),
+        _ => bail!("Unsupported algorithm"),
+    }?;
+    Ok(key)
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PlatformConfig {
-    pub authentication: Authentication,
+    pub authentication: Option<Authentication>,
     pub features: Features,
     pub hubs: Vec<String>, // Assuming hubs might contain strings, adjust if needed
-    pub provider: String,
-    pub domain: String,
-    pub region: String,
-    #[serde(rename = "termsOfService")]
+    pub provider: Option<String>,
+    pub domain: Option<String>,
+    pub region: Option<String>,
     pub terms_of_service: String,
-    #[serde(rename = "legalNotice")]
     pub legal_notice: String,
-    #[serde(rename = "privacyPolicy")]
     pub privacy_policy: String,
     pub contact: Contact,
-    #[serde(rename = "maxUsersPrototype")]
-    pub max_users_prototype: i32,
-    #[serde(rename = "defaultUserPlan")]
-    pub default_user_plan: String,
+    pub max_users_prototype: Option<i32>,
+    pub default_user_plan: Option<String>,
     pub environment: Environment,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum Environment {
     Development,
     Production,
     Staging,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Authentication {
     pub variant: String,
-    #[serde(rename = "openid")]
     pub openid: Option<OpenIdConfig>,
-    #[serde(rename = "oauth2")]
     pub oauth2: Option<OAuth2Config>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct OpenIdProxy {
     pub enabled: bool,
     pub authorize: Option<String>,
@@ -129,40 +123,32 @@ pub struct OpenIdProxy {
     pub revoke: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct OpenIdConfig {
-    pub authority: String,
-    #[serde(rename = "clientId")]
-    pub client_id: String,
-    #[serde(rename = "discoveryUrl")]
-    pub discovery_url: String,
-    #[serde(rename = "jwksUrl")]
+    pub authority: Option<String>,
+    pub client_id: Option<String>,
+    pub redirect_uri: Option<String>,
+    pub response_type: Option<String>,
+    pub scope: Option<String>,
+    pub discovery_url: Option<String>,
     pub jwks_url: String,
-    pub proxy: OpenIdProxy,
+    pub proxy: Option<OpenIdProxy>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct OAuth2Config {
-    #[serde(rename = "authorizationEndpoint")]
     pub authorization_endpoint: String,
-    #[serde(rename = "tokenEndpoint")]
     pub token_endpoint: String,
-    #[serde(rename = "clientId")]
     pub client_id: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Features {
-    #[serde(rename = "modelHosting")]
     pub model_hosting: bool,
-    #[serde(rename = "flowHosting")]
     pub flow_hosting: bool,
     pub governance: bool,
-    #[serde(rename = "aiAct")]
     pub ai_act: bool,
-    #[serde(rename = "unauthorizedRead")]
     pub unauthorized_read: bool,
-    #[serde(rename = "adminInterface")]
     pub admin_interface: bool,
     pub premium: bool,
 }

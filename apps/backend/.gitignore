@@ -1,4 +1,5 @@
 .env
 .env.dev
 .env.prod
-hub.config.json
+api.config.json
+jwks.json
