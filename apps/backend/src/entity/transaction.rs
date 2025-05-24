@@ -4,50 +4,30 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "Profile")]
+#[sea_orm(table_name = "Transaction")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false, column_type = "Text")]
     pub id: String,
-    #[sea_orm(column_type = "Text")]
-    pub name: String,
-    #[sea_orm(column_type = "Text", nullable)]
-    pub thumbnail: Option<String>,
-    #[sea_orm(column_type = "Text", nullable)]
-    pub icon: Option<String>,
-    #[sea_orm(column_type = "Text", nullable)]
-    pub description: Option<String>,
-    pub interests: Option<Vec<String>>,
-    pub tags: Option<Vec<String>>,
-    #[sea_orm(column_name = "bitIds")]
-    pub bit_ids: Option<Vec<String>>,
+    #[sea_orm(column_name = "userId", column_type = "Text", nullable)]
+    pub user_id: Option<String>,
+    #[sea_orm(column_name = "stripeId", column_type = "Text", unique)]
+    pub stripe_id: String,
     #[sea_orm(column_name = "createdAt")]
     pub created_at: DateTime,
     #[sea_orm(column_name = "updatedAt")]
     pub updated_at: DateTime,
-    #[sea_orm(column_type = "JsonBinary", nullable)]
-    pub theme: Option<Json>,
-    #[sea_orm(column_name = "userId", column_type = "Text")]
-    pub user_id: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(has_many = "super::membership::Entity")]
-    Membership,
     #[sea_orm(
         belongs_to = "super::user::Entity",
         from = "Column::UserId",
         to = "super::user::Column::Id",
         on_update = "Cascade",
-        on_delete = "Cascade"
+        on_delete = "SetNull"
     )]
     User,
-}
-
-impl Related<super::membership::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Membership.def()
-    }
 }
 
 impl Related<super::user::Entity> for Entity {

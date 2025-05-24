@@ -33,7 +33,6 @@ export default function RootLayout({
 		<html lang="en" suppressHydrationWarning suppressContentEditableWarning>
 			{/* <ReactScan /> */}
 			<PHProvider>
-				<DesktopAuthProvider>
 
 					<ReactFlowProvider>
 						<PersistQueryClientProvider
@@ -41,12 +40,13 @@ export default function RootLayout({
 							persistOptions={{
 								persister,
 							}}
-						>
+							>
 							<TooltipProvider>
 								<Toaster />
 								<body className={inter.className}>
 									<ToastProvider />
 									<TauriProvider>
+							<DesktopAuthProvider>
 										<Suspense
 											fallback={
 												<div className="flex flex-1 justify-center items-center">
@@ -64,12 +64,12 @@ export default function RootLayout({
 												<AppSidebar>{children}</AppSidebar>
 											</ThemeProvider>
 										</Suspense>
+				</DesktopAuthProvider>
 									</TauriProvider>
 								</body>
 							</TooltipProvider>
 						</PersistQueryClientProvider>
 					</ReactFlowProvider>
-				</DesktopAuthProvider>
 			</PHProvider>
 		</html>
 	);

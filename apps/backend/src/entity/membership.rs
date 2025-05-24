@@ -26,6 +26,8 @@ pub struct Model {
     pub joined_via: Option<String>,
     #[sea_orm(column_name = "appId", column_type = "Text")]
     pub app_id: String,
+    #[sea_orm(column_name = "profileId", column_type = "Text", nullable)]
+    pub profile_id: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -38,6 +40,14 @@ pub enum Relation {
         on_delete = "Cascade"
     )]
     App,
+    #[sea_orm(
+        belongs_to = "super::profile::Entity",
+        from = "Column::ProfileId",
+        to = "super::profile::Column::Id",
+        on_update = "Cascade",
+        on_delete = "SetNull"
+    )]
+    Profile,
     #[sea_orm(
         belongs_to = "super::role::Entity",
         from = "Column::RoleId",
@@ -59,6 +69,12 @@ pub enum Relation {
 impl Related<super::app::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::App.def()
+    }
+}
+
+impl Related<super::profile::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Profile.def()
     }
 }
 

@@ -1,5 +1,5 @@
-use anyhow::bail;
 use axum::body::Body;
+use flow_like_types::bail;
 use flow_like_types::{Result, Value};
 use hyper_util::{
     client::legacy::{connect::HttpConnector, Client},
@@ -19,12 +19,12 @@ pub type AppState = Arc<State>;
 const CONFIG: &str = include_str!("../api.config.json");
 const JWKS: &str = include_str!(concat!(env!("OUT_DIR"), "/jwks.json"));
 
-#[derive(Debug)]
 pub struct State {
     pub platform_config: PlatformConfig,
     pub db: DatabaseConnection,
     pub jwks: JwkSet,
     pub client: Client<HttpConnector, Body>,
+    pub stripe_client: Option<stripe::Client>,
 }
 
 impl State {
@@ -48,21 +48,31 @@ impl State {
             .await
             .expect("Failed to connect to database");
 
+        let stripe_client = if platform_config.features.premium {
+            let stripe_key =
+                std::env::var("STRIPE_SECRET_KEY").expect("STRIPE_SECRET_KEY must be set");
+            let stripe_client = stripe::Client::new(stripe_key);
+            Some(stripe_client)
+        } else {
+            None
+        };
+
         Self {
             platform_config,
             db,
             client,
             jwks,
+            stripe_client,
         }
     }
 
     pub fn validate_token(&self, token: &str) -> Result<HashMap<String, Value>> {
         let header = jsonwebtoken::decode_header(token)?;
         let Some(kid) = header.kid else {
-            return Err(anyhow::anyhow!("Missing kid in token header"));
+            return Err(flow_like_types::anyhow!("Missing kid in token header"));
         };
         let Some(jwk) = self.jwks.find(&kid) else {
-            return Err(anyhow::anyhow!("JWK not found for kid: {}", kid));
+            return Err(flow_like_types::anyhow!("JWK not found for kid: {}", kid));
         };
         let alg = decoding_key_for_algorithm(&jwk.algorithm)?;
         let mut validation = Validation::new(header.alg);
@@ -73,7 +83,7 @@ impl State {
     }
 }
 
-fn decoding_key_for_algorithm(alg: &AlgorithmParameters) -> anyhow::Result<DecodingKey> {
+fn decoding_key_for_algorithm(alg: &AlgorithmParameters) -> flow_like_types::Result<DecodingKey> {
     let key = match alg {
         AlgorithmParameters::RSA(rsa) => DecodingKey::from_rsa_components(&rsa.n, &rsa.e),
         AlgorithmParameters::EllipticCurve(ec) => DecodingKey::from_ec_components(&ec.x, &ec.y),
@@ -124,15 +134,22 @@ pub struct OpenIdProxy {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CognitoConfig {
+    pub user_pool_id: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct OpenIdConfig {
     pub authority: Option<String>,
     pub client_id: Option<String>,
     pub redirect_uri: Option<String>,
+    pub post_logout_redirect_uri: Option<String>,
     pub response_type: Option<String>,
     pub scope: Option<String>,
     pub discovery_url: Option<String>,
     pub jwks_url: String,
     pub proxy: Option<OpenIdProxy>,
+    pub cognito: Option<CognitoConfig>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

@@ -70,22 +70,7 @@ model SwimlaneItem {
   updatedAt DateTime @updatedAt
 }
 
-model Profile {
-  id String @id
 
-  path String?
-  name String
-  thumbnail String?
-  icon String?
-  description String?
-  interests String[]
-  tags String[]
-
-  bitIds String[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
 
 model Template {
   id String @id
@@ -139,28 +124,72 @@ enum UserTier {
 
 model User {
   id          String  @id
-  email       String  @unique
-  username    String  @unique
-  name        String
+
+  stripeId    String?
+
+  email       String?
+  username    String?
+  name        String?
   description String?
   avatarUrl   String?
 
-  themes Json?
   additionalInformation Json?
 
-  permission BigInt
+  permission BigInt @default(0)
   acceptedTermsVersion String?
   tutorialCompleted Boolean @default(false)
 
-  personalAccessToken PAT[]
   memberships Membership[]
-  comments    Comment[]
+  profiles Profile[]
+  personalAccessToken PAT[]
   queue       JoinQueue[]
+  comments    Comment[]
   logs       ProviderInvocation[]
   feedback    Feedback[]
   assignedPublicationRequests PublicationRequest[]
   publicationLogs PublicationLog[]
   invitations Invitations[]
+  transactions Transaction[]
+
+  status UserStatus @default(ACTIVE)
+  tier UserTier @default(FREE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Transaction {
+  id String @id
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId String?
+
+  stripeId String @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Profile {
+  id String @id
+
+  name String
+  thumbnail String?
+  icon String?
+  description String?
+  interests String[]
+  tags String[]
+
+  memberships Membership[]
+
+  theme Json?
+
+  bitIds String[]
+
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -399,6 +428,9 @@ model Membership {
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
+
+  profile Profile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
+  profileId String?
 
   app   App @relation(fields: [appId], references: [id], onDelete: Cascade)
   appId String

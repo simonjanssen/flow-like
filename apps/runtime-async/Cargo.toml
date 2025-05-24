@@ -1,0 +1,10 @@
+[package]
+name = "runtime-async"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+aws_lambda_events = "0.16.0"
+flow-like = { path = "../../packages/core" }
+flow-like-types = { path = "../../packages/types" }
+lambda_runtime = {version="0.13.0", features = ["anyhow"]}

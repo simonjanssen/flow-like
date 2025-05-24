@@ -13,7 +13,7 @@ pub fn routes() -> Router<AppState> {
         .route("/db", get(db_state_handler))
 }
 
-#[tracing::instrument]
+#[tracing::instrument(skip(state))]
 async fn db_state_handler(
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, AppError> {

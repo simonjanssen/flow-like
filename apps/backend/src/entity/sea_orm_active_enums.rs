@@ -114,6 +114,28 @@ pub enum SwimlaneType {
     Query,
 }
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "UserStatus")]
+pub enum UserStatus {
+    #[sea_orm(string_value = "ACTIVE")]
+    Active,
+    #[sea_orm(string_value = "INACTIVE")]
+    Inactive,
+    #[sea_orm(string_value = "BANNED")]
+    Banned,
+}
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "UserTier")]
+pub enum UserTier {
+    #[sea_orm(string_value = "FREE")]
+    Free,
+    #[sea_orm(string_value = "PREMIUM")]
+    Premium,
+    #[sea_orm(string_value = "PRO")]
+    Pro,
+    #[sea_orm(string_value = "ENTERPRISE")]
+    Enterprise,
+}
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "Visibility")]
 pub enum Visibility {
     #[sea_orm(string_value = "PUBLIC")]

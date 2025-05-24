@@ -1,6 +1,8 @@
-use axum::{routing::get, Router};
+use axum::{middleware::from_fn_with_state, routing::get, Extension, Json, Router};
 use dotenv::dotenv;
+use error::{ApiError, AppError};
 use flow_like_types::tokio;
+use middleware::jwt::jwt_middleware;
 use socket2::{Domain, Socket, Type};
 use std::{
     io,
@@ -47,10 +49,11 @@ async fn main() {
         .nest("/health", routes::health::routes())
         .nest("/info", routes::info::routes())
         .nest("/user", routes::user::routes())
-        .nest("/store", routes::store::routes(&state))
+        .nest("/store", routes::store::routes())
         .nest("/auth", routes::auth::routes())
         .with_state(state.clone())
         .route("/version", get(|| async { "0.0.0" }))
+        .layer(from_fn_with_state(state.clone(), jwt_middleware))
         .layer(CorsLayer::permissive())
         .layer(
             ServiceBuilder::new()

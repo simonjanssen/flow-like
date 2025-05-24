@@ -29,4 +29,5 @@ pub mod swimlane;
 pub mod swimlane_item;
 pub mod technical_user;
 pub mod template;
+pub mod transaction;
 pub mod user;

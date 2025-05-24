@@ -1,5 +1,7 @@
 import * as Sentry from "@sentry/nextjs";
 import { invoke } from "@tauri-apps/api/core";
+import { Window } from "@tauri-apps/api/window"
+import { WebviewWindow } from "@tauri-apps/api/webviewWindow"
 import {
 	Avatar,
 	AvatarFallback,
@@ -81,9 +83,11 @@ import {
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useTauriInvoke } from "./useInvoke";
+import { getCurrentUser } from "aws-amplify/auth";
+import { useApi } from "../lib/useApi";
 
 const data = {
 	navMain: [
@@ -614,6 +618,26 @@ export function NavUser({
 }>) {
 	const { isMobile } = useSidebar();
 	const auth = useAuth()
+	const info = useApi("GET", "user/info")
+
+	const displayName: string = useMemo(() => {
+		console.dir(auth?.user)
+
+		const profile = auth?.user?.profile;
+		if (!profile) return "Offline";
+
+		const user = getCurrentUser()
+		console.dir(user)
+
+		return profile?.name ??
+		profile?.preferred_username ??
+		(profile as Record<string, any>)["cognito:username"] ??
+		"Offline";
+	}, [auth?.user?.profile])
+
+	const email: string = useMemo(() => {
+		return auth?.user?.profile?.email ?? "Anonymous"
+	}, [auth?.user?.profile])
 
 	return (
 		<SidebarMenu>
@@ -627,15 +651,15 @@ export function NavUser({
 							<Avatar className="h-8 w-8 rounded-lg">
 								<AvatarImage src={user?.avatar} alt={user?.name ?? "Offline"} />
 								<AvatarFallback className="rounded-lg">
-									{(user?.name ?? "Anon").slice(0, 2).toUpperCase()}
+									{(displayName).slice(0, 2).toUpperCase()}
 								</AvatarFallback>
 							</Avatar>
 							<div className="grid flex-1 text-left text-sm leading-tight">
 								<span className="truncate font-semibold">
-									{user?.name ?? "Offline"}
+									{displayName}
 								</span>
 								<span className="truncate text-xs">
-									{user?.email ?? "Anonymous"}
+									{email}
 								</span>
 							</div>
 							<ChevronsUpDown className="ml-auto size-4" />
@@ -652,24 +676,24 @@ export function NavUser({
 								<Avatar className="h-8 w-8 rounded-lg">
 									<AvatarImage
 										src={user?.avatar}
-										alt={user?.name ?? "Offline"}
+										alt={email}
 									/>
 									<AvatarFallback className="rounded-lg">
-										{(user?.name ?? "Anonymous").slice(0, 2).toUpperCase()}
+										{(displayName).slice(0, 2).toUpperCase()}
 									</AvatarFallback>
 								</Avatar>
 								<div className="grid flex-1 text-left text-sm leading-tight">
 									<span className="truncate font-semibold">
-										{user?.name ?? "Offline"}
+										{displayName}
 									</span>
 									<span className="truncate text-xs">
-										{user?.email ?? "Anonymous"}
+										{email}
 									</span>
 								</div>
 							</div>
 						</DropdownMenuLabel>
 						<DropdownMenuSeparator />
-						{user && (
+						{auth?.isAuthenticated && (
 							<>
 								<DropdownMenuGroup>
 									<DropdownMenuItem className="gap-2">
@@ -693,14 +717,22 @@ export function NavUser({
 									</DropdownMenuItem>
 								</DropdownMenuGroup>
 								<DropdownMenuSeparator />
-								<DropdownMenuItem className="gap-2">
+								<DropdownMenuItem className="gap-2" onClick={async () => {
+									await auth?.signoutRedirect({
+										post_logout_redirect_uri: process.env.NEXT_PUBLIC_REDIRECT_LOGOUT_URL,
+										id_token_hint: auth?.user?.id_token,
+
+									})
+								}}>
 									<LogOut className="size-4" />
 									Log out
 								</DropdownMenuItem>
 							</>
 						)}
-						{!user && (
-							<DropdownMenuItem className="gap-2" onClick={async () => await auth.signinRedirect()}>
+						{!auth?.isAuthenticated && (
+							<DropdownMenuItem className="gap-2" onClick={async () => {
+								await auth?.signinRedirect()
+							}}>
 								<LogInIcon className="size-4" />
 								Log in
 							</DropdownMenuItem>

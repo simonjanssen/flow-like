@@ -1,4 +1,3 @@
-use anyhow::anyhow;
 use axum::body::Body;
 use axum::extract::State;
 use axum::middleware::Next;
@@ -6,6 +5,7 @@ use axum::response::{IntoResponse, Redirect};
 use axum::routing::post;
 use axum::Json;
 use axum::{http::Request, routing::get, Router};
+use flow_like_types::anyhow;
 use hyper::Uri;
 
 use crate::error::AppError;
@@ -22,7 +22,7 @@ pub fn routes() -> Router<AppState> {
         .route("/openid", get(openid_config))
 }
 
-#[tracing::instrument]
+#[tracing::instrument(skip(state))]
 async fn openid_config(State(state): State<AppState>) -> Result<Json<OpenIdConfig>, AppError> {
     let config = state
         .platform_config
@@ -37,7 +37,7 @@ async fn openid_config(State(state): State<AppState>) -> Result<Json<OpenIdConfi
     Ok(Json(config))
 }
 
-#[tracing::instrument]
+#[tracing::instrument(skip(state))]
 async fn discovery(State(state): State<AppState>) -> Redirect {
     Redirect::temporary(
         &state
@@ -55,7 +55,7 @@ async fn discovery(State(state): State<AppState>) -> Redirect {
     )
 }
 
-#[tracing::instrument]
+#[tracing::instrument(skip(state))]
 async fn jwks(State(state): State<AppState>) -> Redirect {
     Redirect::temporary(
         &state
@@ -70,7 +70,7 @@ async fn jwks(State(state): State<AppState>) -> Redirect {
     )
 }
 
-#[tracing::instrument]
+#[tracing::instrument(skip(state))]
 async fn proxy_authorize(
     State(state): State<AppState>,
     req: Request<Body>,
@@ -78,7 +78,7 @@ async fn proxy_authorize(
     proxy_request(state, req, "authorize").await
 }
 
-#[tracing::instrument]
+#[tracing::instrument(skip(state))]
 async fn proxy_token(
     State(state): State<AppState>,
     req: Request<Body>,
@@ -86,7 +86,7 @@ async fn proxy_token(
     proxy_request(state, req, "token").await
 }
 
-#[tracing::instrument]
+#[tracing::instrument(skip(state))]
 async fn proxy_userinfo(
     State(state): State<AppState>,
     req: Request<Body>,
@@ -94,7 +94,7 @@ async fn proxy_userinfo(
     proxy_request(state, req, "userinfo").await
 }
 
-#[tracing::instrument]
+#[tracing::instrument(skip(state))]
 async fn proxy_revoke(
     State(state): State<AppState>,
     req: Request<Body>,
@@ -102,7 +102,7 @@ async fn proxy_revoke(
     proxy_request(state, req, "revoke").await
 }
 
-#[tracing::instrument]
+#[tracing::instrument(skip(state))]
 async fn proxy_request(
     state: AppState,
     mut req: Request<Body>,

@@ -13,10 +13,11 @@ use flow_like::{
     utils::http::HTTPClient,
 };
 use flow_like_types::{sync::Mutex, tokio::time::interval};
+use serde_json::json;
 use settings::Settings;
 use state::TauriFlowLikeState;
 use std::{sync::Arc, time::Duration};
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_deep_link::{DeepLinkExt, OpenUrlEvent};
 use tracing_subscriber::prelude::*;
 
@@ -208,8 +209,26 @@ pub fn run() {
         .manage(state::TauriSettingsState(settings_state))
         .manage(state::TauriFlowLikeState(state_ref))
         .on_page_load(|view, payload| {
+            let label = view.label();
             let app_handle = view.app_handle();
-            println!("Page loaded: {}", payload.url());
+            let main_window = app_handle.get_webview_window("main");
+
+            if let Some(main_window) = main_window {
+                if label == "oidcFlow" {
+                    let res = main_window.emit(
+                        "oidc/url",
+                        json!({
+                            "url": payload.url(),
+                        }),
+                    );
+
+                    if let Err(e) = res {
+                        eprintln!("Error emitting oidcUrlChange: {}", e);
+                    }
+                }
+            }
+
+            println!("{} loaded: {}", label, payload.url());
         })
         .invoke_handler(tauri::generate_handler![
             functions::file::get_path_meta,

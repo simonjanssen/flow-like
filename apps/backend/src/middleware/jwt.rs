@@ -1,11 +1,15 @@
-use crate::entity::{pat, prelude::*, technical_user};
-use anyhow::bail;
+use crate::{
+    entity::{pat, prelude::*, technical_user},
+    error::AuthorizationError,
+};
 use axum::{
     body::Body,
     extract::{Request, State},
     middleware::Next,
     response::Response,
 };
+use flow_like_types::anyhow;
+use flow_like_types::bail;
 use flow_like_types::Result;
 use hyper::{header::AUTHORIZATION, StatusCode};
 use sea_orm::{sqlx::types::chrono, ColumnTrait, EntityTrait, QueryFilter};
@@ -15,6 +19,7 @@ use crate::state::AppState;
 #[derive(Debug, Clone)]
 pub struct OpenIDUser {
     pub sub: String,
+    pub username: String,
     pub email: Option<String>,
 }
 
@@ -25,24 +30,48 @@ pub struct PATUser {
 }
 
 #[derive(Debug, Clone)]
-pub struct AppUser {
+pub struct ApiKey {
     pub api_key: String,
     pub app_id: String,
 }
 
 #[derive(Debug, Clone)]
-pub enum AuthorizedUser {
+pub enum AppUser {
     OpenID(OpenIDUser),
     PAT(PATUser),
-    APIKey(AppUser),
+    APIKey(ApiKey),
+    Unauthorized,
 }
 
-impl AuthorizedUser {
-    pub fn sub(&self) -> Result<String> {
+impl AppUser {
+    pub fn sub(&self) -> Result<String, AuthorizationError> {
         match self {
-            AuthorizedUser::OpenID(user) => Ok(user.sub.clone()),
-            AuthorizedUser::PAT(user) => Ok(user.sub.clone()),
-            AuthorizedUser::APIKey(_) => bail!("APIKey user does not have a sub"),
+            AppUser::OpenID(user) => Ok(user.sub.clone()),
+            AppUser::PAT(user) => Ok(user.sub.clone()),
+            AppUser::APIKey(_) => Err(AuthorizationError::from(anyhow!(
+                "APIKey user does not have a sub"
+            ))),
+            AppUser::Unauthorized => Err(AuthorizationError::from(anyhow!(
+                "Unauthorized user does not have a sub"
+            ))),
+        }
+    }
+
+    pub fn email(&self) -> Option<String> {
+        match self {
+            AppUser::OpenID(user) => user.email.clone(),
+            AppUser::PAT(_) => None,
+            AppUser::APIKey(_) => None,
+            AppUser::Unauthorized => None,
+        }
+    }
+
+    pub fn username(&self) -> Option<String> {
+        match self {
+            AppUser::OpenID(user) => Some(user.username.clone()),
+            AppUser::PAT(_) => None,
+            AppUser::APIKey(_) => None,
+            AppUser::Unauthorized => None,
         }
     }
 
@@ -55,7 +84,7 @@ pub async fn jwt_middleware(
     State(state): State<AppState>,
     request: Request,
     next: Next,
-) -> Result<Response<Body>, StatusCode> {
+) -> Result<Response<Body>, AuthorizationError> {
     let mut request = request;
     if let Some(auth_header) = request.headers().get(AUTHORIZATION) {
         if let Ok(token) = auth_header.to_str() {
@@ -66,20 +95,30 @@ pub async fn jwt_middleware(
             };
 
             let token = token.trim();
-            let claims = state
-                .validate_token(token)
-                .map_err(|_| StatusCode::UNAUTHORIZED)?;
-            let sub = claims.get("sub").ok_or(StatusCode::UNAUTHORIZED)?;
+            let claims = state.validate_token(token)?;
+            let sub = claims.get("sub").ok_or(anyhow!("sub not found"))?;
+            let sub = sub.as_str().ok_or(anyhow!("sub not a string"))?;
             let email = claims
                 .get("email")
                 .and_then(|v| v.as_str())
                 .map(String::from);
-            let sub = sub.as_str().ok_or(StatusCode::UNAUTHORIZED)?;
-            let user = AuthorizedUser::OpenID(OpenIDUser {
+            let username = claims
+                .get("username")
+                .and_then(|v| v.as_str())
+                .map(String::from)
+                .or_else(|| {
+                    claims
+                        .get("cognito:username")
+                        .and_then(|v| v.as_str())
+                        .map(String::from)
+                })
+                .unwrap_or_else(|| sub.to_string());
+            let user = AppUser::OpenID(OpenIDUser {
                 sub: sub.to_string(),
+                username: username,
                 email,
             });
-            request.extensions_mut().insert::<AuthorizedUser>(user);
+            request.extensions_mut().insert::<AppUser>(user);
             return Ok(next.run(request).await);
         }
     }
@@ -89,14 +128,13 @@ pub async fn jwt_middleware(
             let db_pat = Pat::find()
                 .filter(pat::Column::Key.eq(pat_str))
                 .one(&state.db)
-                .await
-                .map_err(|_| StatusCode::UNAUTHORIZED)?;
+                .await?;
             if let Some(pat) = db_pat {
-                let pat_user = AuthorizedUser::PAT(PATUser {
+                let pat_user = AppUser::PAT(PATUser {
                     pat: pat_str.to_string(),
                     sub: pat.user_id.clone(),
                 });
-                request.extensions_mut().insert::<AuthorizedUser>(pat_user);
+                request.extensions_mut().insert::<AppUser>(pat_user);
                 return Ok(next.run(request).await);
             }
         }
@@ -107,26 +145,28 @@ pub async fn jwt_middleware(
             let db_app = TechnicalUser::find()
                 .filter(technical_user::Column::Key.eq(api_key_str))
                 .one(&state.db)
-                .await
-                .map_err(|_| StatusCode::UNAUTHORIZED)?;
+                .await?;
 
             if let Some(app) = db_app {
                 if let Some(valid_until) = app.valid_until {
                     let now = chrono::Utc::now().naive_utc();
                     if valid_until < now {
-                        return Err(StatusCode::UNAUTHORIZED);
+                        return Err(AuthorizationError::from(anyhow!("API Key is expired")));
                     }
                 }
 
-                let app_user = AuthorizedUser::APIKey(AppUser {
+                let app_user = AppUser::APIKey(ApiKey {
                     api_key: api_key_str.to_string(),
                     app_id: app.id.clone(),
                 });
-                request.extensions_mut().insert::<AuthorizedUser>(app_user);
+                request.extensions_mut().insert::<AppUser>(app_user);
                 return Ok(next.run(request).await);
             }
         }
     }
 
-    Err(StatusCode::UNAUTHORIZED)
+    request
+        .extensions_mut()
+        .insert::<AppUser>(AppUser::Unauthorized);
+    return Ok(next.run(request).await);
 }

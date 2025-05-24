@@ -9,12 +9,8 @@ use tower::ServiceBuilder;
 
 use super::auth::auth_middleware;
 
-pub fn routes(state: &AppState) -> Router<AppState> {
+pub fn routes() -> Router<AppState> {
     let mut router = Router::new();
-
-    if !state.platform_config.features.unauthorized_read {
-        router = router.layer(ServiceBuilder::new().layer(middleware::from_fn(auth_middleware)));
-    }
 
     router
         .route("/", get(|| async { "ok" }))

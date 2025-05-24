@@ -1,0 +1,16 @@
+[package]
+name = "runtime"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+flow-like = { path = "../../packages/core" }
+flow-like-types = { path = "../../packages/types" }
+lambda_http.workspace = true
+axum.workspace = true
+serde = { workspace = true, features = ["derive", "rc"] }
+serde_json.workspace = true
+sentry-tracing.workspace = true
+sentry.workspace = true
+sentry-tower.workspace = true
+tracing.workspace = true
