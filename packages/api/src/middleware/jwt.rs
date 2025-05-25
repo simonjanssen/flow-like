@@ -10,8 +10,7 @@ use axum::{
 };
 use flow_like_types::Result;
 use flow_like_types::anyhow;
-use flow_like_types::bail;
-use hyper::{StatusCode, header::AUTHORIZATION};
+use hyper::header::AUTHORIZATION;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, sqlx::types::chrono};
 
 use crate::state::AppState;
@@ -115,7 +114,7 @@ pub async fn jwt_middleware(
                 .unwrap_or_else(|| sub.to_string());
             let user = AppUser::OpenID(OpenIDUser {
                 sub: sub.to_string(),
-                username: username,
+                username,
                 email,
             });
             request.extensions_mut().insert::<AppUser>(user);
@@ -168,5 +167,5 @@ pub async fn jwt_middleware(
     request
         .extensions_mut()
         .insert::<AppUser>(AppUser::Unauthorized);
-    return Ok(next.run(request).await);
+    Ok(next.run(request).await)
 }

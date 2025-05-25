@@ -2,7 +2,6 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use sea_orm::DbErr;
 
 pub struct AppError(flow_like_types::Error);
 pub struct AuthorizationError(flow_like_types::Error);

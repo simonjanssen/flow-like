@@ -1,16 +1,13 @@
 use crate::error::AppError;
 use crate::state::AppState;
+use axum::Json;
 use axum::extract::State;
-use axum::{Json, middleware};
 use axum::{Router, routing::get};
 use serde_json::json;
 use std::time::Instant;
-use tower::ServiceBuilder;
-
-use super::auth::auth_middleware;
 
 pub fn routes() -> Router<AppState> {
-    let mut router = Router::new();
+    let router = Router::new();
 
     router
         .route("/", get(|| async { "ok" }))

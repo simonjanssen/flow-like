@@ -1,16 +1,8 @@
 // https://github.com/awslabs/aws-lambda-rust-runtime/tree/main/examples/http-axum
-use axum::extract::Query;
 use axum::http::StatusCode;
-use axum::{
-    extract::Path,
-    response::Json,
-    routing::{get, post},
-    Router,
-};
+use axum::{routing::get, Router};
 use flow_like_types::tokio;
 use lambda_http::{run_with_streaming_response, tracing, Error};
-use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
 use std::env::set_var;
 
 async fn health_check() -> (StatusCode, String) {

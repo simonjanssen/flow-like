@@ -1,18 +1,11 @@
-use std::collections::HashMap;
-
-use crate::{
-    entity::{pat, prelude::*, technical_user, user},
-    error::ApiError,
-    middleware::jwt::AppUser,
-    state::AppState,
-};
+use crate::{entity::user, error::ApiError, middleware::jwt::AppUser, state::AppState};
 use axum::{
     Extension, Json,
     extract::{Path, State},
 };
 use flow_like_types::Value;
-use flow_like_types::{anyhow, bail};
-use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, sqlx::types::chrono};
+use flow_like_types::anyhow;
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, sqlx::types::chrono};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

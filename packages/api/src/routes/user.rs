@@ -1,9 +1,6 @@
-use super::auth::auth_middleware;
 use crate::state::AppState;
-use axum::middleware;
 use axum::{Router, routing::get};
 use info::user_info;
-use tower::ServiceBuilder;
 
 pub mod info;
 pub mod lookup;

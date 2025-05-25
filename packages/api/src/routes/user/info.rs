@@ -1,14 +1,9 @@
 use std::collections::HashMap;
 
-use crate::{
-    entity::{pat, prelude::*, technical_user, user},
-    error::ApiError,
-    middleware::jwt::AppUser,
-    state::AppState,
-};
+use crate::{entity::user, error::ApiError, middleware::jwt::AppUser, state::AppState};
 use axum::{Extension, Json, extract::State};
 use flow_like_types::anyhow;
-use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, sqlx::types::chrono};
+use sea_orm::{ActiveModelTrait, EntityTrait, sqlx::types::chrono};
 
 #[tracing::instrument(skip(state))]
 pub async fn user_info(
@@ -85,7 +80,7 @@ async fn generate_stripe_user(
                 ("sub".to_string(), sub.to_string()),
                 ("platform".to_string(), "FlowLike".to_string()),
             ])),
-            email: email.as_ref().map(String::as_str),
+            email: email.as_deref(),
             ..Default::default()
         },
     )
