@@ -1,19 +1,15 @@
 {
-	"name": "flow-like-backend",
+	"name": "flow-like-api",
 	"private": true,
 	"version": "0.0.2",
 	"type": "module",
 	"scripts": {
-		"dev": "cargo watch -x run",
-		"dev:zero-downtime": "systemfd --no-pid -s http::3000 -- cargo watch -x run",
 		"postinstall": "cargo install sea-orm-cli@1.1.11",
 		"db:push:sync": "bun run db:push && bun run db:sync",
 		"db:sync": "sea-orm-cli generate entity -o src/entity --max-connections 10 --with-serde both",
 		"db:push": "bunx prisma db push",
 		"db:migration:create": "bunx prisma migrate dev --name",
-		"db:migration:deploy": "bunx prisma migrate deploy",
-		"build": "bun run --cwd ./apps/desktop build",
-		"build:docker": "cd ../.. && docker build -f apps/backend/docker/api/Dockerfile -t flow-like-backend ."
+		"db:migration:deploy": "bunx prisma migrate deploy"
 	},
 	"devDependencies": {
 		"@types/node": "^22.10.10",

@@ -1,7 +1,7 @@
 import * as Sentry from "@sentry/nextjs";
 import { invoke } from "@tauri-apps/api/core";
-import { Window } from "@tauri-apps/api/window"
-import { WebviewWindow } from "@tauri-apps/api/webviewWindow"
+import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { Window } from "@tauri-apps/api/window";
 import {
 	Avatar,
 	AvatarFallback,
@@ -53,7 +53,7 @@ import {
 	useSidebar,
 } from "@tm9657/flow-like-ui";
 import type { ISettingsProfile } from "@tm9657/flow-like-ui/types";
-import { useAuth } from "react-oidc-context";
+import { getCurrentUser } from "aws-amplify/auth";
 import {
 	BadgeCheck,
 	Bell,
@@ -84,10 +84,10 @@ import { useTheme } from "next-themes";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useAuth } from "react-oidc-context";
 import { toast } from "sonner";
-import { useTauriInvoke } from "./useInvoke";
-import { getCurrentUser } from "aws-amplify/auth";
 import { useApi } from "../lib/useApi";
+import { useTauriInvoke } from "./useInvoke";
 
 const data = {
 	navMain: [
@@ -617,27 +617,29 @@ export function NavUser({
 	user?: IUser;
 }>) {
 	const { isMobile } = useSidebar();
-	const auth = useAuth()
-	const info = useApi("GET", "user/info")
+	const auth = useAuth();
+	const info = useApi("GET", "user/info");
 
 	const displayName: string = useMemo(() => {
-		console.dir(auth?.user)
+		console.dir(auth?.user);
 
 		const profile = auth?.user?.profile;
 		if (!profile) return "Offline";
 
-		const user = getCurrentUser()
-		console.dir(user)
+		const user = getCurrentUser();
+		console.dir(user);
 
-		return profile?.name ??
-		profile?.preferred_username ??
-		(profile as Record<string, any>)["cognito:username"] ??
-		"Offline";
-	}, [auth?.user?.profile])
+		return (
+			profile?.name ??
+			profile?.preferred_username ??
+			(profile as Record<string, any>)["cognito:username"] ??
+			"Offline"
+		);
+	}, [auth?.user?.profile]);
 
 	const email: string = useMemo(() => {
-		return auth?.user?.profile?.email ?? "Anonymous"
-	}, [auth?.user?.profile])
+		return auth?.user?.profile?.email ?? "Anonymous";
+	}, [auth?.user?.profile]);
 
 	return (
 		<SidebarMenu>
@@ -651,16 +653,12 @@ export function NavUser({
 							<Avatar className="h-8 w-8 rounded-lg">
 								<AvatarImage src={user?.avatar} alt={user?.name ?? "Offline"} />
 								<AvatarFallback className="rounded-lg">
-									{(displayName).slice(0, 2).toUpperCase()}
+									{displayName.slice(0, 2).toUpperCase()}
 								</AvatarFallback>
 							</Avatar>
 							<div className="grid flex-1 text-left text-sm leading-tight">
-								<span className="truncate font-semibold">
-									{displayName}
-								</span>
-								<span className="truncate text-xs">
-									{email}
-								</span>
+								<span className="truncate font-semibold">{displayName}</span>
+								<span className="truncate text-xs">{email}</span>
 							</div>
 							<ChevronsUpDown className="ml-auto size-4" />
 						</SidebarMenuButton>
@@ -674,21 +672,14 @@ export function NavUser({
 						<DropdownMenuLabel className="p-0 font-normal">
 							<div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
 								<Avatar className="h-8 w-8 rounded-lg">
-									<AvatarImage
-										src={user?.avatar}
-										alt={email}
-									/>
+									<AvatarImage src={user?.avatar} alt={email} />
 									<AvatarFallback className="rounded-lg">
-										{(displayName).slice(0, 2).toUpperCase()}
+										{displayName.slice(0, 2).toUpperCase()}
 									</AvatarFallback>
 								</Avatar>
 								<div className="grid flex-1 text-left text-sm leading-tight">
-									<span className="truncate font-semibold">
-										{displayName}
-									</span>
-									<span className="truncate text-xs">
-										{email}
-									</span>
+									<span className="truncate font-semibold">{displayName}</span>
+									<span className="truncate text-xs">{email}</span>
 								</div>
 							</div>
 						</DropdownMenuLabel>
@@ -717,22 +708,28 @@ export function NavUser({
 									</DropdownMenuItem>
 								</DropdownMenuGroup>
 								<DropdownMenuSeparator />
-								<DropdownMenuItem className="gap-2" onClick={async () => {
-									await auth?.signoutRedirect({
-										post_logout_redirect_uri: process.env.NEXT_PUBLIC_REDIRECT_LOGOUT_URL,
-										id_token_hint: auth?.user?.id_token,
-
-									})
-								}}>
+								<DropdownMenuItem
+									className="gap-2"
+									onClick={async () => {
+										await auth?.signoutRedirect({
+											post_logout_redirect_uri:
+												process.env.NEXT_PUBLIC_REDIRECT_LOGOUT_URL,
+											id_token_hint: auth?.user?.id_token,
+										});
+									}}
+								>
 									<LogOut className="size-4" />
 									Log out
 								</DropdownMenuItem>
 							</>
 						)}
 						{!auth?.isAuthenticated && (
-							<DropdownMenuItem className="gap-2" onClick={async () => {
-								await auth?.signinRedirect()
-							}}>
+							<DropdownMenuItem
+								className="gap-2"
+								onClick={async () => {
+									await auth?.signinRedirect();
+								}}
+							>
 								<LogInIcon className="size-4" />
 								Log in
 							</DropdownMenuItem>

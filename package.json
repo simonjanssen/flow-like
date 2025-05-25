@@ -6,7 +6,7 @@
 	"scripts": {
 		"dev:desktop": "bun run --cwd ./apps/desktop dev:all",
 		"dev:desktop:win": "bun run --cwd ./apps/desktop dev:all:win",
-		"dev:backend": "bun run --cwd ./apps/backend dev",
+		"dev:api": "bun run --cwd ./apps/backend/local/api dev",
 		"dev:embedded": "bun run --cwd ./apps/embedded dev",
 		"dev:website": "bun run --cwd ./apps/website dev",
 		"dev:docs": "bun run --cwd ./apps/docs dev",

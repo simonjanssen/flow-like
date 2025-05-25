@@ -45,7 +45,7 @@ async fn main() {
 
     let state = Arc::new(state::State::new().await);
 
-    let app = Router::new()
+    let app: Router = Router::new()
         .nest("/health", routes::health::routes())
         .nest("/info", routes::info::routes())
         .nest("/user", routes::user::routes())

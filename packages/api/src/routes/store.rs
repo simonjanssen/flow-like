@@ -1,8 +1,8 @@
 use crate::error::AppError;
 use crate::state::AppState;
 use axum::extract::State;
-use axum::{middleware, Json};
-use axum::{routing::get, Router};
+use axum::{Json, middleware};
+use axum::{Router, routing::get};
 use serde_json::json;
 use std::time::Instant;
 use tower::ServiceBuilder;

@@ -1,0 +1,23 @@
+[package]
+name = "local-api"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+flow-like-api.workspace = true
+flow-like-types.workspace = true
+socket2 = "0.5.9"
+tracing.workspace = true
+tracing-subscriber.workspace = true
+dotenv.workspace = true
+sentry-tracing.workspace = true
+sentry.workspace = true
+oasgen = {version="0.25.0", features = ["axum"]}
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+debug = false

@@ -11,19 +11,6 @@
         "wrangler": "^3.109.3",
       },
     },
-    "apps/backend": {
-      "name": "flow-like-backend",
-      "version": "0.0.2",
-      "dependencies": {
-        "@prisma/client": "^6.8.2",
-      },
-      "devDependencies": {
-        "@types/node": "^22.10.10",
-        "prisma": "^6.8.2",
-        "tsx": "^4.19.2",
-        "typescript": "^5.7.3",
-      },
-    },
     "apps/desktop": {
       "name": "flow-like-desktop",
       "version": "0.0.2",
@@ -225,6 +212,19 @@
       },
       "devDependencies": {
         "postcss": "^8.4.49",
+      },
+    },
+    "packages/api": {
+      "name": "flow-like-api",
+      "version": "0.0.2",
+      "dependencies": {
+        "@prisma/client": "^6.8.2",
+      },
+      "devDependencies": {
+        "@types/node": "^22.10.10",
+        "prisma": "^6.8.2",
+        "tsx": "^4.19.2",
+        "typescript": "^5.7.3",
       },
     },
     "packages/ui": {
@@ -2177,7 +2177,7 @@
 
     "flattie": ["flattie@1.1.1", "", {}, "sha512-9UbaD6XdAL97+k/n+N7JwX46K/M6Zc6KcFYskrYL8wbBV/Uyk0CTAMY0VT+qiK5PM7AIc9aTWYtq65U7T+aCNQ=="],
 
-    "flow-like-backend": ["flow-like-backend@workspace:apps/backend"],
+    "flow-like-api": ["flow-like-api@workspace:packages/api"],
 
     "flow-like-desktop": ["flow-like-desktop@workspace:apps/desktop"],
 

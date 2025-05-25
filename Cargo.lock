@@ -934,13 +934,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "aws-api"
+version = "0.1.0"
+dependencies = [
+ "axum 0.8.4",
+ "flow-like-api",
+ "flow-like-types",
+ "lambda_http",
+ "sentry 0.38.1",
+ "sentry-tower",
+ "sentry-tracing 0.38.1",
+ "serde",
+ "serde_json",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "aws-config"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8c39646d1a6b51240a1a23bb57ea4eebede7e16fbc237fdc876980233dcecb4f"
 dependencies = [
  "aws-credential-types",
- "aws-runtime",
+ "aws-runtime 1.5.6",
  "aws-sdk-sso",
  "aws-sdk-ssooidc",
  "aws-sdk-sts",
@@ -1000,6 +1017,22 @@ dependencies = [
 
 [[package]]
 name = "aws-runtime"
+version = "0.1.0"
+dependencies = [
+ "axum 0.8.4",
+ "flow-like",
+ "flow-like-types",
+ "lambda_http",
+ "sentry 0.38.1",
+ "sentry-tower",
+ "sentry-tracing 0.38.1",
+ "serde",
+ "serde_json",
+ "tracing",
+]
+
+[[package]]
+name = "aws-runtime"
 version = "1.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0aff45ffe35196e593ea3b9dd65b320e51e2dda95aff4390bc459e461d09c6ad"
@@ -1025,13 +1058,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "aws-runtime-async"
+version = "0.1.0"
+dependencies = [
+ "aws_lambda_events",
+ "flow-like",
+ "flow-like-types",
+ "lambda_runtime",
+]
+
+[[package]]
 name = "aws-sdk-bedrockruntime"
 version = "1.81.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8aa16e18e507507e11531eb33c2d1aeed4181b08d8dda83de2a0df1e167b75c1"
 dependencies = [
  "aws-credential-types",
- "aws-runtime",
+ "aws-runtime 1.5.6",
  "aws-smithy-async",
  "aws-smithy-eventstream",
  "aws-smithy-http 0.62.0",
@@ -1055,7 +1098,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "250de21a41a7448fb8a2aa492fcf8cb92ab89fbae0d42e1cac81f1bc9f50f84a"
 dependencies = [
  "aws-credential-types",
- "aws-runtime",
+ "aws-runtime 1.5.6",
  "aws-smithy-async",
  "aws-smithy-http 0.60.12",
  "aws-smithy-json",
@@ -1078,7 +1121,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "02d4bdb0e5f80f0689e61c77ab678b2b9304af329616af38aef5b6b967b8e736"
 dependencies = [
  "aws-credential-types",
- "aws-runtime",
+ "aws-runtime 1.5.6",
  "aws-smithy-async",
  "aws-smithy-http 0.62.0",
  "aws-smithy-json",
@@ -1101,7 +1144,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "acbbb3ce8da257aedbccdcb1aadafbbb6a5fe9adf445db0e1ea897bdc7e22d08"
 dependencies = [
  "aws-credential-types",
- "aws-runtime",
+ "aws-runtime 1.5.6",
  "aws-smithy-async",
  "aws-smithy-http 0.62.0",
  "aws-smithy-json",
@@ -1124,7 +1167,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "96a78a8f50a1630db757b60f679c8226a8a70ee2ab5f5e6e51dc67f6c61c7cfd"
 dependencies = [
  "aws-credential-types",
- "aws-runtime",
+ "aws-runtime 1.5.6",
  "aws-smithy-async",
  "aws-smithy-http 0.62.0",
  "aws-smithy-json",
@@ -1497,35 +1540,6 @@ dependencies = [
  "tower-layer",
  "tower-service",
  "tracing",
-]
-
-[[package]]
-name = "backend"
-version = "0.1.0"
-dependencies = [
- "async-stripe",
- "axum 0.8.4",
- "bytemuck",
- "chrono",
- "dotenv",
- "flow-like",
- "flow-like-types",
- "hyper 1.6.0",
- "hyper-util",
- "jsonwebtoken",
- "oasgen",
- "reqwest",
- "sea-orm",
- "sentry 0.38.1",
- "sentry-tower",
- "sentry-tracing 0.38.1",
- "serde",
- "serde_json",
- "socket2",
- "tower 0.5.2",
- "tower-http",
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
@@ -4194,6 +4208,35 @@ dependencies = [
  "tempfile",
  "url",
  "wasmer",
+]
+
+[[package]]
+name = "flow-like-api"
+version = "0.1.0"
+dependencies = [
+ "async-stripe",
+ "axum 0.8.4",
+ "bytemuck",
+ "chrono",
+ "dotenv",
+ "flow-like",
+ "flow-like-types",
+ "hyper 1.6.0",
+ "hyper-util",
+ "jsonwebtoken",
+ "oasgen",
+ "reqwest",
+ "sea-orm",
+ "sentry 0.38.1",
+ "sentry-tower",
+ "sentry-tracing 0.38.1",
+ "serde",
+ "serde_json",
+ "socket2",
+ "tower 0.5.2",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -6938,6 +6981,21 @@ name = "litemap"
 version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4ee93343901ab17bd981295f2cf0026d4ad018c7c31ba84549a4ddbb47a45104"
+
+[[package]]
+name = "local-api"
+version = "0.1.0"
+dependencies = [
+ "dotenv",
+ "flow-like-api",
+ "flow-like-types",
+ "oasgen",
+ "sentry 0.38.1",
+ "sentry-tracing 0.38.1",
+ "socket2",
+ "tracing",
+ "tracing-subscriber",
+]
 
 [[package]]
 name = "local-channel"
@@ -10128,32 +10186,6 @@ dependencies = [
  "spki",
  "subtle",
  "zeroize",
-]
-
-[[package]]
-name = "runtime"
-version = "0.1.0"
-dependencies = [
- "axum 0.8.4",
- "flow-like",
- "flow-like-types",
- "lambda_http",
- "sentry 0.38.1",
- "sentry-tower",
- "sentry-tracing 0.38.1",
- "serde",
- "serde_json",
- "tracing",
-]
-
-[[package]]
-name = "runtime-async"
-version = "0.1.0"
-dependencies = [
- "aws_lambda_events",
- "flow-like",
- "flow-like-types",
- "lambda_runtime",
 ]
 
 [[package]]

@@ -6,9 +6,9 @@ use crate::{
     middleware::jwt::AppUser,
     state::AppState,
 };
-use axum::{extract::State, Extension, Json};
+use axum::{Extension, Json, extract::State};
 use flow_like_types::anyhow;
-use sea_orm::{sqlx::types::chrono, ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, sqlx::types::chrono};
 
 #[tracing::instrument(skip(state))]
 pub async fn user_info(

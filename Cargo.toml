@@ -2,19 +2,29 @@
 resolver = "2"
 members = [
     "apps/desktop/src-tauri",
-    "apps/backend",
+    "apps/backend/local/api",
     "apps/schema-gen",
     "apps/benchmark",
-    "apps/runtime",
-    "apps/runtime-async",
+    "apps/backend/aws/runtime",
+    "apps/backend/aws/runtime-async",
+    "apps/backend/aws/api",
     "packages/core",
     "packages/model-provider",
     "packages/bits",
     "packages/types",
-    "packages/catalog", "packages/storage",
+    "packages/catalog",
+    "packages/storage",
+    "packages/api",
 ]
 
 [workspace.dependencies]
+flow-like = { path = "packages/core" }
+flow-like-types = { path = "packages/types" }
+flow-like-api = { path = "packages/api" }
+flow-like-model-provider = { path = "packages/model-provider" }
+flow-like-bits = { path = "packages/bits" }
+flow-like-catalog = { path = "packages/catalog" }
+flow-like-storage = { path = "packages/storage" }
 lambda_http = "0.14.0"
 futures = "0.3.31"
 serde = { version = "1.0.219", features = ["derive", "rc"] }

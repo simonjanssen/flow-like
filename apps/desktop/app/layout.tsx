@@ -12,12 +12,12 @@ import { createIDBPersister } from "@tm9657/flow-like-ui/lib/persister";
 import { Inter } from "next/font/google";
 import { Suspense } from "react";
 import { AppSidebar } from "../components/app-sidebar";
+import { DesktopAuthProvider } from "../components/auth-provider";
 import { TauriProvider } from "../components/tauri-provider";
 import ToastProvider from "../components/toast-provider";
 import PostHogPageView from "./PostHogPageView";
 import { ReactScan } from "./ReactScanComponent";
 import { PHProvider } from "./provider";
-import { DesktopAuthProvider } from "../components/auth-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -33,20 +33,19 @@ export default function RootLayout({
 		<html lang="en" suppressHydrationWarning suppressContentEditableWarning>
 			{/* <ReactScan /> */}
 			<PHProvider>
-
-					<ReactFlowProvider>
-						<PersistQueryClientProvider
-							client={queryClient}
-							persistOptions={{
-								persister,
-							}}
-							>
-							<TooltipProvider>
-								<Toaster />
-								<body className={inter.className}>
-									<ToastProvider />
-									<TauriProvider>
-							<DesktopAuthProvider>
+				<ReactFlowProvider>
+					<PersistQueryClientProvider
+						client={queryClient}
+						persistOptions={{
+							persister,
+						}}
+					>
+						<TooltipProvider>
+							<Toaster />
+							<body className={inter.className}>
+								<ToastProvider />
+								<TauriProvider>
+									<DesktopAuthProvider>
 										<Suspense
 											fallback={
 												<div className="flex flex-1 justify-center items-center">
@@ -64,12 +63,12 @@ export default function RootLayout({
 												<AppSidebar>{children}</AppSidebar>
 											</ThemeProvider>
 										</Suspense>
-				</DesktopAuthProvider>
-									</TauriProvider>
-								</body>
-							</TooltipProvider>
-						</PersistQueryClientProvider>
-					</ReactFlowProvider>
+									</DesktopAuthProvider>
+								</TauriProvider>
+							</body>
+						</TooltipProvider>
+					</PersistQueryClientProvider>
+				</ReactFlowProvider>
 			</PHProvider>
 		</html>
 	);

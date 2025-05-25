@@ -1,13 +1,12 @@
 [package]
-name = "backend"
+name = "flow-like-api"
 version = "0.1.0"
-edition = "2021"
-build = "build.rs"
+edition = "2024"
 
 [build-dependencies]
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_json.workspace = true
-flow-like-types = { path = "../../packages/types" }
+flow-like-types = { path = "../types" }
 reqwest = { version = "0.12.15", features = ["blocking"] }
 
 [dependencies]
@@ -17,8 +16,8 @@ serde = { workspace = true, features = ["derive", "rc"] }
 socket2 = "0.5.9"
 tower.workspace = true
 tracing-subscriber.workspace = true
-flow-like = { path = "../../packages/core" }
-flow-like-types = { path = "../../packages/types" }
+flow-like = { path = "../core" }
+flow-like-types = { path = "../types" }
 serde_json.workspace = true
 dotenv.workspace = true
 jsonwebtoken.workspace = true
@@ -33,11 +32,3 @@ tower-http.workspace = true
 chrono.workspace = true
 oasgen = {version="0.25.0", features = ["axum"]}
 async-stripe.workspace = true
-
-
-[profile.release]
-opt-level = 3
-lto = true
-codegen-units = 1
-panic = "abort"
-strip = true

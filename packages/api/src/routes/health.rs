@@ -1,8 +1,8 @@
 use crate::error::AppError;
 use crate::state::AppState;
-use axum::extract::State;
 use axum::Json;
-use axum::{routing::get, Router};
+use axum::extract::State;
+use axum::{Router, routing::get};
 use sea_orm::EntityTrait;
 use serde_json::json;
 use std::time::Instant;

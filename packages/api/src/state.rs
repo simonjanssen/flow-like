@@ -2,13 +2,12 @@ use axum::body::Body;
 use flow_like_types::bail;
 use flow_like_types::{Result, Value};
 use hyper_util::{
-    client::legacy::{connect::HttpConnector, Client},
+    client::legacy::{Client, connect::HttpConnector},
     rt::TokioExecutor,
 };
 use jsonwebtoken::{
-    decode,
+    DecodingKey, Validation, decode,
     jwk::{AlgorithmParameters, JwkSet},
-    DecodingKey, Validation,
 };
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use serde::{Deserialize, Serialize};
@@ -16,7 +15,7 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 
 pub type AppState = Arc<State>;
 
-const CONFIG: &str = include_str!("../api.config.json");
+const CONFIG: &str = include_str!("../../../api.config.json");
 const JWKS: &str = include_str!(concat!(env!("OUT_DIR"), "/jwks.json"));
 
 pub struct State {

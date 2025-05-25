@@ -2,7 +2,7 @@ use crate::{
     error::AppError,
     state::{AppState, Contact, Features},
 };
-use axum::{extract::State, routing::get, Json, Router};
+use axum::{Json, Router, extract::State, routing::get};
 
 pub fn routes() -> Router<AppState> {
     Router::new()

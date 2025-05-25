@@ -1,4 +1,4 @@
-use flow_like_types::{reqwest::blocking::get, Result};
+use flow_like_types::{Result, reqwest::blocking::get};
 use serde::Deserialize;
 use std::{env, fs, path::Path};
 
@@ -19,10 +19,10 @@ struct OpenIdConfig {
 
 fn main() -> Result<()> {
     // make sure we rerun if config changes
-    println!("cargo:rerun-if-changed=./api.config.json");
+    println!("cargo:rerun-if-changed=../../api.config.json");
 
     // load and parse
-    let cfg_str = fs::read_to_string("./api.config.json")?;
+    let cfg_str = fs::read_to_string("../../api.config.json")?;
     let cfg: ApiConfig = flow_like_types::json::from_str(&cfg_str)?;
     let jwks_url = cfg
         .authentication
