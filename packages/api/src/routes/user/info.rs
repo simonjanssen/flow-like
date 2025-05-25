@@ -5,7 +5,7 @@ use axum::{Extension, Json, extract::State};
 use flow_like_types::anyhow;
 use sea_orm::{ActiveModelTrait, EntityTrait, sqlx::types::chrono};
 
-#[tracing::instrument(skip(state))]
+#[tracing::instrument(name = "GET /user/info", skip(state, user))]
 pub async fn user_info(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,

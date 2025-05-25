@@ -33,7 +33,7 @@ impl From<user::Model> for UserLookupResponse {
     }
 }
 
-#[tracing::instrument(skip(state))]
+#[tracing::instrument(name = "GET /user/lookup/{query}", skip(state, user))]
 pub async fn user_lookup(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,

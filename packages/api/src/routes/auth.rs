@@ -1,7 +1,6 @@
 use axum::Json;
 use axum::body::Body;
 use axum::extract::State;
-use axum::middleware::Next;
 use axum::response::{IntoResponse, Redirect};
 use axum::routing::post;
 use axum::{Router, http::Request, routing::get};
@@ -22,7 +21,7 @@ pub fn routes() -> Router<AppState> {
         .route("/openid", get(openid_config))
 }
 
-#[tracing::instrument(skip(state))]
+#[tracing::instrument(name = "GET /auth/openid", skip(state))]
 async fn openid_config(State(state): State<AppState>) -> Result<Json<OpenIdConfig>, AppError> {
     let config = state
         .platform_config
@@ -37,7 +36,7 @@ async fn openid_config(State(state): State<AppState>) -> Result<Json<OpenIdConfi
     Ok(Json(config))
 }
 
-#[tracing::instrument(skip(state))]
+#[tracing::instrument(name = "GET /auth/discovery", skip(state))]
 async fn discovery(State(state): State<AppState>) -> Redirect {
     Redirect::temporary(
         &state
@@ -55,7 +54,7 @@ async fn discovery(State(state): State<AppState>) -> Redirect {
     )
 }
 
-#[tracing::instrument(skip(state))]
+#[tracing::instrument(name = "GET /auth/jwks", skip(state))]
 async fn jwks(State(state): State<AppState>) -> Redirect {
     Redirect::temporary(
         &state
@@ -70,7 +69,7 @@ async fn jwks(State(state): State<AppState>) -> Redirect {
     )
 }
 
-#[tracing::instrument(skip(state))]
+#[tracing::instrument(name = "GET /auth/authorize (proxy)", skip(state))]
 async fn proxy_authorize(
     State(state): State<AppState>,
     req: Request<Body>,
@@ -78,7 +77,7 @@ async fn proxy_authorize(
     proxy_request(state, req, "authorize").await
 }
 
-#[tracing::instrument(skip(state))]
+#[tracing::instrument(name = "GET /auth/token (proxy)", skip(state))]
 async fn proxy_token(
     State(state): State<AppState>,
     req: Request<Body>,
@@ -86,7 +85,7 @@ async fn proxy_token(
     proxy_request(state, req, "token").await
 }
 
-#[tracing::instrument(skip(state))]
+#[tracing::instrument(name = "GET /auth/userinfo (proxy)", skip(state))]
 async fn proxy_userinfo(
     State(state): State<AppState>,
     req: Request<Body>,
@@ -94,7 +93,7 @@ async fn proxy_userinfo(
     proxy_request(state, req, "userinfo").await
 }
 
-#[tracing::instrument(skip(state))]
+#[tracing::instrument(name = "GET /auth/revoke (proxy)", skip(state))]
 async fn proxy_revoke(
     State(state): State<AppState>,
     req: Request<Body>,
@@ -137,20 +136,4 @@ async fn proxy_request(
         .await
         .map_err(|_| anyhow!("Bad Request"))?
         .into_response())
-}
-
-pub async fn auth_middleware(req: Request<Body>, next: Next) -> impl IntoResponse {
-    // Implement your authorization logic here
-    // For example, check for a valid token in the headers
-    if let Some(auth_header) = req.headers().get("Authorization") {
-        if auth_header == "Bearer valid_token" {
-            return next.run(req).await;
-        }
-    }
-
-    // If authorization fails, return a 401 Unauthorized response
-    axum::response::Response::builder()
-        .status(axum::http::StatusCode::UNAUTHORIZED)
-        .body(axum::body::Body::from("Unauthorized"))
-        .unwrap()
 }
