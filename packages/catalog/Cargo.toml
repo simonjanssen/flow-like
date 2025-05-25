@@ -4,11 +4,11 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-flow-like = { path = "../core" }
-flow-like-types = { path = "../types" }
-flow-like-bits = { path = "../bits" }
-flow-like-model-provider = { path = "../model-provider" }
-flow-like-storage = { path = "../storage" }
+flow-like.workspace = true
+flow-like-types.workspace = true
+flow-like-bits.workspace = true
+flow-like-model-provider.workspace = true
+flow-like-storage.workspace = true
 fasteval = "0.2.4"
 strsim = "0.11.1"
 regex = "1.11.1"

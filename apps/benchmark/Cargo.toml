@@ -13,4 +13,4 @@ readme = "README.md"
 anyhow = "1.0.95"
 serde.workspace = true
 serde_json.workspace = true
-flow-like = {path="../../packages/core"}
+flow-like.workspace = true

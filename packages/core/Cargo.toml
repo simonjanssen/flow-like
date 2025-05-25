@@ -15,10 +15,10 @@ crate-type = ["lib", "cdylib", "staticlib"]
 bench = false
 
 [dependencies]
-flow-like-types = { path = "../types" }
-flow-like-bits = { path = "../bits" }
-flow-like-model-provider = { path = "../model-provider" }
-flow-like-storage = { path = "../storage" }
+flow-like-types.workspace = true
+flow-like-bits.workspace = true
+flow-like-model-provider.workspace = true
+flow-like-storage.workspace = true
 wasmer = "6.0.1"
 rayon = "1.9.0"
 http-cache-reqwest = {version="0.15.0", features = [] }

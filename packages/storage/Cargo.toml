@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-flow-like-types = { path = "../types" }
+flow-like-types.workspace = true
 object_store = {version="0.11.1", features = ["gcp", "aws", "azure", "serde", "serde_json", "cloud"] }
 lancedb = {version="0.19.0"}
 arrow-array = "54.1"

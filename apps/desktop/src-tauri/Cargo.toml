@@ -20,9 +20,9 @@ crate-type = ["lib", "cdylib"]
 tauri-build = { version = "2.2.0", features = [] }
 
 [dependencies]
-flow-like = { path = "../../../packages/core" }
-flow-like-catalog = { path = "../../../packages/catalog" }
-flow-like-types = { path = "../../../packages/types" }
+flow-like.workspace = true
+flow-like-catalog.workspace = true
+flow-like-types.workspace = true
 tauri = { version = "2.5.1", features = [ "protocol-asset", "macos-private-api"] }
 tauri-plugin-shell = "2.2.1"
 tauri-plugin-log = "2.4.0"
