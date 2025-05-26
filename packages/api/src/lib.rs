@@ -15,6 +15,7 @@ mod middleware;
 mod routes;
 
 pub mod error;
+pub mod permission;
 pub mod state;
 
 pub use axum;

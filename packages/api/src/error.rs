@@ -10,7 +10,8 @@ pub struct NotFoundError(flow_like_types::Error);
 pub enum ApiError {
     App(AppError),
     Auth(AuthorizationError),
-    NotFound(NotFoundError),
+    NotFound,
+    Forbidden,
 }
 
 impl IntoResponse for ApiError {
@@ -18,7 +19,8 @@ impl IntoResponse for ApiError {
         match self {
             ApiError::App(err) => err.into_response(),
             ApiError::Auth(err) => err.into_response(),
-            ApiError::NotFound(err) => err.into_response(),
+            ApiError::NotFound => (StatusCode::NOT_FOUND, "Not Found").into_response(),
+            ApiError::Forbidden => (StatusCode::FORBIDDEN, "Forbidden").into_response(),
         }
     }
 }
@@ -37,12 +39,6 @@ where
 impl From<AppError> for ApiError {
     fn from(err: AppError) -> Self {
         ApiError::App(err)
-    }
-}
-
-impl From<NotFoundError> for ApiError {
-    fn from(err: NotFoundError) -> Self {
-        ApiError::NotFound(err)
     }
 }
 

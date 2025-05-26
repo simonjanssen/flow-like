@@ -1,6 +1,7 @@
 use crate::{
-    entity::{pat, prelude::*, technical_user},
-    error::AuthorizationError,
+    entity::{membership, pat, prelude::*, role, technical_user, user},
+    error::{ApiError, AuthorizationError},
+    permission::{global_permission::GlobalPermission, role_permission::RolePermissions},
 };
 use axum::{
     body::Body,
@@ -11,7 +12,10 @@ use axum::{
 use flow_like_types::Result;
 use flow_like_types::anyhow;
 use hyper::header::AUTHORIZATION;
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, sqlx::types::chrono};
+use sea_orm::{
+    ColumnTrait, EntityTrait, JoinType, QueryFilter, QuerySelect, RelationTrait,
+    sqlx::types::chrono,
+};
 
 use crate::state::AppState;
 
@@ -42,6 +46,19 @@ pub enum AppUser {
     Unauthorized,
 }
 
+#[derive(Clone)]
+pub struct AppPermissionResponse {
+    pub state: AppState,
+    pub permissions: RolePermissions,
+    pub role: role::Model,
+}
+
+impl AppPermissionResponse {
+    pub fn has_permission(&self, permission: RolePermissions) -> bool {
+        self.permissions.contains(permission)
+    }
+}
+
 impl AppUser {
     pub fn sub(&self) -> Result<String, AuthorizationError> {
         match self {
@@ -54,6 +71,14 @@ impl AppUser {
                 "Unauthorized user does not have a sub"
             ))),
         }
+    }
+
+    pub async fn get_user(&self, state: &AppState) -> Result<user::Model, AuthorizationError> {
+        let sub = self.sub()?;
+        user::Entity::find_by_id(&sub)
+            .one(&state.db)
+            .await?
+            .ok_or_else(|| AuthorizationError::from(anyhow!("User not found")))
     }
 
     pub fn email(&self) -> Option<String> {
@@ -74,8 +99,69 @@ impl AppUser {
         }
     }
 
-    pub fn app_permission(&self, app_id: &str) -> Result<String> {
-        unimplemented!()
+    pub async fn global_permission(&self, state: AppState) -> Result<GlobalPermission, ApiError> {
+        let sub = self.sub()?;
+        let user = user::Entity::find_by_id(&sub)
+            .one(&state.db)
+            .await?
+            .ok_or_else(|| anyhow!("User not found"))?;
+        let permission = GlobalPermission::from_bits(user.permission)
+            .ok_or_else(|| anyhow!("Invalid permission bits"))?;
+        Ok(permission)
+    }
+
+    pub async fn app_permission(
+        &self,
+        app_id: &str,
+        state: &AppState,
+    ) -> Result<AppPermissionResponse, ApiError> {
+        let sub = self.sub();
+        if let Ok(sub) = sub {
+            let role_model = role::Entity::find()
+                .join(JoinType::InnerJoin, role::Relation::Membership.def())
+                .filter(
+                    membership::Column::UserId
+                        .eq(&sub)
+                        .and(membership::Column::AppId.eq(app_id)),
+                )
+                .one(&state.db)
+                .await?
+                .ok_or(ApiError::from(anyhow!("Role not found for user in app")))?;
+
+            let permissions = RolePermissions::from_bits(role_model.permissions)
+                .ok_or_else(|| anyhow!("Invalid role permission bits"))?;
+            return Ok(AppPermissionResponse {
+                state: state.clone(),
+                permissions,
+                role: role_model,
+            });
+        }
+
+        if let AppUser::APIKey(api_key) = self {
+            let role_model = role::Entity::find()
+                .join(JoinType::InnerJoin, role::Relation::TechnicalUser.def())
+                .filter(
+                    technical_user::Column::AppId
+                        .eq(&api_key.app_id)
+                        .and(technical_user::Column::Key.eq(&api_key.api_key)),
+                )
+                .one(&state.db)
+                .await?
+                .ok_or_else(|| ApiError::from(anyhow!("Technical user not found for API Key")))?;
+
+            let permissions = RolePermissions::from_bits(role_model.permissions)
+                .ok_or_else(|| anyhow!("Invalid role permission bits"))?;
+
+            return Ok(AppPermissionResponse {
+                state: state.clone(),
+                permissions,
+                role: role_model,
+            });
+        }
+
+        Err(ApiError::from(anyhow!(
+            "User does not have app permissions"
+        )))
     }
 }
 

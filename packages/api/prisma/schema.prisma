@@ -47,6 +47,7 @@ model Swimlane {
 
   // these are used to find items for the swimlane that are not fixed
   tags String[]
+  index Int
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -69,8 +70,6 @@ model SwimlaneItem {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
-
-
 
 model Template {
   id String @id
@@ -182,11 +181,13 @@ model Profile {
   interests String[]
   tags String[]
 
-  memberships Membership[]
-
   theme Json?
+  settings Json?
 
+  // JSON with the apps that are part of the profile. Contains the app ID, if it is favorite, pinned and position of the two
+  apps Json[]
   bitIds String[]
+  hubs String[]
 
   userId String
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -290,10 +291,10 @@ model App {
   feedback Feedback[]
   publicationRequests PublicationRequest[]
 
-  defaultRole Role @relation("defaultForApp", fields: [defaultRoleId], references: [id])
-  defaultRoleId String @unique
-  ownerRole Role @relation("ownerForApp", fields: [ownerRoleId], references: [id])
-  ownerRoleId String @unique
+  defaultRole Role? @relation("defaultForApp", fields: [defaultRoleId], references: [id])
+  defaultRoleId String? @unique
+  ownerRole Role? @relation("ownerForApp", fields: [ownerRoleId], references: [id])
+  ownerRoleId String? @unique
   roles Role[]
   files File[]
 
@@ -429,19 +430,11 @@ model Membership {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String
 
-  profile Profile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
-  profileId String?
-
   app   App @relation(fields: [appId], references: [id], onDelete: Cascade)
   appId String
 
   role   Role   @relation(fields: [roleId], references: [id])
   roleId String
-
-  favorite Boolean @default(false)
-  favoritePosition Int?
-  pinned   Boolean @default(false)
-  pinnedPosition Int?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -14,17 +14,68 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, Hash, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum ConnectionMode {
+    Straight,
+    Step,
+    SimpleBezier,
+}
+
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, Hash, PartialEq, Eq)]
+pub struct Settings {
+    pub connection_mode: ConnectionMode,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Settings {
+            connection_mode: ConnectionMode::SimpleBezier,
+        }
+    }
+}
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, Hash, PartialEq, Eq)]
+pub struct ProfileApp {
+    pub app_id: String,
+    pub favorite: bool,
+    pub favorite_order: Option<i32>,
+    pub pinned: bool,
+    pub pinned_order: Option<i32>,
+}
+
+impl ProfileApp {
+    pub fn new(app_id: String) -> Self {
+        Self {
+            app_id,
+            favorite: false,
+            favorite_order: None,
+            pinned: false,
+            pinned_order: None,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Profile {
     #[serde(default = "flow_like_types::create_id")]
     pub id: String,
     pub name: String,
     pub description: String,
+    #[serde(default)]
+    pub icon: String,
     pub thumbnail: String,
+    #[serde(default)]
+    pub interests: Vec<String>,
+    #[serde(default)]
+    pub tags: Vec<String>,
     #[serde(default)]
     pub hub: String,
     #[serde(default)]
     pub hubs: Vec<String>,
+    #[serde(default)]
+    pub apps: Vec<ProfileApp>,
     pub bits: Vec<(String, String)>,
+    #[serde(default)]
+    pub settings: Settings,
     pub updated: String,
     pub created: String,
 }
@@ -39,6 +90,13 @@ impl Default for Profile {
             hub: "".to_string(),
             hubs: vec![],
             bits: vec![],
+            icon: "".to_string(),
+            interests: vec![],
+            tags: vec![],
+            apps: vec![],
+            settings: Settings {
+                connection_mode: ConnectionMode::SimpleBezier,
+            },
             updated: "".to_string(),
             created: "".to_string(),
         }

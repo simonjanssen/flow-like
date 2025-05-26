@@ -15,10 +15,10 @@ pub struct Model {
     pub media: Option<Vec<String>>,
     #[sea_orm(column_type = "Text", nullable)]
     pub changelog: Option<String>,
-    #[sea_orm(column_name = "defaultRoleId", column_type = "Text", unique)]
-    pub default_role_id: String,
-    #[sea_orm(column_name = "ownerRoleId", column_type = "Text", unique)]
-    pub owner_role_id: String,
+    #[sea_orm(column_name = "defaultRoleId", column_type = "Text", nullable, unique)]
+    pub default_role_id: Option<String>,
+    #[sea_orm(column_name = "ownerRoleId", column_type = "Text", nullable, unique)]
+    pub owner_role_id: Option<String>,
     #[sea_orm(column_name = "ratingSum")]
     pub rating_sum: i32,
     #[sea_orm(column_name = "ratingCount")]
@@ -61,7 +61,7 @@ pub enum Relation {
         from = "Column::DefaultRoleId",
         to = "super::role::Column::Id",
         on_update = "Cascade",
-        on_delete = "Restrict"
+        on_delete = "SetNull"
     )]
     Role2,
     #[sea_orm(
@@ -69,7 +69,7 @@ pub enum Relation {
         from = "Column::OwnerRoleId",
         to = "super::role::Column::Id",
         on_update = "Cascade",
-        on_delete = "Restrict"
+        on_delete = "SetNull"
     )]
     Role1,
     #[sea_orm(has_many = "super::technical_user::Entity")]

@@ -5,6 +5,7 @@ use flow_like::{
     bit::BitMeta,
     flow::{board::Board, variable::Variable},
     flow_like_storage::Path,
+    profile::ProfileApp,
 };
 use futures::{StreamExt, TryStreamExt};
 use serde_json::Value;
@@ -19,8 +20,8 @@ pub async fn get_apps(app_handle: AppHandle) -> Result<Vec<App>, TauriFunctionEr
 
     let flow_like_state = TauriFlowLikeState::construct(&app_handle).await?;
 
-    for app in profile.apps.iter() {
-        if let Ok(app) = App::load(app.clone(), flow_like_state.clone()).await {
+    for app in profile.hub_profile.apps.iter() {
+        if let Ok(app) = App::load(app.app_id.clone(), flow_like_state.clone()).await {
             let app = app;
             app_list.push(app);
         }
@@ -96,7 +97,10 @@ pub async fn create_app(
     let settings = TauriSettingsState::construct(&app_handle).await?;
     let mut settings = settings.lock().await;
 
-    profile.apps.push(new_app.id.clone());
+    profile
+        .hub_profile
+        .apps
+        .push(ProfileApp::new(new_app.id.clone()));
 
     settings
         .profiles
@@ -204,7 +208,10 @@ pub async fn delete_app(app_handle: AppHandle, app_id: String) -> Result<(), Tau
 
     let mut settings = settings.lock().await;
     for profile in settings.profiles.values_mut() {
-        profile.apps.retain(|app| app != &app_id);
+        profile
+            .hub_profile
+            .apps
+            .retain(|app| &app.app_id != &app_id);
     }
     settings.serialize();
     drop(settings);

@@ -1,4 +1,6 @@
 use axum::body::Body;
+use flow_like::flow_like_storage;
+use flow_like::flow_like_storage::files::store::FlowLikeStore;
 use flow_like_types::bail;
 use flow_like_types::{Result, Value};
 use hyper_util::{
@@ -24,10 +26,12 @@ pub struct State {
     pub jwks: JwkSet,
     pub client: Client<HttpConnector, Body>,
     pub stripe_client: Option<stripe::Client>,
+    pub meta_store: FlowLikeStore,
+    pub content_store: FlowLikeStore,
 }
 
 impl State {
-    pub async fn new() -> Self {
+    pub async fn new(content_store: FlowLikeStore, meta_store: FlowLikeStore) -> Self {
         let platform_config: PlatformConfig =
             serde_json::from_str(CONFIG).expect("Failed to parse config file");
 
@@ -62,6 +66,8 @@ impl State {
             client,
             jwks,
             stripe_client,
+            meta_store,
+            content_store,
         }
     }
 

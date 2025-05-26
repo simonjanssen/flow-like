@@ -28,12 +28,14 @@ pub struct Model {
     pub theme: Option<Json>,
     #[sea_orm(column_name = "userId", column_type = "Text")]
     pub user_id: String,
+    pub apps: Option<Vec<Json>>,
+    pub hubs: Option<Vec<String>>,
+    #[sea_orm(column_type = "JsonBinary", nullable)]
+    pub settings: Option<Json>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(has_many = "super::membership::Entity")]
-    Membership,
     #[sea_orm(
         belongs_to = "super::user::Entity",
         from = "Column::UserId",
@@ -42,12 +44,6 @@ pub enum Relation {
         on_delete = "Cascade"
     )]
     User,
-}
-
-impl Related<super::membership::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Membership.def()
-    }
 }
 
 impl Related<super::user::Entity> for Entity {

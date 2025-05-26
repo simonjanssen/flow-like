@@ -38,7 +38,24 @@ async fn main() {
         Some(guard)
     };
 
-    let state = Arc::new(flow_like_api::state::State::new().await);
+    let content_store = std::env::var("CONTENT_BUCKET_NAME").unwrap();
+    let meta_store = std::env::var("META_BUCKET_NAME").unwrap();
+
+    let content_store = flow_like_storage::object_store::aws::AmazonS3Builder::from_env()
+        .with_bucket_name(content_store)
+        .build()
+        .unwrap();
+    let content_store =
+        flow_like_storage::files::store::FlowLikeStore::AWS(Arc::new(content_store));
+
+    let meta_store = flow_like_storage::object_store::aws::AmazonS3Builder::from_env()
+        .with_bucket_name(meta_store)
+        .with_s3_express(true)
+        .build()
+        .unwrap();
+    let meta_store = flow_like_storage::files::store::FlowLikeStore::AWS(Arc::new(meta_store));
+
+    let state = Arc::new(flow_like_api::state::State::new(content_store, meta_store).await);
 
     let app = construct_router(state);
 
