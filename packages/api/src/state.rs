@@ -1,7 +1,12 @@
+use aws_config::SdkConfig;
 use axum::body::Body;
-use flow_like::flow_like_storage;
-use flow_like::flow_like_storage::files::store::FlowLikeStore;
+use flow_like::app::App;
+use flow_like::flow::node::NodeLogic;
+use flow_like::flow_like_model_provider::provider::{ModelProviderConfiguration, OpenAIConfig};
+use flow_like::state::{FlowLikeConfig, FlowLikeState, FlowNodeRegistryInner};
+use flow_like::utils::http::HTTPClient;
 use flow_like_types::bail;
+use flow_like_types::sync::Mutex;
 use flow_like_types::{Result, Value};
 use hyper_util::{
     client::legacy::{Client, connect::HttpConnector},
@@ -15,6 +20,8 @@ use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
+use crate::credentials::RuntimeCredentials;
+
 pub type AppState = Arc<State>;
 
 const CONFIG: &str = include_str!("../../../api.config.json");
@@ -26,12 +33,16 @@ pub struct State {
     pub jwks: JwkSet,
     pub client: Client<HttpConnector, Body>,
     pub stripe_client: Option<stripe::Client>,
-    pub meta_store: FlowLikeStore,
-    pub content_store: FlowLikeStore,
+    #[cfg(feature = "aws")]
+    pub aws_client: Arc<SdkConfig>,
+    pub catalog: Arc<Vec<Arc<dyn NodeLogic>>>,
+    pub registry: Arc<FlowNodeRegistryInner>,
+    pub provider: Arc<ModelProviderConfiguration>,
+    pub credentials_cache: moka::sync::Cache<String, Arc<RuntimeCredentials>>,
 }
 
 impl State {
-    pub async fn new(content_store: FlowLikeStore, meta_store: FlowLikeStore) -> Self {
+    pub async fn new(catalog: Arc<Vec<Arc<dyn NodeLogic>>>) -> Self {
         let platform_config: PlatformConfig =
             serde_json::from_str(CONFIG).expect("Failed to parse config file");
 
@@ -60,14 +71,43 @@ impl State {
             None
         };
 
+        let mut provider = ModelProviderConfiguration::default();
+
+        let openai_endpoint = std::env::var("OPENAI_ENDPOINT").ok();
+        let openai_key = std::env::var("OPENAI_API_KEY").ok();
+
+        if let (Some(endpoint), Some(key)) = (openai_endpoint, openai_key) {
+            provider.openai_config.push(OpenAIConfig {
+                endpoint: Some(endpoint),
+                api_key: Some(key),
+                organization: None,
+                proxy: None,
+            })
+        }
+
+        let config = FlowLikeConfig::new();
+        let (http_client, _) = HTTPClient::new();
+        let flow_like_state = FlowLikeState::new(config, http_client);
+
+        let registry = FlowNodeRegistryInner::prepare(&flow_like_state, &catalog).await;
+
+        let cache = moka::sync::Cache::builder()
+            .max_capacity(32 * 1024 * 1024) // 32 MB
+            .time_to_live(Duration::from_secs(30 * 60)) // 30 minutes
+            .build();
+
         Self {
             platform_config,
             db,
             client,
             jwks,
             stripe_client,
-            meta_store,
-            content_store,
+            #[cfg(feature = "aws")]
+            aws_client: Arc::new(aws_config::load_from_env().await),
+            catalog,
+            provider: Arc::new(provider),
+            registry: Arc::new(registry),
+            credentials_cache: cache,
         }
     }
 
@@ -85,6 +125,46 @@ impl State {
         let decoded = decode::<HashMap<String, Value>>(token, &alg, &validation)?;
         let claims = decoded.claims;
         Ok(claims)
+    }
+
+    pub async fn scoped_credentials(
+        &self,
+        sub: &str,
+        app_id: &str,
+    ) -> flow_like_types::Result<Arc<RuntimeCredentials>> {
+        let key = format!("{}:{}", sub, app_id);
+        if let Some(credentials) = self.credentials_cache.get(&key) {
+            return Ok(credentials);
+        }
+        let credentials = RuntimeCredentials::scoped(sub, app_id, self).await?;
+        self.credentials_cache
+            .insert(key, Arc::new(credentials.clone()));
+        Ok(Arc::new(credentials))
+    }
+
+    pub async fn scoped_app(
+        &self,
+        sub: &str,
+        app_id: &str,
+        state: &AppState,
+    ) -> flow_like_types::Result<App> {
+        let credentials = self.scoped_credentials(sub, app_id).await?;
+        let app_state = Arc::new(Mutex::new(credentials.to_state(state.clone()).await?));
+
+        let app = App::load(app_id.to_string(), app_state.clone()).await?;
+
+        Ok(app)
+    }
+
+    pub async fn master_credentials(&self) -> flow_like_types::Result<Arc<RuntimeCredentials>> {
+        let credentials = self.credentials_cache.get("master");
+        if let Some(credentials) = credentials {
+            return Ok(credentials);
+        }
+        let credentials = Arc::new(RuntimeCredentials::master_credentials().await?);
+        self.credentials_cache
+            .insert("master".to_string(), credentials.clone());
+        Ok(credentials)
     }
 }
 

@@ -29,22 +29,8 @@ async fn main() -> Result<(), Error> {
 
     tracing::info!("Starting FlowLike API...");
 
-    let content_store = std::env::var("CONTENT_BUCKET_NAME")?;
-    let meta_store = std::env::var("META_BUCKET_NAME")?;
-
-    let content_store = flow_like_storage::object_store::aws::AmazonS3Builder::from_env()
-        .with_bucket_name(content_store)
-        .build()?;
-    let content_store =
-        flow_like_storage::files::store::FlowLikeStore::AWS(Arc::new(content_store));
-
-    let meta_store = flow_like_storage::object_store::aws::AmazonS3Builder::from_env()
-        .with_bucket_name(meta_store)
-        .with_s3_express(true)
-        .build()?;
-    let meta_store = flow_like_storage::files::store::FlowLikeStore::AWS(Arc::new(meta_store));
-
-    let state = Arc::new(flow_like_api::state::State::new(content_store, meta_store).await);
+    let catalog = Arc::new(flow_like_catalog::get_catalog().await);
+    let state = Arc::new(flow_like_api::state::State::new(catalog).await);
     let app = construct_router(state);
 
     run_with_streaming_response(app).await

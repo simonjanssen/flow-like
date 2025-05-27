@@ -58,6 +58,20 @@ impl FlowLikeConfig {
         }
     }
 
+    pub fn with_default_store(store: FlowLikeStore) -> Self {
+        FlowLikeConfig {
+            callbacks: FlowLikeCallbacks::default(),
+            stores: FlowLikeStores {
+                app_storage_store: Some(store.clone()),
+                app_meta_store: Some(store.clone()),
+                bits_store: Some(store.clone()),
+                user_store: Some(store.clone()),
+                temporary_store: Some(store.clone()),
+                log_store: Some(store),
+            },
+        }
+    }
+
     pub fn register_app_storage_store(&mut self, store: FlowLikeStore) {
         self.stores.app_storage_store = Some(store);
     }
@@ -116,6 +130,19 @@ impl FlowNodeRegistryInner {
 
     pub fn get_nodes(&self) -> Vec<Node> {
         self.registry.values().map(|node| node.0.clone()).collect()
+    }
+
+    pub async fn prepare(state: &FlowLikeState, nodes: &Arc<Vec<Arc<dyn NodeLogic>>>) -> Self {
+        let mut registry = FlowNodeRegistryInner {
+            registry: HashMap::with_capacity(nodes.len()),
+        };
+
+        for logic in nodes.iter() {
+            let node = logic.get_node(state).await;
+            registry.insert(node, logic.clone());
+        }
+
+        registry
     }
 
     #[inline]
@@ -197,31 +224,6 @@ impl FlowNodeRegistry {
         let mut registry = FlowNodeRegistryInner {
             registry: self.node_registry.registry.clone(),
         };
-
-        let num_cpus = std::thread::available_parallelism()
-            .map(|p| p.get())
-            .unwrap_or(2);
-        let batch_size = std::cmp::min(64, std::cmp::max(4, num_cpus * 4));
-
-        for chunk in nodes.chunks(batch_size) {
-            let futures: Vec<_> = chunk
-                .iter()
-                .map(|logic| {
-                    let logic_clone = logic.clone();
-                    let guard_ref = &guard;
-                    async move {
-                        let node = logic_clone.get_node(guard_ref).await;
-                        (node, logic_clone)
-                    }
-                })
-                .collect();
-
-            let results = future::join_all(futures).await;
-
-            for (node, logic) in results {
-                registry.insert(node, logic);
-            }
-        }
 
         for logic in nodes {
             let node = logic.get_node(&guard).await;
@@ -323,6 +325,28 @@ impl FlowLikeState {
             format!("{}-{}-{}-{}", board_id, version.0, version.1, version.2)
         } else {
             board_id.to_string()
+        };
+
+        let board = self.board_registry.try_get(&key);
+
+        match board.try_unwrap() {
+            Some(board) => Ok(board.clone()),
+            None => Err(flow_like_types::anyhow!(
+                "Board not found or could not be locked"
+            )),
+        }
+    }
+
+    #[cfg(feature = "flow-runtime")]
+    pub fn get_template(
+        &self,
+        template_id: &str,
+        version: Option<(u32, u32, u32)>,
+    ) -> flow_like_types::Result<Arc<Mutex<Board>>> {
+        let key = if let Some(version) = version {
+            format!("{}-{}-{}-{}", template_id, version.0, version.1, version.2)
+        } else {
+            template_id.to_string()
         };
 
         let board = self.board_registry.try_get(&key);

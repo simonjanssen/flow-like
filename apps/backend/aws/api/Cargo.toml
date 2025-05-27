@@ -7,6 +7,7 @@ edition = "2024"
 flow-like-api.workspace = true
 flow-like-types.workspace = true
 flow-like-storage.workspace = true
+flow-like-catalog.workspace = true
 lambda_http.workspace = true
 axum.workspace = true
 serde = { workspace = true, features = ["derive", "rc"] }

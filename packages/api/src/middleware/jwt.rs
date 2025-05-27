@@ -34,6 +34,7 @@ pub struct PATUser {
 
 #[derive(Debug, Clone)]
 pub struct ApiKey {
+    pub key_id: String,
     pub api_key: String,
     pub app_id: String,
 }
@@ -51,11 +52,23 @@ pub struct AppPermissionResponse {
     pub state: AppState,
     pub permissions: RolePermissions,
     pub role: role::Model,
+    pub sub: Option<String>,
+    pub identifier: String,
 }
 
 impl AppPermissionResponse {
     pub fn has_permission(&self, permission: RolePermissions) -> bool {
         self.permissions.contains(permission)
+    }
+
+    pub fn sub(&self) -> Result<String> {
+        self.sub.clone().ok_or_else(|| anyhow!("No sub available"))
+    }
+
+    /// Either returns the sub if available or in case of API keys it returns the key ID.
+    /// This is useful for identifying the user in logs or other contexts where a unique identifier is needed.
+    pub fn identifier(&self) -> String {
+        self.identifier.clone()
     }
 }
 
@@ -134,6 +147,8 @@ impl AppUser {
                 state: state.clone(),
                 permissions,
                 role: role_model,
+                sub: Some(sub.clone()),
+                identifier: sub,
             });
         }
 
@@ -156,6 +171,8 @@ impl AppUser {
                 state: state.clone(),
                 permissions,
                 role: role_model,
+                sub: None,
+                identifier: api_key.key_id.clone(),
             });
         }
 
@@ -241,8 +258,9 @@ pub async fn jwt_middleware(
                 }
 
                 let app_user = AppUser::APIKey(ApiKey {
+                    key_id: app.id.clone(),
                     api_key: api_key_str.to_string(),
-                    app_id: app.id.clone(),
+                    app_id: app.app_id.clone(),
                 });
                 request.extensions_mut().insert::<AppUser>(app_user);
                 return Ok(next.run(request).await);

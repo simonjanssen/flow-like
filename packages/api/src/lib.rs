@@ -14,6 +14,7 @@ mod entity;
 mod middleware;
 mod routes;
 
+pub mod credentials;
 pub mod error;
 pub mod permission;
 pub mod state;
@@ -29,6 +30,7 @@ pub fn construct_router(state: Arc<State>) -> Router {
         .nest("/health", routes::health::routes())
         .nest("/info", routes::info::routes())
         .nest("/user", routes::user::routes())
+        .nest("/app", routes::app::routes())
         .nest("/store", routes::store::routes())
         .nest("/auth", routes::auth::routes())
         .with_state(state.clone())

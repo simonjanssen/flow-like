@@ -1,6 +1,6 @@
 use crate::{
     bit::BitMeta,
-    flow::board::Board,
+    flow::board::{Board, VersionType},
     state::FlowLikeState,
     utils::compression::{compress_to_file, from_compressed},
 };
@@ -32,6 +32,7 @@ pub struct App {
     pub bits: Vec<String>,
     pub boards: Vec<String>,
     pub releases: Vec<String>,
+    pub templates: Vec<String>,
 
     pub updated_at: SystemTime,
     pub created_at: SystemTime,
@@ -49,6 +50,7 @@ impl Clone for App {
             meta: self.meta.clone(),
             authors: self.authors.clone(),
             boards: self.boards.clone(),
+            templates: self.templates.clone(),
             bits: self.bits.clone(),
             releases: self.releases.clone(),
             updated_at: self.updated_at,
@@ -78,6 +80,7 @@ impl App {
             bits,
             boards: vec![],
             releases: vec![],
+            templates: vec![],
             updated_at: SystemTime::now(),
             created_at: SystemTime::now(),
             frontend: None,
@@ -116,6 +119,35 @@ impl App {
         self.boards.push(board.id.clone());
         self.updated_at = SystemTime::now();
         Ok(board.id)
+    }
+
+    pub async fn create_template_version(
+        &mut self,
+        template_id: Option<String>,
+        version_type: VersionType,
+        board_id: String,
+        board_version: Option<(u32, u32, u32)>,
+    ) -> flow_like_types::Result<(String, (u32, u32, u32))> {
+        let template_id = template_id.unwrap_or(create_id());
+        let new_template: Arc<Mutex<Board>> = self
+            .open_board(board_id, Some(false), board_version)
+            .await?;
+        let old_template = self.open_template(template_id.clone(), None).await.ok();
+
+        let template: (u32, u32, u32) = new_template
+            .lock()
+            .await
+            .create_template(template_id.clone(), version_type, old_template, None)
+            .await?;
+
+        if !self.templates.contains(&template_id) {
+            self.templates.push(template_id.clone());
+        }
+
+        self.updated_at = SystemTime::now();
+        self.save().await?;
+
+        Ok((template_id, template))
     }
 
     pub async fn boards_configured(&self) -> bool {
@@ -173,6 +205,23 @@ impl App {
         }
 
         Ok(board_ref)
+    }
+
+    pub async fn open_template(
+        &self,
+        template_id: String,
+        version: Option<(u32, u32, u32)>,
+    ) -> flow_like_types::Result<Board> {
+        let storage_root = Path::from("apps").child(self.id.clone());
+
+        let state = self
+            .app_state
+            .clone()
+            .ok_or(flow_like_types::anyhow!("App state not found"))?;
+
+        let template = Board::load_template(storage_root, &template_id, state, version).await?;
+
+        Ok(template)
     }
 
     pub async fn delete_board(&mut self, board_id: &str) -> flow_like_types::Result<()> {
@@ -269,6 +318,7 @@ mod tests {
             boards: vec!["board1".to_string(), "board2".to_string()],
             bits: vec!["bit1".to_string(), "bit2".to_string()],
             releases: vec!["release1".to_string(), "release2".to_string()],
+            templates: vec!["template1".to_string(), "template2".to_string()],
             updated_at: std::time::SystemTime::now(),
             created_at: std::time::SystemTime::now(),
             app_state: Some(flow_state().await),
