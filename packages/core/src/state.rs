@@ -3,7 +3,6 @@ use flow_like_storage::lancedb::connection::ConnectBuilder;
 use flow_like_storage::object_store::path::Path;
 use flow_like_types::Ok;
 use flow_like_types::sync::{DashMap, Mutex, RwLock};
-use futures::future;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};

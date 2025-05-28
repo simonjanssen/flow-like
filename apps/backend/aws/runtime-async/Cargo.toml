@@ -4,10 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-aws_lambda_events = "0.16.0"
+aws_lambda_events = { version = "0.16.0", default-features = false, features = ["sqs"] }
 flow-like.workspace = true
 flow-like-types.workspace = true
-lambda_runtime = {version="0.13.0", features = ["anyhow"]}
+lambda_runtime = {version="0.14.1", features = ["anyhow"]}
 
 [profile.release]
 opt-level = "z"

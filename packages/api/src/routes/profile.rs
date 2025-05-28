@@ -13,6 +13,6 @@ pub fn routes() -> Router<AppState> {
         .route("/", get(get_profiles::get_profiles))
         .route(
             "/{profile_id}",
-            (post(upsert_profile::upsert_profile).delete(delete_profile::delete_profile)),
+            post(upsert_profile::upsert_profile).delete(delete_profile::delete_profile),
         )
 }

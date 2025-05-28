@@ -1,6 +1,7 @@
 use dotenv::dotenv;
 use flow_like_api::axum;
 use flow_like_api::construct_router;
+use flow_like_storage::object_store::aws::AmazonS3Builder;
 use flow_like_types::tokio;
 use socket2::{Domain, Socket, Type};
 use std::{
@@ -38,8 +39,30 @@ async fn main() {
         Some(guard)
     };
 
+    let cdn_bucket = std::env::var("CDN_BUCKET_NAME").unwrap();
+    let cdn_bucket_endpoint = std::env::var("CDN_BUCKET_ENDPOINT").ok();
+    let cdn_bucket_access_key = std::env::var("CDN_BUCKET_ACCESS_KEY_ID").ok();
+    let cdn_bucket_secret_key = std::env::var("CDN_BUCKET_SECRET_ACCESS_KEY").ok();
+
+    let mut cdn_bucket = AmazonS3Builder::new().with_bucket_name(cdn_bucket);
+    if let Some(endpoint) = cdn_bucket_endpoint {
+        if !endpoint.is_empty() {
+            cdn_bucket = cdn_bucket.with_endpoint(endpoint);
+        }
+    }
+
+    if let (Some(access_key), Some(secret_key)) = (cdn_bucket_access_key, cdn_bucket_secret_key) {
+        if !access_key.is_empty() && !secret_key.is_empty() {
+            cdn_bucket = cdn_bucket.with_access_key_id(access_key);
+            cdn_bucket = cdn_bucket.with_secret_access_key(secret_key);
+        }
+    }
+
+    let cdn_bucket =
+        flow_like_storage::files::store::FlowLikeStore::AWS(Arc::new(cdn_bucket.build().unwrap()));
+
     let catalog = Arc::new(flow_like_catalog::get_catalog().await);
-    let state = Arc::new(flow_like_api::state::State::new(catalog).await);
+    let state = Arc::new(flow_like_api::state::State::new(catalog, Arc::new(cdn_bucket)).await);
 
     let app = construct_router(state);
 

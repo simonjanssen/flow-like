@@ -26,11 +26,13 @@ pub mod auth {
 }
 
 pub fn construct_router(state: Arc<State>) -> Router {
-    Router::new()
+    let router = Router::new()
         .nest("/health", routes::health::routes())
         .nest("/info", routes::info::routes())
         .nest("/user", routes::user::routes())
+        .nest("/profile", routes::profile::routes())
         .nest("/app", routes::app::routes())
+        .nest("/bit", routes::bit::routes())
         .nest("/store", routes::store::routes())
         .nest("/auth", routes::auth::routes())
         .with_state(state.clone())
@@ -43,5 +45,7 @@ pub fn construct_router(state: Arc<State>) -> Router {
                 .layer(CompressionLayer::new().compress_when(
                     DefaultPredicate::new().and(NotForContentType::new("text/event-stream")),
                 )),
-        )
+        );
+
+    Router::new().nest("/api/v1", router)
 }

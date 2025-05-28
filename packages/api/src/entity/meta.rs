@@ -29,6 +29,12 @@ pub struct Model {
     pub app_id: Option<String>,
     #[sea_orm(column_name = "templateId", column_type = "Text", nullable)]
     pub template_id: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub icon: Option<String>,
+    #[sea_orm(column_name = "previewMedia")]
+    pub preview_media: Option<Vec<String>>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub thumbnail: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

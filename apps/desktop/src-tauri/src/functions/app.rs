@@ -2,7 +2,7 @@ use super::TauriFunctionError;
 use crate::state::{TauriFlowLikeState, TauriSettingsState};
 use flow_like::{
     app::App,
-    bit::BitMeta,
+    bit::Metadata,
     flow::{board::Board, variable::Variable},
     flow_like_storage::Path,
     profile::ProfileApp,
@@ -64,7 +64,7 @@ pub async fn get_remote_apps(_handler: AppHandle) {
 #[tauri::command(async)]
 pub async fn create_app(
     app_handle: AppHandle,
-    meta: BitMeta,
+    meta: Metadata,
     bits: Vec<String>,
     template: String,
 ) -> Result<String, TauriFunctionError> {

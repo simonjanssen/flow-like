@@ -1,8 +1,11 @@
 use aws_config::SdkConfig;
 use axum::body::Body;
 use flow_like::app::App;
+use flow_like::flow::board::Board;
 use flow_like::flow::node::NodeLogic;
 use flow_like::flow_like_model_provider::provider::{ModelProviderConfiguration, OpenAIConfig};
+use flow_like::flow_like_storage::Path;
+use flow_like::flow_like_storage::files::store::FlowLikeStore;
 use flow_like::state::{FlowLikeConfig, FlowLikeState, FlowNodeRegistryInner};
 use flow_like::utils::http::HTTPClient;
 use flow_like_types::bail;
@@ -39,10 +42,14 @@ pub struct State {
     pub registry: Arc<FlowNodeRegistryInner>,
     pub provider: Arc<ModelProviderConfiguration>,
     pub credentials_cache: moka::sync::Cache<String, Arc<RuntimeCredentials>>,
+    pub cdn_bucket: Arc<FlowLikeStore>,
 }
 
 impl State {
-    pub async fn new(catalog: Arc<Vec<Arc<dyn NodeLogic>>>) -> Self {
+    pub async fn new(
+        catalog: Arc<Vec<Arc<dyn NodeLogic>>>,
+        cdn_bucket: Arc<FlowLikeStore>,
+    ) -> Self {
         let platform_config: PlatformConfig =
             serde_json::from_str(CONFIG).expect("Failed to parse config file");
 
@@ -108,6 +115,7 @@ impl State {
             provider: Arc::new(provider),
             registry: Arc::new(registry),
             credentials_cache: cache,
+            cdn_bucket,
         }
     }
 
@@ -156,6 +164,42 @@ impl State {
         Ok(app)
     }
 
+    pub async fn scoped_board(
+        &self,
+        sub: &str,
+        app_id: &str,
+        board_id: &str,
+        state: &AppState,
+        version: Option<(u32, u32, u32)>,
+    ) -> flow_like_types::Result<Board> {
+        let credentials = self.scoped_credentials(sub, app_id).await?;
+        let app_state = Arc::new(Mutex::new(credentials.to_state(state.clone()).await?));
+
+        let storage_root = Path::from("apps").child(app_id.to_string());
+
+        let board = Board::load(storage_root, board_id, app_state, version).await?;
+
+        Ok(board)
+    }
+
+    pub async fn scoped_template(
+        &self,
+        sub: &str,
+        app_id: &str,
+        template_id: &str,
+        state: &AppState,
+        version: Option<(u32, u32, u32)>,
+    ) -> flow_like_types::Result<Board> {
+        let credentials = self.scoped_credentials(sub, app_id).await?;
+        let app_state = Arc::new(Mutex::new(credentials.to_state(state.clone()).await?));
+
+        let storage_root = Path::from("apps").child(app_id.to_string());
+
+        let board = Board::load_template(storage_root, template_id, app_state, version).await?;
+
+        Ok(board)
+    }
+
     pub async fn master_credentials(&self) -> flow_like_types::Result<Arc<RuntimeCredentials>> {
         let credentials = self.credentials_cache.get("master");
         if let Some(credentials) = credentials {
@@ -187,6 +231,7 @@ pub struct PlatformConfig {
     pub domain: Option<String>,
     pub region: Option<String>,
     pub terms_of_service: String,
+    pub cdn: Option<String>,
     pub legal_notice: String,
     pub privacy_policy: String,
     pub contact: Contact,

@@ -8,6 +8,7 @@ members = [
     "apps/backend/aws/runtime",
     "apps/backend/aws/runtime-async",
     "apps/backend/aws/api",
+    "apps/backend/aws/media-transformer",
     "packages/core",
     "packages/model-provider",
     "packages/bits",
@@ -46,3 +47,7 @@ sentry-tower = { version = "0.38.1", features = ["axum", "axum-matched-path"] }
 bytemuck = "1.23.0"
 tower-http = {version="0.6.4", features = ["full"]}
 async-stripe = {version="0.41.0", features = ["runtime-tokio-hyper"]}
+futures-util = "0.3.31"
+moka = { version = "0.12.10", features = ["sync"] }
+bitflags = "2.9.1"
+blake3 = "1.8.2"

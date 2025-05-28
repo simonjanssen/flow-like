@@ -59,6 +59,8 @@ pub struct AppPermissionResponse {
 impl AppPermissionResponse {
     pub fn has_permission(&self, permission: RolePermissions) -> bool {
         self.permissions.contains(permission)
+            || self.permissions.contains(RolePermissions::Admin)
+            || self.permissions.contains(RolePermissions::Owner)
     }
 
     pub fn sub(&self) -> Result<String> {
@@ -121,6 +123,21 @@ impl AppUser {
         let permission = GlobalPermission::from_bits(user.permission)
             .ok_or_else(|| anyhow!("Invalid permission bits"))?;
         Ok(permission)
+    }
+
+    pub async fn check_global_permission(
+        &self,
+        state: &AppState,
+        permission: GlobalPermission,
+    ) -> Result<GlobalPermission, ApiError> {
+        let global_permission = self.global_permission(state.clone()).await?;
+        let has_permission = global_permission.contains(permission)
+            || global_permission.contains(GlobalPermission::Admin);
+        if has_permission {
+            Ok(global_permission)
+        } else {
+            Err(ApiError::Forbidden)
+        }
     }
 
     pub async fn app_permission(

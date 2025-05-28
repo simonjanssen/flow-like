@@ -1,4 +1,4 @@
-use crate::{app::App, bit::BitMeta};
+use crate::{app::App, bit::Metadata};
 use flow_like_types::{FromProto, Timestamp, ToProto};
 use std::time::SystemTime;
 
@@ -29,7 +29,7 @@ impl FromProto<flow_like_types::proto::App> for App {
             meta: proto
                 .meta
                 .into_iter()
-                .map(|(k, v)| (k, BitMeta::from_proto(v)))
+                .map(|(k, v)| (k, Metadata::from_proto(v)))
                 .collect(),
             authors: proto.authors,
             bits: proto.bits,

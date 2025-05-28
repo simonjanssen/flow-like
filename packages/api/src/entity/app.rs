@@ -12,7 +12,6 @@ pub struct Model {
     pub id: String,
     pub status: Status,
     pub visibility: Visibility,
-    pub media: Option<Vec<String>>,
     #[sea_orm(column_type = "Text", nullable)]
     pub changelog: Option<String>,
     #[sea_orm(column_name = "defaultRoleId", column_type = "Text", nullable, unique)]

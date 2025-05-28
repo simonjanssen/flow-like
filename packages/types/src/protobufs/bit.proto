@@ -8,4 +8,7 @@ message Meta {
     string long_description = 3;
     repeated string tags = 4;
     string use_case = 5;
+    optional string icon = 6;
+    optional string thumbnail = 7;
+    repeated string preview_media = 8;
 }

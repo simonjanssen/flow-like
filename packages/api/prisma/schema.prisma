@@ -75,7 +75,6 @@ model Template {
   id String @id
 
   meta Meta[]
-  media String[]
 
   comments Comment[]
   changelog String?
@@ -278,7 +277,6 @@ model App {
   meta Meta[]
 
   templates Template[]
-  media String[]
   queue JoinQueue[]
   members Membership[]
   comments Comment[]
@@ -468,10 +466,12 @@ model Role {
 }
 
 enum BitType {
+  COURSE
   LLM
   VLM
   EMBEDDING
   IMAGE_EMBEDDING
+  OBJECT_DETECTION
   FILE
   MEDIA
   TEMPLATE
@@ -489,26 +489,22 @@ enum BitType {
 model Bit {
   id String @id
 
-  private Boolean @default(true)
-  permissionAttributes String[]
-
+  authors String[]
   type BitType
   meta Meta[]
   repository String?
   downloadLink String?
   fileName String?
   hash String
+  parameters Json?
 
   size BigInt?
   hub String
 
-  icon String?
-  thumbnail String?
-
   version String?
   license String?
 
-  dependencies Dependency[]
+  dependencies String[]
   dependencyTreeHash String
 
   providerProxy ProviderProxy?
@@ -521,24 +517,8 @@ model Bit {
   @@index([type])
   @@index([createdAt])
   @@index([updatedAt])
-  @@index([private])
   @@index([hash])
   @@index([hub])
-}
-
-model Dependency {
-  id String @id
-
-  bit   Bit @relation(fields: [bitId], references: [id], onDelete: Cascade)
-  bitId String
-
-  dependencyId String
-  hub String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([bitId])
 }
 
 model Meta {
@@ -550,6 +530,10 @@ model Meta {
   description String?
   longDescription String?
   tags String[]
+
+  icon String?
+  thumbnail String?
+  previewMedia String[]
 
   app  App? @relation(fields: [appId], references: [id], onDelete: Cascade)
   appId String?

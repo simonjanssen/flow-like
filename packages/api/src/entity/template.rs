@@ -16,7 +16,6 @@ pub struct Model {
     pub app_id: String,
     #[sea_orm(column_type = "Text", nullable)]
     pub changelog: Option<String>,
-    pub media: Option<Vec<String>>,
     #[sea_orm(column_name = "ratingCount")]
     pub rating_count: i32,
     #[sea_orm(column_name = "ratingSum")]

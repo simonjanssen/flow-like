@@ -9,9 +9,6 @@ use serde::{Deserialize, Serialize};
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false, column_type = "Text")]
     pub id: String,
-    pub private: bool,
-    #[sea_orm(column_name = "permissionAttributes")]
-    pub permission_attributes: Option<Vec<String>>,
     pub r#type: BitType,
     #[sea_orm(column_type = "Text", nullable)]
     pub repository: Option<String>,
@@ -25,10 +22,6 @@ pub struct Model {
     #[sea_orm(column_type = "Text")]
     pub hub: String,
     #[sea_orm(column_type = "Text", nullable)]
-    pub icon: Option<String>,
-    #[sea_orm(column_type = "Text", nullable)]
-    pub thumbnail: Option<String>,
-    #[sea_orm(column_type = "Text", nullable)]
     pub version: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub license: Option<String>,
@@ -38,24 +31,20 @@ pub struct Model {
     pub created_at: DateTime,
     #[sea_orm(column_name = "updatedAt")]
     pub updated_at: DateTime,
+    pub dependencies: Option<Vec<String>>,
+    #[sea_orm(column_type = "JsonBinary", nullable)]
+    pub parameters: Option<Json>,
+    pub authors: Option<Vec<String>>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(has_many = "super::dependency::Entity")]
-    Dependency,
     #[sea_orm(has_many = "super::meta::Entity")]
     Meta,
     #[sea_orm(has_one = "super::provider_proxy::Entity")]
     ProviderProxy,
     #[sea_orm(has_many = "super::swimlane_item::Entity")]
     SwimlaneItem,
-}
-
-impl Related<super::dependency::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Dependency.def()
-    }
 }
 
 impl Related<super::meta::Entity> for Entity {

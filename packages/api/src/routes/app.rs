@@ -4,8 +4,10 @@ use axum::{
     routing::{get, put},
 };
 
+pub mod board;
 pub mod delete_app;
 pub mod get_apps;
+pub mod get_nodes;
 pub mod meta;
 pub mod template;
 pub mod upsert_app;
@@ -13,11 +15,13 @@ pub mod upsert_app;
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/", get(get_apps::get_apps))
+        .route("/nodes", get(get_nodes::get_nodes))
         .route(
             "/{app_id}",
             put(upsert_app::upsert_app).delete(delete_app::delete_app),
         )
-        .nest("/template", template::routes())
+        .nest("/{app_id}/template", template::routes())
+        .nest("/{app_id}/board", board::routes())
 }
 
 #[macro_export]

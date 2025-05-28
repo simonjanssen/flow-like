@@ -38,6 +38,10 @@ pub enum BitType {
     Board,
     #[sea_orm(string_value = "OTHER")]
     Other,
+    #[sea_orm(string_value = "OBJECT_DETECTION")]
+    ObjectDetection,
+    #[sea_orm(string_value = "COURSE")]
+    Course,
 }
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "LLMProvider")]

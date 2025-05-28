@@ -14,7 +14,7 @@ use crate::{
 };
 use commands::GenericCommand;
 use flow_like_storage::object_store::{ObjectStore, path::Path};
-use flow_like_types::{FromProto, ToProto, Value, create_id, json::to_vec, sync::Mutex};
+use flow_like_types::{FromProto, ToProto, create_id, sync::Mutex};
 use futures::StreamExt;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};

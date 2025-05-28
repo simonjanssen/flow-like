@@ -18,12 +18,15 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
-pub struct BitMeta {
+pub struct Metadata {
     pub name: String,
     pub description: String,
     pub long_description: String,
     pub tags: Vec<String>,
     pub use_case: String,
+    pub icon: Option<String>,
+    pub thumbnail: Option<String>,
+    pub preview_media: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
@@ -45,6 +48,7 @@ pub enum BitTypes {
     Project,
     Board,
     Other,
+    ObjectDetection,
 }
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, Default)]
 pub struct BitModelPreference {
@@ -205,13 +209,12 @@ impl BitModelClassification {
         total_score / total_weight
     }
 }
-
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 pub struct Bit {
     pub id: String,
     #[serde(rename = "type")]
     pub bit_type: BitTypes,
-    pub meta: std::collections::HashMap<String, BitMeta>,
+    pub meta: std::collections::HashMap<String, Metadata>,
     pub authors: Vec<String>,
     pub repository: Option<String>,
     pub download_link: Option<String>,
@@ -220,10 +223,9 @@ pub struct Bit {
     pub size: Option<u64>,
     pub hub: String,
     pub parameters: Value,
-    pub icon: String,
-    pub version: String,
-    pub license: String,
-    pub dependencies: Vec<(String, String)>,
+    pub version: Option<String>,
+    pub license: Option<String>,
+    pub dependencies: Vec<String>,
     pub dependency_tree_hash: String,
     pub created: String,
     pub updated: String,
@@ -265,7 +267,17 @@ fn collect_dependencies<'a>(
 
         dependencies.push(bit.clone());
 
-        for (hub_domain, dependency_id) in bit.dependencies.iter() {
+        for dependency in bit.dependencies.iter() {
+            let (hub_domain, dependency_id) = match dependency.split_once(':') {
+                Some(parts) => parts,
+                None => {
+                    println!(
+                        "Invalid dependency format for bit {}: {}",
+                        bit_id, dependency
+                    );
+                    continue;
+                }
+            };
             if !hubs.contains_key(hub_domain) {
                 let hub =
                     crate::hub::Hub::new(&format!("https://{hub_domain}"), http_client.clone())
@@ -514,7 +526,11 @@ impl Bit {
         let mut visited = HashSet::new();
         let mut hubs = HashMap::new();
         let http_client = state.lock().await.http_client.clone();
-        for (hub_domain, dependency_id) in self.dependencies.iter() {
+        for dependency in self.dependencies.iter() {
+            let (hub_domain, dependency_id) =
+                dependency.split_once(':').ok_or(flow_like_types::anyhow!(
+                    "Invalid dependency format, expected 'hub_domain:dependency_id'"
+                ))?;
             if !hubs.contains_key(hub_domain) {
                 let hub =
                     crate::hub::Hub::new(&format!("https://{hub_domain}"), http_client.clone())

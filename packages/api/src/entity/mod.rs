@@ -7,7 +7,6 @@ pub mod bit;
 pub mod comment;
 pub mod course;
 pub mod course_connection;
-pub mod dependency;
 pub mod feedback;
 pub mod file;
 pub mod invitations;

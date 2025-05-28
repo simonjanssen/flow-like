@@ -1065,7 +1065,7 @@ dependencies = [
  "aws_lambda_events",
  "flow-like",
  "flow-like-types",
- "lambda_runtime",
+ "lambda_runtime 0.14.1",
 ]
 
 [[package]]
@@ -1423,13 +1423,11 @@ dependencies = [
  "base64 0.22.1",
  "bytes",
  "chrono",
- "flate2",
  "http 1.2.0",
  "http-body 1.0.1",
  "http-serde",
  "query_map",
  "serde",
- "serde_dynamo",
  "serde_json",
  "serde_with",
 ]
@@ -1750,9 +1748,9 @@ dependencies = [
 
 [[package]]
 name = "blake3"
-version = "1.8.1"
+version = "1.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "389a099b34312839e16420d499a9cad9650541715937ffbdd40d36f49e77eeb3"
+checksum = "3888aaa89e4b2a40fca9848e400f6a658a5a3978de7be858e209cafa8be9a4a0"
 dependencies = [
  "arrayref",
  "arrayvec",
@@ -4213,11 +4211,14 @@ dependencies = [
  "aws-sdk-sts",
  "axum 0.8.4",
  "bitflags 2.9.1",
+ "blake3",
  "bytemuck",
  "chrono",
  "dotenv",
  "flow-like",
+ "flow-like-storage",
  "flow-like-types",
+ "futures-util",
  "hyper 1.6.0",
  "hyper-util",
  "jsonwebtoken",
@@ -6210,7 +6211,7 @@ dependencies = [
  "http-body 1.0.1",
  "http-body-util",
  "hyper 1.6.0",
- "lambda_runtime",
+ "lambda_runtime 0.13.0",
  "mime",
  "percent-encoding",
  "pin-project-lite",
@@ -6227,6 +6228,34 @@ version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ed49669d6430292aead991e19bf13153135a884f916e68f32997c951af637ebe"
 dependencies = [
+ "async-stream",
+ "base64 0.22.1",
+ "bytes",
+ "futures",
+ "http 1.2.0",
+ "http-body 1.0.1",
+ "http-body-util",
+ "http-serde",
+ "hyper 1.6.0",
+ "hyper-util",
+ "lambda_runtime_api_client 0.11.1",
+ "pin-project",
+ "serde",
+ "serde_json",
+ "serde_path_to_error",
+ "tokio",
+ "tokio-stream",
+ "tower 0.4.13",
+ "tower-layer",
+ "tracing",
+]
+
+[[package]]
+name = "lambda_runtime"
+version = "0.14.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d1d671fd790e9962674a58008bbc0bf159605029db4a34a68028aaaa08837e6b"
+dependencies = [
  "anyhow",
  "async-stream",
  "base64 0.22.1",
@@ -6238,14 +6267,14 @@ dependencies = [
  "http-serde",
  "hyper 1.6.0",
  "hyper-util",
- "lambda_runtime_api_client",
+ "lambda_runtime_api_client 0.12.1",
  "pin-project",
  "serde",
  "serde_json",
  "serde_path_to_error",
  "tokio",
  "tokio-stream",
- "tower 0.4.13",
+ "tower 0.5.2",
  "tower-layer",
  "tracing",
 ]
@@ -6266,6 +6295,27 @@ dependencies = [
  "hyper-util",
  "tokio",
  "tower 0.4.13",
+ "tower-service",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "lambda_runtime_api_client"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "64234fb6987f347c13c242bf8a847544030fd94145a1004ecd567cc342f832d5"
+dependencies = [
+ "bytes",
+ "futures-channel",
+ "futures-util",
+ "http 1.2.0",
+ "http-body 1.0.1",
+ "http-body-util",
+ "hyper 1.6.0",
+ "hyper-util",
+ "tokio",
+ "tower 0.5.2",
  "tower-service",
  "tracing",
  "tracing-subscriber",
@@ -7311,6 +7361,18 @@ checksum = "dbefd235b0aadd181626f281e1d684e116972988c14c264e42069d5e8a5775cc"
 dependencies = [
  "instant",
  "log",
+]
+
+[[package]]
+name = "media-transformer"
+version = "0.1.0"
+dependencies = [
+ "aws_lambda_events",
+ "flow-like-storage",
+ "flow-like-types",
+ "image",
+ "lambda_runtime 0.14.1",
+ "tokio",
 ]
 
 [[package]]
@@ -11014,16 +11076,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.98",
-]
-
-[[package]]
-name = "serde_dynamo"
-version = "4.2.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e36c1b1792cfd9de29eb373ee6a4b74650369c096f55db7198ceb7b8921d1f7f"
-dependencies = [
- "base64 0.21.7",
- "serde",
 ]
 
 [[package]]

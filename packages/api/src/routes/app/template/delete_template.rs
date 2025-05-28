@@ -12,7 +12,7 @@ use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
     name = "DELETE /app/{app_id}/template/{template_id}",
     skip(state, user)
 )]
-pub async fn delete_templates(
+pub async fn delete_template(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,
     Path((app_id, template_id)): Path<(String, String)>,
@@ -22,11 +22,15 @@ pub async fn delete_templates(
     let templates = template::Entity::delete_many()
         .filter(
             template::Column::AppId
-                .eq(app_id)
-                .and(template::Column::Id.eq(template_id)),
+                .eq(app_id.clone())
+                .and(template::Column::Id.eq(template_id.clone())),
         )
         .exec_with_returning(&state.db)
         .await?;
+
+    let mut app = state.scoped_app(&user.sub()?, &app_id, &state).await?;
+
+    app.delete_template(&template_id).await?;
 
     Ok(Json(templates))
 }

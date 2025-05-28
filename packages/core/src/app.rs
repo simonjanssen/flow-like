@@ -1,11 +1,12 @@
 use crate::{
-    bit::BitMeta,
+    bit::Metadata,
     flow::board::{Board, VersionType},
     state::FlowLikeState,
     utils::compression::{compress_to_file, from_compressed},
 };
 use flow_like_storage::Path;
 use flow_like_types::{FromProto, ToProto, create_id, sync::Mutex};
+use futures::{StreamExt, TryStreamExt};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{sync::Arc, time::SystemTime, vec};
@@ -26,7 +27,7 @@ pub struct FrontendConfiguration {
 #[derive(Serialize, Deserialize, JsonSchema)]
 pub struct App {
     pub id: String,
-    pub meta: std::collections::HashMap<String, BitMeta>,
+    pub meta: std::collections::HashMap<String, Metadata>,
     pub authors: Vec<String>,
 
     pub bits: Vec<String>,
@@ -64,7 +65,7 @@ impl Clone for App {
 impl App {
     pub async fn new(
         id: Option<String>,
-        meta: BitMeta,
+        meta: Metadata,
         bits: Vec<String>,
         app_state: Arc<Mutex<FlowLikeState>>,
     ) -> flow_like_types::Result<Self> {
@@ -243,7 +244,57 @@ impl App {
             app_state.lock().await.remove_board(board_id)?;
         }
 
+        // Remove all versions of the board
+        let versions_path = Path::from("apps")
+            .child(self.id.clone())
+            .child("versions")
+            .child(board_id);
+        let locations = store
+            .list(Some(&versions_path))
+            .map_ok(|m| m.location)
+            .boxed();
+
+        store
+            .delete_stream(locations)
+            .try_collect::<Vec<Path>>()
+            .await?;
         self.updated_at = SystemTime::now();
+        self.save().await?;
+        Ok(())
+    }
+
+    pub async fn delete_template(&mut self, template_id: &str) -> flow_like_types::Result<()> {
+        self.templates.retain(|b| b != template_id);
+        let template_dir = Path::from("apps")
+            .child(self.id.clone())
+            .child(format!("{}.template", template_id));
+
+        let state = self
+            .app_state
+            .clone()
+            .ok_or(flow_like_types::anyhow!("App state not found"))?;
+        let store = FlowLikeState::project_meta_store(&state)
+            .await?
+            .as_generic();
+        store.delete(&template_dir).await?;
+
+        // Remove all versions of the board
+        let versions_path = Path::from("apps")
+            .child(self.id.clone())
+            .child("templates")
+            .child("versions")
+            .child(template_id);
+        let locations = store
+            .list(Some(&versions_path))
+            .map_ok(|m| m.location)
+            .boxed();
+
+        store
+            .delete_stream(locations)
+            .try_collect::<Vec<Path>>()
+            .await?;
+        self.updated_at = SystemTime::now();
+        self.save().await?;
         Ok(())
     }
 

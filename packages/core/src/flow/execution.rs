@@ -8,9 +8,7 @@ use flow_like_storage::arrow_array::{RecordBatch, RecordBatchIterator};
 use flow_like_storage::arrow_schema::FieldRef;
 use flow_like_storage::files::store::FlowLikeStore;
 use flow_like_storage::lancedb::Connection;
-use flow_like_storage::lancedb::arrow::IntoArrowStream;
 use flow_like_storage::lancedb::index::scalar::BitmapIndexBuilder;
-use flow_like_storage::lancedb::query::ExecutableQuery;
 use flow_like_storage::serde_arrow::schema::{SchemaLike, TracingOptions};
 use flow_like_storage::{Path, serde_arrow};
 use flow_like_types::Value;
@@ -153,7 +151,7 @@ impl LogMeta {
 
         let table = db.open_table("runs").execute().await;
 
-        if let Err(err) = table {
+        if let Err(_err) = table {
             let table = db
                 .create_empty_table("runs", schema.clone())
                 .execute()

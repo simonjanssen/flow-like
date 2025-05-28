@@ -5,7 +5,6 @@ pub use super::bit::Entity as Bit;
 pub use super::comment::Entity as Comment;
 pub use super::course::Entity as Course;
 pub use super::course_connection::Entity as CourseConnection;
-pub use super::dependency::Entity as Dependency;
 pub use super::feedback::Entity as Feedback;
 pub use super::file::Entity as File;
 pub use super::invitations::Entity as Invitations;
