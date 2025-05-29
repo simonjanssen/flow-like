@@ -92,7 +92,6 @@ export function DesktopAuthProvider({
 	const [userManager, setUserManager] = useState<UserManager>();
 	const backend = useBackend();
 	const currentProfile = useInvoke(backend.getSettingsProfile, []);
-	const auth = useAuth();
 
 	useEffect(() => {
 		(async () => {
@@ -171,12 +170,10 @@ export function DesktopAuthProvider({
 			}
 		});
 
-		auth?.signinSilent();
-
 		return () => {
 			unlisten.then((unsub) => unsub());
 		};
-	}, [userManager, openIdAuthConfig, auth]);
+	}, [userManager, openIdAuthConfig]);
 
 	if (!openIdAuthConfig) return children;
 
@@ -190,7 +187,47 @@ export function DesktopAuthProvider({
 				})
 			}
 		>
-			{children}
+			<AuthInner>
+				{children}
+			</AuthInner>
 		</AuthProvider>
 	);
+}
+
+function AuthInner({children}: {children: React.ReactNode}) {
+	const auth = useAuth();
+
+	useEffect(() => {
+		if(!auth) return;
+
+		(async () => {
+            try {
+                const existingUser = auth.user;
+
+                if (existingUser && !existingUser.expired) {
+                    return;
+                }
+
+                try {
+                    let user = await auth?.signinSilent();
+					if(!user) {
+						console.warn("Silent login returned no user, attempting redirect login.");
+						await auth?.signinRedirect();
+					}
+                } catch (silentError) {
+                    console.warn("Silent login failed, attempting normal login:", silentError);
+
+                    try {
+                        await auth?.signinRedirect();
+                    } catch (redirectError) {
+                        console.error("Both silent and redirect login failed:", redirectError);
+                    }
+                }
+            } catch (error) {
+                console.error("Login process failed:", error);
+            }
+        })();
+	}, [auth]);
+
+	return <>{children}</>;
 }

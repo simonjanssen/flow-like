@@ -26,6 +26,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuShortcut,
 	DropdownMenuTrigger,
+	GlobalPermission,
 	IBitTypes,
 	Input,
 	Label,
@@ -67,12 +68,15 @@ import {
 	Edit3Icon,
 	ExternalLinkIcon,
 	HeartIcon,
+	LayoutDashboard,
+	LayoutDashboardIcon,
 	LayoutGridIcon,
 	LibraryIcon,
 	LogInIcon,
 	LogOut,
 	type LucideIcon,
 	Moon,
+	Package2Icon,
 	Plus,
 	Settings2Icon,
 	SidebarCloseIcon,
@@ -80,6 +84,8 @@ import {
 	Sparkles,
 	StoreIcon,
 	Sun,
+	UsersRound,
+	UsersRoundIcon,
 	WorkflowIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -99,6 +105,7 @@ const data = {
 			url: "/",
 			icon: HeartIcon,
 			isActive: true,
+			permission: false,
 			items: [
 				{
 					title: "Home",
@@ -119,6 +126,7 @@ const data = {
 			url: "/library",
 			icon: LibraryIcon,
 			isActive: false,
+			permission: false,
 			items: [
 				{
 					title: "Overview",
@@ -145,12 +153,14 @@ const data = {
 		{
 			title: "Documentation",
 			url: "https://docs.flow-like.com/",
+			permission: false,
 			icon: BookOpenIcon,
 		},
 		{
 			title: "Settings",
 			url: "/settings",
 			icon: Settings2Icon,
+			permission: false,
 			items: [
 				{
 					title: "General",
@@ -179,6 +189,55 @@ const data = {
 				{
 					title: "System Info",
 					url: "/settings/system",
+				},
+			],
+		},
+		{
+			title: "User Actions",
+			url: "/admin/user",
+			icon: UsersRoundIcon,
+			permission: true,
+			items: [
+				{
+					title: "Find",
+					url: "/admin/user",
+					permission: GlobalPermission.ReadProfile
+				},
+				{
+					title: "Manage",
+					url: "/admin/user/edit",
+					permission: GlobalPermission.WriteProfile
+				}
+			],
+		},
+		{
+			title: "Governance",
+			url: "/admin/governance",
+			icon: LayoutDashboardIcon,
+			permission: true,
+			items: [
+				{
+					title: "Dashboard",
+					url: "/admin/governance",
+					permission: GlobalPermission.ReadPublishing
+				},
+				{
+					title: "Your Requests",
+					url: "/admin/governance/requests",
+					permission: GlobalPermission.WritePublishing
+				}
+			],
+		},
+		{
+			title: "Bits",
+			url: "/admin/bits",
+			icon: Package2Icon,
+			permission: true,
+			items: [
+				{
+					title: "Manage Bits",
+					url: "/admin/bits",
+					permission: GlobalPermission.WriteBits
 				},
 			],
 		},
@@ -529,22 +588,32 @@ function NavMain({
 		url: string;
 		icon?: LucideIcon;
 		isActive?: boolean;
+		permission?: boolean | undefined;
 		items?: {
 			title: string;
 			url: string;
+			permission?: GlobalPermission
 		}[];
 	}[];
 }>) {
 	const router = useRouter();
 	const pathname = usePathname();
 	const { open } = useSidebar();
+	const auth = useAuth();
+	const info = useApi<{permission: number}>(
+		"GET",
+		"user/info",
+		undefined,
+		auth?.isAuthenticated ?? false,
+	);
 
 	return (
+		<>
 		<SidebarGroup>
 			<SidebarGroupLabel>Navigation</SidebarGroupLabel>
 			<SidebarMenu>
-				{items.map((item) =>
-					item.items && item.items.length > 0 ? (
+				{items.filter(item => !item.permission).map((item) =>
+					 item.items && item.items.length > 0 ? (
 						<Collapsible
 							key={item.title}
 							asChild
@@ -621,6 +690,89 @@ function NavMain({
 				)}
 			</SidebarMenu>
 		</SidebarGroup>
+		{(info.data?.permission ?? 0) > 0 && <SidebarGroup>
+			<SidebarGroupLabel>Admin Area</SidebarGroupLabel>
+			<SidebarMenu>
+				{items.filter(item => item.permission && typeof item.items?.find(subitem => new GlobalPermission(info.data?.permission ?? 0).hasPermission(subitem.permission ?? GlobalPermission.Admin)) !== "undefined").map((item) =>
+					item.items && item.items.length > 0 ? (
+						<Collapsible
+							key={item.title}
+							asChild
+							defaultOpen={
+								(localStorage.getItem(`sidebar:${item.title}`) ??
+									(item.isActive ? "open" : "closed")) === "open"
+							}
+							onOpenChange={(open) => {
+								localStorage.setItem(
+									`sidebar:${item.title}`,
+									open ? "open" : "closed",
+								);
+							}}
+							className="group/collapsible"
+						>
+							<SidebarMenuItem>
+								<CollapsibleTrigger asChild>
+									<SidebarMenuButton
+										variant={
+											pathname === item.url ||
+											typeof item.items?.find(
+												(item) => item.url === pathname,
+											) !== "undefined"
+												? "outline"
+												: "default"
+										}
+										tooltip={item.title}
+										onClick={() => {
+											if (!open) router.push(item.url);
+										}}
+									>
+										{item.icon && <item.icon />}
+										<span>{item.title}</span>
+										<ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+									</SidebarMenuButton>
+								</CollapsibleTrigger>
+								<CollapsibleContent>
+									<SidebarMenuSub>
+										{item.items?.filter(item => new GlobalPermission(info.data?.permission ?? 0).hasPermission(item.permission ?? GlobalPermission.Admin)).map((subItem) => (
+											<SidebarMenuSubItem key={subItem.title}>
+												<SidebarMenuSubButton asChild>
+													<Link href={subItem.url}>
+														<span
+															className={
+																pathname === subItem.url
+																	? "font-bold text-primary"
+																	: ""
+															}
+														>
+															{subItem.title}
+														</span>
+													</Link>
+												</SidebarMenuSubButton>
+											</SidebarMenuSubItem>
+										))}
+									</SidebarMenuSub>
+								</CollapsibleContent>
+							</SidebarMenuItem>
+						</Collapsible>
+					) : (
+						<SidebarMenuItem key={item.title}>
+							<a href={item.url} target="_blank" rel="noreferrer">
+								<SidebarMenuButton
+									variant={pathname === item.url ? "outline" : "default"}
+									tooltip={item.title}
+								>
+									{item.icon && <item.icon />}
+									<span>{item.title}</span>
+									<ExternalLinkIcon className="ml-auto" />
+								</SidebarMenuButton>
+							</a>
+						</SidebarMenuItem>
+					),
+				)}
+			</SidebarMenu>
+		</SidebarGroup>}
+		</>
+
 	);
 }
 
@@ -631,20 +783,12 @@ export function NavUser({
 }>) {
 	const { isMobile } = useSidebar();
 	const auth = useAuth();
-	const info = useApi(
-		"GET",
-		"user/info",
-		typeof auth?.user?.id_token === "string",
-	);
 
 	const displayName: string = useMemo(() => {
-		console.dir(auth?.user);
-
 		const profile = auth?.user?.profile;
 		if (!profile) return "Offline";
 
 		const user = getCurrentUser();
-		console.dir(user);
 
 		return (
 			profile?.name ??
