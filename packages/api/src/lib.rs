@@ -1,8 +1,10 @@
 use std::sync::Arc;
 
-use axum::{Router, middleware::from_fn_with_state, routing::get};
+use axum::{middleware::from_fn_with_state, routing::get, Json, Router};
+use error::AppError;
+use flow_like::hub::Hub;
 use middleware::jwt::jwt_middleware;
-use state::State;
+use state::{AppState, State};
 use tower::ServiceBuilder;
 use tower_http::{
     compression::{CompressionLayer, DefaultPredicate, Predicate, predicate::NotForContentType},
@@ -27,6 +29,7 @@ pub mod auth {
 
 pub fn construct_router(state: Arc<State>) -> Router {
     let router = Router::new()
+        .route("/", get(hub_info))
         .nest("/health", routes::health::routes())
         .nest("/info", routes::info::routes())
         .nest("/user", routes::user::routes())
@@ -48,4 +51,11 @@ pub fn construct_router(state: Arc<State>) -> Router {
         );
 
     Router::new().nest("/api/v1", router)
+}
+
+#[tracing::instrument(name = "GET /", skip(state))]
+async fn hub_info(
+    axum::extract::State(state): axum::extract::State<AppState>,
+) -> Result<Json<Hub>, AppError> {
+    Ok(Json(state.platform_config.clone()))
 }

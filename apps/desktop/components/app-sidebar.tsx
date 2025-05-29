@@ -66,6 +66,7 @@ import {
 	DownloadIcon,
 	Edit3Icon,
 	ExternalLinkIcon,
+	HeartIcon,
 	LayoutGridIcon,
 	LibraryIcon,
 	LogInIcon,
@@ -77,6 +78,7 @@ import {
 	SidebarCloseIcon,
 	SidebarOpenIcon,
 	Sparkles,
+	StoreIcon,
 	Sun,
 	WorkflowIcon,
 } from "lucide-react";
@@ -86,15 +88,16 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "react-oidc-context";
 import { toast } from "sonner";
+import { fetcher } from "../lib/api";
 import { useApi } from "../lib/useApi";
 import { useTauriInvoke } from "./useInvoke";
 
 const data = {
 	navMain: [
 		{
-			title: "Apps",
+			title: "Hub",
 			url: "/",
-			icon: LayoutGridIcon,
+			icon: HeartIcon,
 			isActive: true,
 			items: [
 				{
@@ -407,7 +410,10 @@ function Profiles() {
 								<Avatar className="h-8 w-8 rounded-lg">
 									<AvatarImage
 										className="rounded-lg size-8 w-8 h-8"
-										src={currentProfile.data?.hub_profile.thumbnail}
+										src={
+											currentProfile.data?.hub_profile.thumbnail ??
+											"/placeholder.webp"
+										}
 									/>
 									<AvatarImage
 										className="rounded-lg size-8 w-8 h-8"
@@ -452,16 +458,20 @@ function Profiles() {
 											invalidate(backend.getProfile, []),
 											invalidate(backend.getSettingsProfile, []),
 											invalidate(backend.getApps, []),
-											invalidate(backend.getBitsByCategory, [IBitTypes.Llm]),
-											invalidate(backend.getBitsByCategory, [IBitTypes.Vlm]),
-											invalidate(backend.getBitsByCategory, [
-												IBitTypes.Embedding,
+											invalidate(backend.searchBits, [
+												{
+													bit_types: [
+														IBitTypes.Llm,
+														IBitTypes.Vlm,
+														IBitTypes.Embedding,
+														IBitTypes.ImageEmbedding,
+													],
+												},
 											]),
-											invalidate(backend.getBitsByCategory, [
-												IBitTypes.ImageEmbedding,
-											]),
-											invalidate(backend.getBitsByCategory, [
-												IBitTypes.Template,
+											invalidate(backend.searchBits, [
+												{
+													bit_types: [IBitTypes.Template],
+												},
 											]),
 										]);
 									}}
@@ -471,7 +481,10 @@ function Profiles() {
 										<Avatar className="h-8 w-8 rounded-sm">
 											<AvatarImage
 												className="rounded-sm w-8 h-8"
-												src={profile.hub_profile.thumbnail}
+												src={
+													profile.hub_profile.thumbnail ??
+													"/thumbnail-placeholder.webp"
+												}
 											/>
 											<AvatarImage
 												className="rounded-sm w-8 h-8"
@@ -618,7 +631,11 @@ export function NavUser({
 }>) {
 	const { isMobile } = useSidebar();
 	const auth = useAuth();
-	const info = useApi("GET", "user/info");
+	const info = useApi(
+		"GET",
+		"user/info",
+		typeof auth?.user?.id_token === "string",
+	);
 
 	const displayName: string = useMemo(() => {
 		console.dir(auth?.user);
@@ -698,7 +715,24 @@ export function NavUser({
 										<BadgeCheck className="size-4" />
 										Account
 									</DropdownMenuItem>
-									<DropdownMenuItem className="gap-2">
+									<DropdownMenuItem
+										className="gap-2"
+										onClick={async () => {
+											const urlRequest = await fetcher<{ url: string }>(
+												"user/billing",
+												{ method: "GET" },
+												auth,
+											);
+											const view = new WebviewWindow("billing", {
+												url: urlRequest.url,
+												title: "Billing",
+												focus: true,
+												resizable: true,
+												maximized: true,
+												contentProtected: true,
+											});
+										}}
+									>
 										<CreditCard className="size-4" />
 										Billing
 									</DropdownMenuItem>

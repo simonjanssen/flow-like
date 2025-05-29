@@ -56,6 +56,7 @@ class TauriWindow implements IWindow {
 			backgroundColor: "#000000",
 			focus: true,
 			maximized: true,
+			contentProtected: true,
 		});
 		const promise = new Promise((resolve, reject) => {
 			this.abort = reject;

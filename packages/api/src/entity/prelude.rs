@@ -2,6 +2,8 @@
 
 pub use super::app::Entity as App;
 pub use super::bit::Entity as Bit;
+pub use super::bit_cache::Entity as BitCache;
+pub use super::bit_tree_cache::Entity as BitTreeCache;
 pub use super::comment::Entity as Comment;
 pub use super::course::Entity as Course;
 pub use super::course_connection::Entity as CourseConnection;
@@ -25,5 +27,6 @@ pub use super::swimlane::Entity as Swimlane;
 pub use super::swimlane_item::Entity as SwimlaneItem;
 pub use super::technical_user::Entity as TechnicalUser;
 pub use super::template::Entity as Template;
+pub use super::template_profile::Entity as TemplateProfile;
 pub use super::transaction::Entity as Transaction;
 pub use super::user::Entity as User;

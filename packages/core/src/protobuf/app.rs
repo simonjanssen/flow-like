@@ -1,4 +1,4 @@
-use crate::{app::App, bit::Metadata};
+use crate::app::App;
 use flow_like_types::{FromProto, Timestamp, ToProto};
 use std::time::SystemTime;
 
@@ -6,11 +6,6 @@ impl ToProto<flow_like_types::proto::App> for App {
     fn to_proto(&self) -> flow_like_types::proto::App {
         flow_like_types::proto::App {
             id: self.id.clone(),
-            meta: self
-                .meta
-                .iter()
-                .map(|(k, v)| (k.clone(), v.to_proto()))
-                .collect(),
             authors: self.authors.clone(),
             bits: self.bits.clone(),
             boards: self.boards.clone(),
@@ -18,6 +13,7 @@ impl ToProto<flow_like_types::proto::App> for App {
             templates: self.templates.clone(),
             created_at: Some(Timestamp::from(self.created_at)),
             updated_at: Some(Timestamp::from(self.updated_at)),
+            ..Default::default()
         }
     }
 }
@@ -26,11 +22,6 @@ impl FromProto<flow_like_types::proto::App> for App {
     fn from_proto(proto: flow_like_types::proto::App) -> Self {
         App {
             id: proto.id,
-            meta: proto
-                .meta
-                .into_iter()
-                .map(|(k, v)| (k, Metadata::from_proto(v)))
-                .collect(),
             authors: proto.authors,
             bits: proto.bits,
             boards: proto.boards,

@@ -7,14 +7,15 @@ import {
 	Checkbox,
 	DynamicImage,
 	type IBit,
-	type IBitMeta,
 	IBitTypes,
+	IMetadata,
 	type ISettingsProfile,
 	Input,
 	Label,
 	Progress,
 	type QueryObserverResult,
 	Textarea,
+	nowSystemTime,
 	useBackend,
 	useInvoke,
 } from "@tm9657/flow-like-ui";
@@ -41,6 +42,9 @@ const BLANK_BIT: IBit = {
 			name: "Blank",
 			tags: [],
 			use_case: "Create your own App from scratch",
+			created_at: nowSystemTime(),
+			updated_at: nowSystemTime(),
+			preview_media: []
 		},
 	},
 	parameters: {},
@@ -53,13 +57,15 @@ const BLANK_BIT: IBit = {
 interface ICreationDialog {
 	templateId: string;
 	progress: number;
-	meta: IBitMeta;
+	meta: IMetadata;
 	models: string[];
 }
 
 export default function CreateAppPage() {
 	const backend = useBackend();
-	const templates = useInvoke(backend.getBitsByCategory, [IBitTypes.Template]);
+	const templates = useInvoke(backend.searchBits, [{
+		bit_types: [IBitTypes.Template]
+	}]);
 	const apps = useInvoke(backend.getApps, []);
 	const currentProfile = useTauriInvoke<ISettingsProfile | null>(
 		"get_current_profile",
@@ -71,10 +77,12 @@ export default function CreateAppPage() {
 		models: [],
 		meta: {
 			description: "",
-			long_description: "",
 			name: "",
 			tags: [],
 			use_case: "",
+			created_at: nowSystemTime(),
+			updated_at: nowSystemTime(),
+			preview_media: [],
 		},
 	});
 
@@ -131,6 +139,7 @@ function FinalScreen({
 	refresh: () => Promise<void>;
 }>) {
 	const router = useRouter();
+	const backend = useBackend();
 	return (
 		<>
 			<Crossfire
@@ -156,11 +165,7 @@ function FinalScreen({
 						</Button>
 						<Button
 							onClick={async () => {
-								await invoke("create_app", {
-									meta: creationDialog.meta,
-									bits: creationDialog.models,
-									template: creationDialog.templateId,
-								});
+								await backend.createApp(creationDialog.meta, creationDialog.models, creationDialog.templateId);
 								toast("Created App 🎉");
 								await refresh();
 								router.push("/library/apps");
@@ -236,27 +241,6 @@ function MetadataCreation({
 							}));
 						}}
 					/>
-				</div>
-				<div className="grid items-center gap-1.5 w-full">
-					<Label htmlFor="tags">Tags</Label>
-					<Input
-						value={localTags}
-						type="text"
-						id="tags"
-						placeholder="Tags (tag1, tag2)"
-						onChange={(e) => {
-							setLocalTags(e.target.value);
-						}}
-					/>
-				</div>
-				<div className="flex flex-row gap-2">
-					{creationDialog.meta.tags
-						.filter((tag) => tag !== "")
-						.map((tag) => (
-							<Badge key={tag} variant={"default"}>
-								{tag}
-							</Badge>
-						))}
 				</div>
 			</div>
 			<div className="w-full flex flex-row justify-end gap-2">

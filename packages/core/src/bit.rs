@@ -9,24 +9,32 @@ use flow_like_storage::files::store::local_store::LocalObjectStore;
 use flow_like_types::Value;
 use flow_like_types::intercom::InterComCallback;
 use flow_like_types::sync::Mutex;
-use futures::FutureExt;
-use futures::future::BoxFuture;
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::SystemTime;
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 pub struct Metadata {
     pub name: String,
     pub description: String,
-    pub long_description: String,
+    pub long_description: Option<String>,
+    pub release_notes : Option<String>,
     pub tags: Vec<String>,
-    pub use_case: String,
+    pub use_case: Option<String>,
     pub icon: Option<String>,
     pub thumbnail: Option<String>,
     pub preview_media: Vec<String>,
+    pub age_rating: Option<i32>,
+    pub website: Option<String>,
+    pub support_url: Option<String>,
+    pub docs_url: Option<String>,
+    pub organization_specific_values: Option<Vec<u8>>,
+    pub created_at: SystemTime,
+    pub updated_at: SystemTime,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
@@ -250,48 +258,15 @@ pub struct BitPack {
     pub bits: Vec<Bit>,
 }
 
-fn collect_dependencies<'a>(
-    bit: &'a Bit,
+async fn collect_dependencies(
+    bit: &Bit,
     state: Arc<Mutex<FlowLikeState>>,
-    visited: &'a mut HashSet<String>,
-    hubs: &'a mut HashMap<String, crate::hub::Hub>,
-    dependencies: &'a mut Vec<Bit>,
-) -> BoxFuture<'a, ()> {
-    async move {
+) -> flow_like_types::Result<Vec<Bit>> {
         let http_client = state.lock().await.http_client.clone();
+        let hub = crate::hub::Hub::new(&bit.hub, http_client.clone()).await?;
         let bit_id = bit.id.clone();
-        if visited.contains(&bit_id) {
-            return;
-        }
-        visited.insert(bit_id.clone());
-
-        dependencies.push(bit.clone());
-
-        for dependency in bit.dependencies.iter() {
-            let (hub_domain, dependency_id) = match dependency.split_once(':') {
-                Some(parts) => parts,
-                None => {
-                    println!(
-                        "Invalid dependency format for bit {}: {}",
-                        bit_id, dependency
-                    );
-                    continue;
-                }
-            };
-            if !hubs.contains_key(hub_domain) {
-                let hub =
-                    crate::hub::Hub::new(&format!("https://{hub_domain}"), http_client.clone())
-                        .await
-                        .unwrap();
-                hubs.insert(hub_domain.to_string(), hub);
-            }
-            let hub = hubs.get(hub_domain).unwrap();
-            if let Ok(dependency) = hub.get_bit_by_id(dependency_id).await {
-                collect_dependencies(&dependency, state.clone(), visited, hubs, dependencies).await;
-            }
-        }
-    }
-    .boxed()
+        let bits = hub.get_bit_dependencies(&bit_id).await?;
+        Ok(bits)
 }
 
 impl BitPack {
@@ -510,7 +485,6 @@ impl Bit {
     ) -> flow_like_types::Result<BitPack> {
         let bits_store = FlowLikeState::bit_store(&state).await?.as_generic();
 
-        let mut dependencies = vec![];
         let cache_dir =
             Path::from("deps-cache").child(format!("bit-deps-{}.bin", self.dependency_tree_hash));
 
@@ -523,35 +497,10 @@ impl Bit {
             }
         }
 
-        let mut visited = HashSet::new();
-        let mut hubs = HashMap::new();
-        let http_client = state.lock().await.http_client.clone();
-        for dependency in self.dependencies.iter() {
-            let (hub_domain, dependency_id) =
-                dependency.split_once(':').ok_or(flow_like_types::anyhow!(
-                    "Invalid dependency format, expected 'hub_domain:dependency_id'"
-                ))?;
-            if !hubs.contains_key(hub_domain) {
-                let hub =
-                    crate::hub::Hub::new(&format!("https://{hub_domain}"), http_client.clone())
-                        .await
-                        .unwrap();
-                hubs.insert(hub_domain.to_string(), hub);
-            }
-            let hub = hubs.get(hub_domain).unwrap();
-            if let Ok(dependency) = hub.get_bit_by_id(dependency_id).await {
-                collect_dependencies(
-                    &dependency,
-                    state.clone(),
-                    &mut visited,
-                    &mut hubs,
-                    &mut dependencies,
-                )
-                .await;
-            }
-        }
+        let dependencies = collect_dependencies(self, state.clone()).await?;
 
         println!("Dependencies for {} found", self.id);
+
         let bit_pack = BitPack { bits: dependencies };
         let res = compress_to_file_json(bits_store, cache_dir, &bit_pack).await;
         if res.is_err() {

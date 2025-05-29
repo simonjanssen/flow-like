@@ -1,31 +1,47 @@
 export interface IBit {
 	authors: string[];
 	created: string;
-	dependencies: Array<string[]>;
+	dependencies: string[];
 	dependency_tree_hash: string;
 	download_link?: null | string;
 	file_name?: null | string;
 	hash: string;
 	hub: string;
-	icon: string;
 	id: string;
-	license: string;
-	meta: { [key: string]: IBitMeta };
+	license?: null | string;
+	meta: { [key: string]: IMetadata };
 	parameters: any;
 	repository?: null | string;
 	size?: number | null;
 	type: IBitTypes;
 	updated: string;
-	version: string;
+	version?: null | string;
 	[property: string]: any;
 }
 
-export interface IBitMeta {
+export interface IMetadata {
+	age_rating?: number | null;
+	created_at: ISystemTime;
 	description: string;
-	long_description: string;
+	docs_url?: null | string;
+	icon?: null | string;
+	long_description?: null | string;
 	name: string;
+	organization_specific_values?: number[] | null;
+	preview_media: string[];
+	release_notes?: null | string;
+	support_url?: null | string;
 	tags: string[];
-	use_case: string;
+	thumbnail?: null | string;
+	updated_at: ISystemTime;
+	use_case?: null | string;
+	website?: null | string;
+	[property: string]: any;
+}
+
+export interface ISystemTime {
+	nanos_since_epoch: number;
+	secs_since_epoch: number;
 	[property: string]: any;
 }
 
@@ -38,6 +54,7 @@ export enum IBitTypes {
 	ImageEmbedding = "ImageEmbedding",
 	Llm = "Llm",
 	Media = "Media",
+	ObjectDetection = "ObjectDetection",
 	Other = "Other",
 	PreprocessorConfig = "PreprocessorConfig",
 	Project = "Project",

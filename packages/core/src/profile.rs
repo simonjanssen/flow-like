@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     bit::{Bit, BitModelPreference, BitTypes},
-    hub::Hub,
+    hub::{BitSearchQuery, Hub},
     utils::http::HTTPClient,
 };
 use flow_like_types::{Result, anyhow, tokio::task};
@@ -59,10 +59,10 @@ pub struct Profile {
     #[serde(default = "flow_like_types::create_id")]
     pub id: String,
     pub name: String,
-    pub description: String,
+    pub description: Option<String>,
     #[serde(default)]
-    pub icon: String,
-    pub thumbnail: String,
+    pub icon: Option<String>,
+    pub thumbnail: Option<String>,
     #[serde(default)]
     pub interests: Vec<String>,
     #[serde(default)]
@@ -72,8 +72,8 @@ pub struct Profile {
     #[serde(default)]
     pub hubs: Vec<String>,
     #[serde(default)]
-    pub apps: Vec<ProfileApp>,
-    pub bits: Vec<(String, String)>,
+    pub apps: Option<Vec<ProfileApp>>,
+    pub bits: Vec<String>, // hub:id
     #[serde(default)]
     pub settings: Settings,
     pub updated: String,
@@ -85,15 +85,15 @@ impl Default for Profile {
         Self {
             id: flow_like_types::create_id(),
             name: "".to_string(),
-            description: "".to_string(),
-            thumbnail: "".to_string(),
+            description: Some("".to_string()),
+            thumbnail: Some("".to_string()),
             hub: "".to_string(),
             hubs: vec![],
             bits: vec![],
-            icon: "".to_string(),
+            icon: Some("".to_string()),
             interests: vec![],
             tags: vec![],
-            apps: vec![],
+            apps: Some(vec![]),
             settings: Settings {
                 connection_mode: ConnectionMode::SimpleBezier,
             },
@@ -116,14 +116,17 @@ impl Profile {
         let mut best_bit = (0.0, None);
 
         if !remote {
-            for (hub, bit_id) in &self.bits {
+            for bit in &self.bits {
+                let (hub, bit_id) = bit.split_once(':').ok_or_else(|| {
+                    anyhow!("Invalid bit format: {}", bit)
+                })?;
+
                 let hub = Hub::new(hub, http_client.clone()).await?;
-                let bit = hub.get_bit_by_id(bit_id).await?;
+                let bit = hub.get_bit(bit_id).await?;
                 if multimodal && !bit.is_multimodal() {
                     continue;
                 }
                 if let Ok(score) = bit.score(preference) {
-                    println!("Score: {} for {}", score, bit.meta.get("en").unwrap().name);
                     if best_bit.1.is_none() || (score > best_bit.0) {
                         best_bit = (score, Some(bit.clone()));
                     }
@@ -138,17 +141,9 @@ impl Profile {
         let preference = preference.parse();
         let available_hubs = self.get_available_hubs(http_client).await?;
         let mut bits: HashMap<String, Bit> = HashMap::new();
+        let query = BitSearchQuery::builder().with_bit_types(vec![BitTypes::Vlm, BitTypes::Llm]).build();
         for hub in available_hubs {
-            match hub.get_bits_of_type(&BitTypes::Vlm).await {
-                Ok(models) => {
-                    bits.extend(models.into_iter().map(|bit| (bit.id.clone(), bit.clone())));
-                }
-                Err(_) => {
-                    continue;
-                }
-            };
-
-            match hub.get_bits_of_type(&BitTypes::Llm).await {
+            match hub.search_bit(&query).await {
                 Ok(models) => {
                     bits.extend(models.into_iter().map(|bit| (bit.id.clone(), bit.clone())));
                 }
@@ -176,19 +171,19 @@ impl Profile {
         }
     }
 
-    pub async fn get_available_bits_of_type(
+    pub async fn search_bits(
         &self,
-        bit_type: &BitTypes,
+        query: &BitSearchQuery,
         http_client: Arc<HTTPClient>,
     ) -> Result<Vec<Bit>> {
         let hubs = self.get_available_hubs(http_client).await?;
         let mut bits: HashMap<String, Bit> = HashMap::new();
         for hub in hubs {
-            let hub_bits = hub.get_bits_of_type(bit_type).await;
+            let hub_bits = hub.search_bit(query).await;
             let hub_bits = match hub_bits {
                 Ok(models) => models,
                 Err(err) => {
-                    println!("Models not found: {}", err);
+                    println!("Bit could not be queried: {}", err);
                     continue;
                 }
             };
@@ -202,44 +197,21 @@ impl Profile {
         Ok(bits)
     }
 
-    pub async fn get_available_bits(&self, http_client: Arc<HTTPClient>) -> Result<Vec<Bit>> {
-        let hubs = self.get_available_hubs(http_client).await?;
-        let mut bits: HashMap<String, Bit> = HashMap::new();
-        for hub in hubs {
-            let hub_bits = hub.get_bits().await;
-            let hub_bits = match hub_bits {
-                Ok(models) => models,
-                Err(err) => {
-                    println!("Models not found: {}", err);
-                    vec![]
-                }
-            };
-            for bit in hub_bits {
-                if !bits.contains_key(&bit.id) {
-                    bits.insert(bit.id.clone(), bit.clone());
-                }
-            }
-        }
-
-        let bits = bits.into_values().collect();
-        Ok(bits)
-    }
-
     pub async fn get_bit(
         &self,
         bit: String,
         hub: Option<String>,
         http_client: Arc<HTTPClient>,
     ) -> Result<Bit> {
-        if hub.is_some() {
-            let hub = Hub::new(&format!("https://{}", hub.unwrap()), http_client).await?;
-            let bit = hub.get_bit_by_id(&bit).await?;
+        if let Some(hub) = hub {
+            let hub = Hub::new(&hub, http_client).await?;
+            let bit = hub.get_bit(&bit).await?;
             return Ok(bit);
         }
 
         let hubs = self.get_available_hubs(http_client).await?;
         for hub in hubs {
-            let bit = hub.get_bit_by_id(&bit).await;
+            let bit = hub.get_bit(&bit).await;
             if let Ok(bit) = bit {
                 return Ok(bit);
             }
@@ -250,7 +222,7 @@ impl Profile {
     pub async fn find_bit(&self, bit_id: &str, http_client: Arc<HTTPClient>) -> Result<Bit> {
         let hubs = self.get_available_hubs(http_client).await?;
         for hub in hubs {
-            let bit = hub.get_bit_by_id(bit_id).await;
+            let bit = hub.get_bit(bit_id).await;
             if let Ok(bit) = bit {
                 return Ok(bit);
             }
@@ -264,8 +236,10 @@ impl Profile {
             hubs.insert(hub.clone());
         }
 
-        self.bits.iter().for_each(|(hub, _)| {
-            hubs.insert(hub.clone());
+        self.bits.iter().for_each(| id| {
+            if let Some((hub, _bit_id)) = id.split_once(':') {
+                hubs.insert(hub.to_string());
+            }
         });
 
         let hub_futures: Vec<_> = hubs
@@ -288,14 +262,16 @@ impl Profile {
     }
 
     pub async fn add_bit(&mut self, bit: &Bit) {
-        let bit_exists = self.bits.iter().any(|(_, bit_id)| bit_id == &bit.id);
+        let bit_id = format!("{}:{}", bit.hub, bit.id);
+        let bit_exists = self.bits.iter().any(|reference| reference == &bit_id);
         if bit_exists {
             return;
         }
-        self.bits.push((bit.hub.clone(), bit.id.clone()));
+        self.bits.push(bit_id);
     }
 
     pub fn remove_bit(&mut self, bit: &Bit) {
-        self.bits.retain(|(_, bit_id)| bit_id != &bit.id);
+        let bit_id = format!("{}:{}", bit.hub, bit.id);
+        self.bits.retain(|reference| reference != &bit_id);
     }
 }

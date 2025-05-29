@@ -3,7 +3,7 @@ export type { IRunPayload } from "./flow/run-payload";
 export * from "./bit/bit";
 export type {
 	IBitPack,
-	IBitMeta,
+	IMetadata,
 } from "./bit/bit-pack";
 export * from "./bit/preferences";
 export * from "./bit/bit/embedding-model-parameters";

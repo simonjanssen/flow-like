@@ -15,6 +15,7 @@ use crate::{
 pub mod delete_bit;
 pub mod get_bit;
 pub mod search_bits;
+pub mod get_with_dependencies;
 pub mod upsert_bit;
 
 impl From<BitType> for BitTypes {
@@ -95,19 +96,12 @@ impl From<bit::Model> for Bit {
 
 impl From<Bit> for bit::Model {
     fn from(value: Bit) -> Self {
-        let now_time = chrono::Utc::now().naive_utc();
-
-        let created_string = NaiveDateTime::parse_from_str(&value.created, "%Y-%m-%dT%H:%M:%S%.fZ")
-            .unwrap_or(now_time);
-        let updated_string = NaiveDateTime::parse_from_str(&value.updated, "%Y-%m-%dT%H:%M:%S%.fZ")
-            .unwrap_or(now_time);
-
         bit::Model {
             id: value.id,
             authors: Some(value.authors),
             r#type: value.bit_type.into(),
-            updated_at: updated_string,
-            created_at: created_string,
+            updated_at: chrono::DateTime::parse_from_rfc3339(&value.updated).unwrap_or_default().naive_utc(),
+            created_at: chrono::DateTime::parse_from_rfc3339(&value.created).unwrap_or_default().naive_utc(),
             dependencies: Some(value.dependencies),
             dependency_tree_hash: value.dependency_tree_hash,
             download_link: value.download_link,
@@ -131,5 +125,9 @@ pub fn routes() -> Router<AppState> {
             get(get_bit::get_bit)
                 .put(upsert_bit::upsert_bit)
                 .delete(delete_bit::delete_bit),
+        )
+        .route(
+            "/{bit_id}/dependencies",
+            get(get_with_dependencies::get_with_dependencies),
         )
 }

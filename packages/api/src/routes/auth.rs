@@ -4,11 +4,12 @@ use axum::extract::State;
 use axum::response::{IntoResponse, Redirect};
 use axum::routing::post;
 use axum::{Router, http::Request, routing::get};
+use flow_like::hub::OpenIdConfig;
 use flow_like_types::anyhow;
 use hyper::Uri;
 
 use crate::error::AppError;
-use crate::state::{AppState, OpenIdConfig};
+use crate::state::AppState;
 
 pub fn routes() -> Router<AppState> {
     Router::new()

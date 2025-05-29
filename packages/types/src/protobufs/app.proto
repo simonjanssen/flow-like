@@ -6,14 +6,40 @@ import "google/protobuf/timestamp.proto";
 import "bit.proto";
 import "variable.proto";
 
+enum AppCategory {
+  OTHER = 0;
+  PRODUCTIVITY = 1;
+  SOCIAL = 2;
+  ENTERTAINMENT = 3;
+  EDUCATION = 4;
+  HEALTH = 5;
+  FINANCE = 6;
+  LIFESTYLE = 7;
+  TRAVEL = 8;
+  NEWS = 9;
+  SPORTS = 10;
+  SHOPPING = 11;
+  FOOD_AND_DRINK = 12;
+  MUSIC = 13;
+  PHOTOGRAPHY = 14;
+  UTILITIES = 15;
+  WEATHER = 16;
+  GAMES = 17;
+  BUSINESS = 18;
+  COMMUNICATION = 19;
+  ANIME = 20;
+}
+
 message App {
   string id = 1;
-  map<string, Meta> meta = 2;
+  // map<string, Meta> meta = 2; Removed in favor of more generic metadata
   repeated string authors = 3;
   repeated string bits = 4;
   repeated string boards = 5;
   repeated string releases = 6;
   repeated string templates = 7;
+  optional AppCategory primary_category = 8;
+  optional AppCategory secondary_category = 9;
   google.protobuf.Timestamp created_at = 16;
   google.protobuf.Timestamp updated_at = 17;
 }

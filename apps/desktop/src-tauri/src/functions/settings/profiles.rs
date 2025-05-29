@@ -41,15 +41,16 @@ async fn get_bits(
     http_client: Arc<HTTPClient>,
 ) -> Vec<(UserProfile, Vec<Bit>)> {
     // Collect all futures for models and embedding models
-    let mut bits: HashMap<String, String> = HashMap::new();
-    let mut hubs: HashMap<String, Hub> = HashMap::new();
+    let mut bits: HashMap<&str, &str> = HashMap::new();
+    let mut hubs: HashMap<&str, Hub> = HashMap::new();
 
     for profile in profiles.iter() {
-        for (hub, bit) in profile.bits.iter() {
-            bits.insert(bit.clone(), hub.clone());
+        for bit_id in profile.bits.iter() {
+            let (hub, bit) = bit_id.split_once(':').unwrap_or(("", bit_id));
+            bits.insert(bit, hub);
             if !hubs.contains_key(hub) {
                 hubs.insert(
-                    hub.clone(),
+                    hub,
                     Hub::new(hub, http_client.clone()).await.unwrap(),
                 );
             }
@@ -58,7 +59,7 @@ async fn get_bits(
 
     let bit_features = bits.iter().map(|(bit_id, hub_id)| {
         let hub = hubs.get(hub_id).unwrap();
-        hub.get_bit_by_id(bit_id)
+        hub.get_bit(bit_id)
     });
 
     let bits_results = join_all(bit_features).await;
@@ -79,7 +80,8 @@ async fn get_bits(
             let bits = profile
                 .bits
                 .iter()
-                .map(|(_, bit)| {
+                .map(|bit_url| {
+                    let (_hub, bit) = bit_url.split_once(':').unwrap_or(("", bit_url));
                     let bit = bits_map.get(bit).unwrap();
                     bit.clone()
                 })
@@ -109,13 +111,17 @@ pub async fn get_bits_in_current_profile(
 
     let mut tasks: Vec<JoinHandle<Option<Bit>>> = vec![];
 
-    for (hub, bit) in profile.hub_profile.bits.iter() {
-        let hub = hub.clone();
-        let bit = bit.clone();
+    for bit_id in profile.hub_profile.bits.iter() {
+        let (hub, bit) = bit_id.split_once(':').unwrap_or(("", bit_id));
+        if hub.is_empty() {
+            continue; // Skip bits without a hub
+        }
+        let hub = hub.to_string();
+        let bit = bit.to_string();
         let http_client = http_client.clone();
         let task = flow_like_types::tokio::spawn(async move {
             let hub = Hub::new(&hub, http_client).await.ok()?;
-            let bit = hub.get_bit_by_id(&bit).await.ok()?;
+            let bit = hub.get_bit(&bit).await.ok()?;
             Some(bit)
         });
         tasks.push(task);

@@ -5,7 +5,7 @@ use crate::{
     utils::compression::{compress_to_file, from_compressed},
 };
 use flow_like_storage::Path;
-use flow_like_types::{FromProto, ToProto, create_id, sync::Mutex};
+use flow_like_types::{FromProto, ToProto, create_id, proto, sync::Mutex};
 use futures::{StreamExt, TryStreamExt};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -24,10 +24,34 @@ pub struct FrontendConfiguration {
     pub landing_page: Option<String>,
 }
 
+#[derive(Clone, Serialize, Deserialize, JsonSchema)]
+pub enum AppCategory {
+    Other = 0,
+    Productivity = 1,
+    Social = 2,
+    Entertainment = 3,
+    Education = 4,
+    Health = 5,
+    Finance = 6,
+    Lifestyle = 7,
+    Travel = 8,
+    News = 9,
+    Sports = 10,
+    Shopping = 11,
+    FoodAndDrink = 12,
+    Music = 13,
+    Photography = 14,
+    Utilities = 15,
+    Weather = 16,
+    Games = 17,
+    Business = 18,
+    Communication = 19,
+    Anime = 20,
+}
+
 #[derive(Serialize, Deserialize, JsonSchema)]
 pub struct App {
     pub id: String,
-    pub meta: std::collections::HashMap<String, Metadata>,
     pub authors: Vec<String>,
 
     pub bits: Vec<String>,
@@ -48,7 +72,6 @@ impl Clone for App {
     fn clone(&self) -> Self {
         Self {
             id: self.id.clone(),
-            meta: self.meta.clone(),
             authors: self.authors.clone(),
             boards: self.boards.clone(),
             templates: self.templates.clone(),
@@ -71,12 +94,10 @@ impl App {
     ) -> flow_like_types::Result<Self> {
         let id = id.unwrap_or(create_id());
 
-        let mut meta_map = std::collections::HashMap::new();
-        meta_map.insert("en".to_string(), meta);
+        App::push_meta(id.clone(), meta, app_state.clone(), None, None).await?;
 
         let item = Self {
             id,
-            meta: meta_map,
             authors: vec![],
             bits,
             boards: vec![],
@@ -107,6 +128,72 @@ impl App {
         vault.app_state = Some(app_state.clone());
 
         Ok(vault)
+    }
+
+    pub async fn get_meta(
+        id: String,
+        app_state: Arc<Mutex<FlowLikeState>>,
+        language: Option<String>,
+        template_id: Option<String>,
+    ) -> flow_like_types::Result<Metadata> {
+        let store = FlowLikeState::project_storage_store(&app_state)
+            .await?
+            .as_generic();
+
+        let mut metadata_path = Path::from("apps").child(id).child("metadata");
+        if let Some(template_id) = template_id {
+            metadata_path = metadata_path.child("templates").child(template_id);
+        }
+        let languages = [
+            language.unwrap_or_else(|| "en".to_string()),
+            "en".to_string(),
+        ];
+
+        // Try requested language first, then fallback to English
+        for lang in languages
+            .iter()
+            .take_while(|&l| l != &languages[1] || l == &languages[0])
+        {
+            let meta_path = metadata_path.child(format!("{}.meta", lang));
+
+            if let Ok(metadata) = from_compressed::<proto::Metadata>(store.clone(), meta_path).await
+            {
+                return Ok(Metadata::from_proto(metadata));
+            }
+        }
+
+        Err(flow_like_types::anyhow!(
+            "No metadata found for app {}",
+            metadata_path
+        ))
+    }
+
+    pub async fn push_meta(
+        id: String,
+        metadata: Metadata,
+        app_state: Arc<Mutex<FlowLikeState>>,
+        language: Option<String>,
+        template_id: Option<String>,
+    ) -> flow_like_types::Result<()> {
+        let store = FlowLikeState::project_storage_store(&app_state)
+            .await?
+            .as_generic();
+
+        let language = language.unwrap_or_else(|| "en".to_string());
+        let mut meta_path = Path::from("apps")
+            .child(id)
+            .child("metadata");
+
+        if let Some(template_id) = template_id {
+            meta_path = meta_path.child("templates").child(template_id);
+        }
+
+        let meta_path = meta_path.child(format!("{}.meta", language));
+
+        let proto_metadata = metadata.to_proto();
+        compress_to_file(store, meta_path, &proto_metadata).await?;
+
+        Ok(())
     }
 
     pub async fn create_board(&mut self, id: Option<String>) -> flow_like_types::Result<String> {
@@ -364,7 +451,6 @@ mod tests {
     async fn serialize_app() {
         let app = crate::app::App {
             id: "id".to_string(),
-            meta: std::collections::HashMap::new(),
             authors: vec!["author1".to_string(), "author2".to_string()],
             boards: vec!["board1".to_string(), "board2".to_string()],
             bits: vec!["bit1".to_string(), "bit2".to_string()],

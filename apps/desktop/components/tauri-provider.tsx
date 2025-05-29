@@ -17,6 +17,7 @@ import {
 	type ILog,
 	type ILogLevel,
 	type ILogMetadata,
+	type IMetadata,
 	type INode,
 	type IProfile,
 	type IRunPayload,
@@ -25,9 +26,38 @@ import {
 	useBackendStore,
 	useDownloadManager,
 } from "@tm9657/flow-like-ui";
+import type { IBitSearchQuery } from "@tm9657/flow-like-ui/lib/schema/hub/bit-search-query";
 import { useEffect, useState } from "react";
 
 export class TauriBackend implements IBackendState {
+	async createApp(metadata: IMetadata, bits: string[], template: string): Promise<IApp> {
+		const app: IApp = await invoke("create_app", {
+			metadata: metadata,
+			bits: bits,
+			template: template,
+		});
+		return app;
+	}
+	async getAppMeta(appId: string, language?: string): Promise<IMetadata> {
+		const meta: IMetadata = await invoke("get_app_meta", {
+			appId: appId,
+			language,
+		});
+		return meta;
+	}
+
+	async pushAppMeta(
+		appId: string,
+		metadata: IMetadata,
+		language?: string,
+	): Promise<void> {
+		await invoke("push_app_meta", {
+			appId: appId,
+			metadata: metadata,
+			language,
+		});
+	}
+
 	async getCatalog(): Promise<INode[]> {
 		const nodes: INode[] = await invoke("get_catalog");
 		return nodes;
@@ -325,9 +355,9 @@ export class TauriBackend implements IBackendState {
 		});
 	}
 
-	async getBitsByCategory(type: IBitTypes): Promise<IBit[]> {
-		return await invoke("get_bits_by_category", {
-			bitType: type,
+	async searchBits(query: IBitSearchQuery): Promise<IBit[]> {
+		return await invoke("search_bits", {
+			query,
 		});
 	}
 
@@ -368,12 +398,12 @@ export class TauriBackend implements IBackendState {
 		});
 	}
 
-	async getApps(): Promise<IApp[]> {
+	async getApps(): Promise<[IApp, IMetadata | undefined][]> {
 		return await invoke("get_apps");
 	}
 
 	async getBit(id: string, hub?: string): Promise<IBit> {
-		return await invoke("get_bit_by_id", {
+		return await invoke("get_bit", {
 			bit: id,
 			hub: hub,
 		});

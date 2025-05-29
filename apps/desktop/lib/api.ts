@@ -2,7 +2,7 @@ import type { AuthContextProps } from "react-oidc-context";
 
 function constructUrl(path: string): string {
 	const baseUrl = process.env.NEXT_PUBLIC_API_URL!;
-	return `${baseUrl}${path}`;
+	return `${baseUrl}api/v1/${path}`;
 }
 
 export async function fetcher<T>(

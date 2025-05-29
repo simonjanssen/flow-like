@@ -13,17 +13,19 @@ use std::collections::HashSet;
 use tauri::AppHandle;
 
 #[tauri::command(async)]
-pub async fn get_apps(app_handle: AppHandle) -> Result<Vec<App>, TauriFunctionError> {
-    let mut app_list: Vec<App> = vec![];
+pub async fn get_apps(app_handle: AppHandle, language: Option<String>) -> Result<Vec<(App, Option<Metadata>)>, TauriFunctionError> {
+    let mut app_list: Vec<(App, Option<Metadata>)> = vec![];
 
     let profile = TauriSettingsState::current_profile(&app_handle).await?;
 
     let flow_like_state = TauriFlowLikeState::construct(&app_handle).await?;
 
-    for app in profile.hub_profile.apps.iter() {
-        if let Ok(app) = App::load(app.app_id.clone(), flow_like_state.clone()).await {
+    for app in profile.hub_profile.apps.unwrap_or_default().iter() {
+        let app_id = app.app_id.clone();
+        if let Ok(app) = App::load(app_id.clone(), flow_like_state.clone()).await {
             let app = app;
-            app_list.push(app);
+            let metadata = App::get_meta(app_id.clone(), flow_like_state.clone(), language.clone(), None).await.ok();
+            app_list.push((app, metadata));
         }
     }
 
@@ -57,21 +59,16 @@ pub async fn app_configured(
 }
 
 #[tauri::command(async)]
-pub async fn get_remote_apps(_handler: AppHandle) {
-    unimplemented!("Not implemented yet")
-}
-
-#[tauri::command(async)]
 pub async fn create_app(
     app_handle: AppHandle,
-    meta: Metadata,
+    metadata: Metadata,
     bits: Vec<String>,
     template: String,
 ) -> Result<String, TauriFunctionError> {
     let flow_like_state = TauriFlowLikeState::construct(&app_handle).await?;
 
     let bits_map: HashSet<String> = bits.clone().into_iter().collect();
-    let mut new_app = App::new(None, meta, bits, flow_like_state).await?;
+    let mut new_app = App::new(None, metadata, bits, flow_like_state).await?;
 
     if template == "blank" {
         let board = new_app.create_board(None).await?;
@@ -97,10 +94,13 @@ pub async fn create_app(
     let settings = TauriSettingsState::construct(&app_handle).await?;
     let mut settings = settings.lock().await;
 
-    profile
-        .hub_profile
-        .apps
-        .push(ProfileApp::new(new_app.id.clone()));
+    if profile.hub_profile.apps.is_none() {
+        profile.hub_profile.apps = Some(vec![]);
+    }
+
+    if let Some(apps) = &mut profile.hub_profile.apps {
+        apps.push(ProfileApp::new(new_app.id.clone()));
+    }
 
     settings
         .profiles
@@ -173,6 +173,21 @@ pub async fn update_app(app_handle: AppHandle, app: App) -> Result<(), TauriFunc
 }
 
 #[tauri::command(async)]
+pub async fn push_app_meta(app_handle: AppHandle, app_id: String, metadata: Metadata, language: Option<String>) -> Result<(), TauriFunctionError> {
+    let state = TauriFlowLikeState::construct(&app_handle).await?;
+    App::push_meta(app_id, metadata, state, language, None).await?;
+    Ok(())
+}
+
+#[tauri::command(async)]
+pub async fn get_app_meta(app_handle: AppHandle, app_id: App, language: Option<String>) -> Result<Metadata, TauriFunctionError> {
+    let metadata = App::get_meta(app_id.id, TauriFlowLikeState::construct(&app_handle).await?, language, None)
+        .await
+        .map_err(|_| TauriFunctionError::new("Failed to get app metadata"))?;
+    Ok(metadata)
+}
+
+#[tauri::command(async)]
 pub async fn get_app_size(
     app_handle: AppHandle,
     app_id: String,
@@ -208,10 +223,9 @@ pub async fn delete_app(app_handle: AppHandle, app_id: String) -> Result<(), Tau
 
     let mut settings = settings.lock().await;
     for profile in settings.profiles.values_mut() {
-        profile
-            .hub_profile
-            .apps
-            .retain(|app| &app.app_id != &app_id);
+        if let Some(apps) = &mut profile.hub_profile.apps {
+            apps.retain(|app| &app.app_id != &app_id);
+        }
     }
     settings.serialize();
     drop(settings);

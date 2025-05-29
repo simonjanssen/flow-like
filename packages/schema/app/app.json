@@ -8,19 +8,13 @@
 		"boards",
 		"created_at",
 		"id",
-		"meta",
 		"releases",
+		"templates",
 		"updated_at"
 	],
 	"properties": {
 		"id": {
 			"type": "string"
-		},
-		"meta": {
-			"type": "object",
-			"additionalProperties": {
-				"$ref": "#/definitions/BitMeta"
-			}
 		},
 		"authors": {
 			"type": "array",
@@ -46,6 +40,12 @@
 				"type": "string"
 			}
 		},
+		"templates": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			}
+		},
 		"updated_at": {
 			"$ref": "#/definitions/SystemTime"
 		},
@@ -64,36 +64,6 @@
 		}
 	},
 	"definitions": {
-		"BitMeta": {
-			"type": "object",
-			"required": [
-				"description",
-				"long_description",
-				"name",
-				"tags",
-				"use_case"
-			],
-			"properties": {
-				"name": {
-					"type": "string"
-				},
-				"description": {
-					"type": "string"
-				},
-				"long_description": {
-					"type": "string"
-				},
-				"tags": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					}
-				},
-				"use_case": {
-					"type": "string"
-				}
-			}
-		},
 		"SystemTime": {
 			"type": "object",
 			"required": ["nanos_since_epoch", "secs_since_epoch"],

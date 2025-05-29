@@ -3,7 +3,7 @@ fn main() -> Result<()> {
     prost_build::compile_protos(
         &[
             "src/protobufs/app.proto",
-            "src/protobufs/bit.proto",
+            "src/protobufs/metadata.proto",
             "src/protobufs/board.proto",
             "src/protobufs/comment.proto",
             "src/protobufs/node.proto",

@@ -10,20 +10,143 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
+
+#[derive(Clone, Debug, Serialize, JsonSchema, Deserialize)]
 pub struct Hub {
-    name: String,
-    description: String,
-    thumbnail: String,
-    icon: String,
-    domain: String,
-    dependencies: Vec<String>,
+    pub name: String,
+    pub description: String,
+    pub thumbnail: Option<String>,
+    pub icon: Option<String>,
+    pub authentication: Option<Authentication>,
+    pub features: Features,
+    pub hubs: Vec<String>, // Assuming hubs might contain strings, adjust if needed
+    pub provider: Option<String>,
+    pub domain: String,
+    pub region: Option<String>,
+    pub terms_of_service: String,
+    pub cdn: Option<String>,
+    pub legal_notice: String,
+    pub privacy_policy: String,
+    pub contact: Contact,
+    pub max_users_prototype: Option<i32>,
+    pub default_user_plan: Option<String>,
+    pub environment: Environment,
 
     #[serde(skip)]
-    recursion_guard: Arc<Mutex<RecursionGuard>>,
+    recursion_guard: Option<Arc<Mutex<RecursionGuard>>>,
 
     #[serde(skip)]
     http_client: Option<Arc<HTTPClient>>,
+}
+
+#[derive(Clone, Debug, Serialize, JsonSchema, Deserialize, PartialEq)]
+pub enum Environment {
+    Development,
+    Production,
+    Staging,
+}
+
+#[derive(Clone, Debug, Serialize, JsonSchema, Deserialize)]
+pub struct Authentication {
+    pub variant: String,
+    pub openid: Option<OpenIdConfig>,
+    pub oauth2: Option<OAuth2Config>,
+}
+
+#[derive(Clone, Debug, Serialize, JsonSchema, Deserialize)]
+pub struct OpenIdProxy {
+    pub enabled: bool,
+    pub authorize: Option<String>,
+    pub token: Option<String>,
+    pub userinfo: Option<String>,
+    pub revoke: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, JsonSchema, Deserialize)]
+pub struct CognitoConfig {
+    pub user_pool_id: String,
+}
+
+#[derive(Clone, Debug, Serialize, JsonSchema, Deserialize)]
+pub struct OpenIdConfig {
+    pub authority: Option<String>,
+    pub client_id: Option<String>,
+    pub redirect_uri: Option<String>,
+    pub post_logout_redirect_uri: Option<String>,
+    pub response_type: Option<String>,
+    pub scope: Option<String>,
+    pub discovery_url: Option<String>,
+    pub jwks_url: String,
+    pub proxy: Option<OpenIdProxy>,
+    pub cognito: Option<CognitoConfig>,
+}
+
+#[derive(Clone, Debug, Serialize, JsonSchema, Deserialize)]
+pub struct OAuth2Config {
+    pub authorization_endpoint: String,
+    pub token_endpoint: String,
+    pub client_id: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
+pub struct Features {
+    pub model_hosting: bool,
+    pub flow_hosting: bool,
+    pub governance: bool,
+    pub ai_act: bool,
+    pub unauthorized_read: bool,
+    pub admin_interface: bool,
+    pub premium: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
+pub struct Contact {
+    pub name: String,
+    pub email: String,
+    pub url: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
+pub struct BitSearchQuery {
+    pub search: Option<String>,
+    pub limit: Option<u64>,
+    pub offset: Option<u64>,
+    pub bit_types: Option<Vec<BitTypes>>,
+}
+
+impl BitSearchQuery {
+    pub fn builder() -> Self {
+        Self {
+            search: None,
+            limit: None,
+            offset: None,
+            bit_types: None,
+        }
+    }
+
+    pub fn with_search(mut self, search: &str) -> Self {
+        self.search = Some(search.to_string());
+        self
+    }
+
+    pub fn with_limit(mut self, limit: u64) -> Self {
+        self.limit = Some(limit);
+        self
+    }
+
+    pub fn with_offset(mut self, offset: u64) -> Self {
+        self.offset = Some(offset);
+        self
+    }
+
+    pub fn with_bit_types(mut self, bit_types: Vec<BitTypes>) -> Self {
+        self.bit_types = Some(bit_types);
+        self
+    }
+
+    pub fn build(self) -> Self {
+        self
+    }
 }
 
 impl Hub {
@@ -37,6 +160,10 @@ impl Hub {
             url = format!("https://{}", url);
         }
 
+        if !url.ends_with('/') {
+            url.push('/');
+        }
+
         let url = match Url::parse(&url) {
             Ok(url) => url,
             Err(e) => {
@@ -47,20 +174,17 @@ impl Hub {
 
         // TODO Cache this.
         // We should implement a global Cache anyways, best with support for reqwest
-        let manifest_url = url.join("static/hub.json").unwrap();
-        let request = http_client.client().get(manifest_url).build()?;
+        let request = http_client.client().get(url.clone()).build()?;
         let mut info: Hub = http_client.hashed_request(request).await?;
-        info.recursion_guard = RecursionGuard::new(vec![url.as_ref()]);
-        info.domain = url.to_string();
+        info.recursion_guard = Some(RecursionGuard::new(vec![url.as_ref()]));
         info.http_client = Some(http_client);
         Ok(info)
     }
 
-    pub async fn get_bit_by_id(&self, bit_id: &str) -> Result<Bit> {
-        let url = Url::parse(&self.domain).unwrap();
+    pub async fn get_bit(&self, bit_id: &str) -> Result<Bit> {
+        let url = Url::parse(&self.domain)?;
         let bit_url = url
-            .join(format!("static/bits/{}.json", bit_id).as_str())
-            .unwrap();
+            .join(format!("api/v1/bit/{}", bit_id).as_str())?;
         let request = self.http_client().client().get(bit_url).build()?;
         let bit = self.http_client().hashed_request::<Bit>(request).await;
         if let Ok(bit) = bit {
@@ -69,31 +193,27 @@ impl Hub {
 
         let dependency_hubs = self.get_dependency_hubs().await?;
         for hub in dependency_hubs {
-            let bit = Box::pin(hub.get_bit_by_id(bit_id)).await;
+            let bit = Box::pin(hub.get_bit(bit_id)).await;
             match bit {
                 Ok(bit) => return Ok(bit),
                 Err(_) => continue,
             }
         }
 
-        Err(flow_like_types::Error::msg("Bit not found")) // Return an error if the bit is not found in any of the dependency hubs
+        Err(flow_like_types::Error::msg("Bit not found"))
     }
 
     pub async fn set_recursion_guard(&mut self, guard: Arc<Mutex<RecursionGuard>>) {
-        self.recursion_guard = guard;
-        self.recursion_guard.lock().await.insert(&self.domain);
+        self.recursion_guard = Some(guard);
+        if let Some(ref guard) = self.recursion_guard {
+            guard.lock().await.insert(&self.domain);
+        }
     }
 
-    pub async fn get_bits_of_type(&self, bit_type: &BitTypes) -> Result<Vec<Bit>> {
-        let url = Url::parse(&self.domain).unwrap();
-        let url_type = format!(
-            "static/{}.json",
-            flow_like_types::json::to_string(&bit_type)
-                .unwrap()
-                .replace("\"", "")
-        );
-        let type_bits_url = url.join(&url_type).unwrap();
-        let request = self.http_client().client().get(type_bits_url).build()?;
+    pub async fn search_bit(&self, query: &BitSearchQuery) -> Result<Vec<Bit>> {
+        let url = Url::parse(&self.domain)?;
+        let type_bits_url = url.join("api/v1/bit")?;
+        let request = self.http_client().client().post(type_bits_url).json(query).build()?;
         let mut bits = self
             .http_client()
             .hashed_request::<Vec<Bit>>(request)
@@ -101,27 +221,21 @@ impl Hub {
         let dependency_hubs = self.get_dependency_hubs().await?;
 
         for hub in dependency_hubs {
-            let hub_models = Box::pin(hub.get_bits_of_type(bit_type)).await?;
+            let hub_models = Box::pin(hub.search_bit(query)).await?;
             bits.extend(hub_models);
         }
 
         Ok(bits)
     }
 
-    pub async fn get_bits(&self) -> Result<Vec<Bit>> {
-        let url = Url::parse(&self.domain).unwrap();
-        let bits_url = url.join("static/bits.json").unwrap();
-        let request = self.http_client().client().get(bits_url).build()?;
-        let mut bits = self
+    pub async fn get_bit_dependencies(&self, bit_id: &str) -> Result<Vec<Bit>> {
+        let url = Url::parse(&self.domain)?;
+        let dependencies_url = url.join(format!("api/v1/bit/{}/dependencies", bit_id).as_str())?;
+        let request = self.http_client().client().get(dependencies_url).build()?;
+        let bits = self
             .http_client()
             .hashed_request::<Vec<Bit>>(request)
             .await?;
-        let dependency_hubs = self.get_dependency_hubs().await?;
-
-        for hub in dependency_hubs {
-            let hub_models = Box::pin(hub.get_bits()).await?;
-            bits.extend(hub_models);
-        }
 
         Ok(bits)
     }
@@ -144,27 +258,38 @@ impl Hub {
         Ok(bits)
     }
 
+
+
     // should be optimized
     pub async fn get_dependency_hubs(&self) -> Result<Vec<Hub>> {
+        let recursion_guard = if let Some(guard) = &self.recursion_guard {
+            guard.clone()
+        } else {
+            RecursionGuard::new(vec![&self.domain])
+        };
+
         let mut hubs = vec![];
-        for hub in &self.dependencies {
-            let hub = &format!("https://{}", hub);
+        for hub in &self.hubs {
+            let guard = recursion_guard.clone();
+            let mut guard = guard.lock().await;
+
             if hub == &self.domain {
                 continue;
             }
 
-            if self.recursion_guard.lock().await.contains(hub) {
+            if guard.contains(hub) {
                 continue;
             }
 
-            self.recursion_guard.lock().await.insert(hub);
+            guard.insert(hub);
+            drop(guard);
 
             let hub = Hub::new(hub, self.http_client()).await;
             let mut hub = match hub {
                 Ok(hub) => hub,
                 Err(_) => continue,
             };
-            hub.set_recursion_guard(self.recursion_guard.clone()).await;
+            hub.set_recursion_guard(recursion_guard.clone()).await;
             hubs.push(hub);
         }
         Ok(hubs)

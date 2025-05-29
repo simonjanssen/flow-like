@@ -1,14 +1,3 @@
 syntax = "proto3";
 
 package flow_like_types;
-
-message Meta {
-    string name = 1;
-    string description = 2;
-    string long_description = 3;
-    repeated string tags = 4;
-    string use_case = 5;
-    optional string icon = 6;
-    optional string thumbnail = 7;
-    repeated string preview_media = 8;
-}

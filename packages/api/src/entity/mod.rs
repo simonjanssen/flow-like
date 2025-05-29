@@ -4,6 +4,8 @@ pub mod prelude;
 
 pub mod app;
 pub mod bit;
+pub mod bit_cache;
+pub mod bit_tree_cache;
 pub mod comment;
 pub mod course;
 pub mod course_connection;
@@ -28,5 +30,6 @@ pub mod swimlane;
 pub mod swimlane_item;
 pub mod technical_user;
 pub mod template;
+pub mod template_profile;
 pub mod transaction;
 pub mod user;

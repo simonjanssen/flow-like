@@ -21,14 +21,11 @@
 				"dependency_tree_hash",
 				"hash",
 				"hub",
-				"icon",
 				"id",
-				"license",
 				"meta",
 				"parameters",
 				"type",
-				"updated",
-				"version"
+				"updated"
 			],
 			"properties": {
 				"id": {
@@ -40,7 +37,7 @@
 				"meta": {
 					"type": "object",
 					"additionalProperties": {
-						"$ref": "#/definitions/BitMeta"
+						"$ref": "#/definitions/Metadata"
 					}
 				},
 				"authors": {
@@ -70,29 +67,16 @@
 					"type": "string"
 				},
 				"parameters": true,
-				"icon": {
-					"type": "string"
-				},
 				"version": {
-					"type": "string"
+					"type": ["string", "null"]
 				},
 				"license": {
-					"type": "string"
+					"type": ["string", "null"]
 				},
 				"dependencies": {
 					"type": "array",
 					"items": {
-						"type": "array",
-						"items": [
-							{
-								"type": "string"
-							},
-							{
-								"type": "string"
-							}
-						],
-						"maxItems": 2,
-						"minItems": 2
+						"type": "string"
 					}
 				},
 				"dependency_tree_hash": {
@@ -125,17 +109,19 @@
 				"Projection",
 				"Project",
 				"Board",
-				"Other"
+				"Other",
+				"ObjectDetection"
 			]
 		},
-		"BitMeta": {
+		"Metadata": {
 			"type": "object",
 			"required": [
+				"created_at",
 				"description",
-				"long_description",
 				"name",
+				"preview_media",
 				"tags",
-				"use_case"
+				"updated_at"
 			],
 			"properties": {
 				"name": {
@@ -145,7 +131,10 @@
 					"type": "string"
 				},
 				"long_description": {
-					"type": "string"
+					"type": ["string", "null"]
+				},
+				"release_notes": {
+					"type": ["string", "null"]
 				},
 				"tags": {
 					"type": "array",
@@ -154,7 +143,62 @@
 					}
 				},
 				"use_case": {
-					"type": "string"
+					"type": ["string", "null"]
+				},
+				"icon": {
+					"type": ["string", "null"]
+				},
+				"thumbnail": {
+					"type": ["string", "null"]
+				},
+				"preview_media": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				},
+				"age_rating": {
+					"type": ["integer", "null"],
+					"format": "int32"
+				},
+				"website": {
+					"type": ["string", "null"]
+				},
+				"support_url": {
+					"type": ["string", "null"]
+				},
+				"docs_url": {
+					"type": ["string", "null"]
+				},
+				"organization_specific_values": {
+					"type": ["array", "null"],
+					"items": {
+						"type": "integer",
+						"format": "uint8",
+						"minimum": 0.0
+					}
+				},
+				"created_at": {
+					"$ref": "#/definitions/SystemTime"
+				},
+				"updated_at": {
+					"$ref": "#/definitions/SystemTime"
+				}
+			}
+		},
+		"SystemTime": {
+			"type": "object",
+			"required": ["nanos_since_epoch", "secs_since_epoch"],
+			"properties": {
+				"secs_since_epoch": {
+					"type": "integer",
+					"format": "uint64",
+					"minimum": 0.0
+				},
+				"nanos_since_epoch": {
+					"type": "integer",
+					"format": "uint32",
+					"minimum": 0.0
 				}
 			}
 		}

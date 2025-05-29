@@ -35,6 +35,24 @@ pub struct Model {
     pub preview_media: Option<Vec<String>>,
     #[sea_orm(column_type = "Text", nullable)]
     pub thumbnail: Option<String>,
+    #[sea_orm(column_name = "ageRating")]
+    pub age_rating: Option<i32>,
+    #[sea_orm(column_name = "docsUrl", column_type = "Text", nullable)]
+    pub docs_url: Option<String>,
+    #[sea_orm(
+        column_name = "organizationSpecificValues",
+        column_type = "JsonBinary",
+        nullable
+    )]
+    pub organization_specific_values: Option<Json>,
+    #[sea_orm(column_name = "releaseNotes", column_type = "Text", nullable)]
+    pub release_notes: Option<String>,
+    #[sea_orm(column_name = "supportUrl", column_type = "Text", nullable)]
+    pub support_url: Option<String>,
+    #[sea_orm(column_name = "useCase", column_type = "Text", nullable)]
+    pub use_case: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub website: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

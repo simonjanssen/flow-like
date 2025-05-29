@@ -1,7 +1,7 @@
 import { get, set } from "idb-keyval";
 import type { IBackendState } from "../../state/backend-state";
 import type { Nullable } from "../schema/auto-import";
-import { type IBit, type IBitMeta, IBitTypes } from "../schema/bit/bit";
+import { type IBit, IBitTypes, type IMetadata } from "../schema/bit/bit";
 import type { IEmbeddingModelParameters } from "../schema/bit/bit/embedding-model-parameters";
 import type { IImageEmbeddingModelParameters } from "../schema/bit/bit/image-embedding-model-parameters";
 import type { ILlmParameters } from "../schema/bit/bit/llm-parameters";
@@ -104,7 +104,7 @@ export class Download {
 export class Bit implements IBit {
 	authors: string[] = [];
 	created = "";
-	dependencies: Array<string[]> = [];
+	dependencies: Array<string> = [];
 	dependency_tree_hash = "";
 	download_link?: Nullable<string>;
 	file_name?: Nullable<string>;
@@ -113,7 +113,7 @@ export class Bit implements IBit {
 	icon = "";
 	id = "";
 	license = "";
-	meta: { [key: string]: IBitMeta } = {};
+	meta: { [key: string]: IMetadata } = {};
 	parameters:
 		| IImageEmbeddingModelParameters
 		| IEmbeddingModelParameters

@@ -25,7 +25,7 @@ pub struct Model {
     pub version: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub license: Option<String>,
-    #[sea_orm(column_name = "dependencyTreeHash", column_type = "Text")]
+    #[sea_orm(column_name = "dependencyTreeHash", column_type = "Text", unique)]
     pub dependency_tree_hash: String,
     #[sea_orm(column_name = "createdAt")]
     pub created_at: DateTime,
@@ -39,12 +39,28 @@ pub struct Model {
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
+    #[sea_orm(has_many = "super::bit_cache::Entity")]
+    BitCache,
+    #[sea_orm(has_one = "super::bit_tree_cache::Entity")]
+    BitTreeCache,
     #[sea_orm(has_many = "super::meta::Entity")]
     Meta,
     #[sea_orm(has_one = "super::provider_proxy::Entity")]
     ProviderProxy,
     #[sea_orm(has_many = "super::swimlane_item::Entity")]
     SwimlaneItem,
+}
+
+impl Related<super::bit_cache::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::BitCache.def()
+    }
+}
+
+impl Related<super::bit_tree_cache::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::BitTreeCache.def()
+    }
 }
 
 impl Related<super::meta::Entity> for Entity {

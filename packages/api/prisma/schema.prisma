@@ -186,10 +186,34 @@ model Profile {
   // JSON with the apps that are part of the profile. Contains the app ID, if it is favorite, pinned and position of the two
   apps Json[]
   bitIds String[]
+  hub String
   hubs String[]
 
   userId String
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TemplateProfile {
+  id String @id
+
+  name String
+  thumbnail String?
+  icon String?
+  description String?
+  interests String[]
+  tags String[]
+
+  theme Json?
+  settings Json?
+
+  // JSON with the apps that are part of the profile. Contains the app ID, if it is favorite, pinned and position of the two
+  apps Json[]
+  bitIds String[]
+  hub String
+  hubs String[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -505,7 +529,7 @@ model Bit {
   license String?
 
   dependencies String[]
-  dependencyTreeHash String
+  dependencyTreeHash String @unique
 
   providerProxy ProviderProxy?
 
@@ -514,11 +538,42 @@ model Bit {
 
   featuredSwimlane SwimlaneItem[]
 
+  cache BitTreeCache?
+  caches BitCache[]
+
   @@index([type])
   @@index([createdAt])
   @@index([updatedAt])
   @@index([hash])
   @@index([hub])
+}
+
+model BitCache {
+  id String @id
+
+  bit Bit? @relation(fields: [bitId], references: [id], onDelete: Cascade)
+  bitId String?
+
+  externalBit Json?
+
+  bitTreeCache BitTreeCache @relation(fields: [dependencyTreeHash], references: [dependencyTreeHash], onDelete: Cascade)
+  dependencyTreeHash String
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@index([dependencyTreeHash])
+}
+
+model BitTreeCache {
+  dependencyTreeHash String @id
+  bit Bit @relation(fields: [dependencyTreeHash], references: [dependencyTreeHash], onDelete: Cascade)
+
+  bits BitCache[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
 }
 
 model Meta {
@@ -529,11 +584,21 @@ model Meta {
   name String
   description String?
   longDescription String?
+  releaseNotes String?
   tags String[]
+
+  useCase String?
 
   icon String?
   thumbnail String?
   previewMedia String[]
+
+  ageRating Int?
+
+  website String?
+  supportUrl String?
+  docsUrl String?
+  organizationSpecificValues Json?
 
   app  App? @relation(fields: [appId], references: [id], onDelete: Cascade)
   appId String?

@@ -5,25 +5,16 @@ use crate::{
     state::AppState,
 };
 use axum::{Extension, Json, extract::State};
-use flow_like::bit::{Bit, BitTypes};
+use flow_like::{bit::Bit, hub::BitSearchQuery};
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QuerySelect};
-use serde::{Deserialize, Serialize};
 
 use super::get_bit::temporary_bit;
-
-#[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct Query {
-    pub search: Option<String>,
-    pub limit: Option<u64>,
-    pub offset: Option<u64>,
-    pub bit_types: Option<Vec<BitTypes>>,
-}
 
 #[tracing::instrument(name = "POST /bit", skip(state, user))]
 pub async fn search_bits(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,
-    Json(query): Json<Query>,
+    Json(query): Json<BitSearchQuery>,
 ) -> Result<Json<Vec<Bit>>, ApiError> {
     if !state.platform_config.features.unauthorized_read {
         user.sub()?;

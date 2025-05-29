@@ -1,0 +1,51 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "BitSearchQuery",
+	"type": "object",
+	"properties": {
+		"search": {
+			"type": ["string", "null"]
+		},
+		"limit": {
+			"type": ["integer", "null"],
+			"format": "uint64",
+			"minimum": 0.0
+		},
+		"offset": {
+			"type": ["integer", "null"],
+			"format": "uint64",
+			"minimum": 0.0
+		},
+		"bit_types": {
+			"type": ["array", "null"],
+			"items": {
+				"$ref": "#/definitions/BitTypes"
+			}
+		}
+	},
+	"definitions": {
+		"BitTypes": {
+			"type": "string",
+			"enum": [
+				"Llm",
+				"Vlm",
+				"Embedding",
+				"ImageEmbedding",
+				"File",
+				"Media",
+				"Template",
+				"Tokenizer",
+				"TokenizerConfig",
+				"SpecialTokensMap",
+				"Config",
+				"Course",
+				"PreprocessorConfig",
+				"Projection",
+				"Project",
+				"Board",
+				"Other",
+				"ObjectDetection"
+			]
+		}
+	}
+}

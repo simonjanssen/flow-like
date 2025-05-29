@@ -13,16 +13,25 @@ import type {
 	ILog,
 	ILogLevel,
 	ILogMetadata,
+	IMetadata,
 	INode,
 	IProfile,
 	IRunPayload,
 	IVersionType,
 } from "../lib";
+import type { IBitSearchQuery } from "../lib/schema/hub/bit-search-query";
 import type { ISettingsProfile } from "../types";
 
 export interface IBackendState {
-	getApps(): Promise<IApp[]>;
+	createApp(metadata: IMetadata, bits: string[], template: string): Promise<IApp>;
+	getApps(): Promise<[IApp, IMetadata | undefined][]>;
 	getApp(appId: string): Promise<IApp>;
+	getAppMeta(appId: string, language?: string): Promise<IMetadata>;
+	pushAppMeta(
+		appId: string,
+		metadata: IMetadata,
+		language?: string,
+	): Promise<void>;
 	getBoards(appId: string): Promise<IBoard[]>;
 	getCatalog(): Promise<INode[]>;
 	getBoard(
@@ -142,7 +151,7 @@ export interface IBackendState {
 	removeBit(bit: IBit, profile: ISettingsProfile): Promise<void>;
 	getPackSize(bits: IBit[]): Promise<number>;
 	getBitSize(bit: IBit): Promise<number>;
-	getBitsByCategory(type: IBitTypes): Promise<IBit[]>;
+	searchBits(type: IBitSearchQuery): Promise<IBit[]>;
 	isBitInstalled(bit: IBit): Promise<boolean>;
 }
 

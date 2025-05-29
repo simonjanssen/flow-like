@@ -3,34 +3,28 @@ use crate::{
     bit::{Bit, BitModelPreference, BitPack, LLMParameters, VLMParameters},
     flow::{
         board::{
-            Board, VersionType,
             commands::{
-                GenericCommand,
                 comments::{
                     remove_comment::RemoveCommentCommand, upsert_comment::UpsertCommentCommand,
-                },
-                layer::{remove_layer::RemoveLayerCommand, upsert_layer::UpsertLayerCommand},
-                nodes::{
+                }, layer::{remove_layer::RemoveLayerCommand, upsert_layer::UpsertLayerCommand}, nodes::{
                     add_node::AddNodeCommand, copy_paste::CopyPasteCommand,
                     move_node::MoveNodeCommand, remove_node::RemoveNodeCommand,
                     update_node::UpdateNodeCommand,
-                },
-                pins::{
+                }, pins::{
                     connect_pins::ConnectPinsCommand, disconnect_pins::DisconnectPinsCommand,
                     upsert_pin::UpsertPinCommand,
-                },
-                variables::{
+                }, variables::{
                     remove_variable::RemoveVariableCommand, upsert_variable::UpsertVariableCommand,
-                },
-            },
+                }, GenericCommand
+            }, Board, VersionType
         },
-        execution::{LogMeta, RunPayload, log::LogMessage},
+        execution::{log::LogMessage, LogMeta, RunPayload},
         node::Node,
         pin::Pin,
         release::{CanaryRelease, Release},
         variable::Variable,
     },
-    hub::Hub,
+    hub::{BitSearchQuery, Hub},
     profile::Profile,
     utils::file::FileMetadata,
 };
@@ -154,6 +148,7 @@ pub fn generate_schema(base_path: PathBuf) -> flow_like_types::Result<()> {
     generate_and_save_schema::<Profile>(&base_path, "profile/profile.json")?;
 
     generate_and_save_schema::<Hub>(&base_path, "hub/hub.json")?;
+    generate_and_save_schema::<BitSearchQuery>(&base_path, "hub/bit-search-query.json")?;
 
     generate_and_save_schema::<App>(&base_path, "app/app.json")?;
 

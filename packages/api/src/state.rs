@@ -6,6 +6,7 @@ use flow_like::flow::node::NodeLogic;
 use flow_like::flow_like_model_provider::provider::{ModelProviderConfiguration, OpenAIConfig};
 use flow_like::flow_like_storage::Path;
 use flow_like::flow_like_storage::files::store::FlowLikeStore;
+use flow_like::hub::{Environment, Hub};
 use flow_like::state::{FlowLikeConfig, FlowLikeState, FlowNodeRegistryInner};
 use flow_like::utils::http::HTTPClient;
 use flow_like_types::bail;
@@ -31,7 +32,7 @@ const CONFIG: &str = include_str!("../../../api.config.json");
 const JWKS: &str = include_str!(concat!(env!("OUT_DIR"), "/jwks.json"));
 
 pub struct State {
-    pub platform_config: PlatformConfig,
+    pub platform_config: Hub,
     pub db: DatabaseConnection,
     pub jwks: JwkSet,
     pub client: Client<HttpConnector, Body>,
@@ -50,7 +51,7 @@ impl State {
         catalog: Arc<Vec<Arc<dyn NodeLogic>>>,
         cdn_bucket: Arc<FlowLikeStore>,
     ) -> Self {
-        let platform_config: PlatformConfig =
+        let platform_config: Hub =
             serde_json::from_str(CONFIG).expect("Failed to parse config file");
 
         let jwks = flow_like_types::json::from_str::<JwkSet>(JWKS).expect("Failed to parse JWKS");
@@ -220,89 +221,4 @@ fn decoding_key_for_algorithm(alg: &AlgorithmParameters) -> flow_like_types::Res
         _ => bail!("Unsupported algorithm"),
     }?;
     Ok(key)
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct PlatformConfig {
-    pub authentication: Option<Authentication>,
-    pub features: Features,
-    pub hubs: Vec<String>, // Assuming hubs might contain strings, adjust if needed
-    pub provider: Option<String>,
-    pub domain: Option<String>,
-    pub region: Option<String>,
-    pub terms_of_service: String,
-    pub cdn: Option<String>,
-    pub legal_notice: String,
-    pub privacy_policy: String,
-    pub contact: Contact,
-    pub max_users_prototype: Option<i32>,
-    pub default_user_plan: Option<String>,
-    pub environment: Environment,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub enum Environment {
-    Development,
-    Production,
-    Staging,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Authentication {
-    pub variant: String,
-    pub openid: Option<OpenIdConfig>,
-    pub oauth2: Option<OAuth2Config>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct OpenIdProxy {
-    pub enabled: bool,
-    pub authorize: Option<String>,
-    pub token: Option<String>,
-    pub userinfo: Option<String>,
-    pub revoke: Option<String>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct CognitoConfig {
-    pub user_pool_id: String,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct OpenIdConfig {
-    pub authority: Option<String>,
-    pub client_id: Option<String>,
-    pub redirect_uri: Option<String>,
-    pub post_logout_redirect_uri: Option<String>,
-    pub response_type: Option<String>,
-    pub scope: Option<String>,
-    pub discovery_url: Option<String>,
-    pub jwks_url: String,
-    pub proxy: Option<OpenIdProxy>,
-    pub cognito: Option<CognitoConfig>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct OAuth2Config {
-    pub authorization_endpoint: String,
-    pub token_endpoint: String,
-    pub client_id: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Features {
-    pub model_hosting: bool,
-    pub flow_hosting: bool,
-    pub governance: bool,
-    pub ai_act: bool,
-    pub unauthorized_read: bool,
-    pub admin_interface: bool,
-    pub premium: bool,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Contact {
-    pub name: String,
-    pub email: String,
-    pub url: String,
 }

@@ -1,5 +1,5 @@
 pub mod app;
-pub mod bit;
+pub mod metadata;
 pub mod board;
 pub mod comment;
 pub mod node;

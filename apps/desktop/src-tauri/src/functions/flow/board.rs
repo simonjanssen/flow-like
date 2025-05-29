@@ -152,7 +152,7 @@ pub async fn get_open_boards(
 
     let mut board_app_lookup = HashMap::new();
 
-    for app in profile.hub_profile.apps.iter() {
+    for app in profile.hub_profile.apps.unwrap_or_default().iter() {
         if let Ok(app) = App::load(app.app_id.clone(), flow_like_state.clone()).await {
             let app = app;
             for board_id in app.boards.iter() {
