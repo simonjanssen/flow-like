@@ -13,7 +13,10 @@ use std::collections::HashSet;
 use tauri::AppHandle;
 
 #[tauri::command(async)]
-pub async fn get_apps(app_handle: AppHandle, language: Option<String>) -> Result<Vec<(App, Option<Metadata>)>, TauriFunctionError> {
+pub async fn get_apps(
+    app_handle: AppHandle,
+    language: Option<String>,
+) -> Result<Vec<(App, Option<Metadata>)>, TauriFunctionError> {
     let mut app_list: Vec<(App, Option<Metadata>)> = vec![];
 
     let profile = TauriSettingsState::current_profile(&app_handle).await?;
@@ -24,7 +27,14 @@ pub async fn get_apps(app_handle: AppHandle, language: Option<String>) -> Result
         let app_id = app.app_id.clone();
         if let Ok(app) = App::load(app_id.clone(), flow_like_state.clone()).await {
             let app = app;
-            let metadata = App::get_meta(app_id.clone(), flow_like_state.clone(), language.clone(), None).await.ok();
+            let metadata = App::get_meta(
+                app_id.clone(),
+                flow_like_state.clone(),
+                language.clone(),
+                None,
+            )
+            .await
+            .ok();
             app_list.push((app, metadata));
         }
     }
@@ -173,17 +183,31 @@ pub async fn update_app(app_handle: AppHandle, app: App) -> Result<(), TauriFunc
 }
 
 #[tauri::command(async)]
-pub async fn push_app_meta(app_handle: AppHandle, app_id: String, metadata: Metadata, language: Option<String>) -> Result<(), TauriFunctionError> {
+pub async fn push_app_meta(
+    app_handle: AppHandle,
+    app_id: String,
+    metadata: Metadata,
+    language: Option<String>,
+) -> Result<(), TauriFunctionError> {
     let state = TauriFlowLikeState::construct(&app_handle).await?;
     App::push_meta(app_id, metadata, state, language, None).await?;
     Ok(())
 }
 
 #[tauri::command(async)]
-pub async fn get_app_meta(app_handle: AppHandle, app_id: App, language: Option<String>) -> Result<Metadata, TauriFunctionError> {
-    let metadata = App::get_meta(app_id.id, TauriFlowLikeState::construct(&app_handle).await?, language, None)
-        .await
-        .map_err(|_| TauriFunctionError::new("Failed to get app metadata"))?;
+pub async fn get_app_meta(
+    app_handle: AppHandle,
+    app_id: App,
+    language: Option<String>,
+) -> Result<Metadata, TauriFunctionError> {
+    let metadata = App::get_meta(
+        app_id.id,
+        TauriFlowLikeState::construct(&app_handle).await?,
+        language,
+        None,
+    )
+    .await
+    .map_err(|_| TauriFunctionError::new("Failed to get app metadata"))?;
     Ok(metadata)
 }
 

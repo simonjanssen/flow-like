@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use axum::{middleware::from_fn_with_state, routing::get, Json, Router};
 use error::AppError;
@@ -7,9 +7,9 @@ use middleware::jwt::jwt_middleware;
 use state::{AppState, State};
 use tower::ServiceBuilder;
 use tower_http::{
-    compression::{CompressionLayer, DefaultPredicate, Predicate, predicate::NotForContentType},
+    compression::{predicate::NotForContentType, CompressionLayer, DefaultPredicate, Predicate},
     cors::CorsLayer,
-    decompression::RequestDecompressionLayer,
+    decompression::RequestDecompressionLayer, timeout::TimeoutLayer,
 };
 
 mod entity;
@@ -44,6 +44,7 @@ pub fn construct_router(state: Arc<State>) -> Router {
         .layer(CorsLayer::permissive())
         .layer(
             ServiceBuilder::new()
+                // .layer(TimeoutLayer::new(Duration::from_secs(15 * 60)))
                 .layer(RequestDecompressionLayer::new())
                 .layer(CompressionLayer::new().compress_when(
                     DefaultPredicate::new().and(NotForContentType::new("text/event-stream")),

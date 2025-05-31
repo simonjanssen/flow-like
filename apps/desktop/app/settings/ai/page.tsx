@@ -27,7 +27,7 @@ import { Skeleton } from "@tm9657/flow-like-ui/components/ui/skeleton";
 import type { ISettingsProfile } from "@tm9657/flow-like-ui/types";
 import { ListFilter, Search } from "lucide-react";
 import MiniSearch from "minisearch";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTauriInvoke } from "../../../components/useInvoke";
 
 let counter = 0;
@@ -51,12 +51,25 @@ export default function SettingsPage() {
 	const backend = useBackend();
 	const [searchTerm, setSearchTerm] = useState("");
 	const [blacklist, setBlacklist] = useState(new Set<string>());
+	const profile: UseQueryResult<ISettingsProfile> = useTauriInvoke(
+		"get_current_profile",
+		{},
+	);
 
-	async function imageBlacklist() {
-		if (!(embeddingModels.data && imageEmbeddingModels.data)) return;
+	const foundBits = useInvoke(
+		backend.searchBits,
+		[{
+			bit_types: [IBitTypes.Llm, IBitTypes.Vlm, IBitTypes.Embedding, IBitTypes.ImageEmbedding],
+		}],
+		typeof profile.data !== "undefined",
+		[profile.data?.hub_profile.id ?? ""],
+	);
+
+	const imageBlacklist = useCallback(async () => {
+		if (!foundBits.data) return;
 
 		const dependencies = await Promise.all(
-			imageEmbeddingModels.data.map((bit) =>
+			foundBits.data.filter(bit => bit.type === IBitTypes.ImageEmbedding).map((bit) =>
 				Bit.fromObject(bit).setBackend(backend).fetchDependencies(),
 			),
 		);
@@ -68,40 +81,7 @@ export default function SettingsPage() {
 			),
 		);
 		setBlacklist(blacklist);
-	}
-
-	const profile: UseQueryResult<ISettingsProfile> = useTauriInvoke(
-		"get_current_profile",
-		{},
-	);
-
-	const llms = useInvoke(
-		backend.getBitsByCategory,
-		[IBitTypes.Llm],
-		typeof profile.data !== "undefined",
-		[profile.data?.hub_profile.id ?? ""],
-	);
-
-	const vlms = useInvoke(
-		backend.getBitsByCategory,
-		[IBitTypes.Vlm],
-		typeof profile.data !== "undefined",
-		[profile.data?.hub_profile.id ?? ""],
-	);
-
-	const embeddingModels = useInvoke(
-		backend.getBitsByCategory,
-		[IBitTypes.Embedding],
-		typeof profile.data !== "undefined",
-		[profile.data?.hub_profile.id ?? ""],
-	);
-
-	const imageEmbeddingModels = useInvoke(
-		backend.getBitsByCategory,
-		[IBitTypes.ImageEmbedding],
-		typeof profile.data !== "undefined",
-		[profile.data?.hub_profile.id ?? ""],
-	);
+	}, [blacklist, foundBits.data])
 
 	const [bits, setBits] = useState<IBit[]>([]);
 
@@ -140,30 +120,18 @@ export default function SettingsPage() {
 	);
 
 	useEffect(() => {
-		if (!(embeddingModels.data && imageEmbeddingModels.data)) return;
+		if (!foundBits.data) return;
 		imageBlacklist();
-	}, [embeddingModels.data, imageEmbeddingModels.data]);
+	}, [foundBits.data]);
 
 	useEffect(() => {
-		if (
-			!llms.data ||
-			!vlms.data ||
-			!embeddingModels.data ||
-			!imageEmbeddingModels.data
+		if (!foundBits.data) return;
+		const allBits = foundBits.data?.filter(
+			(bit) =>
+				!blacklist.has(bit.id) &&
+				(searchFilter.appliedFilter.includes("All") ||
+					searchFilter.appliedFilter.includes(bitTypeToFilter(bit.type))),
 		)
-			return;
-		const allBits = [
-			...(llms.data ?? []),
-			...(vlms.data ?? []),
-			...(embeddingModels.data ?? []),
-			...(imageEmbeddingModels.data ?? []),
-		]
-			.filter(
-				(bit) =>
-					!blacklist.has(bit.id) &&
-					(searchFilter.appliedFilter.includes("All") ||
-						searchFilter.appliedFilter.includes(bitTypeToFilter(bit.type))),
-			)
 			.sort((a, b) => Date.parse(b.updated) - Date.parse(a.updated));
 
 		removeAll();
@@ -177,10 +145,7 @@ export default function SettingsPage() {
 			})),
 		);
 	}, [
-		llms.data,
-		vlms.data,
-		embeddingModels.data,
-		imageEmbeddingModels.data,
+		foundBits.data,
 		blacklist,
 		searchFilter,
 	]);
@@ -277,10 +242,7 @@ export default function SettingsPage() {
 					"flex flex-grow h-full max-h-full overflow-auto w-full pr-2 max-w-screen-xl"
 				}
 			>
-				{(llms.isLoading ||
-					vlms.isLoading ||
-					embeddingModels.isLoading ||
-					imageEmbeddingModels.isLoading) && (
+				{foundBits.isLoading && (
 					<BentoGrid className="mx-auto cursor-pointer w-full">
 						{[...Array(10)].map((item, i) => {
 							if (i === 0) counter = 0;
@@ -315,12 +277,7 @@ export default function SettingsPage() {
 						})}
 					</BentoGrid>
 				)}
-				{!(
-					llms.isLoading ||
-					vlms.isLoading ||
-					embeddingModels.isLoading ||
-					imageEmbeddingModels.isLoading
-				) && (
+				{!foundBits.isLoading && (
 					<BentoGrid className="mx-auto cursor-pointer w-full pb-20">
 						{(searchTerm === "" ? bits : (searchResults ?? [])).map(
 							(bit, i) => {

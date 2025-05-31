@@ -235,8 +235,13 @@ const data = {
 			permission: true,
 			items: [
 				{
-					title: "Manage Bits",
-					url: "/admin/bits",
+					title: "Add Bits",
+					url: "/admin/bits/add",
+					permission: GlobalPermission.WriteBits
+				},
+				{
+					title: "Edit Bits",
+					url: "/admin/bits/edit",
 					permission: GlobalPermission.WriteBits
 				},
 			],

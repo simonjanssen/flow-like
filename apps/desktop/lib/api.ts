@@ -1,4 +1,5 @@
 import type { AuthContextProps } from "react-oidc-context";
+import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 
 function constructUrl(path: string): string {
 	const baseUrl = process.env.NEXT_PUBLIC_API_URL!;
@@ -16,13 +17,15 @@ export async function fetcher<T>(
 	}
 
 	const url = constructUrl(path);
-	const response = await fetch(url, {
+	const response = await tauriFetch(url, {
 		...options,
 		headers: {
 			"Content-Type": "application/json",
 			...options?.headers,
 			...headers,
 		},
+		keepalive: true,
+		priority: "high"
 	});
 
 	if (!response.ok) {
@@ -44,7 +47,7 @@ export async function post<T>(
 	return fetcher<T>(path, {
 		method: "POST",
 		body: data ? JSON.stringify(data) : undefined,
-	});
+	}, auth);
 }
 
 export async function get<T>(
@@ -53,7 +56,7 @@ export async function get<T>(
 ): Promise<T> {
 	return fetcher<T>(path, {
 		method: "GET",
-	});
+	}, auth);
 }
 
 export async function put<T>(
@@ -64,7 +67,7 @@ export async function put<T>(
 	return fetcher<T>(path, {
 		method: "PUT",
 		body: data ? JSON.stringify(data) : undefined,
-	});
+	}, auth);
 }
 
 export async function del<T>(
@@ -75,7 +78,7 @@ export async function del<T>(
 	return fetcher<T>(path, {
 		method: "DELETE",
 		body: data ? JSON.stringify(data) : undefined,
-	});
+	}, auth);
 }
 
 export async function patch<T>(
@@ -86,5 +89,5 @@ export async function patch<T>(
 	return fetcher<T>(path, {
 		method: "PATCH",
 		body: data ? JSON.stringify(data) : undefined,
-	});
+	}, auth);
 }

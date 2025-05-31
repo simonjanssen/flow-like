@@ -227,7 +227,7 @@ function AuthInner({children}: {children: React.ReactNode}) {
                 console.error("Login process failed:", error);
             }
         })();
-	}, [auth]);
+	}, [auth.user?.profile?.sub]);
 
 	return <>{children}</>;
 }

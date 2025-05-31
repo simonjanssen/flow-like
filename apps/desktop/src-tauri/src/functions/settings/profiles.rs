@@ -49,10 +49,7 @@ async fn get_bits(
             let (hub, bit) = bit_id.split_once(':').unwrap_or(("", bit_id));
             bits.insert(bit, hub);
             if !hubs.contains_key(hub) {
-                hubs.insert(
-                    hub,
-                    Hub::new(hub, http_client.clone()).await.unwrap(),
-                );
+                hubs.insert(hub, Hub::new(hub, http_client.clone()).await.unwrap());
             }
         }
     }

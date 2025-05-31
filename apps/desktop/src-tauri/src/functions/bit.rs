@@ -2,7 +2,10 @@ use std::sync::Arc;
 
 use super::TauriFunctionError;
 use crate::state::{TauriFlowLikeState, TauriSettingsState};
-use flow_like::{bit::{Bit, BitPack}, hub::BitSearchQuery};
+use flow_like::{
+    bit::{Bit, BitPack},
+    hub::BitSearchQuery,
+};
 use flow_like_types::intercom::BufferedInterComHandler;
 use tauri::{AppHandle, Emitter};
 
@@ -48,10 +51,7 @@ pub async fn search_bits(
 ) -> Result<Vec<Bit>, TauriFunctionError> {
     let profile = TauriSettingsState::current_profile(&app_handle).await?;
     let http_client = TauriFlowLikeState::http_client(&app_handle).await?;
-    let bits = profile
-        .hub_profile
-        .search_bits(&query, http_client)
-        .await?;
+    let bits = profile.hub_profile.search_bits(&query, http_client).await?;
 
     Ok(bits)
 }
