@@ -5,6 +5,8 @@
 	"type": "module",
 	"scripts": {
 		"dev:desktop": "bun run --cwd ./apps/desktop dev:all",
+		"dev:desktop:mac:arm": "bun run --cwd ./apps/desktop dev:mac:arm",
+		"dev:desktop:mac:intel": "bun run --cwd ./apps/desktop dev:mac:intel",
 		"dev:desktop:win": "bun run --cwd ./apps/desktop dev:all:win",
 		"dev:api": "bun run --cwd ./apps/backend/local/api dev",
 		"dev:embedded": "bun run --cwd ./apps/embedded dev",

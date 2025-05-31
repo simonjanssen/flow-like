@@ -201,13 +201,13 @@ const data = {
 				{
 					title: "Find",
 					url: "/admin/user",
-					permission: GlobalPermission.ReadProfile
+					permission: GlobalPermission.ReadProfile,
 				},
 				{
 					title: "Manage",
 					url: "/admin/user/edit",
-					permission: GlobalPermission.WriteProfile
-				}
+					permission: GlobalPermission.WriteProfile,
+				},
 			],
 		},
 		{
@@ -219,13 +219,13 @@ const data = {
 				{
 					title: "Dashboard",
 					url: "/admin/governance",
-					permission: GlobalPermission.ReadPublishing
+					permission: GlobalPermission.ReadPublishing,
 				},
 				{
 					title: "Your Requests",
 					url: "/admin/governance/requests",
-					permission: GlobalPermission.WritePublishing
-				}
+					permission: GlobalPermission.WritePublishing,
+				},
 			],
 		},
 		{
@@ -237,12 +237,17 @@ const data = {
 				{
 					title: "Add Bits",
 					url: "/admin/bits/add",
-					permission: GlobalPermission.WriteBits
+					permission: GlobalPermission.WriteBits,
+				},
+				{
+					title: "Add Profile",
+					url: "/admin/profiles/add",
+					permission: GlobalPermission.WriteBits,
 				},
 				{
 					title: "Edit Bits",
 					url: "/admin/bits/edit",
-					permission: GlobalPermission.WriteBits
+					permission: GlobalPermission.WriteBits,
 				},
 			],
 		},
@@ -597,7 +602,7 @@ function NavMain({
 		items?: {
 			title: string;
 			url: string;
-			permission?: GlobalPermission
+			permission?: GlobalPermission;
 		}[];
 	}[];
 }>) {
@@ -605,7 +610,7 @@ function NavMain({
 	const pathname = usePathname();
 	const { open } = useSidebar();
 	const auth = useAuth();
-	const info = useApi<{permission: number}>(
+	const info = useApi<{ permission: number }>(
 		"GET",
 		"user/info",
 		undefined,
@@ -614,170 +619,193 @@ function NavMain({
 
 	return (
 		<>
-		<SidebarGroup>
-			<SidebarGroupLabel>Navigation</SidebarGroupLabel>
-			<SidebarMenu>
-				{items.filter(item => !item.permission).map((item) =>
-					 item.items && item.items.length > 0 ? (
-						<Collapsible
-							key={item.title}
-							asChild
-							defaultOpen={
-								(localStorage.getItem(`sidebar:${item.title}`) ??
-									(item.isActive ? "open" : "closed")) === "open"
-							}
-							onOpenChange={(open) => {
-								localStorage.setItem(
-									`sidebar:${item.title}`,
-									open ? "open" : "closed",
-								);
-							}}
-							className="group/collapsible"
-						>
-							<SidebarMenuItem>
-								<CollapsibleTrigger asChild>
-									<SidebarMenuButton
-										variant={
-											pathname === item.url ||
-											typeof item.items?.find(
-												(item) => item.url === pathname,
-											) !== "undefined"
-												? "outline"
-												: "default"
-										}
-										tooltip={item.title}
-										onClick={() => {
-											if (!open) router.push(item.url);
-										}}
-									>
-										{item.icon && <item.icon />}
-										<span>{item.title}</span>
-										<ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-									</SidebarMenuButton>
-								</CollapsibleTrigger>
-								<CollapsibleContent>
-									<SidebarMenuSub>
-										{item.items?.map((subItem) => (
-											<SidebarMenuSubItem key={subItem.title}>
-												<SidebarMenuSubButton asChild>
-													<Link href={subItem.url}>
-														<span
-															className={
-																pathname === subItem.url
-																	? "font-bold text-primary"
-																	: ""
-															}
-														>
-															{subItem.title}
-														</span>
-													</Link>
-												</SidebarMenuSubButton>
-											</SidebarMenuSubItem>
-										))}
-									</SidebarMenuSub>
-								</CollapsibleContent>
-							</SidebarMenuItem>
-						</Collapsible>
-					) : (
-						<SidebarMenuItem key={item.title}>
-							<a href={item.url} target="_blank" rel="noreferrer">
-								<SidebarMenuButton
-									variant={pathname === item.url ? "outline" : "default"}
-									tooltip={item.title}
+			<SidebarGroup>
+				<SidebarGroupLabel>Navigation</SidebarGroupLabel>
+				<SidebarMenu>
+					{items
+						.filter((item) => !item.permission)
+						.map((item) =>
+							item.items && item.items.length > 0 ? (
+								<Collapsible
+									key={item.title}
+									asChild
+									defaultOpen={
+										(localStorage.getItem(`sidebar:${item.title}`) ??
+											(item.isActive ? "open" : "closed")) === "open"
+									}
+									onOpenChange={(open) => {
+										localStorage.setItem(
+											`sidebar:${item.title}`,
+											open ? "open" : "closed",
+										);
+									}}
+									className="group/collapsible"
 								>
-									{item.icon && <item.icon />}
-									<span>{item.title}</span>
-									<ExternalLinkIcon className="ml-auto" />
-								</SidebarMenuButton>
-							</a>
-						</SidebarMenuItem>
-					),
-				)}
-			</SidebarMenu>
-		</SidebarGroup>
-		{(info.data?.permission ?? 0) > 0 && <SidebarGroup>
-			<SidebarGroupLabel>Admin Area</SidebarGroupLabel>
-			<SidebarMenu>
-				{items.filter(item => item.permission && typeof item.items?.find(subitem => new GlobalPermission(info.data?.permission ?? 0).hasPermission(subitem.permission ?? GlobalPermission.Admin)) !== "undefined").map((item) =>
-					item.items && item.items.length > 0 ? (
-						<Collapsible
-							key={item.title}
-							asChild
-							defaultOpen={
-								(localStorage.getItem(`sidebar:${item.title}`) ??
-									(item.isActive ? "open" : "closed")) === "open"
-							}
-							onOpenChange={(open) => {
-								localStorage.setItem(
-									`sidebar:${item.title}`,
-									open ? "open" : "closed",
-								);
-							}}
-							className="group/collapsible"
-						>
-							<SidebarMenuItem>
-								<CollapsibleTrigger asChild>
-									<SidebarMenuButton
-										variant={
-											pathname === item.url ||
-											typeof item.items?.find(
-												(item) => item.url === pathname,
-											) !== "undefined"
-												? "outline"
-												: "default"
+									<SidebarMenuItem>
+										<CollapsibleTrigger asChild>
+											<SidebarMenuButton
+												variant={
+													pathname === item.url ||
+													typeof item.items?.find(
+														(item) => item.url === pathname,
+													) !== "undefined"
+														? "outline"
+														: "default"
+												}
+												tooltip={item.title}
+												onClick={() => {
+													if (!open) router.push(item.url);
+												}}
+											>
+												{item.icon && <item.icon />}
+												<span>{item.title}</span>
+												<ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+											</SidebarMenuButton>
+										</CollapsibleTrigger>
+										<CollapsibleContent>
+											<SidebarMenuSub>
+												{item.items?.map((subItem) => (
+													<SidebarMenuSubItem key={subItem.title}>
+														<SidebarMenuSubButton asChild>
+															<Link href={subItem.url}>
+																<span
+																	className={
+																		pathname === subItem.url
+																			? "font-bold text-primary"
+																			: ""
+																	}
+																>
+																	{subItem.title}
+																</span>
+															</Link>
+														</SidebarMenuSubButton>
+													</SidebarMenuSubItem>
+												))}
+											</SidebarMenuSub>
+										</CollapsibleContent>
+									</SidebarMenuItem>
+								</Collapsible>
+							) : (
+								<SidebarMenuItem key={item.title}>
+									<a href={item.url} target="_blank" rel="noreferrer">
+										<SidebarMenuButton
+											variant={pathname === item.url ? "outline" : "default"}
+											tooltip={item.title}
+										>
+											{item.icon && <item.icon />}
+											<span>{item.title}</span>
+											<ExternalLinkIcon className="ml-auto" />
+										</SidebarMenuButton>
+									</a>
+								</SidebarMenuItem>
+							),
+						)}
+				</SidebarMenu>
+			</SidebarGroup>
+			{(info.data?.permission ?? 0) > 0 && (
+				<SidebarGroup>
+					<SidebarGroupLabel>Admin Area</SidebarGroupLabel>
+					<SidebarMenu>
+						{items
+							.filter(
+								(item) =>
+									item.permission &&
+									typeof item.items?.find((subitem) =>
+										new GlobalPermission(
+											info.data?.permission ?? 0,
+										).hasPermission(
+											subitem.permission ?? GlobalPermission.Admin,
+										),
+									) !== "undefined",
+							)
+							.map((item) =>
+								item.items && item.items.length > 0 ? (
+									<Collapsible
+										key={item.title}
+										asChild
+										defaultOpen={
+											(localStorage.getItem(`sidebar:${item.title}`) ??
+												(item.isActive ? "open" : "closed")) === "open"
 										}
-										tooltip={item.title}
-										onClick={() => {
-											if (!open) router.push(item.url);
+										onOpenChange={(open) => {
+											localStorage.setItem(
+												`sidebar:${item.title}`,
+												open ? "open" : "closed",
+											);
 										}}
+										className="group/collapsible"
 									>
-										{item.icon && <item.icon />}
-										<span>{item.title}</span>
-										<ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-									</SidebarMenuButton>
-								</CollapsibleTrigger>
-								<CollapsibleContent>
-									<SidebarMenuSub>
-										{item.items?.filter(item => new GlobalPermission(info.data?.permission ?? 0).hasPermission(item.permission ?? GlobalPermission.Admin)).map((subItem) => (
-											<SidebarMenuSubItem key={subItem.title}>
-												<SidebarMenuSubButton asChild>
-													<Link href={subItem.url}>
-														<span
-															className={
-																pathname === subItem.url
-																	? "font-bold text-primary"
-																	: ""
-															}
-														>
-															{subItem.title}
-														</span>
-													</Link>
-												</SidebarMenuSubButton>
-											</SidebarMenuSubItem>
-										))}
-									</SidebarMenuSub>
-								</CollapsibleContent>
-							</SidebarMenuItem>
-						</Collapsible>
-					) : (
-						<SidebarMenuItem key={item.title}>
-							<a href={item.url} target="_blank" rel="noreferrer">
-								<SidebarMenuButton
-									variant={pathname === item.url ? "outline" : "default"}
-									tooltip={item.title}
-								>
-									{item.icon && <item.icon />}
-									<span>{item.title}</span>
-									<ExternalLinkIcon className="ml-auto" />
-								</SidebarMenuButton>
-							</a>
-						</SidebarMenuItem>
-					),
-				)}
-			</SidebarMenu>
-		</SidebarGroup>}
+										<SidebarMenuItem>
+											<CollapsibleTrigger asChild>
+												<SidebarMenuButton
+													variant={
+														pathname === item.url ||
+														typeof item.items?.find(
+															(item) => item.url === pathname,
+														) !== "undefined"
+															? "outline"
+															: "default"
+													}
+													tooltip={item.title}
+													onClick={() => {
+														if (!open) router.push(item.url);
+													}}
+												>
+													{item.icon && <item.icon />}
+													<span>{item.title}</span>
+													<ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+												</SidebarMenuButton>
+											</CollapsibleTrigger>
+											<CollapsibleContent>
+												<SidebarMenuSub>
+													{item.items
+														?.filter((item) =>
+															new GlobalPermission(
+																info.data?.permission ?? 0,
+															).hasPermission(
+																item.permission ?? GlobalPermission.Admin,
+															),
+														)
+														.map((subItem) => (
+															<SidebarMenuSubItem key={subItem.title}>
+																<SidebarMenuSubButton asChild>
+																	<Link href={subItem.url}>
+																		<span
+																			className={
+																				pathname === subItem.url
+																					? "font-bold text-primary"
+																					: ""
+																			}
+																		>
+																			{subItem.title}
+																		</span>
+																	</Link>
+																</SidebarMenuSubButton>
+															</SidebarMenuSubItem>
+														))}
+												</SidebarMenuSub>
+											</CollapsibleContent>
+										</SidebarMenuItem>
+									</Collapsible>
+								) : (
+									<SidebarMenuItem key={item.title}>
+										<a href={item.url} target="_blank" rel="noreferrer">
+											<SidebarMenuButton
+												variant={pathname === item.url ? "outline" : "default"}
+												tooltip={item.title}
+											>
+												{item.icon && <item.icon />}
+												<span>{item.title}</span>
+												<ExternalLinkIcon className="ml-auto" />
+											</SidebarMenuButton>
+										</a>
+									</SidebarMenuItem>
+								),
+							)}
+					</SidebarMenu>
+				</SidebarGroup>
+			)}
 		</>
-
 	);
 }
 

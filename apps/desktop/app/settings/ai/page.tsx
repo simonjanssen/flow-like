@@ -58,9 +58,16 @@ export default function SettingsPage() {
 
 	const foundBits = useInvoke(
 		backend.searchBits,
-		[{
-			bit_types: [IBitTypes.Llm, IBitTypes.Vlm, IBitTypes.Embedding, IBitTypes.ImageEmbedding],
-		}],
+		[
+			{
+				bit_types: [
+					IBitTypes.Llm,
+					IBitTypes.Vlm,
+					IBitTypes.Embedding,
+					IBitTypes.ImageEmbedding,
+				],
+			},
+		],
 		typeof profile.data !== "undefined",
 		[profile.data?.hub_profile.id ?? ""],
 	);
@@ -69,9 +76,11 @@ export default function SettingsPage() {
 		if (!foundBits.data) return;
 
 		const dependencies = await Promise.all(
-			foundBits.data.filter(bit => bit.type === IBitTypes.ImageEmbedding).map((bit) =>
-				Bit.fromObject(bit).setBackend(backend).fetchDependencies(),
-			),
+			foundBits.data
+				.filter((bit) => bit.type === IBitTypes.ImageEmbedding)
+				.map((bit) =>
+					Bit.fromObject(bit).setBackend(backend).fetchDependencies(),
+				),
 		);
 		const blacklist = new Set<string>(
 			dependencies.flatMap((dep) =>
@@ -81,7 +90,7 @@ export default function SettingsPage() {
 			),
 		);
 		setBlacklist(blacklist);
-	}, [blacklist, foundBits.data])
+	}, [blacklist, foundBits.data]);
 
 	const [bits, setBits] = useState<IBit[]>([]);
 
@@ -126,12 +135,13 @@ export default function SettingsPage() {
 
 	useEffect(() => {
 		if (!foundBits.data) return;
-		const allBits = foundBits.data?.filter(
-			(bit) =>
-				!blacklist.has(bit.id) &&
-				(searchFilter.appliedFilter.includes("All") ||
-					searchFilter.appliedFilter.includes(bitTypeToFilter(bit.type))),
-		)
+		const allBits = foundBits.data
+			?.filter(
+				(bit) =>
+					!blacklist.has(bit.id) &&
+					(searchFilter.appliedFilter.includes("All") ||
+						searchFilter.appliedFilter.includes(bitTypeToFilter(bit.type))),
+			)
 			.sort((a, b) => Date.parse(b.updated) - Date.parse(a.updated));
 
 		removeAll();
@@ -144,11 +154,7 @@ export default function SettingsPage() {
 				description: item.meta["en"].description,
 			})),
 		);
-	}, [
-		foundBits.data,
-		blacklist,
-		searchFilter,
-	]);
+	}, [foundBits.data, blacklist, searchFilter]);
 
 	return (
 		<main className="flex flex-grow h-full max-h-full overflow-hidden flex-col items-center w-full justify-center">

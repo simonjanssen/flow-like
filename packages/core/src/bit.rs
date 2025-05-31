@@ -22,7 +22,7 @@ pub struct Metadata {
     pub name: String,
     pub description: String,
     pub long_description: Option<String>,
-    pub release_notes : Option<String>,
+    pub release_notes: Option<String>,
     pub tags: Vec<String>,
     pub use_case: Option<String>,
     pub icon: Option<String>,
@@ -262,11 +262,11 @@ async fn collect_dependencies(
     bit: &Bit,
     state: Arc<Mutex<FlowLikeState>>,
 ) -> flow_like_types::Result<Vec<Bit>> {
-        let http_client = state.lock().await.http_client.clone();
-        let hub = crate::hub::Hub::new(&bit.hub, http_client.clone()).await?;
-        let bit_id = bit.id.clone();
-        let bits = hub.get_bit_dependencies(&bit_id).await?;
-        Ok(bits)
+    let http_client = state.lock().await.http_client.clone();
+    let hub = crate::hub::Hub::new(&bit.hub, http_client.clone()).await?;
+    let bit_id = bit.id.clone();
+    let bits = hub.get_bit_dependencies(&bit_id).await?;
+    Ok(bits)
 }
 
 impl BitPack {

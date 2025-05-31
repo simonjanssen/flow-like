@@ -23,7 +23,11 @@ import type { IBitSearchQuery } from "../lib/schema/hub/bit-search-query";
 import type { ISettingsProfile } from "../types";
 
 export interface IBackendState {
-	createApp(metadata: IMetadata, bits: string[], template: string): Promise<IApp>;
+	createApp(
+		metadata: IMetadata,
+		bits: string[],
+		template: string,
+	): Promise<IApp>;
 	getApps(): Promise<[IApp, IMetadata | undefined][]>;
 	getApp(appId: string): Promise<IApp>;
 	getAppMeta(appId: string, language?: string): Promise<IMetadata>;

@@ -1,7 +1,14 @@
 use crate::{
-    entity::{bit, meta, sea_orm_active_enums::BitType}, error::ApiError, middleware::jwt::AppUser, routes::LanguageParams, state::AppState
+    entity::{bit, meta, sea_orm_active_enums::BitType},
+    error::ApiError,
+    middleware::jwt::AppUser,
+    routes::LanguageParams,
+    state::AppState,
 };
-use axum::{extract::{Query, State}, Extension, Json};
+use axum::{
+    Extension, Json,
+    extract::{Query, State},
+};
 use flow_like::{bit::Bit, hub::BitSearchQuery};
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QuerySelect};
 
@@ -33,39 +40,39 @@ pub async fn search_bits(
         qb = qb.filter(bit::Column::Type.is_in(types));
     }
 
+    // qb = qb.left_join(meta::Entity);
+
     if let Some(search_str) = bit_query.search {
-        qb = qb
-            .left_join(meta::Entity)
-            .filter(
-                meta::Column::Description
-                    .contains(&search_str)
-                    .or(meta::Column::Name.contains(&search_str)),
-            )
-            .group_by(bit::Column::Id);
-    } else {
-        qb = qb.left_join(meta::Entity);
+        qb = qb.filter(
+            meta::Column::Description
+                .contains(&search_str)
+                .or(meta::Column::Name.contains(&search_str)),
+        )
     }
 
     qb = qb.filter(
-        meta::Column::Lang.is_null()
+        meta::Column::Lang
+            .is_null()
             .or(meta::Column::Lang.eq(language))
-            .or(meta::Column::Lang.eq("en"))
+            .or(meta::Column::Lang.eq("en")),
     );
 
-    let models = qb.find_with_related(meta::Entity).all(&state.db).await.map_err(ApiError::from)?;
+    let models = qb
+        .find_with_related(meta::Entity)
+        .all(&state.db)
+        .await
+        .map_err(ApiError::from)?;
 
-    let mut bits = models.into_iter().map(
-        |(bit_model, meta_models)| {
+    let mut bits = models
+        .into_iter()
+        .map(|(bit_model, meta_models)| {
             let mut bit: Bit = Bit::from(bit_model);
             for meta in meta_models {
-                bit.meta.insert(
-                    meta.lang.clone(),
-                    meta.into(),
-                );
+                bit.meta.insert(meta.lang.clone(), meta.into());
             }
             bit
-        }
-    ).collect::<Vec<_>>();
+        })
+        .collect::<Vec<_>>();
 
     if !state.platform_config.features.unauthorized_read {
         for bit in bits.iter_mut() {

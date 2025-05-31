@@ -180,9 +180,7 @@ impl App {
             .as_generic();
 
         let language = language.unwrap_or_else(|| "en".to_string());
-        let mut meta_path = Path::from("apps")
-            .child(id)
-            .child("metadata");
+        let mut meta_path = Path::from("apps").child(id).child("metadata");
 
         if let Some(template_id) = template_id {
             meta_path = meta_path.child("templates").child(template_id);

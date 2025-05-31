@@ -6,6 +6,8 @@
 	"scripts": {
 		"dev": "next dev",
 		"dev:all": "bun run tauri dev & bun run --watch ./scripts/translation-server.ts",
+		"dev:mac:intel": "bun run tauri dev --config src-tauri/configs/tauri.macos.intel.conf.json & bun run --watch ./scripts/translation-server.ts",
+		"dev:mac:arm": "bun run tauri dev --config src-tauri/configs/tauri.macos.arm.conf.json & bun run --watch ./scripts/translation-server.ts",
 		"dev:all:win": "bun run tauri dev",
 		"postinstall": "bun run ./scripts/llamafile.ts && bun run ./scripts/sync-version.ts",
 		"build": "bun run ./scripts/llamafile.ts --force && next build",

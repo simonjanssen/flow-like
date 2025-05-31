@@ -1,4 +1,9 @@
-use crate::{entity::{profile, template_profile}, error::ApiError, middleware::jwt::AppUser, state::AppState};
+use crate::{
+    entity::{profile, template_profile},
+    error::ApiError,
+    middleware::jwt::AppUser,
+    state::AppState,
+};
 use axum::{Extension, Json, extract::State};
 use flow_like::profile::{Profile, Settings};
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
@@ -13,9 +18,7 @@ pub async fn get_profile_templates(
         user.sub()?;
     }
 
-    let profiles = template_profile::Entity::find()
-        .all(&state.db)
-        .await?;
+    let profiles = template_profile::Entity::find().all(&state.db).await?;
 
     let profiles: Vec<Profile> = profiles.into_iter().map(Profile::from).collect();
 
@@ -38,6 +41,7 @@ impl From<template_profile::Model> for Profile {
             interests: model.interests.unwrap_or_default(),
             settings: Settings::default(),
             tags: model.tags.unwrap_or_default(),
+            theme: model.theme,
             thumbnail: model.thumbnail,
             created: created_string,
             updated: updated_string,
@@ -61,8 +65,12 @@ impl From<Profile> for template_profile::Model {
             tags: Some(profile.tags),
             thumbnail: profile.thumbnail,
             theme: None,
-            created_at: chrono::DateTime::parse_from_rfc3339(&profile.created).unwrap_or_default().naive_utc(),
-            updated_at: chrono::DateTime::parse_from_rfc3339(&profile.updated).unwrap_or_default().naive_utc(),
+            created_at: chrono::DateTime::parse_from_rfc3339(&profile.created)
+                .unwrap_or_default()
+                .naive_utc(),
+            updated_at: chrono::DateTime::parse_from_rfc3339(&profile.updated)
+                .unwrap_or_default()
+                .naive_utc(),
         }
     }
 }

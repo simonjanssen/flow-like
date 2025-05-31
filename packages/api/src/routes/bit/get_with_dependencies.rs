@@ -12,7 +12,10 @@ use flow_like::{bit::Bit, utils::http::HTTPClient};
 use flow_like_types::create_id;
 use sea_orm::{ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter};
 use serde_json::from_value;
-use std::{collections::{HashMap, HashSet}, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use super::get_bit::temporary_bit;
 
@@ -89,7 +92,7 @@ async fn fetch_dependencies(bit: &Bit, state: &AppState) -> flow_like_types::Res
     let mut recursion_guard = HashSet::from([bit.id.clone()]);
     let mut new_dependencies = bit.dependencies.clone();
 
-    while !new_dependencies.is_empty(){
+    while !new_dependencies.is_empty() {
         let mut next_dependencies = Vec::new();
         for dependency in &new_dependencies {
             let (hub, id) = dependency.split_once(':').ok_or_else(|| {
@@ -146,10 +149,7 @@ async fn fetch_dependencies(bit: &Bit, state: &AppState) -> flow_like_types::Res
     Ok(bits)
 }
 
-async fn fetch_own_bit(
-    bit_id: &str,
-    state: &AppState,
-) -> flow_like_types::Result<Bit> {
+async fn fetch_own_bit(bit_id: &str, state: &AppState) -> flow_like_types::Result<Bit> {
     let bit = bit::Entity::find_by_id(bit_id)
         .one(&state.db)
         .await?

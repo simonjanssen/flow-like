@@ -1,11 +1,23 @@
 "use client";
 import type { UseQueryResult } from "@tanstack/react-query";
-import { DownloadCloudIcon, PackageCheckIcon } from "lucide-react";
-import { useState } from "react";
+import {
+	CameraIcon,
+	DownloadCloudIcon,
+	FileIcon,
+	FileSearch,
+	ImageIcon,
+	MessagesSquareIcon,
+	Package2Icon,
+	PackageCheckIcon,
+	ScanEyeIcon,
+	UniversityIcon,
+	WorkflowIcon,
+} from "lucide-react";
+import { type JSX, useState } from "react";
 import { Progress } from "../../components/ui/progress";
 import { useInvoke } from "../../hooks/use-invoke";
 import { Bit, Download, type IDownloadProgress } from "../../lib/bit/bit";
-import type { IBit } from "../../lib/schema/bit/bit";
+import { type IBit, IBitTypes } from "../../lib/schema/bit/bit";
 import { humanFileSize } from "../../lib/utils";
 import { useBackend } from "../../state/backend-state";
 import { useDownloadManager } from "../../state/download-manager";
@@ -59,13 +71,15 @@ export function BitCard({
 		await downloadBit(bit);
 	}
 
+	if (bit.meta["en"] === undefined) return null;
+
 	return (
 		<div
 			className={`${wide ? "md:col-span-2 z-10" : "z-10"} focus:outline-none`}
 			data-testid={"box"}
 		>
 			<DropdownMenu>
-				<DropdownMenuTrigger className="relative w-full h-full text-start">
+				<DropdownMenuTrigger className="relative w-full h-full text-start group">
 					<BentoGridItem
 						className={`h-full w-full overflow-x-hidden ${isInstalled.data && currentProfile.data?.hub_profile.bits.find((b) => b[1] === bit.id) && "!border-[#84cc16]"}`}
 						title={
@@ -92,7 +106,7 @@ export function BitCard({
 							</div>
 						}
 						description={
-							<div className="max-h-20 overflow-x-hidden overflow-y-hidden line-clamp-5">
+							<div className="h-20 max-h-20 overflow-x-hidden overflow-y-hidden line-clamp-5">
 								{bit.meta.en.description}
 							</div>
 						}
@@ -101,11 +115,19 @@ export function BitCard({
 								{progress && <Progress className="mb-2" value={progress} />}
 								<div className="flex flex-row items-center justify-between">
 									<div className="rounded-full w-14 h-14 flex items-center">
-										<Avatar className="border">
-											<AvatarImage className="p-2" src={bit.icon} />
-											<AvatarImage className="" src="/app-logo.webp" />
+										<Avatar className="border bg-card z-10 overflow-hidden">
+											<AvatarImage
+												className="p-1 transition-transform duration-200 ease-in-out transform scale-110 group-hover:scale-150 rounded-full"
+												src={bit.meta?.en?.icon ?? "/app-logo.webp"}
+											/>
 											<AvatarFallback>NA</AvatarFallback>
 										</Avatar>
+										<div className="flex flex-row items-center gap-2 flex-nowrap border-r border-t border-b p-[0.2rem] pl-4 pr-2 py-1 rounded-md translate-x-[-10px] justify-center w-full bg-background min-w-fit">
+											<TypeToIcon type={bit.type} />
+											<p className="whitespace-nowrap delay-0 group-hover:delay-200 max-w-0 group-hover:max-w-xs group-hover:w-fit transition-all duration-300 ease-in-out transform translate-x-[-100%] opacity-0 group-hover:translate-x-0 group-hover:opacity-100">
+												{bitTypeToText(bit.type)}
+											</p>
+										</div>
 									</div>
 									{bit.repository?.startsWith("https://huggingface.co/") && (
 										<img
@@ -119,9 +141,9 @@ export function BitCard({
 							</div>
 						}
 						icon={
-							<div className="text-left text-nowrap text-ellipsis max-w-full overflow-hidden">
+							<div className="text-left text-nowrap text-ellipsis max-w-full overflow-hidden flex flex-row items-center gap-2">
 								{bit.meta.en.tags.map((category) => (
-									<Badge className="ml-2" variant="outline" key={category}>
+									<Badge variant="outline" key={category}>
 										{category}
 									</Badge>
 								))}
@@ -184,5 +206,41 @@ export function BitCard({
 				</DropdownMenuContent>
 			</DropdownMenu>
 		</div>
+	);
+}
+
+export function TypeToIcon({
+	type,
+	className,
+}: { type: IBitTypes; className?: string }): JSX.Element | null {
+	const combinedClass =
+		"min-h-5 min-w-5 h-5 w-5 text-foreground" +
+		(className ? ` ${className}` : "");
+	switch (type) {
+		case IBitTypes.Llm:
+			return <MessagesSquareIcon className={combinedClass} />;
+		case IBitTypes.Vlm:
+			return <CameraIcon className={combinedClass} />;
+		case IBitTypes.Embedding:
+			return <FileSearch className={combinedClass} />;
+		case IBitTypes.ImageEmbedding:
+			return <ScanEyeIcon className={combinedClass} />;
+		case IBitTypes.File:
+			return <FileIcon className={combinedClass} />;
+		case IBitTypes.Media:
+			return <ImageIcon className={combinedClass} />;
+		case IBitTypes.Template:
+			return <WorkflowIcon className={combinedClass} />;
+		case IBitTypes.Course:
+			return <UniversityIcon className={combinedClass} />;
+	}
+
+	return <Package2Icon className={combinedClass} />;
+}
+
+export function bitTypeToText(bitType: IBitTypes): string {
+	// Example name is PreprocessorConfig. We need to add a space before each capital letter except the first one.
+	return bitType.replace(/([A-Z])/g, (match, letter, index) =>
+		index === 0 ? letter : ` ${letter}`,
 	);
 }

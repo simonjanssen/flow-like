@@ -3,22 +3,28 @@ use crate::{
     bit::{Bit, BitModelPreference, BitPack, LLMParameters, VLMParameters},
     flow::{
         board::{
+            Board, VersionType,
             commands::{
+                GenericCommand,
                 comments::{
                     remove_comment::RemoveCommentCommand, upsert_comment::UpsertCommentCommand,
-                }, layer::{remove_layer::RemoveLayerCommand, upsert_layer::UpsertLayerCommand}, nodes::{
+                },
+                layer::{remove_layer::RemoveLayerCommand, upsert_layer::UpsertLayerCommand},
+                nodes::{
                     add_node::AddNodeCommand, copy_paste::CopyPasteCommand,
                     move_node::MoveNodeCommand, remove_node::RemoveNodeCommand,
                     update_node::UpdateNodeCommand,
-                }, pins::{
+                },
+                pins::{
                     connect_pins::ConnectPinsCommand, disconnect_pins::DisconnectPinsCommand,
                     upsert_pin::UpsertPinCommand,
-                }, variables::{
+                },
+                variables::{
                     remove_variable::RemoveVariableCommand, upsert_variable::UpsertVariableCommand,
-                }, GenericCommand
-            }, Board, VersionType
+                },
+            },
         },
-        execution::{log::LogMessage, LogMeta, RunPayload},
+        execution::{LogMeta, RunPayload, log::LogMessage},
         node::Node,
         pin::Pin,
         release::{CanaryRelease, Release},

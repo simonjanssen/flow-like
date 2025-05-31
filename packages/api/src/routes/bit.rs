@@ -1,7 +1,8 @@
 use std::{collections::HashMap, time::SystemTime};
 
 use axum::{
-    routing::{get, post, put}, Router
+    Router,
+    routing::{get, post, put},
 };
 use flow_like::bit::{Bit, BitTypes, Metadata};
 
@@ -10,12 +11,9 @@ use crate::{
     state::AppState,
 };
 
-pub mod delete_bit;
 pub mod get_bit;
-pub mod search_bits;
 pub mod get_with_dependencies;
-pub mod upsert_bit;
-pub mod push_meta;
+pub mod search_bits;
 
 impl From<BitType> for BitTypes {
     fn from(value: BitType) -> Self {
@@ -99,8 +97,12 @@ impl From<Bit> for bit::Model {
             id: value.id,
             authors: Some(value.authors),
             r#type: value.bit_type.into(),
-            updated_at: chrono::DateTime::parse_from_rfc3339(&value.updated).unwrap_or_default().naive_utc(),
-            created_at: chrono::DateTime::parse_from_rfc3339(&value.created).unwrap_or_default().naive_utc(),
+            updated_at: chrono::DateTime::parse_from_rfc3339(&value.updated)
+                .unwrap_or_default()
+                .naive_utc(),
+            created_at: chrono::DateTime::parse_from_rfc3339(&value.created)
+                .unwrap_or_default()
+                .naive_utc(),
             dependencies: Some(value.dependencies),
             dependency_tree_hash: value.dependency_tree_hash,
             download_link: value.download_link,
@@ -132,14 +134,13 @@ impl From<Model> for Metadata {
             website: model.website,
             support_url: model.support_url,
             docs_url: model.docs_url,
-            organization_specific_values: model.organization_specific_values
+            organization_specific_values: model
+                .organization_specific_values
                 .map(|json| json.to_string().into_bytes()),
-            created_at: SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(
-                model.created_at.and_utc().timestamp() as u64
-            ),
-            updated_at: SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(
-                model.updated_at.and_utc().timestamp() as u64
-            ),
+            created_at: SystemTime::UNIX_EPOCH
+                + std::time::Duration::from_secs(model.created_at.and_utc().timestamp() as u64),
+            updated_at: SystemTime::UNIX_EPOCH
+                + std::time::Duration::from_secs(model.updated_at.and_utc().timestamp() as u64),
         }
     }
 }
@@ -148,14 +149,26 @@ impl From<Metadata> for Model {
     fn from(metadata: Metadata) -> Self {
         Model {
             name: metadata.name,
-            description: if metadata.description.is_empty() { None } else { Some(metadata.description) },
+            description: if metadata.description.is_empty() {
+                None
+            } else {
+                Some(metadata.description)
+            },
             long_description: metadata.long_description,
             release_notes: metadata.release_notes,
-            tags: if metadata.tags.is_empty() { None } else { Some(metadata.tags) },
+            tags: if metadata.tags.is_empty() {
+                None
+            } else {
+                Some(metadata.tags)
+            },
             use_case: metadata.use_case,
             icon: metadata.icon,
             thumbnail: metadata.thumbnail,
-            preview_media: if metadata.preview_media.is_empty() { None } else { Some(metadata.preview_media) },
+            preview_media: if metadata.preview_media.is_empty() {
+                None
+            } else {
+                Some(metadata.preview_media)
+            },
             age_rating: metadata.age_rating,
             website: metadata.website,
             support_url: metadata.support_url,
@@ -166,17 +179,30 @@ impl From<Metadata> for Model {
             course_id: None,
             id: "".to_string(),
             lang: "".to_string(),
-            organization_specific_values: metadata.organization_specific_values
+            organization_specific_values: metadata
+                .organization_specific_values
                 .and_then(|bytes| String::from_utf8(bytes).ok())
                 .and_then(|s| serde_json::from_str(&s).ok()),
             created_at: chrono::DateTime::from_timestamp(
-                metadata.created_at.duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default().as_secs() as i64,
-                0
-            ).unwrap_or_default().naive_utc(),
+                metadata
+                    .created_at
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs() as i64,
+                0,
+            )
+            .unwrap_or_default()
+            .naive_utc(),
             updated_at: chrono::DateTime::from_timestamp(
-                metadata.updated_at.duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default().as_secs() as i64,
-                0
-            ).unwrap_or_default().naive_utc(),
+                metadata
+                    .updated_at
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs() as i64,
+                0,
+            )
+            .unwrap_or_default()
+            .naive_utc(),
         }
     }
 }
@@ -184,15 +210,9 @@ impl From<Metadata> for Model {
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/", post(search_bits::search_bits))
-        .route(
-            "/{bit_id}",
-            get(get_bit::get_bit)
-                .put(upsert_bit::upsert_bit)
-                .delete(delete_bit::delete_bit),
-        )
+        .route("/{bit_id}", get(get_bit::get_bit))
         .route(
             "/{bit_id}/dependencies",
             get(get_with_dependencies::get_with_dependencies),
         )
-        .route("/{bit_id}/{language}", put(push_meta::push_meta))
 }

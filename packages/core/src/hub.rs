@@ -10,7 +10,6 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-
 #[derive(Clone, Debug, Serialize, JsonSchema, Deserialize)]
 pub struct Hub {
     pub name: String,
@@ -183,8 +182,7 @@ impl Hub {
 
     pub async fn get_bit(&self, bit_id: &str) -> Result<Bit> {
         let url = Url::parse(&self.domain)?;
-        let bit_url = url
-            .join(format!("api/v1/bit/{}", bit_id).as_str())?;
+        let bit_url = url.join(format!("api/v1/bit/{}", bit_id).as_str())?;
         let request = self.http_client().client().get(bit_url).build()?;
         let bit = self.http_client().hashed_request::<Bit>(request).await;
         if let Ok(bit) = bit {
@@ -213,7 +211,12 @@ impl Hub {
     pub async fn search_bit(&self, query: &BitSearchQuery) -> Result<Vec<Bit>> {
         let url = Url::parse(&self.domain)?;
         let type_bits_url = url.join("api/v1/bit")?;
-        let request = self.http_client().client().post(type_bits_url).json(query).build()?;
+        let request = self
+            .http_client()
+            .client()
+            .post(type_bits_url)
+            .json(query)
+            .build()?;
         let mut bits = self
             .http_client()
             .hashed_request::<Vec<Bit>>(request)
@@ -257,8 +260,6 @@ impl Hub {
             .collect();
         Ok(bits)
     }
-
-
 
     // should be optimized
     pub async fn get_dependency_hubs(&self) -> Result<Vec<Hub>> {

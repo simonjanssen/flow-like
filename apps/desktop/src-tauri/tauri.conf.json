@@ -73,7 +73,6 @@
 			"icons/icon.icns",
 			"icons/icon.ico"
 		],
-		"externalBin": ["bin/llamafiler"],
 		"resources": ["assets/licenses.md"]
 	},
 	"plugins": {

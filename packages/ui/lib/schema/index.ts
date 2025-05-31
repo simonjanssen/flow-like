@@ -10,7 +10,10 @@ export * from "./bit/bit/embedding-model-parameters";
 export type { IImageEmbeddingModelParameters } from "./bit/bit/image-embedding-model-parameters";
 
 export type { ILlmParameters } from "./bit/bit/llm-parameters";
-export type { IBitModelClassification, IModelProvider } from "./bit/bit/llm-parameters";
+export type {
+	IBitModelClassification,
+	IModelProvider,
+} from "./bit/bit/llm-parameters";
 export type { IVlmParameters } from "./bit/bit/vlm-parameters";
 export type { IProvider } from "./bit/bit/provider";
 

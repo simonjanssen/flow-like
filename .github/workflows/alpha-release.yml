@@ -14,9 +14,9 @@ jobs:
       matrix:
         include:
           - platform: "macos-latest" # for Arm based macs (M1 and above).
-            args: "--target aarch64-apple-darwin"
+            args: "--target aarch64-apple-darwin --config src-tauri/configs/tauri.macos.arm.conf.json"
           - platform: "macos-13" # for Intel based macs.
-            args: "--target x86_64-apple-darwin"
+            args: "--target x86_64-apple-darwin --config src-tauri/configs/tauri.macos.intel.conf.json"
           - platform: "ubuntu-latest" # for Tauri v1 you could replace this with ubuntu-20.04.
             args: ""
           - platform: "ubuntu-24.04-arm" # for Tauri v1 you could replace this with ubuntu-20.04.

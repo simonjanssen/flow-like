@@ -57,7 +57,8 @@ impl FromProto<flow_like_types::proto::Metadata> for Metadata {
 
 impl From<AppCategory> for flow_like_types::proto::AppCategory {
     fn from(category: AppCategory) -> Self {
-        flow_like_types::proto::AppCategory::try_from(category as i32).unwrap_or(flow_like_types::proto::AppCategory::Other)
+        flow_like_types::proto::AppCategory::try_from(category as i32)
+            .unwrap_or(flow_like_types::proto::AppCategory::Other)
     }
 }
 

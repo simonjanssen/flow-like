@@ -8,7 +8,7 @@ use crate::{
     hub::{BitSearchQuery, Hub},
     utils::http::HTTPClient,
 };
-use flow_like_types::{Result, anyhow, tokio::task};
+use flow_like_types::{Result, Value, anyhow, tokio::task};
 use futures::future::join_all;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -73,6 +73,8 @@ pub struct Profile {
     pub hubs: Vec<String>,
     #[serde(default)]
     pub apps: Option<Vec<ProfileApp>>,
+    #[serde(default)]
+    pub theme: Option<Value>,
     pub bits: Vec<String>, // hub:id
     #[serde(default)]
     pub settings: Settings,
@@ -94,6 +96,7 @@ impl Default for Profile {
             interests: vec![],
             tags: vec![],
             apps: Some(vec![]),
+            theme: None,
             settings: Settings {
                 connection_mode: ConnectionMode::SimpleBezier,
             },
@@ -117,9 +120,9 @@ impl Profile {
 
         if !remote {
             for bit in &self.bits {
-                let (hub, bit_id) = bit.split_once(':').ok_or_else(|| {
-                    anyhow!("Invalid bit format: {}", bit)
-                })?;
+                let (hub, bit_id) = bit
+                    .split_once(':')
+                    .ok_or_else(|| anyhow!("Invalid bit format: {}", bit))?;
 
                 let hub = Hub::new(hub, http_client.clone()).await?;
                 let bit = hub.get_bit(bit_id).await?;
@@ -141,7 +144,9 @@ impl Profile {
         let preference = preference.parse();
         let available_hubs = self.get_available_hubs(http_client).await?;
         let mut bits: HashMap<String, Bit> = HashMap::new();
-        let query = BitSearchQuery::builder().with_bit_types(vec![BitTypes::Vlm, BitTypes::Llm]).build();
+        let query = BitSearchQuery::builder()
+            .with_bit_types(vec![BitTypes::Vlm, BitTypes::Llm])
+            .build();
         for hub in available_hubs {
             match hub.search_bit(&query).await {
                 Ok(models) => {
@@ -236,7 +241,7 @@ impl Profile {
             hubs.insert(hub.clone());
         }
 
-        self.bits.iter().for_each(| id| {
+        self.bits.iter().for_each(|id| {
             if let Some((hub, _bit_id)) = id.split_once(':') {
                 hubs.insert(hub.to_string());
             }

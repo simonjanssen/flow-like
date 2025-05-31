@@ -187,46 +187,52 @@ export function DesktopAuthProvider({
 				})
 			}
 		>
-			<AuthInner>
-				{children}
-			</AuthInner>
+			<AuthInner>{children}</AuthInner>
 		</AuthProvider>
 	);
 }
 
-function AuthInner({children}: {children: React.ReactNode}) {
+function AuthInner({ children }: { children: React.ReactNode }) {
 	const auth = useAuth();
 
 	useEffect(() => {
-		if(!auth) return;
+		if (!auth) return;
 
 		(async () => {
-            try {
-                const existingUser = auth.user;
+			try {
+				const existingUser = auth.user;
 
-                if (existingUser && !existingUser.expired) {
-                    return;
-                }
+				if (existingUser && !existingUser.expired) {
+					return;
+				}
 
-                try {
-                    let user = await auth?.signinSilent();
-					if(!user) {
-						console.warn("Silent login returned no user, attempting redirect login.");
+				try {
+					const user = await auth?.signinSilent();
+					if (!user) {
+						console.warn(
+							"Silent login returned no user, attempting redirect login.",
+						);
 						await auth?.signinRedirect();
 					}
-                } catch (silentError) {
-                    console.warn("Silent login failed, attempting normal login:", silentError);
+				} catch (silentError) {
+					console.warn(
+						"Silent login failed, attempting normal login:",
+						silentError,
+					);
 
-                    try {
-                        await auth?.signinRedirect();
-                    } catch (redirectError) {
-                        console.error("Both silent and redirect login failed:", redirectError);
-                    }
-                }
-            } catch (error) {
-                console.error("Login process failed:", error);
-            }
-        })();
+					try {
+						await auth?.signinRedirect();
+					} catch (redirectError) {
+						console.error(
+							"Both silent and redirect login failed:",
+							redirectError,
+						);
+					}
+				}
+			} catch (error) {
+				console.error("Login process failed:", error);
+			}
+		})();
 	}, [auth.user?.profile?.sub]);
 
 	return <>{children}</>;

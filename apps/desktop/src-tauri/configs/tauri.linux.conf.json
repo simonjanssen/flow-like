@@ -1,0 +1,6 @@
+{
+	"identifier": "com.flow-like.app",
+	"bundle": {
+		"externalBin": ["binaries/llamafiler"]
+	}
+}

@@ -1,7 +1,4 @@
-use crate::{
-    error::AppError,
-    state::{AppState},
-};
+use crate::{error::AppError, state::AppState};
 use axum::{Json, Router, extract::State, routing::get};
 use flow_like::hub::{Contact, Features};
 
@@ -14,7 +11,10 @@ pub fn routes() -> Router<AppState> {
         .route("/terms", get(terms_of_service))
         .route("/contact", get(contact))
         .route("/features", get(features))
-        .route("/profiles", get(get_profile_templates::get_profile_templates))
+        .route(
+            "/profiles",
+            get(get_profile_templates::get_profile_templates),
+        )
 }
 
 #[tracing::instrument(name = "GET /info/legal", skip(state))]

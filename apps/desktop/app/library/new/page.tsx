@@ -8,7 +8,7 @@ import {
 	DynamicImage,
 	type IBit,
 	IBitTypes,
-	IMetadata,
+	type IMetadata,
 	type ISettingsProfile,
 	Input,
 	Label,
@@ -44,7 +44,7 @@ const BLANK_BIT: IBit = {
 			use_case: "Create your own App from scratch",
 			created_at: nowSystemTime(),
 			updated_at: nowSystemTime(),
-			preview_media: []
+			preview_media: [],
 		},
 	},
 	parameters: {},
@@ -63,9 +63,11 @@ interface ICreationDialog {
 
 export default function CreateAppPage() {
 	const backend = useBackend();
-	const templates = useInvoke(backend.searchBits, [{
-		bit_types: [IBitTypes.Template]
-	}]);
+	const templates = useInvoke(backend.searchBits, [
+		{
+			bit_types: [IBitTypes.Template],
+		},
+	]);
 	const apps = useInvoke(backend.getApps, []);
 	const currentProfile = useTauriInvoke<ISettingsProfile | null>(
 		"get_current_profile",
@@ -165,7 +167,11 @@ function FinalScreen({
 						</Button>
 						<Button
 							onClick={async () => {
-								await backend.createApp(creationDialog.meta, creationDialog.models, creationDialog.templateId);
+								await backend.createApp(
+									creationDialog.meta,
+									creationDialog.models,
+									creationDialog.templateId,
+								);
 								toast("Created App 🎉");
 								await refresh();
 								router.push("/library/apps");

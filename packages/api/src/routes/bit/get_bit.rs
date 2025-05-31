@@ -1,8 +1,15 @@
 use std::{sync::Arc, time::Duration};
 
-use crate::{entity::{bit, meta}, error::ApiError, middleware::jwt::AppUser, routes::LanguageParams, state::AppState};
+use crate::{
+    entity::{bit, meta},
+    error::ApiError,
+    middleware::jwt::AppUser,
+    routes::LanguageParams,
+    state::AppState,
+};
 use axum::{
-    extract::{Path, Query, State}, Extension, Json
+    Extension, Json,
+    extract::{Path, Query, State},
 };
 use flow_like::bit::{Bit, Metadata};
 use flow_like_storage::files::store::FlowLikeStore;
@@ -13,7 +20,7 @@ pub async fn get_bit(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,
     Path(bit_id): Path<String>,
-    Query(query): Query<LanguageParams>
+    Query(query): Query<LanguageParams>,
 ) -> Result<Json<Bit>, ApiError> {
     if !state.platform_config.features.unauthorized_read {
         user.sub()?;
@@ -25,13 +32,17 @@ pub async fn get_bit(
         .left_join(meta::Entity)
         .find_with_related(meta::Entity)
         .filter(
-            bit::Column::Id.eq(&bit_id)
-                .and(meta::Column::Lang.eq(language).or(meta::Column::Lang.eq("en").or(meta::Column::Lang.is_null()))),
+            bit::Column::Id.eq(&bit_id).and(
+                meta::Column::Lang
+                    .eq(language)
+                    .or(meta::Column::Lang.eq("en").or(meta::Column::Lang.is_null())),
+            ),
         )
         .all(&state.db)
         .await?;
 
-    let metadata: Option<Vec<meta::Model>> = bit.iter().next().and_then(|(_, meta)| Some(meta.clone()));
+    let metadata: Option<Vec<meta::Model>> =
+        bit.iter().next().and_then(|(_, meta)| Some(meta.clone()));
 
     let bit = match bit.into_iter().next() {
         Some((bit, _)) => bit,
@@ -41,10 +52,7 @@ pub async fn get_bit(
     let mut bit: Bit = bit.into();
 
     for meta in metadata.unwrap_or_default() {
-        bit.meta.insert(
-            meta.lang.clone(),
-            Metadata::from(meta)
-        );
+        bit.meta.insert(meta.lang.clone(), Metadata::from(meta));
     }
 
     if !state.platform_config.features.unauthorized_read {

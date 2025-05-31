@@ -1,5 +1,5 @@
+import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import type { AuthContextProps } from "react-oidc-context";
-import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 
 function constructUrl(path: string): string {
 	const baseUrl = process.env.NEXT_PUBLIC_API_URL!;
@@ -25,7 +25,7 @@ export async function fetcher<T>(
 			...headers,
 		},
 		keepalive: true,
-		priority: "high"
+		priority: "high",
 	});
 
 	if (!response.ok) {
@@ -44,19 +44,27 @@ export async function post<T>(
 	data?: any,
 	auth?: AuthContextProps,
 ): Promise<T> {
-	return fetcher<T>(path, {
-		method: "POST",
-		body: data ? JSON.stringify(data) : undefined,
-	}, auth);
+	return fetcher<T>(
+		path,
+		{
+			method: "POST",
+			body: data ? JSON.stringify(data) : undefined,
+		},
+		auth,
+	);
 }
 
 export async function get<T>(
 	path: string,
 	auth?: AuthContextProps,
 ): Promise<T> {
-	return fetcher<T>(path, {
-		method: "GET",
-	}, auth);
+	return fetcher<T>(
+		path,
+		{
+			method: "GET",
+		},
+		auth,
+	);
 }
 
 export async function put<T>(
@@ -64,10 +72,14 @@ export async function put<T>(
 	data?: any,
 	auth?: AuthContextProps,
 ): Promise<T> {
-	return fetcher<T>(path, {
-		method: "PUT",
-		body: data ? JSON.stringify(data) : undefined,
-	}, auth);
+	return fetcher<T>(
+		path,
+		{
+			method: "PUT",
+			body: data ? JSON.stringify(data) : undefined,
+		},
+		auth,
+	);
 }
 
 export async function del<T>(
@@ -75,10 +87,14 @@ export async function del<T>(
 	data?: any,
 	auth?: AuthContextProps,
 ): Promise<T> {
-	return fetcher<T>(path, {
-		method: "DELETE",
-		body: data ? JSON.stringify(data) : undefined,
-	}, auth);
+	return fetcher<T>(
+		path,
+		{
+			method: "DELETE",
+			body: data ? JSON.stringify(data) : undefined,
+		},
+		auth,
+	);
 }
 
 export async function patch<T>(
@@ -86,8 +102,12 @@ export async function patch<T>(
 	data?: any,
 	auth?: AuthContextProps,
 ): Promise<T> {
-	return fetcher<T>(path, {
-		method: "PATCH",
-		body: data ? JSON.stringify(data) : undefined,
-	}, auth);
+	return fetcher<T>(
+		path,
+		{
+			method: "PATCH",
+			body: data ? JSON.stringify(data) : undefined,
+		},
+		auth,
+	);
 }

@@ -30,7 +30,11 @@ import type { IBitSearchQuery } from "@tm9657/flow-like-ui/lib/schema/hub/bit-se
 import { useEffect, useState } from "react";
 
 export class TauriBackend implements IBackendState {
-	async createApp(metadata: IMetadata, bits: string[], template: string): Promise<IApp> {
+	async createApp(
+		metadata: IMetadata,
+		bits: string[],
+		template: string,
+	): Promise<IApp> {
 		const app: IApp = await invoke("create_app", {
 			metadata: metadata,
 			bits: bits,
