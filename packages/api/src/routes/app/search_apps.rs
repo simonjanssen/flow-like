@@ -30,8 +30,14 @@ pub async fn search_apps(
     if !state.platform_config.features.unauthorized_read {
         user.sub()?;
     }
-
     let language = query.language.clone().unwrap_or_else(|| "en".to_string());
+
+    let cache_key = format!("search_apps:{:?}:{}", search_query, language);
+
+    if let Some(cached) = state.get_cache(&cache_key) {
+        return Ok(Json(cached));
+    }
+
     let sort = search_query
         .sort
         .unwrap_or_else(|| AppSearchSort::MostRelevant);
@@ -105,6 +111,8 @@ pub async fn search_apps(
             (App::from(app_model), metadata)
         })
         .collect();
+
+    state.set_cache(cache_key, &apps);
 
     Ok(Json(apps))
 }

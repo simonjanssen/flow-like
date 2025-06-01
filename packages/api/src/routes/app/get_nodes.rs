@@ -8,6 +8,7 @@ pub async fn get_nodes(
     Extension(user): Extension<AppUser>,
 ) -> Result<Json<Vec<Node>>, ApiError> {
     user.sub()?;
+
     let nodes = state.registry.as_ref();
     let nodes = nodes.get_nodes();
 

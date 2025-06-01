@@ -1,5 +1,6 @@
 use aws_config::SdkConfig;
 use axum::body::Body;
+use axum::response::Response;
 use flow_like::app::App;
 use flow_like::flow::board::Board;
 use flow_like::flow::node::NodeLogic;
@@ -44,6 +45,7 @@ pub struct State {
     pub provider: Arc<ModelProviderConfiguration>,
     pub credentials_cache: moka::sync::Cache<String, Arc<RuntimeCredentials>>,
     pub cdn_bucket: Arc<FlowLikeStore>,
+    pub response_cache: moka::sync::Cache<String, Value>,
 }
 
 impl State {
@@ -104,6 +106,11 @@ impl State {
             .time_to_live(Duration::from_secs(30 * 60)) // 30 minutes
             .build();
 
+        let response_cache = moka::sync::Cache::builder()
+            .max_capacity(64 * 1024 * 1024) // 32 MB
+            .time_to_live(Duration::from_secs(60)) // 30 minutes
+            .build();
+
         Self {
             platform_config,
             db,
@@ -117,6 +124,7 @@ impl State {
             registry: Arc::new(registry),
             credentials_cache: cache,
             cdn_bucket,
+            response_cache,
         }
     }
 
@@ -210,6 +218,24 @@ impl State {
         self.credentials_cache
             .insert("master".to_string(), credentials.clone());
         Ok(credentials)
+    }
+
+    pub fn get_cache<T>(&self, key: &str) -> Option<T>
+    where
+        T: serde::de::DeserializeOwned,
+    {
+        self.response_cache
+            .get(key)
+            .and_then(|json_value| serde_json::from_value(json_value).ok())
+    }
+
+    pub fn set_cache<T>(&self, key: String, value: T)
+    where
+        T: serde::Serialize,
+    {
+        if let Ok(json_value) = serde_json::to_value(value) {
+            self.response_cache.insert(key, json_value);
+        }
     }
 }
 

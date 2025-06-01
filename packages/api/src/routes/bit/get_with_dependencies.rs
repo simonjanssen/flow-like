@@ -29,6 +29,11 @@ pub async fn get_with_dependencies(
         user.sub()?;
     }
 
+    let cache_key = format!("get_with_dependencies:{}", bit_id);
+    if let Some(cached) = state.get_cache(&cache_key) {
+        return Ok(Json(cached));
+    }
+
     let bit_model = bit::Entity::find_by_id(&bit_id)
         .one(&state.db)
         .await?
@@ -87,6 +92,9 @@ pub async fn get_with_dependencies(
     .await?;
 
     insert_bit_cache(&state, &bits, &converted_bit.dependency_tree_hash).await?;
+
+    state.set_cache(cache_key, &bits);
+
     Ok(Json(bits))
 }
 

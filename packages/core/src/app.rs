@@ -24,7 +24,7 @@ pub struct FrontendConfiguration {
     pub landing_page: Option<String>,
 }
 
-#[derive(Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub enum AppCategory {
     Other = 0,
     Productivity = 1,
@@ -56,7 +56,7 @@ pub enum AppStatus {
     Archived = 2,
 }
 
-#[derive(Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub enum AppVisibility {
     Public = 0,
     PublicRequestAccess = 1,
@@ -65,7 +65,7 @@ pub enum AppVisibility {
     Offline = 4,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
 pub enum AppSearchSort {
     BestRated,
     WorstRated,
@@ -79,7 +79,7 @@ pub enum AppSearchSort {
     OldestUpdated,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Clone)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
 pub struct AppSearchQuery {
     pub search: Option<String>,
     pub limit: Option<u64>,
@@ -222,13 +222,11 @@ impl App {
         let interactions = self.interactions_count as f64;
         let avg_rating = sum_ratings / rating_count;
         self.avg_rating = Some(avg_rating);
-        let relevance = (downloads * 2.0 + interactions)
-            * (1.0 + avg_rating / 5.0)
-            * (rating_count.ln() + 1.0);
+        let relevance =
+            (downloads * 2.0 + interactions) * (1.0 + avg_rating / 5.0) * (rating_count.ln() + 1.0);
         self.relevance_score = Some(relevance);
         relevance
     }
-
 
     pub async fn get_meta(
         id: String,

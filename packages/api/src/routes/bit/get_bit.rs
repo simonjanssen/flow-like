@@ -28,6 +28,12 @@ pub async fn get_bit(
 
     let language = query.language.as_deref().unwrap_or("en");
 
+    let cache_key = format!("get_bit:{}:{}", bit_id, language);
+
+    if let Some(cached) = state.get_cache(&cache_key) {
+        return Ok(Json(cached));
+    }
+
     let bit: Vec<(bit::Model, Vec<meta::Model>)> = bit::Entity::find_by_id(&bit_id)
         .find_with_related(meta::Entity)
         .filter(
@@ -57,6 +63,8 @@ pub async fn get_bit(
     if !state.platform_config.features.unauthorized_read {
         bit = temporary_bit(bit, &state.cdn_bucket).await?;
     }
+
+    state.set_cache(cache_key, &bit);
 
     Ok(Json(bit))
 }

@@ -22,6 +22,12 @@ pub async fn get_apps(
     let language = query.language.clone().unwrap_or_else(|| "en".to_string());
 
     let sub = user.sub()?;
+
+    let cache_key = format!("get_apps:{}:{}:{:?}", sub, language, query);
+    if let Some(cached) = state.get_cache(&cache_key) {
+        return Ok(Json(cached));
+    }
+
     let apps = app::Entity::find()
         .order_by_desc(app::Column::UpdatedAt)
         .join(JoinType::InnerJoin, app::Relation::Membership.def())
@@ -49,6 +55,8 @@ pub async fn get_apps(
             (App::from(app_model), metadata)
         })
         .collect();
+
+    state.set_cache(cache_key, &apps);
 
     Ok(Json(apps))
 }

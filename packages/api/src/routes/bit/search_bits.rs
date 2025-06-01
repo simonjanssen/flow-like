@@ -27,6 +27,12 @@ pub async fn search_bits(
 
     let language = lang_query.language.as_deref().unwrap_or("en");
 
+    let cache_key = format!("search_bits:{:?}:{:?}", bit_query, language);
+
+    if let Some(cached) = state.get_cache(&cache_key) {
+        return Ok(Json(cached));
+    }
+
     let limit = std::cmp::min(bit_query.limit.unwrap_or(50), 100);
     let mut qb = bit::Entity::find()
         .limit(Some(limit))
@@ -91,6 +97,8 @@ pub async fn search_bits(
             *bit = temporary_bit(bit.clone(), &state.cdn_bucket).await?;
         }
     }
+
+    state.set_cache(cache_key, &bits);
 
     Ok(Json(bits))
 }
