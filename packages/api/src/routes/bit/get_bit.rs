@@ -29,7 +29,6 @@ pub async fn get_bit(
     let language = query.language.as_deref().unwrap_or("en");
 
     let bit: Vec<(bit::Model, Vec<meta::Model>)> = bit::Entity::find_by_id(&bit_id)
-        .left_join(meta::Entity)
         .find_with_related(meta::Entity)
         .filter(
             bit::Column::Id.eq(&bit_id).and(

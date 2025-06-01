@@ -1,5 +1,5 @@
 use crate::{
-    entity::{bit, bit_cache},
+    entity::{bit, bit_cache, bit_tree_cache},
     error::ApiError,
     middleware::jwt::AppUser,
     state::AppState,
@@ -77,6 +77,15 @@ pub async fn get_with_dependencies(
 
     let converted_bit: Bit = bit_model.into();
     let bits = fetch_dependencies(&converted_bit, &state).await?;
+
+    bit_tree_cache::Entity::insert(bit_tree_cache::ActiveModel {
+        dependency_tree_hash: Set(converted_bit.dependency_tree_hash.clone()),
+        created_at: Set(chrono::Utc::now().naive_utc()),
+        updated_at: Set(chrono::Utc::now().naive_utc()),
+    })
+    .exec_with_returning(&state.db)
+    .await?;
+
     insert_bit_cache(&state, &bits, &converted_bit.dependency_tree_hash).await?;
     Ok(Json(bits))
 }

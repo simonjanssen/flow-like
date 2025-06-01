@@ -27,14 +27,11 @@ pub async fn search_bits(
 
     let language = lang_query.language.as_deref().unwrap_or("en");
 
-    let mut qb = bit::Entity::find();
+    let limit = std::cmp::min(bit_query.limit.unwrap_or(50), 100);
+    let mut qb = bit::Entity::find()
+        .limit(Some(limit))
+        .offset(bit_query.offset);
 
-    if let Some(limit) = bit_query.limit {
-        qb = qb.limit(Some(limit));
-    }
-    if let Some(offset) = bit_query.offset {
-        qb = qb.offset(Some(offset));
-    }
     if let Some(types) = bit_query.bit_types {
         let types: Vec<BitType> = types.into_iter().map(Into::into).collect();
         qb = qb.filter(bit::Column::Type.is_in(types));
@@ -67,8 +64,23 @@ pub async fn search_bits(
         .into_iter()
         .map(|(bit_model, meta_models)| {
             let mut bit: Bit = Bit::from(bit_model);
-            for meta in meta_models {
-                bit.meta.insert(meta.lang.clone(), meta.into());
+            if meta_models.len() == 1 {
+                // If there's only one metadata, use it directly
+                bit.meta
+                    .insert(language.to_string(), meta_models[0].clone().into());
+            }
+
+            let requested_lang_or_en = meta_models
+                .iter()
+                .find(|meta| meta.lang == language)
+                .or_else(|| meta_models.iter().next())
+                .cloned();
+
+            if let Some(requested_lang_or_en) = requested_lang_or_en {
+                bit.meta.insert(
+                    requested_lang_or_en.lang.clone(),
+                    requested_lang_or_en.into(),
+                );
             }
             bit
         })

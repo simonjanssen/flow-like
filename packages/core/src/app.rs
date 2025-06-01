@@ -49,18 +49,77 @@ pub enum AppCategory {
     Anime = 20,
 }
 
+#[derive(Clone, Serialize, Deserialize, JsonSchema)]
+pub enum AppStatus {
+    Active = 0,
+    Inactive = 1,
+    Archived = 2,
+}
+
+#[derive(Clone, Serialize, Deserialize, JsonSchema)]
+pub enum AppVisibility {
+    Public = 0,
+    PublicRequestAccess = 1,
+    Private = 2,
+    Prototype = 3,
+    Offline = 4,
+}
+
+#[derive(Serialize, Deserialize, JsonSchema, Clone)]
+pub enum AppSearchSort {
+    BestRated,
+    WorstRated,
+    MostPopular,
+    LeastPopular,
+    MostRelevant,
+    LeastRelevant,
+    NewestCreated,
+    OldestCreated,
+    NewestUpdated,
+    OldestUpdated,
+}
+
+#[derive(Serialize, Deserialize, JsonSchema, Clone)]
+pub struct AppSearchQuery {
+    pub search: Option<String>,
+    pub limit: Option<u64>,
+    pub offset: Option<u64>,
+    pub categories: Option<Vec<AppCategory>>,
+    pub authors: Option<Vec<String>>,
+    pub sort: Option<AppSearchSort>,
+    pub tag: Option<String>,
+}
+
 #[derive(Serialize, Deserialize, JsonSchema)]
 pub struct App {
     pub id: String,
-    pub authors: Vec<String>,
 
+    pub status: AppStatus,
+    pub visibility: AppVisibility,
+
+    pub authors: Vec<String>,
     pub bits: Vec<String>,
     pub boards: Vec<String>,
     pub releases: Vec<String>,
     pub templates: Vec<String>,
 
+    pub changelog: Option<String>,
+
+    pub primary_category: Option<AppCategory>,
+    pub secondary_category: Option<AppCategory>,
+
+    pub rating_sum: u64,
+    pub rating_count: u64,
+    pub download_count: u64,
+    pub interactions_count: u64,
+
+    pub avg_rating: Option<f64>,
+    pub relevance_score: Option<f64>,
+
     pub updated_at: SystemTime,
     pub created_at: SystemTime,
+
+    pub version: Option<String>,
 
     pub frontend: Option<FrontendConfiguration>,
 
@@ -72,13 +131,25 @@ impl Clone for App {
     fn clone(&self) -> Self {
         Self {
             id: self.id.clone(),
+            status: self.status.clone(),
+            visibility: self.visibility.clone(),
             authors: self.authors.clone(),
             boards: self.boards.clone(),
             templates: self.templates.clone(),
             bits: self.bits.clone(),
             releases: self.releases.clone(),
+            changelog: self.changelog.clone(),
+            avg_rating: self.avg_rating,
+            download_count: self.download_count,
+            interactions_count: self.interactions_count,
+            rating_count: self.rating_count,
+            rating_sum: self.rating_sum,
+            relevance_score: self.relevance_score,
+            primary_category: self.primary_category.clone(),
+            secondary_category: self.secondary_category.clone(),
             updated_at: self.updated_at,
             created_at: self.created_at,
+            version: self.version.clone(),
             app_state: self.app_state.clone(),
             frontend: self.frontend.clone(),
         }
@@ -105,6 +176,20 @@ impl App {
             templates: vec![],
             updated_at: SystemTime::now(),
             created_at: SystemTime::now(),
+            version: None,
+            status: AppStatus::Active,
+            visibility: AppVisibility::Offline,
+            changelog: None,
+            avg_rating: None,
+            download_count: 0,
+            interactions_count: 0,
+            rating_count: 0,
+            rating_sum: 0,
+            relevance_score: None,
+
+            primary_category: None,
+            secondary_category: None,
+
             frontend: None,
             app_state: Some(app_state.clone()),
         };
@@ -129,6 +214,21 @@ impl App {
 
         Ok(vault)
     }
+
+    pub fn calculate_relevance_score(&mut self) -> f64 {
+        let downloads = self.download_count as f64;
+        let sum_ratings = self.rating_sum as f64;
+        let rating_count = self.rating_count as f64;
+        let interactions = self.interactions_count as f64;
+        let avg_rating = sum_ratings / rating_count;
+        self.avg_rating = Some(avg_rating);
+        let relevance = (downloads * 2.0 + interactions)
+            * (1.0 + avg_rating / 5.0)
+            * (rating_count.ln() + 1.0);
+        self.relevance_score = Some(relevance);
+        relevance
+    }
+
 
     pub async fn get_meta(
         id: String,
@@ -456,7 +556,19 @@ mod tests {
             templates: vec!["template1".to_string(), "template2".to_string()],
             updated_at: std::time::SystemTime::now(),
             created_at: std::time::SystemTime::now(),
+            status: crate::app::AppStatus::Active,
+            visibility: crate::app::AppVisibility::Public,
+            changelog: Some("Changelog text".to_string()),
+            primary_category: Some(crate::app::AppCategory::Productivity),
+            secondary_category: Some(crate::app::AppCategory::Education),
             app_state: Some(flow_state().await),
+            version: Some("1.0.0".to_string()),
+            avg_rating: Some(4.5),
+            download_count: 1000,
+            interactions_count: 500,
+            rating_count: 200,
+            rating_sum: 800,
+            relevance_score: Some(0.9),
             frontend: None,
         };
 

@@ -63,7 +63,7 @@ impl Settings {
         Self {
             loaded: false,
             dev_mode: false,
-            default_hub: String::from("https://hub.buttons.good-co.de"),
+            default_hub: String::from("api.alpha.flow-like.com"),
             current_profile: String::from("default"),
             bit_dir: dirs_next::data_dir()
                 .unwrap_or_default()

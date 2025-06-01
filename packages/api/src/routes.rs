@@ -13,4 +13,6 @@ pub mod user;
 #[derive(Clone, Deserialize, Serialize, Debug)]
 pub struct LanguageParams {
     pub language: Option<String>,
+    pub limit: Option<u64>,
+    pub offset: Option<u64>,
 }

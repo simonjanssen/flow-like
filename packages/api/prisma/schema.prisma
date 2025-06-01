@@ -249,6 +249,30 @@ model PAT {
   @@index([userId])
 }
 
+enum CATEGORY {
+  OTHER
+  PRODUCTIVITY
+  SOCIAL
+  ENTERTAINMENT
+  EDUCATION
+  HEALTH
+  FINANCE
+  LIFESTYLE
+  TRAVEL
+  NEWS
+  SPORTS
+  SHOPPING
+  FOOD_AND_DRINK
+  MUSIC
+  PHOTOGRAPHY
+  UTILITIES
+  WEATHER
+  GAMES
+  BUSINESS
+  COMMUNICATION
+  ANIME
+}
+
 enum Status {
   ACTIVE
   INACTIVE
@@ -257,9 +281,10 @@ enum Status {
 
 enum Visibility {
   PUBLIC
-  PUBLIC_REQUEST_TO_JOIN
+  PUBLIC_REQUEST_ACCESS
   PRIVATE
   PROTOTYPE
+  OFFLINE
 }
 
 model JoinQueue {
@@ -295,8 +320,8 @@ model InviteLink {
 model App {
   id String @id
 
-  status     Status
-  visibility Visibility
+  status     Status @default(ACTIVE)
+  visibility Visibility @default(PRIVATE)
 
   meta Meta[]
 
@@ -320,8 +345,17 @@ model App {
   roles Role[]
   files File[]
 
-  ratingSum   Int   @default(0)
-  ratingCount Int   @default(0)
+  primaryCategory CATEGORY?
+  secondaryCategory CATEGORY?
+
+  ratingSum   BigInt   @default(0)
+  ratingCount BigInt   @default(0)
+  downloadCount BigInt @default(0)
+  interactionsCount BigInt @default(0)
+
+  avgRating Float? @default(0)
+  // Relevance formula: (downloads * 2 + interactions) * (1 + avgRating/5) * log(ratingCount + 1)
+  relevanceScore Float? @default(0)
 
   totalSize BigInt @default(0)
 
@@ -334,6 +368,10 @@ model App {
   updatedAt DateTime @updatedAt
 
   @@index([createdAt])
+  @@index([updatedAt])
+  @@index([avgRating])
+  @@index([relevanceScore])
+  @@index([ratingSum])
   @@index([status])
 }
 
@@ -621,6 +659,7 @@ model Meta {
   @@index([courseId, lang])
   @@index([templateId, lang])
   @@index([lang])
+  @@index([tags])
 }
 
 enum LLMProvider {

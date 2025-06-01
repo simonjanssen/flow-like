@@ -1,14 +1,19 @@
 use crate::{
-    entity::{app, meta, role, sea_orm_active_enums::Status},
+    entity::{
+        app, meta, role,
+        sea_orm_active_enums::{Status, Visibility},
+    },
     error::ApiError,
     middleware::jwt::AppUser,
     permission::role_permission::RolePermissions,
+    routes::LanguageParams,
     state::AppState,
 };
 use axum::{
     Extension, Json,
-    extract::{Path, State},
+    extract::{Path, Query, State},
 };
+use flow_like::{app::App, bit::Metadata};
 use flow_like_types::create_id;
 use sea_orm::{
     ActiveModelTrait,
@@ -17,44 +22,58 @@ use sea_orm::{
 };
 use serde::{Deserialize, Serialize};
 
-use super::meta::Meta;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct App {
-    pub status: Option<Status>,
-    pub changelog: Option<String>,
-    pub meta: Option<Meta>,
+#[derive(Clone, Serialize, Deserialize)]
+pub struct AppUpsertBody {
+    pub app: Option<App>,
+    pub meta: Option<Metadata>,
 }
 
-#[tracing::instrument(name = "PUT /app/{app_id}", skip(state, user))]
+#[tracing::instrument(name = "PUT /app/{app_id}", skip(state, user, app_body, query))]
 pub async fn upsert_app(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,
     Path(app_id): Path<String>,
-    Json(app_body): Json<App>,
-) -> Result<Json<app::Model>, ApiError> {
+    Query(query): Query<LanguageParams>,
+    Json(app_body): Json<AppUpsertBody>,
+) -> Result<Json<App>, ApiError> {
     let app = app::Entity::find()
         .filter(app::Column::Id.eq(&app_id))
         .one(&state.db)
         .await?;
 
+    let language = query.language.clone().unwrap_or_else(|| "en".to_string());
+
     let now = chrono::Utc::now().naive_utc();
 
-    if let Some(app) = &app {
+    if let (Some(app), Some(app_updates)) = (&app, &app_body.app) {
+        let app_updates = app::Model::from(app_updates.clone());
         let sub = user.app_permission(&app_id, &state).await?;
         if !sub.has_permission(RolePermissions::Owner) {
             return Err(ApiError::Forbidden);
         }
         let mut app: app::ActiveModel = app.clone().into();
-        if let Some(status) = app_body.status {
-            app.status = sea_orm::ActiveValue::Set(status);
+        app.status = sea_orm::ActiveValue::Set(app_updates.status);
+        app.changelog = sea_orm::ActiveValue::Set(app_updates.changelog);
+
+        if matches!(
+            app_updates.visibility,
+            Visibility::Offline | Visibility::Private | Visibility::Prototype
+        ) {
+            app.visibility = sea_orm::ActiveValue::Set(app_updates.visibility);
         }
-        if let Some(changelog) = app_body.changelog {
-            app.changelog = sea_orm::ActiveValue::Set(Some(changelog));
-        }
+
+        app.primary_category = sea_orm::ActiveValue::Set(app_updates.primary_category);
+        app.secondary_category = sea_orm::ActiveValue::Set(app_updates.secondary_category);
+        app.price = sea_orm::ActiveValue::Set(app_updates.price);
+        app.version = sea_orm::ActiveValue::Set(app_updates.version);
         app.updated_at = sea_orm::ActiveValue::Set(now.clone());
         let app: app::Model = app.save(&state.db).await?.try_into()?;
-        return Ok(Json(app));
+        return Ok(Json(App::from(app)));
+    }
+
+    // Somehow the user sent an app body without an app, which is not allowed for existing apps.
+    if app.is_some() {
+        return Err(ApiError::Forbidden);
     }
 
     let app = state
@@ -63,8 +82,7 @@ pub async fn upsert_app(
             Box::pin(async move {
                 let app = app::ActiveModel {
                     id: Set(create_id()),
-                    changelog: Set(app_body.changelog),
-                    status: Set(app_body.status.unwrap_or(Status::Active)),
+                    status: Set(Status::Active),
                     created_at: Set(now.clone()),
                     updated_at: Set(now.clone()),
                     ..Default::default()
@@ -77,11 +95,11 @@ pub async fn upsert_app(
                     let meta = meta::ActiveModel {
                         id: Set(create_id()),
                         app_id: Set(Some(app_id.clone())),
-                        name: Set(meta.name.unwrap_or("Untitled App".to_string())),
-                        description: Set(meta.description),
+                        name: Set(meta.name),
+                        description: Set(Some(meta.description)),
                         long_description: Set(meta.long_description),
-                        tags: Set(meta.tags),
-                        lang: Set(meta.lang),
+                        tags: Set(Some(meta.tags)),
+                        lang: Set(language),
                         created_at: Set(now.clone()),
                         updated_at: Set(now.clone()),
                         ..Default::default()
@@ -143,5 +161,5 @@ pub async fn upsert_app(
         })
         .await?;
 
-    Ok(Json(app))
+    Ok(Json(App::from(app)))
 }

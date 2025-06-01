@@ -44,6 +44,52 @@ pub enum BitType {
     Course,
 }
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "CATEGORY")]
+pub enum Category {
+    #[sea_orm(string_value = "OTHER")]
+    Other,
+    #[sea_orm(string_value = "PRODUCTIVITY")]
+    Productivity,
+    #[sea_orm(string_value = "SOCIAL")]
+    Social,
+    #[sea_orm(string_value = "ENTERTAINMENT")]
+    Entertainment,
+    #[sea_orm(string_value = "EDUCATION")]
+    Education,
+    #[sea_orm(string_value = "HEALTH")]
+    Health,
+    #[sea_orm(string_value = "FINANCE")]
+    Finance,
+    #[sea_orm(string_value = "LIFESTYLE")]
+    Lifestyle,
+    #[sea_orm(string_value = "TRAVEL")]
+    Travel,
+    #[sea_orm(string_value = "NEWS")]
+    News,
+    #[sea_orm(string_value = "SPORTS")]
+    Sports,
+    #[sea_orm(string_value = "SHOPPING")]
+    Shopping,
+    #[sea_orm(string_value = "FOOD_AND_DRINK")]
+    FoodAndDrink,
+    #[sea_orm(string_value = "MUSIC")]
+    Music,
+    #[sea_orm(string_value = "PHOTOGRAPHY")]
+    Photography,
+    #[sea_orm(string_value = "UTILITIES")]
+    Utilities,
+    #[sea_orm(string_value = "WEATHER")]
+    Weather,
+    #[sea_orm(string_value = "GAMES")]
+    Games,
+    #[sea_orm(string_value = "BUSINESS")]
+    Business,
+    #[sea_orm(string_value = "COMMUNICATION")]
+    Communication,
+    #[sea_orm(string_value = "ANIME")]
+    Anime,
+}
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "LLMProvider")]
 pub enum LlmProvider {
     #[sea_orm(string_value = "HuggingFace")]
@@ -144,10 +190,12 @@ pub enum UserTier {
 pub enum Visibility {
     #[sea_orm(string_value = "PUBLIC")]
     Public,
-    #[sea_orm(string_value = "PUBLIC_REQUEST_TO_JOIN")]
-    PublicRequestToJoin,
+    #[sea_orm(string_value = "PUBLIC_REQUEST_ACCESS")]
+    PublicRequestAccess,
     #[sea_orm(string_value = "PRIVATE")]
     Private,
     #[sea_orm(string_value = "PROTOTYPE")]
     Prototype,
+    #[sea_orm(string_value = "OFFLINE")]
+    Offline,
 }

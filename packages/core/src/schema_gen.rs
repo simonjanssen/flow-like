@@ -1,5 +1,5 @@
 use crate::{
-    app::App,
+    app::{App, AppSearchQuery},
     bit::{Bit, BitModelPreference, BitPack, LLMParameters, VLMParameters},
     flow::{
         board::{
@@ -157,6 +157,7 @@ pub fn generate_schema(base_path: PathBuf) -> flow_like_types::Result<()> {
     generate_and_save_schema::<BitSearchQuery>(&base_path, "hub/bit-search-query.json")?;
 
     generate_and_save_schema::<App>(&base_path, "app/app.json")?;
+    generate_and_save_schema::<AppSearchQuery>(&base_path, "app/app-search-query.json")?;
 
     generate_and_save_schema::<FileMetadata>(&base_path, "files/file-metadata.json")?;
 
