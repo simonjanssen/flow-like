@@ -1,5 +1,5 @@
 "use client";
-import type { UseQueryResult } from "@tm9657/flow-like-ui";
+import type { IHub, UseQueryResult } from "@tm9657/flow-like-ui";
 import { Bit, Button } from "@tm9657/flow-like-ui";
 import {
 	Avatar,
@@ -18,7 +18,7 @@ export default function Onboarding() {
 	const [profiles, setProfiles] = useState<[ISettingsProfile, IBit[]][]>([]);
 	const [route, setRoute] = useState("");
 	const [totalSize, setTotalSize] = useState(0);
-	const defaultProfiles: UseQueryResult<[ISettingsProfile, IBit[]][]> =
+	const defaultProfiles: UseQueryResult<[[ISettingsProfile, IBit[]][], IHub]> =
 		useTauriInvoke("get_default_profiles", {});
 	const [activeProfiles, setActiveProfiles] = useState<string[]>([]);
 
@@ -53,8 +53,8 @@ export default function Onboarding() {
 
 	useEffect(() => {
 		if (!defaultProfiles.data) return;
-		const profiles: [ISettingsProfile, Bit[]][] = defaultProfiles.data as any;
-		setProfiles(profiles);
+		const profiles: [[ISettingsProfile, IBit[]][], IHub] = defaultProfiles.data as any;
+		setProfiles(profiles[0]);
 	}, [defaultProfiles.data]);
 
 	return (
@@ -115,7 +115,7 @@ function PreviewCard({
 		>
 			<img
 				className="absolute object-cover top-0 bottom-0 right-0 left-0 z-0 w-full h-full"
-				src={profile.hub_profile.thumbnail}
+				src={profile.hub_profile.thumbnail ?? "/placeholder.webp"}
 				width={150}
 				height={150}
 				alt={profile.hub_profile.name}

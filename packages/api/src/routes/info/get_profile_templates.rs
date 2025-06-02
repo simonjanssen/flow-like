@@ -18,9 +18,15 @@ pub async fn get_profile_templates(
         user.sub()?;
     }
 
-    let profiles = template_profile::Entity::find().all(&state.db).await?;
+    let cache_key = "get_profile_templates".to_string();
+    if let Some(cached) = state.get_cache(&cache_key) {
+        return Ok(Json(cached));
+    }
 
+    let profiles = template_profile::Entity::find().all(&state.db).await?;
     let profiles: Vec<Profile> = profiles.into_iter().map(Profile::from).collect();
+
+    state.set_cache(cache_key, &profiles);
 
     Ok(Json(profiles))
 }

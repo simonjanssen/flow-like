@@ -20,6 +20,7 @@ import {
 import { useEffect, useState } from "react";
 import { AuthProvider, hasAuthParams, useAuth } from "react-oidc-context";
 import { get } from "../lib/api";
+import { TauriBackend } from "./tauri-provider";
 
 class OIDCTokenProvider implements TokenProvider {
 	constructor(private readonly userManager: UserManager) {}
@@ -194,6 +195,15 @@ export function DesktopAuthProvider({
 
 function AuthInner({ children }: { children: React.ReactNode }) {
 	const auth = useAuth();
+	const backend = useBackend();
+
+	useEffect(() => {
+		if (!auth) return;
+
+		if (backend instanceof TauriBackend) {
+				backend.pushAuthContext(auth);
+			}
+	} ,[auth, backend])
 
 	useEffect(() => {
 		if (!auth) return;

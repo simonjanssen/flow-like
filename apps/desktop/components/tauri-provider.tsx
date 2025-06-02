@@ -28,8 +28,15 @@ import {
 } from "@tm9657/flow-like-ui";
 import type { IBitSearchQuery } from "@tm9657/flow-like-ui/lib/schema/hub/bit-search-query";
 import { useEffect, useState } from "react";
+import { AuthContextProps, useAuth } from "react-oidc-context";
 
 export class TauriBackend implements IBackendState {
+	constructor(private auth?: AuthContextProps){}
+
+	pushAuthContext(auth: AuthContextProps) {
+		this.auth = auth;
+	}
+
 	async createApp(
 		metadata: IMetadata,
 		bits: string[],
@@ -425,7 +432,7 @@ export function TauriProvider({
 	children,
 }: Readonly<{ children: React.ReactNode }>) {
 	const [loaded, setLoaded] = useState(false);
-	const { setBackend } = useBackendStore();
+	const { backend, setBackend } = useBackendStore();
 	const { setDownloadBackend, download } = useDownloadManager();
 
 	async function resumeDownloads() {

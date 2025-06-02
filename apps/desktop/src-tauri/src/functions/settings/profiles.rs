@@ -23,16 +23,21 @@ pub async fn get_profiles(app_handle: AppHandle) -> HashMap<String, UserProfile>
 #[tauri::command(async)]
 pub async fn get_default_profiles(
     app_handle: AppHandle,
-) -> Result<Vec<(UserProfile, Vec<Bit>)>, TauriFunctionError> {
+) -> Result<(Vec<(UserProfile, Vec<Bit>)>, Hub), TauriFunctionError> {
     let settings = TauriSettingsState::construct(&app_handle).await?;
     let default_hub = settings.lock().await.default_hub.clone();
     let http_client = TauriFlowLikeState::http_client(&app_handle).await?;
     let default_hub = Hub::new(&default_hub, http_client.clone()).await?;
 
     let profiles = default_hub.get_profiles().await?;
+    println !("Profiles: {:?}", profiles);
     let profiles = get_bits(profiles.clone(), http_client).await;
 
-    Ok(profiles)
+    println!("Default hub: {}", default_hub.domain);
+    println!("Profiles count: {}", profiles.len());
+    println!("Profiles: {:?}", profiles);
+
+    Ok((profiles, default_hub))
 }
 
 #[instrument(skip_all)]
@@ -49,7 +54,7 @@ async fn get_bits(
             let (hub, bit) = bit_id.split_once(':').unwrap_or(("", bit_id));
             bits.insert(bit, hub);
             if !hubs.contains_key(hub) {
-                hubs.insert(hub, Hub::new(hub, http_client.clone()).await.unwrap());
+                hubs.insert(hub, Hub::new(hub, http_client.clone()).await?);
             }
         }
     }

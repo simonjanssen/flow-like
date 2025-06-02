@@ -173,16 +173,38 @@ impl Hub {
 
         // TODO Cache this.
         // We should implement a global Cache anyways, best with support for reqwest
-        let request = http_client.client().get(url.clone()).build()?;
+        let hub_info_url = url.join("api/v1")?;
+        let request = http_client.client().get(hub_info_url.clone()).build()?;
         let mut info: Hub = http_client.hashed_request(request).await?;
+        println!("Hub info: {:?}", info);
         info.recursion_guard = Some(RecursionGuard::new(vec![url.as_ref()]));
         info.http_client = Some(http_client);
         Ok(info)
     }
 
+    fn construct_url(&self, path: &str) -> Result<Url> {
+        let mut url = if !self.domain.starts_with("https://") {
+            format!("https://{}", self.domain)
+        } else {
+            self.domain.clone()
+        };
+
+        if !url.ends_with("/") {
+            url.push('/');
+        }
+
+        if path.starts_with('/') {
+            url.push_str(&path[1..]);
+        } else {
+            url.push_str(path);
+        }
+        let url = Url::parse(&url).map_err(|e| flow_like_types::Error::msg(format!("Invalid URL: {}", e)))?;
+
+        Ok(url)
+    }
+
     pub async fn get_bit(&self, bit_id: &str) -> Result<Bit> {
-        let url = Url::parse(&self.domain)?;
-        let bit_url = url.join(format!("api/v1/bit/{}", bit_id).as_str())?;
+        let bit_url = self.construct_url(&format!("api/v1/bit/{}", bit_id))?;
         let request = self.http_client().client().get(bit_url).build()?;
         let bit = self.http_client().hashed_request::<Bit>(request).await;
         if let Ok(bit) = bit {
@@ -209,8 +231,8 @@ impl Hub {
     }
 
     pub async fn search_bit(&self, query: &BitSearchQuery) -> Result<Vec<Bit>> {
-        let url = Url::parse(&self.domain)?;
-        let type_bits_url = url.join("api/v1/bit")?;
+        let type_bits_url = self.construct_url("api/v1/bit")?;
+
         let request = self
             .http_client()
             .client()
@@ -232,8 +254,7 @@ impl Hub {
     }
 
     pub async fn get_bit_dependencies(&self, bit_id: &str) -> Result<Vec<Bit>> {
-        let url = Url::parse(&self.domain)?;
-        let dependencies_url = url.join(format!("api/v1/bit/{}/dependencies", bit_id).as_str())?;
+        let dependencies_url = self.construct_url(&format!("api/v1/bit/{}/dependencies", bit_id))?;
         let request = self.http_client().client().get(dependencies_url).build()?;
         let bits = self
             .http_client()
@@ -244,9 +265,10 @@ impl Hub {
     }
 
     pub async fn get_profiles(&self) -> Result<Vec<Profile>> {
-        let url = Url::parse(&self.domain).unwrap();
-        let profiles_url = url.join("static/profiles.json").unwrap();
+        let profiles_url = self.construct_url("api/v1/info/profiles")?;
+        println!("Requesting profiles from: {}", profiles_url);
         let request = self.http_client().client().get(profiles_url).build()?;
+        println!("Request: {:?}", request);
         let bits = self
             .http_client()
             .hashed_request::<Vec<Profile>>(request)
