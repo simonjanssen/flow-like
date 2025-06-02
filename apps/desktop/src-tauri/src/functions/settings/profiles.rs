@@ -31,7 +31,7 @@ pub async fn get_default_profiles(
 
     let profiles = default_hub.get_profiles().await?;
     println !("Profiles: {:?}", profiles);
-    let profiles = get_bits(profiles.clone(), http_client).await;
+    let profiles = get_bits(profiles.clone(), http_client).await?;
 
     println!("Default hub: {}", default_hub.domain);
     println!("Profiles count: {}", profiles.len());
@@ -44,7 +44,7 @@ pub async fn get_default_profiles(
 async fn get_bits(
     profiles: Vec<Profile>,
     http_client: Arc<HTTPClient>,
-) -> Vec<(UserProfile, Vec<Bit>)> {
+) -> flow_like_types::Result<Vec<(UserProfile, Vec<Bit>)>> {
     // Collect all futures for models and embedding models
     let mut bits: HashMap<&str, &str> = HashMap::new();
     let mut hubs: HashMap<&str, Hub> = HashMap::new();
@@ -93,7 +93,7 @@ async fn get_bits(
         })
         .collect();
 
-    output
+    Ok(output)
 }
 
 #[instrument(skip_all)]
