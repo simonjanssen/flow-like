@@ -40,12 +40,12 @@ impl From<History> for ChatCompletionRequest {
                             } => Content::Text(text),
                             HistoryContent::Image {
                                 content_type: _,
-                                data,
+                                image_url,
                                 ..
                             } => Content::ImageUrl(vec![ImageUrl {
                                 r#type: ContentType::image_url,
                                 text: None,
-                                image_url: Some(ImageUrlType { url: data }),
+                                image_url: Some(ImageUrlType { url: image_url.url }),
                             }]),
                         }
                     } else {
@@ -62,12 +62,12 @@ impl From<History> for ChatCompletionRequest {
                                 }),
                                 HistoryContent::Image {
                                     content_type: _,
-                                    data,
+                                    image_url,
                                     ..
                                 } => Some(ImageUrl {
                                     r#type: ContentType::image_url,
                                     text: None,
-                                    image_url: Some(ImageUrlType { url: data }),
+                                    image_url: Some(ImageUrlType { url: image_url.url }),
                                 }),
                             })
                             .collect::<Vec<ImageUrl>>();

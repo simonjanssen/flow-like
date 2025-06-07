@@ -11,8 +11,7 @@ use flow_like_model_provider::{
 };
 use flow_like_storage::files::store::FlowLikeStore;
 use flow_like_types::{
-    Result, reqwest,
-    tokio::{self, sync::Mutex as TokioMutex, task::JoinHandle, time::sleep},
+    reqwest, tokio::{self, sync::Mutex as TokioMutex, task::JoinHandle, time::sleep}, Result
 };
 use flow_like_types::{
     async_trait,
@@ -96,6 +95,20 @@ impl ModelLogic for LocalModel {
 }
 
 impl LocalModel {
+
+    pub async fn check_health(port: &str) -> Result<bool> {
+        let response = reqwest::get(format!("http://localhost:{}/health", port)).await?;
+
+        if response.status().is_success() {
+            Ok(true)
+        } else {
+            Err(flow_like_types::anyhow!(
+                "Model is not healthy: {}",
+                response.status()
+            ))
+        }
+    }
+
     pub async fn new(
         bit: &Bit,
         app_state: Arc<TokioMutex<FlowLikeState>>,
@@ -129,7 +142,7 @@ impl LocalModel {
         let async_bit = bit.clone();
         let execution_settings = execution_settings.clone();
         let thread_handle = tokio::task::spawn(async move {
-            let program = PathBuf::from("llamafiler");
+            let program = PathBuf::from("llama-server");
             let mut sidecar = match crate::utils::execute::sidecar(&program).await {
                 Ok(sidecar) => sidecar,
                 Err(e) => {
@@ -141,20 +154,23 @@ impl LocalModel {
             context_length =
                 std::cmp::min(context_length, execution_settings.max_context_size as u32);
             let binding = context_length.to_string();
-            let port = format!("localhost:{}", port);
+            let port = port.to_string();
             let mut args = vec![
                 "-m",
                 &gguf_path.to_str().unwrap(),
                 "-c",
                 &binding,
-                "-l",
+                "--host",
+                "localhost",
+                "--port",
                 &port,
+                "--no-webui"
             ];
 
             let mut gpu_layer = 0;
 
             if execution_settings.gpu_mode {
-                gpu_layer = 9999;
+                gpu_layer = 25;
             }
 
             let gpu_layer = gpu_layer.to_string();
@@ -172,7 +188,7 @@ impl LocalModel {
             }
 
             if !projection_path.is_empty() {
-                args.push("-mm");
+                args.push("--mmproj");
                 args.push(&projection_path);
             }
 
@@ -207,7 +223,18 @@ impl LocalModel {
             });
         });
 
-        sleep(Duration::from_millis(2000)).await;
+        let mut loaded = false;
+        let mut max_retries = 60;
+
+        while !loaded && max_retries > 0 {
+            match LocalModel::check_health(&port.to_string()).await {
+                Ok(_) => loaded = true,
+                Err(_e) => {
+                    sleep(Duration::from_secs(1)).await;
+                    max_retries -= 1;
+                }
+            }
+        }
 
         Ok(LocalModel {
             client: reqwest::Client::new(),

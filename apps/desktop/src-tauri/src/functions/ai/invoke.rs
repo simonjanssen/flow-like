@@ -3,7 +3,7 @@ use std::sync::Arc;
 use flow_like::{
     bit::{Bit, BitModelPreference},
     flow_like_model_provider::{
-        history::{History, HistoryMessage, Role},
+        history::{Content, History, HistoryMessage, MessageContent, Role},
         llm::LLMCallback,
         response::Response,
     },
@@ -23,6 +23,7 @@ pub async fn predict(
     id: String,
     system_prompt: String,
     prompt: String,
+    images: Option<Vec<String>>,
 ) -> Result<Response, TauriFunctionError> {
     println!("Invoking predict, prompt: {}", prompt);
     let model = {
@@ -43,7 +44,29 @@ pub async fn predict(
 
     let mut history = History::new("local".to_string(), vec![]);
     history.set_system_prompt(system_prompt.clone());
-    history.push_message(HistoryMessage::from_string(Role::User, &prompt));
+    let images = images.unwrap_or_default();
+    let mut content = Vec::with_capacity(images.len() + 1);
+    content.push(Content::Text {
+        content_type: flow_like::flow_like_model_provider::history::ContentType::Text,
+        text: prompt.clone(),
+    });
+    for image in images {
+        content.push(Content::Image {
+            image_url: flow_like::flow_like_model_provider::history::ImageUrl {
+                url: image,
+                detail: None,
+            },
+            content_type: flow_like::flow_like_model_provider::history::ContentType::ImageUrl,
+        });
+    }
+    history.push_message(HistoryMessage {
+        role: Role::User,
+        content: MessageContent::Contents(content),
+        name: None,
+        tool_call_id: None,
+        tool_calls: None,
+    });
+
     history.set_stream(true);
 
     let buffered_sender = Arc::new(BufferedInterComHandler::new(
