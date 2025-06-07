@@ -12,6 +12,7 @@ const nextConfig = {
 	missingSuspenseWithCSRBailout: false,
 	experimental: {
 		missingSuspenseWithCSRBailout: false,
+		serverComponentsHmrCache: true,
 	},
 	devIndicators: {
 		appIsrStatus: false,

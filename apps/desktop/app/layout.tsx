@@ -32,44 +32,44 @@ export default function RootLayout({
 	return (
 		<html lang="en" suppressHydrationWarning suppressContentEditableWarning>
 			{/* <ReactScan /> */}
-			<PHProvider>
-				<ReactFlowProvider>
-					<PersistQueryClientProvider
-						client={queryClient}
-						persistOptions={{
-							persister,
-						}}
-					>
-						<TooltipProvider>
-							<Toaster />
-							<body className={inter.className}>
+			{/* <PHProvider> */}
+			<ReactFlowProvider>
+				<PersistQueryClientProvider
+					client={queryClient}
+					persistOptions={{
+						persister,
+					}}
+				>
+					<TooltipProvider>
+						<Toaster />
+						<body className={inter.className}>
+							<Suspense
+								fallback={
+									<div className="flex flex-1 justify-center items-center">
+										{"Loading..."}
+									</div>
+								}
+							>
 								<ToastProvider />
 								<TauriProvider>
 									<DesktopAuthProvider>
-										<Suspense
-											fallback={
-												<div className="flex flex-1 justify-center items-center">
-													{"Loading..."}
-												</div>
-											}
+										<PostHogPageView />
+										<ThemeProvider
+											attribute="class"
+											defaultTheme="system"
+											enableSystem
+											disableTransitionOnChange
 										>
-											<PostHogPageView />
-											<ThemeProvider
-												attribute="class"
-												defaultTheme="system"
-												enableSystem
-												disableTransitionOnChange
-											>
-												<AppSidebar>{children}</AppSidebar>
-											</ThemeProvider>
-										</Suspense>
+											<AppSidebar>{children}</AppSidebar>
+										</ThemeProvider>
 									</DesktopAuthProvider>
 								</TauriProvider>
-							</body>
-						</TooltipProvider>
-					</PersistQueryClientProvider>
-				</ReactFlowProvider>
-			</PHProvider>
+							</Suspense>
+						</body>
+					</TooltipProvider>
+				</PersistQueryClientProvider>
+			</ReactFlowProvider>
+			{/* </PHProvider> */}
 		</html>
 	);
 }

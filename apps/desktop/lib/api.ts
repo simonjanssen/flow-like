@@ -1,12 +1,25 @@
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
+import type { IProfile } from "@tm9657/flow-like-ui";
 import type { AuthContextProps } from "react-oidc-context";
 
-function constructUrl(path: string): string {
-	const baseUrl = process.env.NEXT_PUBLIC_API_URL!;
-	return `${baseUrl}api/v1/${path}`;
+function constructUrl(profile: IProfile, path: string): string {
+	let baseUrl = profile.hub ?? "api.flow-like.com";
+	if (process.env.NEXT_PUBLIC_API_URL)
+		baseUrl = process.env.NEXT_PUBLIC_API_URL;
+	if (!baseUrl.endsWith("/")) {
+		baseUrl += "/";
+	}
+
+	if (baseUrl.startsWith("http://") || baseUrl.startsWith("https://")) {
+		// If the base URL is already a full URL, use it as is
+		return `${baseUrl}api/v1/${path}`;
+	}
+
+	return `https://${baseUrl}api/v1/${path}`;
 }
 
 export async function fetcher<T>(
+	profile: IProfile,
 	path: string,
 	options?: RequestInit,
 	auth?: AuthContextProps,
@@ -16,7 +29,7 @@ export async function fetcher<T>(
 		headers["Authorization"] = `Bearer ${auth?.user?.id_token}`;
 	}
 
-	const url = constructUrl(path);
+	const url = constructUrl(profile, path);
 	const response = await tauriFetch(url, {
 		...options,
 		headers: {
@@ -40,11 +53,13 @@ export async function fetcher<T>(
 }
 
 export async function post<T>(
+	profile: IProfile,
 	path: string,
 	data?: any,
 	auth?: AuthContextProps,
 ): Promise<T> {
 	return fetcher<T>(
+		profile,
 		path,
 		{
 			method: "POST",
@@ -55,10 +70,12 @@ export async function post<T>(
 }
 
 export async function get<T>(
+	profile: IProfile,
 	path: string,
 	auth?: AuthContextProps,
 ): Promise<T> {
 	return fetcher<T>(
+		profile,
 		path,
 		{
 			method: "GET",
@@ -68,11 +85,13 @@ export async function get<T>(
 }
 
 export async function put<T>(
+	profile: IProfile,
 	path: string,
 	data?: any,
 	auth?: AuthContextProps,
 ): Promise<T> {
 	return fetcher<T>(
+		profile,
 		path,
 		{
 			method: "PUT",
@@ -83,11 +102,13 @@ export async function put<T>(
 }
 
 export async function del<T>(
+	profile: IProfile,
 	path: string,
 	data?: any,
 	auth?: AuthContextProps,
 ): Promise<T> {
 	return fetcher<T>(
+		profile,
 		path,
 		{
 			method: "DELETE",
@@ -98,11 +119,13 @@ export async function del<T>(
 }
 
 export async function patch<T>(
+	profile: IProfile,
 	path: string,
 	data?: any,
 	auth?: AuthContextProps,
 ): Promise<T> {
 	return fetcher<T>(
+		profile,
 		path,
 		{
 			method: "PATCH",

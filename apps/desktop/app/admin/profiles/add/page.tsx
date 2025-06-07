@@ -163,6 +163,7 @@ export default function AddProfilePage() {
 
 	const handleSave = useCallback(async () => {
 		const putRequest = await fetcher(
+			profile,
 			`admin/profiles/${profile.id}`,
 			{
 				method: "PUT",
@@ -182,6 +183,7 @@ export default function AddProfilePage() {
 			const file = event.target.files?.[0];
 			if (file && file.type === "image/webp") {
 				const signedUrl = await get<{ url: string; final_url?: string }>(
+			profile,
 					"admin/profiles/media",
 					auth,
 				);

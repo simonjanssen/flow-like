@@ -7,14 +7,26 @@
 		"bits",
 		"boards",
 		"created_at",
+		"download_count",
 		"id",
+		"interactions_count",
+		"rating_count",
+		"rating_sum",
 		"releases",
+		"status",
 		"templates",
-		"updated_at"
+		"updated_at",
+		"visibility"
 	],
 	"properties": {
 		"id": {
 			"type": "string"
+		},
+		"status": {
+			"$ref": "#/definitions/AppStatus"
+		},
+		"visibility": {
+			"$ref": "#/definitions/AppVisibility"
 		},
 		"authors": {
 			"type": "array",
@@ -46,11 +58,65 @@
 				"type": "string"
 			}
 		},
+		"changelog": {
+			"type": ["string", "null"]
+		},
+		"primary_category": {
+			"anyOf": [
+				{
+					"$ref": "#/definitions/AppCategory"
+				},
+				{
+					"type": "null"
+				}
+			]
+		},
+		"secondary_category": {
+			"anyOf": [
+				{
+					"$ref": "#/definitions/AppCategory"
+				},
+				{
+					"type": "null"
+				}
+			]
+		},
+		"rating_sum": {
+			"type": "integer",
+			"format": "uint64",
+			"minimum": 0.0
+		},
+		"rating_count": {
+			"type": "integer",
+			"format": "uint64",
+			"minimum": 0.0
+		},
+		"download_count": {
+			"type": "integer",
+			"format": "uint64",
+			"minimum": 0.0
+		},
+		"interactions_count": {
+			"type": "integer",
+			"format": "uint64",
+			"minimum": 0.0
+		},
+		"avg_rating": {
+			"type": ["number", "null"],
+			"format": "double"
+		},
+		"relevance_score": {
+			"type": ["number", "null"],
+			"format": "double"
+		},
 		"updated_at": {
 			"$ref": "#/definitions/SystemTime"
 		},
 		"created_at": {
 			"$ref": "#/definitions/SystemTime"
+		},
+		"version": {
+			"type": ["string", "null"]
 		},
 		"frontend": {
 			"anyOf": [
@@ -61,9 +127,54 @@
 					"type": "null"
 				}
 			]
+		},
+		"price": {
+			"type": ["integer", "null"],
+			"format": "uint32",
+			"minimum": 0.0
 		}
 	},
 	"definitions": {
+		"AppStatus": {
+			"type": "string",
+			"enum": ["Active", "Inactive", "Archived"]
+		},
+		"AppVisibility": {
+			"type": "string",
+			"enum": [
+				"Public",
+				"PublicRequestAccess",
+				"Private",
+				"Prototype",
+				"Offline"
+			]
+		},
+		"AppCategory": {
+			"type": "string",
+			"enum": [
+				"Other",
+				"Productivity",
+				"Social",
+				"Entertainment",
+				"Education",
+				"Health",
+				"Finance",
+				"Lifestyle",
+				"Travel",
+				"News",
+				"Sports",
+				"Shopping",
+				"FoodAndDrink",
+				"Music",
+				"Photography",
+				"Utilities",
+				"Weather",
+				"Games",
+				"Business",
+				"Communication",
+				"Anime"
+			]
+		},
 		"SystemTime": {
 			"type": "object",
 			"required": ["nanos_since_epoch", "secs_since_epoch"],

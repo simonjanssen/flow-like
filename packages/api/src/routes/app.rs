@@ -195,6 +195,7 @@ impl From<app::Model> for flow_like::app::App {
     fn from(model: app::Model) -> Self {
         Self {
             id: model.id,
+            price: Some(model.price as u32),
             status: match model.status {
                 crate::entity::sea_orm_active_enums::Status::Active => {
                     flow_like::app::AppStatus::Active

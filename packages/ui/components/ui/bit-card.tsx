@@ -12,6 +12,13 @@ import {
 	ScanEyeIcon,
 	UniversityIcon,
 	WorkflowIcon,
+	ExternalLinkIcon,
+	TrashIcon,
+	PlusIcon,
+	MinusIcon,
+	SparklesIcon,
+	TrendingUpIcon,
+	GithubIcon,
 } from "lucide-react";
 import { type JSX, useState } from "react";
 import { Progress } from "../../components/ui/progress";
@@ -32,6 +39,8 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "./dropdown-menu";
+import { Button } from "./button";
+import { Card, CardContent, CardHeader } from "./card";
 
 export function BitCard({
 	bit,
@@ -41,6 +50,7 @@ export function BitCard({
 	const { download } = useDownloadManager();
 
 	const [progress, setProgress] = useState<undefined | number>();
+	const [isHovered, setIsHovered] = useState(false);
 	const isInstalled: UseQueryResult<boolean> = useInvoke(
 		backend.isBitInstalled,
 		[bit],
@@ -73,149 +83,232 @@ export function BitCard({
 
 	if (bit.meta["en"] === undefined) return null;
 
+	const isInProfile = (currentProfile.data?.hub_profile.bits || []).findIndex(
+		(id) => id.split(":")[1] === bit.id,
+	) > -1;
+
 	return (
-		<div
-			className={`${wide ? "md:col-span-2 z-10" : "z-10"} focus:outline-none`}
+		<button
+			className={`${wide ? "md:col-span-2" : ""} group/card`}
 			data-testid={"box"}
+			onMouseEnter={() => setIsHovered(true)}
+			onMouseLeave={() => setIsHovered(false)}
 		>
-			<DropdownMenu>
-				<DropdownMenuTrigger className="relative w-full h-full text-start group">
-					<BentoGridItem
-						className={`h-full w-full overflow-x-hidden ${isInstalled.data && currentProfile.data?.hub_profile.bits.find((b) => b[1] === bit.id) && "!border-[#84cc16]"}`}
-						title={
-							<div className="flex flex-row items-center text-nowrap text-start">
-								<p className="max-w-[60%] overflow-hidden text-ellipsis">
-									{bit.meta.en.name}
-								</p>{" "}
-								<Badge variant={"outline"} className="ml-2">
-									{isInstalled ? (
-										<PackageCheckIcon
-											color={"#84cc16"}
-											size={15}
-											className="mr-1"
-										/>
-									) : (
-										<DownloadCloudIcon
-											color="#db2777"
-											size={15}
-											className="mr-1"
-										/>
-									)}{" "}
-									{humanFileSize(bitSize.data ?? 0)}
-								</Badge>
-							</div>
-						}
-						description={
-							<div className="h-20 max-h-20 overflow-x-hidden overflow-y-hidden line-clamp-5">
-								{bit.meta.en.description}
-							</div>
-						}
-						header={
-							<div>
-								{progress && <Progress className="mb-2" value={progress} />}
-								<div className="flex flex-row items-center justify-between">
-									<div className="rounded-full w-14 h-14 flex items-center">
-										<Avatar className="border bg-card z-10 overflow-hidden">
-											<AvatarImage
-												className="p-1 transition-transform duration-200 ease-in-out transform scale-110 group-hover:scale-150 rounded-full"
-												src={bit.meta?.en?.icon ?? "/app-logo.webp"}
-											/>
-											<AvatarFallback>NA</AvatarFallback>
-										</Avatar>
-										<div className="flex flex-row items-center gap-2 flex-nowrap border-r border-t border-b p-[0.2rem] pl-4 pr-2 py-1 rounded-md translate-x-[-10px] justify-center w-full bg-background min-w-fit">
-											<TypeToIcon type={bit.type} />
-											<p className="whitespace-nowrap delay-0 group-hover:delay-200 max-w-0 group-hover:max-w-xs group-hover:w-fit transition-all duration-300 ease-in-out transform translate-x-[-100%] opacity-0 group-hover:translate-x-0 group-hover:opacity-100">
-												{bitTypeToText(bit.type)}
-											</p>
-										</div>
-									</div>
-									{bit.repository?.startsWith("https://huggingface.co/") && (
-										<img
-											src={"/hf-logo.png"}
-											width={25}
-											height={25}
-											alt="Huggingface Logo"
-										/>
-									)}
+
+					<Card className={`
+                        relative h-full w-full cursor-pointer transition-all duration-300 ease-out
+                        hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2
+                        ${isInstalled.data ? 'ring-2 ring-emerald-500/20 shadow-emerald-500/10' : ''}
+                        ${isInProfile ? 'bg-gradient-to-br from-primary/5 to-emerald-500/5' : ''}
+                        overflow-hidden border-2 hover:border-primary/30
+                        backdrop-blur-sm bg-card/80
+                    `}>
+						{/* Installed indicator */}
+						{isInstalled.data && (
+							<div className="absolute top-4 right-4 z-20">
+								<div className="bg-emerald-500 text-white p-2 rounded-full shadow-lg animate-pulse">
+									<PackageCheckIcon size={16} />
 								</div>
 							</div>
-						}
-						icon={
-							<div className="text-left text-nowrap text-ellipsis max-w-full overflow-hidden flex flex-row items-center gap-2">
-								{bit.meta.en.tags.map((category) => (
-									<Badge variant="outline" key={category}>
-										{category}
+						)}
+
+						{/* Progress overlay */}
+						{progress !== undefined && (
+							<div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-30 flex items-center justify-center">
+								<div className="text-center space-y-4">
+									<Progress value={progress} className="w-48" />
+									<div className="flex flex-row items-center gap-2">
+										<DownloadCloudIcon size={32} className="text-primary animate-pulse w-6 h-6" />
+										<p className="text-sm text-muted-foreground">{Math.round(progress)}% Downloaded</p>
+									</div>
+								</div>
+							</div>
+						)}
+
+						<CardHeader className="pb-3">
+                            {/* Header with avatar and type indicator */}
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center space-x-4 flex-1 min-w-0">
+                                    <div className="relative">
+                                        <Avatar className="h-14 w-14 border-2 border-background shadow-lg ring-2 ring-primary/10 transition-all duration-300 group-hover/card:ring-primary/30">
+                                            <AvatarImage
+                                                src={bit.meta?.en?.icon ?? "/app-logo.webp"}
+                                                className="transition-transform duration-300 group-hover/card:scale-110"
+                                            />
+                                            <AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20">
+                                                <BitTypeIcon type={bit.type} className="h-6 w-6" />
+                                            </AvatarFallback>
+                                        </Avatar>
+
+                                        {/* Type badge */}
+                                        <div className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground rounded-full p-1.5 shadow-lg">
+                                            <BitTypeIcon type={bit.type} className="h-3 w-3" />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center space-x-2 mb-1">
+                                            <h3 className="font-semibold text-lg truncate group-hover/card:text-primary transition-colors">
+                                                {bit.meta.en.name}
+                                            </h3>
+                                            {isInProfile && (
+                                                <SparklesIcon className="h-4 w-4 text-primary animate-pulse" />
+                                            )}
+                                            {/* Repository indicator moved here */}
+                                            {bit.repository?.startsWith("https://huggingface.co/") && (
+                                                <img
+                                                    src="/hf-logo.png"
+                                                    width={20}
+                                                    height={20}
+                                                    alt="Hugging Face"
+                                                    className="opacity-70 hover:opacity-100 transition-opacity ml-1"
+                                                />
+                                            )}
+                                        </div>
+
+                                        <div className="flex items-center space-x-2">
+                                            <Badge variant="secondary" className="text-xs font-medium text-secondary-foreground">
+                                                <BitTypeIcon type={bit.type} className="h-3 w-3 mr-1 text-secondary-foreground" />
+                                                {bitTypeToText(bit.type)}
+                                            </Badge>
+
+                                            <Badge
+                                                variant={isInstalled.data ? "default" : "outline"}
+                                                className={`text-xs font-medium transition-all ${isInstalled.data
+                                                        ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                                                        : 'hover:bg-primary/10'
+                                                    }`}
+                                            >
+                                                {isInstalled.data ? (
+                                                    <PackageCheckIcon className="h-3 w-3 mr-1" />
+                                                ) : (
+                                                    <DownloadCloudIcon className="h-3 w-3 mr-1" />
+                                                )}
+                                                {humanFileSize(bitSize.data ?? 0)}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardHeader>
+
+						<CardContent className="pt-0 flex flex-col flex-1">
+							{/* Description with fixed height */}
+							<div className="h-16 mb-4 flex items-center">
+								<p className="text-muted-foreground text-sm leading-relaxed line-clamp-3 text-start">
+									{bit.meta.en.description}
+								</p>
+							</div>
+
+							{/* Tags */}
+							<div className="flex flex-nowrap gap-2 mb-6">
+								{bit.meta.en.tags.slice(0, 2).map((tag) => (
+									<Badge
+										key={tag}
+										variant="outline"
+										className="text-xs hover:bg-primary/10 transition-colors whitespace-nowrap"
+									>
+										{tag}
 									</Badge>
 								))}
+								{bit.meta.en.tags.length > 2 && (
+									<Badge variant="outline" className="text-xs">
+										+{bit.meta.en.tags.length - 2}
+									</Badge>
+								)}
 							</div>
-						}
-					/>
-					{isInstalled.data && (
-						<div className="absolute bottom-0 right-0 bg-[#84cc16] w-8 h-8 p-2 flex flex-row items-center justify-center rounded-br-xl rounded-tl-xl">
-							<PackageCheckIcon />
-						</div>
-					)}
-				</DropdownMenuTrigger>
-				<DropdownMenuContent>
-					{(bit.type === "Embedding" ||
-						bit.type === "ImageEmbedding" ||
-						bit.type === "Vlm" ||
-						bit.type === "Llm") && (
-						<DropdownMenuItem
-							onClick={async () => {
-								const profile = currentProfile.data;
-								if (!profile) return;
-								const bitIndex = profile.hub_profile.bits.findIndex(
-									([hub, id]) => id === bit.id,
-								);
-								if (bitIndex === -1) {
-									await downloadBit(bit);
-									await backend.addBit(bit, profile);
-									await currentProfile.refetch();
-									return;
-								}
 
-								await backend.removeBit(bit, profile);
-								await currentProfile.refetch();
-							}}
-						>
-							{(currentProfile.data?.hub_profile.bits || []).findIndex(
-								([hub, b]) => bit.id === b,
-							) > -1
-								? "Remove from Profile"
-								: "Add to Profile"}
-						</DropdownMenuItem>
-					)}
-					<DropdownMenuItem
-						onClick={async () => {
-							toggleDownload();
-						}}
-					>
-						{isInstalled.data ? "Delete" : "Download"}
-					</DropdownMenuItem>
-					<DropdownMenuSeparator />
-					{bit.repository && (
-						<DropdownMenuItem
-							onClick={() => {
-								if (bit.repository) open(bit.repository);
-							}}
-						>
-							Open Repository
-						</DropdownMenuItem>
-					)}
-				</DropdownMenuContent>
-			</DropdownMenu>
-		</div>
+							{/* Spacer to push action buttons to bottom */}
+							<div className="flex-1" />
+
+							{/* Action buttons - always at bottom */}
+							<div className={`flex items-center justify-between transition-all duration-300 ${isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
+								}`}>
+								<div className="flex items-center space-x-2">
+									{bit.repository && (
+										<a href={bit.repository} target="_blank"><Button
+											size="sm"
+											variant="ghost"
+											className="h-8 px-3"
+										>
+											<ExternalLinkIcon className="h-3 w-3 mr-1" />
+											Repository
+										</Button></a>
+									)}
+								</div>
+
+								<div className="flex items-center space-x-1">
+									{(bit.type === "Embedding" ||
+										bit.type === "ImageEmbedding" ||
+										bit.type === "Vlm" ||
+										bit.type === "Llm") && (
+											<Button
+												size="sm"
+												variant={isInProfile ? "default" : "outline"}
+												onClick={async (e) => {
+													e.stopPropagation();
+													const profile = currentProfile.data;
+													if (!profile) return;
+													const bitIndex = profile.hub_profile.bits.findIndex(
+														(id) => id.split(":").pop() === bit.id,
+													);
+													if (bitIndex === -1) {
+														await downloadBit(bit);
+														await backend.addBit(bit, profile);
+														await currentProfile.refetch();
+														return;
+													}
+
+													await backend.removeBit(bit, profile);
+													await currentProfile.refetch();
+												}}
+												className="h-8 px-3"
+											>
+												{isInProfile ? (
+													<MinusIcon className="h-3 w-3 mr-1" />
+												) : (
+													<PlusIcon className="h-3 w-3 mr-1" />
+												)}
+												{isInProfile ? "Remove" : "Add"}
+											</Button>
+										)}
+
+									<Button
+										size="sm"
+										variant={isInstalled.data ? "destructive" : "default"}
+										onClick={(e) => {
+											e.stopPropagation();
+											toggleDownload();
+										}}
+										className="h-8 px-3"
+									>
+										{isInstalled.data ? (
+											<TrashIcon className="h-3 w-3 mr-1" />
+										) : (
+											<DownloadCloudIcon className="h-3 w-3 mr-1" />
+										)}
+										{isInstalled.data ? "Delete" : "Download"}
+									</Button>
+								</div>
+							</div>
+						</CardContent>
+
+						{/* Gradient overlay for visual appeal */}
+						<div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-primary/5 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 pointer-events-none" />
+					</Card>
+
+		</button>
 	);
 }
 
-export function TypeToIcon({
+export function BitTypeIcon({
 	type,
 	className,
 }: { type: IBitTypes; className?: string }): JSX.Element | null {
 	const combinedClass =
-		"min-h-5 min-w-5 h-5 w-5 text-foreground" +
+		"min-h-4 min-w-4 h-4 w-4 text-foreground" +
 		(className ? ` ${className}` : "");
+
 	switch (type) {
 		case IBitTypes.Llm:
 			return <MessagesSquareIcon className={combinedClass} />;
@@ -239,7 +332,6 @@ export function TypeToIcon({
 }
 
 export function bitTypeToText(bitType: IBitTypes): string {
-	// Example name is PreprocessorConfig. We need to add a space before each capital letter except the first one.
 	return bitType.replace(/([A-Z])/g, (match, letter, index) =>
 		index === 0 ? letter : ` ${letter}`,
 	);

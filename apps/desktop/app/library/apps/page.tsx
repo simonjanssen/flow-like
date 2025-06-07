@@ -1,6 +1,7 @@
 "use client";
 
 import {
+	AppCard,
 	Badge,
 	Button,
 	EmptyState,
@@ -8,6 +9,7 @@ import {
 	HoverCardContent,
 	HoverCardTrigger,
 	type IApp,
+	IMetadata,
 	Separator,
 	humanFileSize,
 	useBackend,
@@ -61,70 +63,22 @@ export default function YoursPage() {
 					{apps.data
 						?.sort(
 							(a, b) =>
-								a.updated_at.nanos_since_epoch - b.updated_at.nanos_since_epoch,
+								a[0].updated_at.nanos_since_epoch -
+								b[0].updated_at.nanos_since_epoch,
 						)
 						.map((app, i) => {
-							return <App key={app.id} app={app} />;
+							return (
+								<AppCard
+									key={app[0].id}
+									app={app[0]}
+									metadata={app[1]}
+									variant="extended"
+									onClick={() => router.push(`/library/config?id=${app[0].id}`)}
+								/>
+							);
 						})}
 				</div>
 			</div>
 		</main>
-	);
-}
-
-function App({ app }: Readonly<{ app: IApp }>) {
-	const router = useRouter();
-	const app_size = useTauriInvoke<number>("get_app_size", { appId: app.id }, [
-		app.id,
-	]);
-	const configured = useTauriInvoke<boolean>(
-		"app_configured",
-		{ appId: app.id },
-		[app.id],
-	);
-
-	return (
-		<button
-			type="button"
-			onClick={() => {
-				router.push(`/library/config?id=${app.id}`);
-			}}
-			className="relative p-3 min-h-[190px] max-h-[190px] min-w-[320px] max-w-[320px] flex flex-col justify-start rounded-md border bg-card text-card-foreground hover:border-primary shadow cursor-pointer"
-		>
-			<h4 className="scroll-m-20 text-start text-md font-semibold tracking-tight line-clamp-1">
-				{app.meta.en.name}
-			</h4>
-			<div className="flex flex-row items-center flex-wrap gap-2 mt-2">
-				{app.meta.en.tags.map((tag) => (
-					<Badge key={tag} variant={"secondary"}>
-						{tag}
-					</Badge>
-				))}
-			</div>
-			<Separator className="my-3" />
-			<div className="">
-				<p className="text-xs [&:not(:first-child)]:mt-6 text-start line-clamp-3 text-muted-foreground ">
-					{app.meta.en.description}
-				</p>
-			</div>
-			<div className="absolute bottom-0 right-0 left-0 flex flex-row items-center gap-2 m-2 flex-wrap">
-				<Badge variant={"outline"}>{humanFileSize(app_size.data ?? 0)}</Badge>
-			</div>
-
-			{!configured.data && !configured.isFetching && (
-				<HoverCard>
-					<HoverCardTrigger asChild>
-						<div className="absolute bottom-0 right-0">
-							<AlertTriangle className="p-1 bg-destructive border rounded-lg w-6 h-6  m-2 text-destructive-foreground" />
-						</div>
-					</HoverCardTrigger>
-					<HoverCardContent className="bg-destructive">
-						<p className="text-destructive-foreground text-xs">
-							Setup not complete yet.
-						</p>
-					</HoverCardContent>
-				</HoverCard>
-			)}
-		</button>
 	);
 }

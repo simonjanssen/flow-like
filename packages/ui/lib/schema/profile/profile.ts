@@ -11,6 +11,7 @@ export interface IProfile {
 	name: string;
 	settings?: ISettings;
 	tags?: string[];
+	theme?: any;
 	thumbnail?: null | string;
 	updated: string;
 	[property: string]: any;

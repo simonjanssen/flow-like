@@ -20,6 +20,7 @@ impl ToProto<flow_like_types::proto::App> for App {
             relevance_score: self.relevance_score.map(|v| v as f32),
             download_count: self.download_count as i64,
             interaction_count: self.interactions_count as i64,
+            price: self.price.map(|p| p as i32),
             rating_count: self.rating_count as i64,
             rating_sum: self.rating_sum as i64,
             templates: self.templates.clone(),
@@ -51,6 +52,7 @@ impl FromProto<flow_like_types::proto::App> for App {
             status: AppStatus::from_proto(proto.status),
             version: proto.version,
             visibility: AppVisibility::from_proto(proto.visibility),
+            price: proto.price.map(|p| p as u32),
             created_at: proto
                 .created_at
                 .map(|t| SystemTime::try_from(t).unwrap_or(SystemTime::UNIX_EPOCH))

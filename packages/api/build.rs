@@ -19,16 +19,16 @@ struct OpenIdConfig {
 
 fn main() -> Result<()> {
     // make sure we rerun if config changes
-    println!("cargo:rerun-if-changed=../../api.config.json");
+    println!("cargo:rerun-if-changed=../../flow-like.config.json");
 
     // load and parse
-    let cfg_str = fs::read_to_string("../../api.config.json")?;
+    let cfg_str = fs::read_to_string("../../flow-like.config.json")?;
     let cfg: ApiConfig = flow_like_types::json::from_str(&cfg_str)?;
     let jwks_url = cfg
         .authentication
         .and_then(|a| a.openid)
         .map(|o| o.jwks_url)
-        .expect("jwks_url must be set in api.config.json");
+        .expect("jwks_url must be set in flow-like.config.json");
 
     // fetch JWKS
     let resp = get(&jwks_url)?.error_for_status()?;

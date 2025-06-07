@@ -1,0 +1,52 @@
+{
+	"name": "Flow-Like Official",
+	"description": "Flow-Like is a platform for building enterprise-grade workflow automation.",
+	"authentication": {
+		"variant": "openid",
+		"openid": {
+			"authority": "https://cognito-idp.eu-central-1.amazonaws.com/eu-central-1_UPKl2Zus6",
+			"client_id": "5me4lps5siu6gnbtgnpg1f3s7d",
+			"redirect_uri": "https://flow-like.com/callback",
+			"post_logout_redirect_uri": "https://flow-like.com/logout",
+			"response_type": "code",
+			"scope": "phone openid email profile",
+			"jwks_url": "https://cognito-idp.eu-central-1.amazonaws.com/eu-central-1_UPKl2Zus6/.well-known/jwks.json",
+			"discovery_url": "https://cognito-idp.eu-central-1.amazonaws.com/eu-central-1_UPKl2Zus6/.well-known/openid-configuration",
+			"cognito": {
+				"user_pool_id": "eu-central-1_UPKl2Zus6"
+			},
+			"proxy": {
+				"enabled": false,
+				"authorize": "https://api.companyx.com/auth",
+				"token": "https://api.companyx.com/auth",
+				"userinfo": "https://api.companyx.com/auth",
+				"revoke": "https://api.companyx.com/auth"
+			}
+		}
+	},
+	"features": {
+		"model_hosting": true,
+		"flow_hosting": true,
+		"governance": true,
+		"ai_act": true,
+		"unauthorized_read": true,
+		"admin_interface": true,
+		"premium": true
+	},
+	"hubs": [],
+	"cdn": "https://cdn.flow-like.com",
+	"provider": "aws",
+	"domain": "api.alpha.flow-like.com",
+	"region": "eu-west-1",
+	"terms_of_service": "https://good-co.de/eula/",
+	"legal_notice": "https://good-co.de/legal-notice/",
+	"privacy_policy": "https://good-co.de/privacy-policy/",
+	"contact": {
+		"name": "Support Team",
+		"email": "help@good-co.de",
+		"url": "https://good-co.de"
+	},
+	"max_users_prototype": -1,
+	"default_user_plan": "FREE",
+	"environment": "Development"
+}

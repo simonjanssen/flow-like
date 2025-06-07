@@ -311,16 +311,39 @@ impl BitPack {
                 || bit.size.is_none()
                 || bit.file_name.is_none()
             {
+                println!(
+                    "Skipping bit {}: already downloaded or missing required fields",
+                    bit.id
+                );
                 return;
             }
 
-            if bit.size.unwrap() == 0 {
+            if bit.size.unwrap_or(0) == 0 {
+                println!(
+                    "Skipping bit {}: size is zero, cannot download",
+                    bit.id
+                );
                 return;
             }
 
             deduplicated_bits.push(bit.clone());
             deduplication_helper.insert(bit.hash.clone());
         });
+
+        if deduplicated_bits.is_empty() {
+            println!("No bits to download");
+            return Ok(vec![]);
+        }
+
+        println!(
+            "Downloading {} bits: {}",
+            deduplicated_bits.len(),
+            deduplicated_bits
+                .iter()
+                .map(|bit| bit.id.clone())
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
 
         let download_futures: Vec<_> = deduplicated_bits
             .iter()

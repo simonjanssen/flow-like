@@ -1,4 +1,4 @@
-import { type UseQueryResult, useQuery } from "@tm9657/flow-like-ui";
+import { type UseQueryResult, useBackend, useInvoke, useQuery } from "@tm9657/flow-like-ui";
 import { useAuth } from "react-oidc-context";
 import { fetcher } from "./api";
 
@@ -9,10 +9,13 @@ export function useApi<T>(
 	enabled?: boolean,
 ): UseQueryResult<T, Error> {
 	const auth = useAuth();
+	const backend = useBackend();
+	const profile = useInvoke(backend.getProfile, []);
 	const query = useQuery<T, Error>({
 		queryKey: [method, path, data, auth?.user?.profile?.sub ?? "anon"],
 		queryFn: async () => {
 			const response = await fetcher<T>(
+				profile.data!,
 				path,
 				{
 					method,
@@ -23,7 +26,7 @@ export function useApi<T>(
 
 			return response;
 		},
-		enabled,
+		enabled: enabled && !!profile.data,
 	});
 
 	return query;

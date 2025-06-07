@@ -30,6 +30,7 @@ export interface IBackendState {
 	): Promise<IApp>;
 	getApps(): Promise<[IApp, IMetadata | undefined][]>;
 	getApp(appId: string): Promise<IApp>;
+	updateApp(app: IApp): Promise<void>;
 	getAppMeta(appId: string, language?: string): Promise<IMetadata>;
 	pushAppMeta(
 		appId: string,

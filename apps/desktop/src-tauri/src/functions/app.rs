@@ -197,11 +197,11 @@ pub async fn push_app_meta(
 #[tauri::command(async)]
 pub async fn get_app_meta(
     app_handle: AppHandle,
-    app_id: App,
+    app_id: String,
     language: Option<String>,
 ) -> Result<Metadata, TauriFunctionError> {
     let metadata = App::get_meta(
-        app_id.id,
+        app_id,
         TauriFlowLikeState::construct(&app_handle).await?,
         language,
         None,

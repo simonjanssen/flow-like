@@ -57,6 +57,11 @@ export default function Id({
 		typeof id === "string",
 	);
 	const app = useInvoke(backend.getApp, [id ?? ""], typeof id === "string");
+	const metadata = useInvoke(
+		backend.getAppMeta,
+		[id ?? ""],
+		typeof id === "string",
+	);
 	const appSize = useTauriInvoke<number>(
 		"get_app_size",
 		{ appId: id },
@@ -101,7 +106,7 @@ export default function Id({
 	}
 
 	return (
-		<main className="lex min-h-screen max-h-screen overflow-hidden flex-col w-full p-4 px-6  flex bg-background">
+		<main className="lex min-h-screen max-h-screen overflow-hidden flex-col w-full p-4 px-6  flex ">
 			<Breadcrumb>
 				<BreadcrumbList>
 					<BreadcrumbItem>
@@ -113,7 +118,7 @@ export default function Id({
 					</BreadcrumbItem>
 					<BreadcrumbSeparator />
 					<BreadcrumbItem>
-						<BreadcrumbPage>{app.data?.meta.en.name}</BreadcrumbPage>
+						<BreadcrumbPage>{metadata.data?.name}</BreadcrumbPage>
 					</BreadcrumbItem>
 				</BreadcrumbList>
 			</Breadcrumb>
@@ -121,10 +126,10 @@ export default function Id({
 				<div className="flex flex-row items-center gap-2">
 					<LayoutGridIcon />
 					<h1 className="text-3xl font-semibold flex flex-row items-center">
-						{app.data?.meta.en.name}
+						{metadata.data?.name}
 					</h1>
 					<Badge variant={"outline"}>{humanFileSize(appSize.data ?? 0)}</Badge>
-					{app.data?.meta.en.tags.map((tag) => (
+					{metadata.data?.tags.map((tag) => (
 						<Badge key={tag} variant={"secondary"}>
 							{tag}
 						</Badge>
@@ -143,9 +148,7 @@ export default function Id({
 					)}
 				</div>
 
-				<p className="leading-7 line-clamp-1">
-					{app.data?.meta.en.description}
-				</p>
+				<p className="leading-7 line-clamp-1">{metadata.data?.description}</p>
 			</div>
 			<div className="grid w-full items-start gap-6 md:grid-cols-[180px_1fr] lg:grid-cols-[250px_1fr] mt-8 h-full flex-grow overflow-hidden max-h-full">
 				<nav className="flex flex-col gap-4 text-sm text-muted-foreground border-r h-full max-h-full overflow-hidden">
@@ -153,7 +156,7 @@ export default function Id({
 						href={`/library/config?id=${app.data?.id}`}
 						className={
 							currentRoute.endsWith("/config")
-								? "font-semibold text-primary flex flex-row items-center gap-1"
+								? "font-semibold text-foreground flex flex-row items-center gap-1"
 								: "hover:text-primary flex flex-row items-center gap-1"
 						}
 					>
@@ -164,7 +167,7 @@ export default function Id({
 						href={`/library/config/configuration?id=${app.data?.id}`}
 						className={
 							currentRoute.endsWith("/configuration")
-								? "font-semibold text-primary flex flex-row items-center gap-1"
+								? "font-semibold text-foreground flex flex-row items-center gap-1"
 								: "hover:text-primary flex flex-row items-center gap-1"
 						}
 					>
@@ -175,7 +178,7 @@ export default function Id({
 						href={`/library/config/logic?id=${app.data?.id}`}
 						className={
 							currentRoute.endsWith("/logic")
-								? "font-semibold text-primary flex flex-row items-center gap-1"
+								? "font-semibold text-foreground flex flex-row items-center gap-1"
 								: "hover:text-primary flex flex-row items-center gap-1"
 						}
 					>
@@ -186,7 +189,7 @@ export default function Id({
 						href={`/library/config/events?id=${app.data?.id}`}
 						className={
 							currentRoute.endsWith("/events")
-								? "font-semibold text-primary flex flex-row items-center gap-1"
+								? "font-semibold text-foreground flex flex-row items-center gap-1"
 								: "hover:text-primary flex flex-row items-center gap-1"
 						}
 					>
@@ -197,7 +200,7 @@ export default function Id({
 						href={`/library/config/storage?id=${app.data?.id}`}
 						className={
 							currentRoute.endsWith("/storage")
-								? "font-semibold text-primary flex flex-row items-center gap-1"
+								? "font-semibold text-foreground flex flex-row items-center gap-1"
 								: "hover:text-primary flex flex-row items-center gap-1"
 						}
 					>
@@ -208,7 +211,7 @@ export default function Id({
 						href={`/library/config/explore?id=${app.data?.id}`}
 						className={
 							currentRoute.endsWith("/explore")
-								? "font-semibold text-primary flex flex-row items-center gap-1"
+								? "font-semibold text-foreground flex flex-row items-center gap-1"
 								: "hover:text-primary flex flex-row items-center gap-1"
 						}
 					>
@@ -219,7 +222,7 @@ export default function Id({
 						href={`/library/config/analytics?id=${app.data?.id}`}
 						className={
 							currentRoute.endsWith("/analytics")
-								? "font-semibold text-primary flex flex-row items-center gap-1"
+								? "font-semibold text-foreground flex flex-row items-center gap-1"
 								: "hover:text-primary flex flex-row items-center gap-1"
 						}
 					>
@@ -230,7 +233,7 @@ export default function Id({
 						href={`/library/config/share?id=${app.data?.id}`}
 						className={
 							currentRoute.endsWith("/share")
-								? "font-semibold text-primary flex flex-row items-center gap-1"
+								? "font-semibold text-foreground flex flex-row items-center gap-1"
 								: "hover:text-primary flex flex-row items-center gap-1"
 						}
 					>
@@ -241,7 +244,7 @@ export default function Id({
 						href={`/library/config/endpoints?id=${app.data?.id}`}
 						className={
 							currentRoute.endsWith("/endpoints")
-								? "font-semibold text-primary flex flex-row items-center gap-1"
+								? "font-semibold text-foreground flex flex-row items-center gap-1"
 								: "hover:text-primary flex flex-row items-center gap-1"
 						}
 					>
@@ -252,7 +255,7 @@ export default function Id({
 						href={`/library/config/export?id=${app.data?.id}`}
 						className={
 							currentRoute.endsWith("/export")
-								? "font-semibold text-primary flex flex-row items-center gap-1"
+								? "font-semibold text-foreground flex flex-row items-center gap-1"
 								: "hover:text-primary flex flex-row items-center gap-1"
 						}
 					>
@@ -299,7 +302,7 @@ export default function Id({
 							))}
 					</div>
 				</nav>
-				<div className="pb-4 pl-2 flex-grow max-h-full h-full overflow-auto">
+				<div className="pl-2 flex-grow max-h-full h-full overflow-auto">
 					<Suspense>{children}</Suspense>
 				</div>
 			</div>

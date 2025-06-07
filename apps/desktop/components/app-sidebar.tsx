@@ -267,7 +267,7 @@ export function AppSidebar({
 		<SidebarProvider>
 			<InnerSidebar />
 			<main className="w-full h-full">
-				<SidebarInset className="bg-dot-black/10 dark:bg-dot-white/10">
+				<SidebarInset className="bg-gradient-to-br from-background via-background to-muted/20">
 					{children}
 				</SidebarInset>
 			</main>
@@ -480,7 +480,7 @@ function Profiles() {
 									<AvatarImage
 										className="rounded-lg size-8 w-8 h-8"
 										src={
-											currentProfile.data?.hub_profile.thumbnail ??
+											currentProfile.data?.hub_profile.icon ??
 											"/placeholder.webp"
 										}
 									/>
@@ -551,7 +551,7 @@ function Profiles() {
 											<AvatarImage
 												className="rounded-sm w-8 h-8"
 												src={
-													profile.hub_profile.thumbnail ??
+													profile.hub_profile.icon ??
 													"/thumbnail-placeholder.webp"
 												}
 											/>
@@ -816,12 +816,12 @@ export function NavUser({
 }>) {
 	const { isMobile } = useSidebar();
 	const auth = useAuth();
+	const backend = useBackend();
+	const profile = useInvoke(backend.getProfile, []);
 
 	const displayName: string = useMemo(() => {
 		const profile = auth?.user?.profile;
 		if (!profile) return "Offline";
-
-		const user = getCurrentUser();
 
 		return (
 			profile?.name ??
@@ -892,27 +892,30 @@ export function NavUser({
 										<BadgeCheck className="size-4" />
 										Account
 									</DropdownMenuItem>
-									<DropdownMenuItem
-										className="gap-2"
-										onClick={async () => {
-											const urlRequest = await fetcher<{ url: string }>(
-												"user/billing",
-												{ method: "GET" },
-												auth,
-											);
-											const view = new WebviewWindow("billing", {
-												url: urlRequest.url,
-												title: "Billing",
-												focus: true,
-												resizable: true,
-												maximized: true,
-												contentProtected: true,
-											});
-										}}
-									>
-										<CreditCard className="size-4" />
-										Billing
-									</DropdownMenuItem>
+									{profile.data && (
+										<DropdownMenuItem
+											className="gap-2"
+											onClick={async () => {
+												const urlRequest = await fetcher<{ url: string }>(
+													profile.data,
+													"user/billing",
+													{ method: "GET" },
+													auth,
+												);
+												const view = new WebviewWindow("billing", {
+													url: urlRequest.url,
+													title: "Billing",
+													focus: true,
+													resizable: true,
+													maximized: true,
+													contentProtected: true,
+												});
+											}}
+										>
+											<CreditCard className="size-4" />
+											Billing
+										</DropdownMenuItem>
+									)}
 									<DropdownMenuItem className="gap-2">
 										<Bell className="size-4" />
 										Notifications
@@ -922,11 +925,7 @@ export function NavUser({
 								<DropdownMenuItem
 									className="gap-2"
 									onClick={async () => {
-										await auth?.signoutRedirect({
-											post_logout_redirect_uri:
-												process.env.NEXT_PUBLIC_REDIRECT_LOGOUT_URL,
-											id_token_hint: auth?.user?.id_token,
-										});
+										await auth?.signoutRedirect();
 									}}
 								>
 									<LogOut className="size-4" />

@@ -171,7 +171,16 @@ export class Bit implements IBit {
 			const deps: IBit[] = cachedDependencies;
 			const pack = new BitPack();
 			pack.bits = deps;
+
+			console.groupCollapsed("Cached Dependencies for", this.hash);
+			console.dir(pack, { depth: null });
+			console.groupEnd();
+
 			return pack;
+		}
+
+		if (!this.backend) {
+			throw new Error("Backend is not set");
 		}
 
 		const bits:
@@ -187,17 +196,27 @@ export class Bit implements IBit {
 		if (bits.bits.length > 0) await set(this.dependency_tree_hash, bits.bits);
 		const pack = new BitPack();
 		pack.bits = bits.bits;
+
+		console.groupCollapsed("Fetched Dependencies for", this.hash);
+		console.dir(pack, { depth: null });
+		console.groupEnd();
+
 		return pack;
 	}
 
-	async fetchSize(): Promise<number> {
+	public async fetchSize(): Promise<number> {
 		const pack = await this.fetchDependencies();
+
+		console.dir(pack, { depth: null });
 		return pack.bits.reduce((acc, bit) => acc + (bit.size ?? 0), 0);
 	}
 
 	async download(cb?: (progress: Download) => void): Promise<IBit[]> {
 		try {
 			const dependencies = await this.fetchDependencies();
+			console.groupCollapsed("Dependencies for", this.hash);
+			console.dir(dependencies, { depth: null });
+			console.groupEnd();
 			const totalProgress = new Download(this.toObject(), dependencies.bits);
 
 			const download: undefined | IBit[] = await this.backend?.downloadBit(

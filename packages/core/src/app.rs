@@ -123,6 +123,8 @@ pub struct App {
 
     pub frontend: Option<FrontendConfiguration>,
 
+    pub price: Option<u32>,
+
     #[serde(skip)]
     pub app_state: Option<Arc<Mutex<FlowLikeState>>>,
 }
@@ -150,6 +152,7 @@ impl Clone for App {
             updated_at: self.updated_at,
             created_at: self.created_at,
             version: self.version.clone(),
+            price: self.price,
             app_state: self.app_state.clone(),
             frontend: self.frontend.clone(),
         }
@@ -189,6 +192,8 @@ impl App {
 
             primary_category: None,
             secondary_category: None,
+
+            price: None,
 
             frontend: None,
             app_state: Some(app_state.clone()),
@@ -564,6 +569,7 @@ mod tests {
             avg_rating: Some(4.5),
             download_count: 1000,
             interactions_count: 500,
+            price: Some(9),
             rating_count: 200,
             rating_sum: 800,
             relevance_score: Some(0.9),

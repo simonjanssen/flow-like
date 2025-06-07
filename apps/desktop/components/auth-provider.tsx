@@ -92,11 +92,12 @@ export function DesktopAuthProvider({
 		useState<UserManagerSettings>();
 	const [userManager, setUserManager] = useState<UserManager>();
 	const backend = useBackend();
-	const currentProfile = useInvoke(backend.getSettingsProfile, []);
+	const currentProfile = useInvoke(backend.getProfile, []);
 
 	useEffect(() => {
+		if (!currentProfile.data) return;
 		(async () => {
-			const response = await get<any>("auth/openid");
+			const response = await get<any>(currentProfile.data, "auth/openid");
 			if (response) {
 				if (process.env.NEXT_PUBLIC_REDIRECT_URL)
 					response.redirect_uri = process.env.NEXT_PUBLIC_REDIRECT_URL;
@@ -132,7 +133,7 @@ export function DesktopAuthProvider({
 				setOpenIdAuthConfig(response);
 			}
 		})();
-	}, []);
+	}, [currentProfile.data]);
 
 	useEffect(() => {
 		if (!openIdAuthConfig) return;
@@ -201,9 +202,9 @@ function AuthInner({ children }: { children: React.ReactNode }) {
 		if (!auth) return;
 
 		if (backend instanceof TauriBackend) {
-				backend.pushAuthContext(auth);
-			}
-	} ,[auth, backend])
+			backend.pushAuthContext(auth);
+		}
+	}, [auth, backend]);
 
 	useEffect(() => {
 		if (!auth) return;

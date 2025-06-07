@@ -29,7 +29,7 @@ use crate::credentials::RuntimeCredentials;
 
 pub type AppState = Arc<State>;
 
-const CONFIG: &str = include_str!("../../../api.config.json");
+const CONFIG: &str = include_str!("../../../flow-like.config.json");
 const JWKS: &str = include_str!(concat!(env!("OUT_DIR"), "/jwks.json"));
 
 pub struct State {

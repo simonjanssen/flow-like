@@ -10,7 +10,7 @@ use axum::{
 };
 use flow_like::{bit::Bit, utils::http::HTTPClient};
 use flow_like_types::create_id;
-use sea_orm::{ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter};
+use sea_orm::{sea_query::OnConflict, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter};
 use serde_json::from_value;
 use std::{
     collections::{HashMap, HashSet},
@@ -88,6 +88,11 @@ pub async fn get_with_dependencies(
         created_at: Set(chrono::Utc::now().naive_utc()),
         updated_at: Set(chrono::Utc::now().naive_utc()),
     })
+    .on_conflict(
+        OnConflict::column(bit_tree_cache::Column::DependencyTreeHash)
+        .update_column(bit_tree_cache::Column::UpdatedAt)
+        .to_owned()
+    )
     .exec_with_returning(&state.db)
     .await?;
 

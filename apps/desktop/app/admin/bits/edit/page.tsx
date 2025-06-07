@@ -3,9 +3,9 @@
 import {
 	BentoGrid,
 	BitCard,
+	BitTypeIcon,
 	type IBit,
 	IBitTypes,
-	TypeToIcon,
 	bitTypeToText,
 } from "@tm9657/flow-like-ui";
 import { Input } from "@tm9657/flow-like-ui";
@@ -215,7 +215,7 @@ export default function EditPage() {
 									className={`group cursor-pointer hover:bg-primary gap-2 ${selectedBitTypes.includes(bitType) ? "text-primary-foreground" : "text-secondary-foreground"}`}
 									onClick={() => handleBitTypeToggle(bitType)}
 								>
-									<TypeToIcon
+									<BitTypeIcon
 										type={bitType}
 										className={`w-3 h-3 group-hover:text-primary-foreground ${selectedBitTypes.includes(bitType) ? "text-primary-foreground" : "text-secondary-foreground"}`}
 									/>

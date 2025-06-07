@@ -5,7 +5,7 @@
 	"required": ["bits", "created", "name", "updated"],
 	"properties": {
 		"id": {
-			"default": "t11q6whwv5ym8vimk6gob7dv",
+			"default": "kvvrsnidk0fur4q5xam2gp4d",
 			"type": "string"
 		},
 		"name": {
@@ -52,6 +52,9 @@
 			"items": {
 				"$ref": "#/definitions/ProfileApp"
 			}
+		},
+		"theme": {
+			"default": null
 		},
 		"bits": {
 			"type": "array",

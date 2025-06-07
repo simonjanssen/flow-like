@@ -28,10 +28,10 @@ import {
 } from "@tm9657/flow-like-ui";
 import type { IBitSearchQuery } from "@tm9657/flow-like-ui/lib/schema/hub/bit-search-query";
 import { useEffect, useState } from "react";
-import { AuthContextProps, useAuth } from "react-oidc-context";
+import { type AuthContextProps, useAuth } from "react-oidc-context";
 
 export class TauriBackend implements IBackendState {
-	constructor(private auth?: AuthContextProps){}
+	constructor(private auth?: AuthContextProps) {}
 
 	pushAuthContext(auth: AuthContextProps) {
 		this.auth = auth;
@@ -49,6 +49,13 @@ export class TauriBackend implements IBackendState {
 		});
 		return app;
 	}
+
+	async updateApp(app: IApp): Promise<void> {
+		await invoke("update_app", {
+			app: app,
+		});
+	}
+
 	async getAppMeta(appId: string, language?: string): Promise<IMetadata> {
 		const meta: IMetadata = await invoke("get_app_meta", {
 			appId: appId,
@@ -125,7 +132,7 @@ export class TauriBackend implements IBackendState {
 
 	async getBoardSettings(): Promise<"straight" | "step" | "simpleBezier"> {
 		const profile: ISettingsProfile = await invoke("get_current_profile");
-		return profile.flow_settings.connection_mode;
+		return profile?.flow_settings?.connection_mode ?? "simpleBezier";
 	}
 
 	async executeBoard(
@@ -385,13 +392,16 @@ export class TauriBackend implements IBackendState {
 	}
 
 	async getPackFromBit(bit: IBit): Promise<{ bits: IBit[] }> {
-		return await invoke("get_pack_from_bit", {
+		console.log("Getting pack from bit:", bit);
+		const pack = await invoke<{ bits: IBit[] }>("get_pack_from_bit", {
 			bit: bit,
 		});
+		console.log("Pack retrieved:", pack);
+		return pack;
 	}
 
 	async getPackSize(bits: IBit[]): Promise<number> {
-		const size: number = await invoke("get_pack_size", {
+		const size: number = await invoke("get_bit_size", {
 			bits: bits,
 		});
 		return size;

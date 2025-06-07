@@ -1,0 +1,88 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "AppSearchQuery",
+	"type": "object",
+	"properties": {
+		"search": {
+			"type": ["string", "null"]
+		},
+		"limit": {
+			"type": ["integer", "null"],
+			"format": "uint64",
+			"minimum": 0.0
+		},
+		"offset": {
+			"type": ["integer", "null"],
+			"format": "uint64",
+			"minimum": 0.0
+		},
+		"categories": {
+			"type": ["array", "null"],
+			"items": {
+				"$ref": "#/definitions/AppCategory"
+			}
+		},
+		"authors": {
+			"type": ["array", "null"],
+			"items": {
+				"type": "string"
+			}
+		},
+		"sort": {
+			"anyOf": [
+				{
+					"$ref": "#/definitions/AppSearchSort"
+				},
+				{
+					"type": "null"
+				}
+			]
+		},
+		"tag": {
+			"type": ["string", "null"]
+		}
+	},
+	"definitions": {
+		"AppCategory": {
+			"type": "string",
+			"enum": [
+				"Other",
+				"Productivity",
+				"Social",
+				"Entertainment",
+				"Education",
+				"Health",
+				"Finance",
+				"Lifestyle",
+				"Travel",
+				"News",
+				"Sports",
+				"Shopping",
+				"FoodAndDrink",
+				"Music",
+				"Photography",
+				"Utilities",
+				"Weather",
+				"Games",
+				"Business",
+				"Communication",
+				"Anime"
+			]
+		},
+		"AppSearchSort": {
+			"type": "string",
+			"enum": [
+				"BestRated",
+				"WorstRated",
+				"MostPopular",
+				"LeastPopular",
+				"MostRelevant",
+				"LeastRelevant",
+				"NewestCreated",
+				"OldestCreated",
+				"NewestUpdated",
+				"OldestUpdated"
+			]
+		}
+	}
+}

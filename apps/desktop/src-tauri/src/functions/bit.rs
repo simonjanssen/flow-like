@@ -40,7 +40,12 @@ pub async fn get_pack_from_bit(
     bit: Bit,
 ) -> Result<BitPack, TauriFunctionError> {
     let flow_like_state = TauriFlowLikeState::construct(&app_handle).await?;
-    let pack = bit.pack(flow_like_state).await?;
+    let pack = bit.pack(flow_like_state).await;
+    if let Err(err) = &pack {
+        println!("Error getting pack from bit: {}", err);
+    }
+    let pack = pack?;
+    println!("Pack size: {}", pack.size());
     Ok(pack)
 }
 
