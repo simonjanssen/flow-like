@@ -2,29 +2,15 @@
 
 import {
 	AppCard,
-	Badge,
 	Button,
 	EmptyState,
-	HoverCard,
-	HoverCardContent,
-	HoverCardTrigger,
-	type IApp,
-	IMetadata,
 	Separator,
-	humanFileSize,
 	useBackend,
 	useInvoke,
 } from "@tm9657/flow-like-ui";
-import {
-	AlertTriangle,
-	FilesIcon,
-	LayoutGridIcon,
-	LinkIcon,
-	Plus,
-} from "lucide-react";
+import { FilesIcon, LayoutGridIcon, LinkIcon, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTauriInvoke } from "../../components/useInvoke";
 
 export default function YoursPage() {
 	const backend = useBackend();
@@ -36,7 +22,7 @@ export default function YoursPage() {
 			<div className="mr-6 max-h-screen overflow-y-auto invisible-scroll flex-2 flex-grow h-full w-full">
 				<div className="flex flex-row items-center">
 					<h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
-						Overview
+						Library
 					</h1>
 					<Link href={"/library/new"}>
 						<Button variant="default" className="ml-4">

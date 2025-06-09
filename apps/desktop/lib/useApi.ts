@@ -1,4 +1,9 @@
-import { type UseQueryResult, useBackend, useInvoke, useQuery } from "@tm9657/flow-like-ui";
+import {
+	type UseQueryResult,
+	useBackend,
+	useInvoke,
+	useQuery,
+} from "@tm9657/flow-like-ui";
 import { useAuth } from "react-oidc-context";
 import { fetcher } from "./api";
 

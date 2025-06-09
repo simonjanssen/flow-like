@@ -10,11 +10,13 @@ import {
 	useInvoke,
 	useMiniSearch,
 } from "@tm9657/flow-like-ui";
+import { Badge } from "@tm9657/flow-like-ui/components/ui/badge";
 import {
 	BentoGrid,
 	BentoGridItem,
 } from "@tm9657/flow-like-ui/components/ui/bento-grid";
 import { BitCard } from "@tm9657/flow-like-ui/components/ui/bit-card";
+import { Card, CardContent } from "@tm9657/flow-like-ui/components/ui/card";
 import {
 	DropdownMenu,
 	DropdownMenuCheckboxItem,
@@ -24,19 +26,17 @@ import {
 	DropdownMenuTrigger,
 } from "@tm9657/flow-like-ui/components/ui/dropdown-menu";
 import { Skeleton } from "@tm9657/flow-like-ui/components/ui/skeleton";
-import { Badge } from "@tm9657/flow-like-ui/components/ui/badge";
-import { Card, CardContent } from "@tm9657/flow-like-ui/components/ui/card";
 import type { ISettingsProfile } from "@tm9657/flow-like-ui/types";
 import {
+	Bot,
+	Database,
+	Eye,
+	Filter,
+	Image,
 	ListFilter,
+	Loader2,
 	Search,
 	Sparkles,
-	Bot,
-	Eye,
-	Database,
-	Image,
-	Loader2,
-	Filter
 } from "lucide-react";
 import MiniSearch from "minisearch";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -83,9 +83,9 @@ export default function SettingsPage() {
 	const [searchTerm, setSearchTerm] = useState("");
 	const [blacklist, setBlacklist] = useState(new Set<string>());
 
-	 const [isHeaderVisible, setIsHeaderVisible] = useState(true);
-    const scrollContainerRef = useRef<HTMLDivElement>(null);
-    const lastScrollY = useRef(0);
+	const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+	const scrollContainerRef = useRef<HTMLDivElement>(null);
+	const lastScrollY = useRef(0);
 
 	const profile: UseQueryResult<ISettingsProfile> = useTauriInvoke(
 		"get_current_profile",
@@ -136,7 +136,14 @@ export default function SettingsPage() {
 		filters: string[];
 	}>({
 		appliedFilter: ["All"],
-		filters: ["LLM", "Vision LLM", "Embedding", "Image Embedding", "In Profile", "Downloaded"],
+		filters: [
+			"LLM",
+			"Vision LLM",
+			"Embedding",
+			"Image Embedding",
+			"In Profile",
+			"Downloaded",
+		],
 	});
 
 	const { search, searchResults, addAllAsync, removeAll } = useMiniSearch<any>(
@@ -166,31 +173,33 @@ export default function SettingsPage() {
 	);
 
 	useEffect(() => {
-        const handleScroll = () => {
-            const scrollContainer = scrollContainerRef.current;
-            if (!scrollContainer) return;
+		const handleScroll = () => {
+			const scrollContainer = scrollContainerRef.current;
+			if (!scrollContainer) return;
 
-            const currentScrollY = scrollContainer.scrollTop;
-            const scrollDifference = currentScrollY - lastScrollY.current;
+			const currentScrollY = scrollContainer.scrollTop;
+			const scrollDifference = currentScrollY - lastScrollY.current;
 
-            // Show header when scrolling up or at the top
-            if (scrollDifference < 0 || currentScrollY < 50) {
-                setIsHeaderVisible(true);
-            }
-            // Hide header when scrolling down and past threshold
-            else if (scrollDifference > 0 && currentScrollY > 100) {
-                setIsHeaderVisible(false);
-            }
+			// Show header when scrolling up or at the top
+			if (scrollDifference < 0 || currentScrollY < 50) {
+				setIsHeaderVisible(true);
+			}
+			// Hide header when scrolling down and past threshold
+			else if (scrollDifference > 0 && currentScrollY > 100) {
+				setIsHeaderVisible(false);
+			}
 
-            lastScrollY.current = currentScrollY;
-        };
+			lastScrollY.current = currentScrollY;
+		};
 
-        const scrollContainer = scrollContainerRef.current;
-        if (scrollContainer) {
-            scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
-            return () => scrollContainer.removeEventListener('scroll', handleScroll);
-        }
-    }, []);
+		const scrollContainer = scrollContainerRef.current;
+		if (scrollContainer) {
+			scrollContainer.addEventListener("scroll", handleScroll, {
+				passive: true,
+			});
+			return () => scrollContainer.removeEventListener("scroll", handleScroll);
+		}
+	}, []);
 
 	useEffect(() => {
 		if (!foundBits.data) return;
@@ -228,17 +237,20 @@ export default function SettingsPage() {
 				if (blacklist.has(bit.id)) return false;
 
 				// Check which filters are applied
-				const hasProfileFilter = searchFilter.appliedFilter.includes("In Profile");
-				const hasDownloadedFilter = searchFilter.appliedFilter.includes("Downloaded");
+				const hasProfileFilter =
+					searchFilter.appliedFilter.includes("In Profile");
+				const hasDownloadedFilter =
+					searchFilter.appliedFilter.includes("Downloaded");
 				const hasAllFilter = searchFilter.appliedFilter.includes("All");
 
 				// Get type filters (excluding "All", "In Profile", "Downloaded")
-				const typeFilters = searchFilter.appliedFilter.filter(filter =>
-					!["All", "In Profile", "Downloaded"].includes(filter)
+				const typeFilters = searchFilter.appliedFilter.filter(
+					(filter) => !["All", "In Profile", "Downloaded"].includes(filter),
 				);
 
 				// Determine type match
-				const typeMatch = hasAllFilter ||
+				const typeMatch =
+					hasAllFilter ||
 					typeFilters.length === 0 || // No specific types selected - show all types
 					typeFilters.includes(bitTypeToFilter(bit.type));
 
@@ -273,9 +285,9 @@ export default function SettingsPage() {
 		console.dir({
 			allBits,
 			profileBitIds,
-			installedBits
-		})
-		console.groupEnd()
+			installedBits,
+		});
+		console.groupEnd();
 
 		removeAll();
 		setBits(allBits);
@@ -289,17 +301,23 @@ export default function SettingsPage() {
 		);
 	}, [foundBits.data, blacklist, searchFilter, profile.data, installedBits]);
 
-	const activeFilterCount = searchFilter.appliedFilter.filter(f => f !== "All").length;
+	const activeFilterCount = searchFilter.appliedFilter.filter(
+		(f) => f !== "All",
+	).length;
 
 	return (
 		<main className="flex flex-grow h-full max-h-full overflow-hidden flex-col w-full">
 			{/* Header Section */}
-			<div className={`
+			<div
+				className={`
                 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60
                 transition-transform duration-300 ease-in-out
-                ${isHeaderVisible ? 'translate-y-0' : '-translate-y-full h-0'}
-            `}>
-				<div className={`max-w-screen-xl mx-auto p-6 flex flex-col duration-200 transition-all ease-in-out space-y-4 ${isHeaderVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full h-0'}`}>
+                ${isHeaderVisible ? "translate-y-0" : "-translate-y-full h-0"}
+            `}
+			>
+				<div
+					className={`max-w-screen-xl mx-auto p-6 flex flex-col duration-200 transition-all ease-in-out space-y-4 ${isHeaderVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-full h-0"}`}
+				>
 					{/* Title and Description */}
 					<div className="flex flex-col space-y-2">
 						<div className="flex items-center space-x-2">
@@ -309,7 +327,8 @@ export default function SettingsPage() {
 							</h1>
 						</div>
 						<p className="text-lg text-muted-foreground max-w-2xl">
-							Discover and configure AI models for your workflow. Browse through our collection of language models, vision models, and embeddings.
+							Discover and configure AI models for your workflow. Browse through
+							our collection of language models, vision models, and embeddings.
 						</p>
 					</div>
 
@@ -335,12 +354,18 @@ export default function SettingsPage() {
 							{/* Active Filters Display */}
 							{activeFilterCount > 0 && (
 								<div className="flex items-center space-x-1">
-									{searchFilter.appliedFilter.filter(f => f !== "All").map((filter) => (
-										<Badge key={filter} variant="secondary" className="flex items-center space-x-1">
-											{getFilterIcon(filter)}
-											<span>{filter}</span>
-										</Badge>
-									))}
+									{searchFilter.appliedFilter
+										.filter((f) => f !== "All")
+										.map((filter) => (
+											<Badge
+												key={filter}
+												variant="secondary"
+												className="flex items-center space-x-1"
+											>
+												{getFilterIcon(filter)}
+												<span>{filter}</span>
+											</Badge>
+										))}
 								</div>
 							)}
 
@@ -434,14 +459,14 @@ export default function SettingsPage() {
 								<span>
 									{searchTerm === ""
 										? `${bits.length} models available`
-										: `${searchResults?.length || 0} results for "${searchTerm}"`
-									}
+										: `${searchResults?.length || 0} results for "${searchTerm}"`}
 								</span>
-								{searchFilter.appliedFilter.length > 0 && !searchFilter.appliedFilter.includes("All") && (
-									<Badge variant="outline" className="text-xs">
-										Filtered
-									</Badge>
-								)}
+								{searchFilter.appliedFilter.length > 0 &&
+									!searchFilter.appliedFilter.includes("All") && (
+										<Badge variant="outline" className="text-xs">
+											Filtered
+										</Badge>
+									)}
 							</div>
 						</div>
 					)}
@@ -450,9 +475,9 @@ export default function SettingsPage() {
 
 			{/* Content Section */}
 			<div
-                ref={scrollContainerRef}
-                className="flex flex-grow h-full max-h-full overflow-auto w-full"
-            >
+				ref={scrollContainerRef}
+				className="flex flex-grow h-full max-h-full overflow-auto w-full"
+			>
 				<div className="w-full max-w-screen-xl mx-auto p-6">
 					{foundBits.isLoading && (
 						<div className="space-y-6">
@@ -514,7 +539,8 @@ export default function SettingsPage() {
 					)}
 					{!foundBits.isLoading && (
 						<>
-							{(searchTerm === "" ? bits : (searchResults ?? [])).length === 0 ? (
+							{(searchTerm === "" ? bits : (searchResults ?? [])).length ===
+							0 ? (
 								<Card className="p-8 text-center max-w-md mx-auto mt-12">
 									<CardContent className="space-y-4 p-0">
 										<div className="w-16 h-16 mx-auto bg-muted rounded-full flex items-center justify-center">
@@ -525,8 +551,7 @@ export default function SettingsPage() {
 											<p className="text-muted-foreground">
 												{searchTerm
 													? `No models match "${searchTerm}". Try adjusting your search or filters.`
-													: "No models available with the current filters."
-												}
+													: "No models available with the current filters."}
 											</p>
 										</div>
 										{(searchTerm || activeFilterCount > 0) && (
@@ -535,7 +560,10 @@ export default function SettingsPage() {
 												onClick={() => {
 													setSearchTerm("");
 													search("");
-													setSearchFilter(old => ({ ...old, appliedFilter: ["All"] }));
+													setSearchFilter((old) => ({
+														...old,
+														appliedFilter: ["All"],
+													}));
 												}}
 												className="mt-4"
 											>

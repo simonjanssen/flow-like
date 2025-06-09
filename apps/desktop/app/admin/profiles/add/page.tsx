@@ -183,7 +183,7 @@ export default function AddProfilePage() {
 			const file = event.target.files?.[0];
 			if (file && file.type === "image/webp") {
 				const signedUrl = await get<{ url: string; final_url?: string }>(
-			profile,
+					profile,
 					"admin/profiles/media",
 					auth,
 				);

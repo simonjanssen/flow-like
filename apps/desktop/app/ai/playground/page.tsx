@@ -137,7 +137,7 @@ export default function Home() {
 					"You are Flowy, a next gen AI assistant, always return your answers parsed in markdown. Be friendly and sprinkle some Smileys in your answers. Generally you are super open minded and talk about any topic the user likes to talk about.",
 				bit,
 				prompt: `${prompt}`,
-				images: base64Files
+				images: base64Files,
 			}),
 		);
 
