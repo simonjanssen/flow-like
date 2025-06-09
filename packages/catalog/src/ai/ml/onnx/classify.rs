@@ -91,7 +91,6 @@ impl Classification for TimmLike {
         let output = outputs["output0"].try_extract_tensor::<f32>()?;
         let output = output.reversed_axes();
         let output = output.slice(s![.., 0]);
-        println!("{:?}", output.shape());
         let output = if apply_softmax {
             softmax(output)?
         } else {
@@ -157,7 +156,6 @@ fn img_to_arr(
         // determine resize dims such that when we crop in the following step we get an arr_width x arr_height cutout
         let resize_width = arr_width_f / crop_pct;
         let resize_height = arr_height_f / crop_pct;
-        println!("{:?}, {:?}", resize_width, resize_height);
 
         // match smaller edge of image to target resize dimension
         let resize_width = if img_width > img_height {

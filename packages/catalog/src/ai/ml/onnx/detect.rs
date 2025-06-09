@@ -166,13 +166,11 @@ impl ObjectDetection for YoloLike {
         let candidates_image = output.select(Axis(2), &idx_candidates).squeeze();
         let mut bboxes: Vec<BoundingBox> = Vec::with_capacity(candidates_image.len_of(Axis(1)));
         for candidate in candidates_image.axis_iter(Axis(1)) {
-            //println!("\tshape for candidate {:?}: {:?}", idx_candidate, candidate.shape());
             let bbox = BoundingBox::from_array(candidate.to_shape(candidate.len()).unwrap().view());
             bboxes.push(bbox);
         }
         let mut bboxes = nms(&bboxes, iou_thres);
         bboxes.truncate(max_detect); // keep only max detections
-        println!("len bboxes nms: {:?}", bboxes.len());
         Ok(bboxes)
     }
 

@@ -28,7 +28,6 @@ static TIMM_OUTPUTS: [&str; 1] = ["output0"];
 pub fn determine_provider(session: &Session) -> Result<Provider, Error> {
     let input_names: Vec<&str> = session.inputs.iter().map(|i| i.name.as_str()).collect();
     let output_names: Vec<&str> = session.outputs.iter().map(|o| o.name.as_str()).collect();
-    println!("{:?} | {:?}", input_names, output_names);
     if input_names == DFINE_INPUTS && output_names == DFINE_OUTPUTS {
         let (input_width, input_height) = determine_input_shape(session, "images")?;
         println!(
@@ -65,7 +64,6 @@ pub fn determine_provider(session: &Session) -> Result<Provider, Error> {
 }
 
 pub fn determine_input_shape(session: &Session, input_name: &str) -> Result<(u32, u32), Error> {
-    println!("{:?}", &session.inputs);
     for input in &session.inputs {
         if input.name == input_name {
             if let Some(dims) = input.input_type.tensor_dimensions() {
