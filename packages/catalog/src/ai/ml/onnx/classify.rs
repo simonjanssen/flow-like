@@ -1,7 +1,10 @@
-use crate::{ai::ml::onnx::NodeOnnxSession, image::NodeImage};
+use crate::{
+    ai::ml::onnx::{NodeOnnxSession, Provider},
+    image::NodeImage,
+};
 use flow_like::{
     flow::{
-        execution::{LogLevel, context::ExecutionContext},
+        execution::context::ExecutionContext,
         node::{Node, NodeLogic},
         pin::{PinOptions, ValueType},
         variable::VariableType,
@@ -14,17 +17,115 @@ use flow_like_types::{
     json::{Deserialize, Serialize, json},
 };
 
+use flow_like_model_provider::ml::ort::session::{Session, SessionInputValue, SessionOutputs};
 use flow_like_model_provider::ml::{
     ndarray::{Array1, Array3, Array4, ArrayView1, Axis, s},
     ort::inputs,
 };
-use std::time::Instant;
+use std::borrow::Cow;
 
-/// # Classification Prediction
 #[derive(Default, Serialize, Deserialize, JsonSchema, Clone, Debug)]
-pub struct Prediction {
+pub struct ClassPrediction {
     pub class_idx: u32,
     pub score: f32,
+}
+
+// ## Image Classification Trait for Common Behavior
+pub trait Classification {
+    fn make_inputs(
+        &self,
+        img: &DynamicImage,
+        mean_rgb: &[f32; 3],
+        std_rgb: &[f32; 3],
+        crop_pct: f32,
+    ) -> Result<Vec<(Cow<'_, str>, SessionInputValue<'_>)>, Error>;
+    fn make_results(
+        &self,
+        outputs: SessionOutputs<'_, '_>,
+        apply_softmax: bool,
+    ) -> Result<Vec<ClassPrediction>, Error>;
+    fn run(
+        &self,
+        session: &Session,
+        img: &DynamicImage,
+        mean_rgb: &[f32; 3],
+        std_rgb: &[f32; 3],
+        crop_pct: f32,
+        apply_softmax: bool,
+    ) -> Result<Vec<ClassPrediction>, Error>;
+}
+
+// ## Implementation for Pytorch-Image-Models (TIMM)
+pub struct TimmLike {
+    pub input_width: u32,
+    pub input_height: u32,
+}
+
+impl Classification for TimmLike {
+    fn make_inputs(
+        &self,
+        img: &DynamicImage,
+        mean_rgb: &[f32; 3],
+        std_rgb: &[f32; 3],
+        crop_pct: f32,
+    ) -> Result<Vec<(Cow<'_, str>, SessionInputValue<'_>)>, Error> {
+        let images = img_to_arr(
+            img,
+            self.input_width,
+            self.input_height,
+            crop_pct,
+            mean_rgb,
+            std_rgb,
+        )?;
+        let session_inputs = inputs! {
+            "input0" => images.view(),
+        }?;
+        Ok(session_inputs)
+    }
+
+    fn make_results(
+        &self,
+        outputs: SessionOutputs<'_, '_>,
+        apply_softmax: bool,
+    ) -> Result<Vec<ClassPrediction>, Error> {
+        let output = outputs["output0"].try_extract_tensor::<f32>()?;
+        let output = output.reversed_axes();
+        let output = output.slice(s![.., 0]);
+        println!("{:?}", output.shape());
+        let output = if apply_softmax {
+            softmax(output)?
+        } else {
+            output.to_owned()
+        };
+        let mut predictions = Vec::with_capacity(output.len_of(Axis(0)));
+        for (class_idx, score) in output.axis_iter(Axis(0)).enumerate() {
+            let score = score.first().copied().unwrap_or(0.);
+            predictions.push(ClassPrediction {
+                class_idx: class_idx as u32,
+                score,
+            });
+        }
+        predictions.sort_unstable_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+        Ok(predictions)
+    }
+
+    fn run(
+        &self,
+        session: &Session,
+        img: &DynamicImage,
+        mean_rgb: &[f32; 3],
+        std_rgb: &[f32; 3],
+        crop_pct: f32,
+        apply_softmax: bool,
+    ) -> Result<Vec<ClassPrediction>, Error> {
+        let session_inputs = self.make_inputs(img, mean_rgb, std_rgb, crop_pct)?;
+        let session_outputs = session.run(session_inputs)?;
+        self.make_results(session_outputs, apply_softmax)
+    }
 }
 
 /// # DynamicImage to ONNX Input Tensor
@@ -112,10 +213,7 @@ fn softmax(input_array: ArrayView1<f32>) -> Result<Array1<f32>, Error> {
     Ok(exp_shifted / sum_exp)
 }
 
-/// # Image Classification
-/// Predict classes for images
-/// Tested for ONNX models exported via https://github.com/huggingface/pytorch-image-models
-/// Applies default input image transformations for close reproduction of PyTorch results
+/// Image Classification Node
 #[derive(Default)]
 pub struct ImageClassificationNode {}
 
@@ -217,77 +315,30 @@ impl NodeLogic for ImageClassificationNode {
         let std_vec: Vec<f32> = context.evaluate_pin("std").await?;
         let crop_pct: f32 = context.evaluate_pin("crop_pct").await?;
         let apply_softmax: bool = context.evaluate_pin("softmax").await?;
+        let mean_rgb = <&[f32; 3]>::try_from(mean_vec.as_slice())?;
+        let std_rgb = <&[f32; 3]>::try_from(std_vec.as_slice())?;
 
-        let mean = <&[f32; 3]>::try_from(mean_vec.as_slice())?;
-        let std = <&[f32; 3]>::try_from(std_vec.as_slice())?;
-
-        let (outputs, t0) = {
-            // acquire onnx session
+        // run inference
+        let predictions = {
+            let img = node_img.get_image(context).await?;
+            let img_guard = img.lock().await;
             let session = node_session.get_session(context).await?;
             let session_guard = session.lock().await;
-
-            // transform DynamicImage -> Array
-            let t0 = Instant::now();
-            let arr_in = {
-                let img = node_img.get_image(context).await?;
-                let img_guard = img.lock().await;
-
-                img_to_arr(
+            let provider = &session_guard.provider;
+            match provider {
+                Provider::TimmLike(model) => model.run(
+                    &session_guard.session,
                     &img_guard,
-                    session_guard.input_width,
-                    session_guard.input_height,
+                    mean_rgb,
+                    std_rgb,
                     crop_pct,
-                    mean,
-                    std,
-                )?
-            }; // drop img_guard
-
-            let inputs = match inputs![&session_guard.input_name => arr_in.view()] {
-                Ok(mapping) => Ok(mapping),
-                Err(_) => Err(anyhow!(
-                    "Failed to put input image into ONNX model input tensor"
+                    apply_softmax,
+                ),
+                _ => Err(anyhow!(
+                    "Unknown/Incompatible ONNX-Model for Image Classification!"
                 )),
-            }?;
-            let dt = t0.elapsed();
-            context.log_message(&format!("[preprocessing]: {:?}", dt), LogLevel::Debug);
-
-            // inference
-            let t0 = Instant::now();
-            let outputs = session_guard.session.run(inputs)?;
-            let arr_out =
-                outputs[session_guard.output_name.as_str()].try_extract_tensor::<f32>()?;
-            let dt = t0.elapsed();
-            context.log_message(&format!("[inference]: {:?}", dt), LogLevel::Debug);
-
-            // postprocessing
-            let t0 = Instant::now();
-            let outputs = arr_out.reversed_axes();
-            let outputs = outputs.slice(s![.., 0]);
-
-            let outputs = if apply_softmax {
-                softmax(outputs)?
-            } else {
-                outputs.to_owned()
-            };
-
-            (outputs, t0)
-        }; // drop session guard
-
-        let mut predictions = Vec::with_capacity(outputs.len_of(Axis(0)));
-        for (class_idx, score) in outputs.axis_iter(Axis(0)).enumerate() {
-            let score = score.first().copied().unwrap_or(0.);
-            predictions.push(Prediction {
-                class_idx: class_idx as u32,
-                score,
-            });
-        }
-        predictions.sort_unstable_by(|a, b| {
-            b.score
-                .partial_cmp(&a.score)
-                .unwrap_or(std::cmp::Ordering::Equal)
-        });
-        let dt = t0.elapsed();
-        context.log_message(&format!("[postprocessing]: {:?}", dt), LogLevel::Debug);
+            }?
+        };
 
         // set outputs
         context
