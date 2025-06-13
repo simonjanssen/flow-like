@@ -22,6 +22,24 @@ pub struct Variable {
     pub value: Arc<Mutex<Value>>,
 }
 
+impl PartialEq for Variable {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+            && self.name == other.name
+            && self.category == other.category
+            && self.description == other.description
+            && self.default_value == other.default_value
+            && self.data_type == other.data_type
+            && self.value_type == other.value_type
+            && self.exposed == other.exposed
+            && self.secret == other.secret
+            && self.editable == other.editable
+        // Intentionally excluding self.value comparison
+    }
+}
+
+impl Eq for Variable {}
+
 impl Variable {
     pub fn new(name: &str, data_type: VariableType, value_type: ValueType) -> Self {
         Self {
@@ -90,7 +108,7 @@ impl Variable {
     }
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
+#[derive(PartialEq, Eq, Serialize, Deserialize, JsonSchema, Debug, Clone)]
 pub enum VariableType {
     Execution,
     String,

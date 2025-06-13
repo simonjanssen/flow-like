@@ -9,7 +9,7 @@ fn main() -> Result<()> {
             "src/protobufs/node.proto",
             "src/protobufs/pin.proto",
             "src/protobufs/variable.proto",
-            "src/protobufs/release.proto",
+            "src/protobufs/event.proto",
         ],
         &["src/protobufs/"],
     )?;

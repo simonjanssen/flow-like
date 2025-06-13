@@ -319,10 +319,7 @@ impl BitPack {
             }
 
             if bit.size.unwrap_or(0) == 0 {
-                println!(
-                    "Skipping bit {}: size is zero, cannot download",
-                    bit.id
-                );
+                println!("Skipping bit {}: size is zero, cannot download", bit.id);
                 return;
             }
 

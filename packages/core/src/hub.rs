@@ -198,7 +198,8 @@ impl Hub {
         } else {
             url.push_str(path);
         }
-        let url = Url::parse(&url).map_err(|e| flow_like_types::Error::msg(format!("Invalid URL: {}", e)))?;
+        let url = Url::parse(&url)
+            .map_err(|e| flow_like_types::Error::msg(format!("Invalid URL: {}", e)))?;
 
         Ok(url)
     }
@@ -254,7 +255,8 @@ impl Hub {
     }
 
     pub async fn get_bit_dependencies(&self, bit_id: &str) -> Result<Vec<Bit>> {
-        let dependencies_url = self.construct_url(&format!("api/v1/bit/{}/dependencies", bit_id))?;
+        let dependencies_url =
+            self.construct_url(&format!("api/v1/bit/{}/dependencies", bit_id))?;
         let request = self.http_client().client().get(dependencies_url).build()?;
         let bits = self
             .http_client()

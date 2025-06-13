@@ -6,6 +6,7 @@ export interface IApp {
 	changelog?: null | string;
 	created_at: ISystemTime;
 	download_count: number;
+	events: string[];
 	frontend?: null | IFrontendConfiguration;
 	id: string;
 	interactions_count: number;
@@ -13,7 +14,6 @@ export interface IApp {
 	primary_category?: IAppCategory | null;
 	rating_count: number;
 	rating_sum: number;
-	releases: string[];
 	relevance_score?: number | null;
 	secondary_category?: IAppCategory | null;
 	status: IAppStatus;

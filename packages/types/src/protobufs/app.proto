@@ -51,7 +51,7 @@ message App {
   repeated string authors = 4;
   repeated string bits = 5;
   repeated string boards = 6;
-  repeated string releases = 7;
+  repeated string events = 7;
   repeated string templates = 8;
   optional string changelog = 9;
   optional AppCategory primary_category = 10;

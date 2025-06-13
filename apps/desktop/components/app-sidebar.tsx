@@ -1,7 +1,6 @@
 import * as Sentry from "@sentry/nextjs";
 import { invoke } from "@tauri-apps/api/core";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { Window } from "@tauri-apps/api/window";
 import {
 	Avatar,
 	AvatarFallback,
@@ -50,16 +49,13 @@ import {
 	useDownloadManager,
 	useInvalidateInvoke,
 	useInvoke,
-	useQueryClient,
 	useSidebar,
 } from "@tm9657/flow-like-ui";
 import type { ISettingsProfile } from "@tm9657/flow-like-ui/types";
-import { getCurrentUser } from "aws-amplify/auth";
 import {
 	BadgeCheck,
 	Bell,
 	BookOpenIcon,
-	BotMessageSquareIcon,
 	BugIcon,
 	ChevronRight,
 	ChevronsUpDown,
@@ -68,9 +64,7 @@ import {
 	Edit3Icon,
 	ExternalLinkIcon,
 	HeartIcon,
-	LayoutDashboard,
 	LayoutDashboardIcon,
-	LayoutGridIcon,
 	LibraryIcon,
 	LogInIcon,
 	LogOut,
@@ -82,9 +76,7 @@ import {
 	SidebarCloseIcon,
 	SidebarOpenIcon,
 	Sparkles,
-	StoreIcon,
 	Sun,
-	UsersRound,
 	UsersRoundIcon,
 	WorkflowIcon,
 } from "lucide-react";
@@ -278,7 +270,6 @@ export function AppSidebar({
 function InnerSidebar() {
 	const intervalRef = useRef<any>(null);
 	const router = useRouter();
-	const { resolvedTheme } = useTheme();
 	const { manager } = useDownloadManager();
 	const [user] = useState<IUser | undefined>();
 	const { open, toggleSidebar } = useSidebar();
@@ -459,7 +450,6 @@ function InnerSidebar() {
 }
 
 function Profiles() {
-	const queryClient = useQueryClient();
 	const backend = useBackend();
 	const invalidate = useInvalidateInvoke();
 	const { isMobile } = useSidebar();
@@ -598,7 +588,7 @@ function NavMain({
 		url: string;
 		icon?: LucideIcon;
 		isActive?: boolean;
-		permission?: boolean | undefined;
+		permission?: boolean;
 		items?: {
 			title: string;
 			url: string;
@@ -902,7 +892,8 @@ export function NavUser({
 													{ method: "GET" },
 													auth,
 												);
-												const view = new WebviewWindow("billing", {
+
+												const _view = new WebviewWindow("billing", {
 													url: urlRequest.url,
 													title: "Billing",
 													focus: true,

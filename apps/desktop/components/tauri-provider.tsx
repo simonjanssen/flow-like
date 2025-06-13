@@ -7,9 +7,9 @@ import {
 	type IBackendState,
 	type IBit,
 	type IBitPack,
-	type IBitTypes,
 	type IBoard,
 	type IDownloadProgress,
+	type IEvent,
 	type IExecutionStage,
 	type IFileMetadata,
 	type IGenericCommand,
@@ -28,7 +28,7 @@ import {
 } from "@tm9657/flow-like-ui";
 import type { IBitSearchQuery } from "@tm9657/flow-like-ui/lib/schema/hub/bit-search-query";
 import { useEffect, useState } from "react";
-import { type AuthContextProps, useAuth } from "react-oidc-context";
+import type { AuthContextProps } from "react-oidc-context";
 
 export class TauriBackend implements IBackendState {
 	constructor(private auth?: AuthContextProps) {}
@@ -288,19 +288,137 @@ export class TauriBackend implements IBackendState {
 		});
 	}
 
-	registerEvent(
+	// Event Operations
+	async getEvent(
 		appId: string,
-		boardId: string,
-		nodeId: string,
-		eventType: string,
 		eventId: string,
-		ttl?: number,
-	): Promise<void> {
-		throw new Error("Method not implemented.");
+		version?: [number, number, number],
+	): Promise<IEvent> {
+		return await invoke("get_event", {
+			appId: appId,
+			eventId: eventId,
+			version: version,
+		});
 	}
 
-	removeEvent(eventId: string, eventType: string): Promise<void> {
-		throw new Error("Method not implemented.");
+	async getEvents(appId: string): Promise<IEvent[]> {
+		return await invoke("get_events", {
+			appId: appId,
+		});
+	}
+
+	async getEventVersions(
+		appId: string,
+		eventId: string,
+	): Promise<[number, number, number][]> {
+		return await invoke("get_event_versions", {
+			appId: appId,
+			eventId: eventId,
+		});
+	}
+
+	async upsertEvent(
+		appId: string,
+		event: IEvent,
+		versionType?: IVersionType,
+	): Promise<IEvent> {
+		return await invoke("upsert_event", {
+			appId: appId,
+			event: event,
+			versionType: versionType,
+		});
+	}
+
+	async deleteEvent(appId: string, eventId: string): Promise<void> {
+		await invoke("delete_event", {
+			appId: appId,
+			eventId: eventId,
+		});
+	}
+
+	async validateEvent(
+		appId: string,
+		eventId: string,
+		version?: [number, number, number],
+	): Promise<void> {
+		return await invoke("validate_event", {
+			appId: appId,
+			eventId: eventId,
+			version: version,
+		});
+	}
+
+	// Template Operations
+
+	async getTemplates(
+		appId?: string,
+		language?: string,
+	): Promise<[string, string, IMetadata | undefined][]> {
+		return await invoke("get_templates", {
+			appId: appId,
+			language: language,
+		});
+	}
+
+	async getTemplate(
+		appId: string,
+		templateId: string,
+		version?: [number, number, number],
+	): Promise<IBoard> {
+		return await invoke("get_template", {
+			appId: appId,
+			templateId: templateId,
+			version: version,
+		});
+	}
+
+	async upsertTemplate(
+		appId: string,
+		boardId: string,
+		templateId?: string,
+		boardVersion?: [number, number, number],
+		versionType?: IVersionType,
+	): Promise<[string, [number, number, number]]> {
+		return await invoke("upsert_template", {
+			appId: appId,
+			boardId: boardId,
+			templateId: templateId,
+			boardVersion: boardVersion,
+			versionType: versionType,
+		});
+	}
+
+	async deleteTemplate(appId: string, templateId: string): Promise<void> {
+		await invoke("delete_template", {
+			appId: appId,
+			templateId: templateId,
+		});
+	}
+
+	async getTemplateMeta(
+		appId: string,
+		templateId: string,
+		language?: string,
+	): Promise<IMetadata> {
+		return await invoke("get_template_meta", {
+			appId: appId,
+			templateId: templateId,
+			language: language,
+		});
+	}
+
+	async pushTemplateMeta(
+		appId: string,
+		templateId: string,
+		metadata: IMetadata,
+		language?: string,
+	): Promise<void> {
+		await invoke("push_template_meta", {
+			appId: appId,
+			templateId: templateId,
+			metadata: metadata,
+			language: language,
+		});
 	}
 
 	async getPathMeta(path: string): Promise<IFileMetadata[]> {
@@ -442,7 +560,7 @@ export function TauriProvider({
 	children,
 }: Readonly<{ children: React.ReactNode }>) {
 	const [loaded, setLoaded] = useState(false);
-	const { backend, setBackend } = useBackendStore();
+	const { setBackend } = useBackendStore();
 	const { setDownloadBackend, download } = useDownloadManager();
 
 	async function resumeDownloads() {

@@ -40,7 +40,7 @@ async fn create_template(
         "Board ID is required for new templates".to_string()
     ))?;
     let (_, version) = app
-        .create_template_version(
+        .upsert_template(
             Some(template_id.clone()),
             template_data
                 .version_type
@@ -128,7 +128,7 @@ pub async fn upsert_template(
         let sub = user.sub()?;
         let mut app = state.scoped_app(&sub, &app_id, &state).await?;
         let (_, version) = app
-            .create_template_version(
+            .upsert_template(
                 Some(template_id),
                 version_type,
                 board_id,

@@ -294,6 +294,19 @@ pub fn run() {
             functions::flow::run::list_runs,
             functions::flow::run::query_run,
             functions::flow::run::finalize_run,
+            functions::flow::event::validate_event,
+            functions::flow::event::get_event,
+            functions::flow::event::get_events,
+            functions::flow::event::get_event_versions,
+            functions::flow::event::upsert_event,
+            functions::flow::event::delete_event,
+            functions::flow::template::get_template,
+            functions::flow::template::get_templates,
+            functions::flow::template::get_template_versions,
+            functions::flow::template::upsert_template,
+            functions::flow::template::delete_template,
+            functions::flow::template::get_template_meta,
+            functions::flow::template::push_template_meta,
         ]);
 
     #[cfg(desktop)]

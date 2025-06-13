@@ -8,13 +8,19 @@ import {
 } from "../../../lib/uint8";
 
 export function IntegerVariable({
+	disabled,
 	variable,
 	onChange,
-}: Readonly<{ variable: IVariable; onChange: (variable: IVariable) => void }>) {
+}: Readonly<{
+	disabled?: boolean;
+	variable: IVariable;
+	onChange: (variable: IVariable) => void;
+}>) {
 	return (
-		<div className="grid w-full max-w-sm items-center gap-1.5">
+		<div className="grid w-full items-center gap-1.5">
 			<Label htmlFor="default_value">Default Value</Label>
 			<Input
+				disabled={disabled}
 				value={parseUint8ArrayToJson(variable.default_value)}
 				onChange={(e) => {
 					onChange({

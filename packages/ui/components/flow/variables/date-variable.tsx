@@ -18,9 +18,14 @@ import {
 } from "../../ui";
 
 export function DateVariable({
+	disabled,
 	variable,
 	onChange,
-}: Readonly<{ variable: IVariable; onChange: (variable: IVariable) => void }>) {
+}: Readonly<{
+	disabled?: boolean;
+	variable: IVariable;
+	onChange: (variable: IVariable) => void;
+}>) {
 	const parsed = parseUint8ArrayToJson(variable.default_value);
 
 	const defaultDate =
@@ -66,8 +71,9 @@ export function DateVariable({
 
 	return (
 		<Popover>
-			<PopoverTrigger asChild>
+			<PopoverTrigger disabled={disabled} asChild>
 				<Button
+					disabled={disabled}
 					variant={"outline"}
 					className={cn(
 						"w-full pl-3 text-left font-normal",
@@ -87,12 +93,14 @@ export function DateVariable({
 					<div className="flex flex-row items-center gap-2">
 						<p className="text-nowrap">Time:</p>
 						<Input
+							disabled={disabled}
 							type="time"
 							value={timeValue}
 							onChange={(e) => setTimeValue(e.target.value)}
 						/>
 					</div>
 					<Calendar
+						disabled={disabled}
 						showOutsideDays
 						ISOWeek
 						captionLayout="dropdown"

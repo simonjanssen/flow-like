@@ -124,7 +124,7 @@ impl Pin {
     }
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq, Eq)]
 pub enum ValueType {
     Array,
     Normal,

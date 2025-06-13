@@ -21,7 +21,7 @@ message Version {
   uint32 patch = 3;
 }
 
-message Release {
+message Event {
   string id = 1;
   string name = 2;
   string description = 3;
@@ -35,7 +35,7 @@ message Release {
   }
   optional Version board_version = 10;
   optional Canary canary = 11;
-  Version release_version = 12;
+  Version event_version = 12;
   google.protobuf.Timestamp created_at = 13;
   google.protobuf.Timestamp updated_at = 14;
   bool active = 15;

@@ -1,5 +1,5 @@
 use flow_like_model_provider::history::{
-    Content, ContentType, History, HistoryMessage, ImageUrl, MessageContent, ResponseFormat, Role
+    Content, ContentType, History, HistoryMessage, ImageUrl, MessageContent, ResponseFormat,
 };
 use flow_like_types::utils::data_url::optimize_data_url;
 use serde::{Deserialize, Serialize};

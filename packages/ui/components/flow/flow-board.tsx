@@ -16,6 +16,7 @@ import {
 	type OnEdgesChange,
 	type OnNodesChange,
 	ReactFlow,
+	type ReactFlowInstance,
 	addEdge,
 	applyEdgeChanges,
 	applyNodeChanges,
@@ -108,7 +109,14 @@ function hexToRgba(hex: string, alpha = 0.3): string {
 export function FlowBoard({
 	appId,
 	boardId,
-}: Readonly<{ appId: string; boardId: string }>) {
+	nodeId,
+	initialVersion,
+}: Readonly<{
+	appId: string;
+	boardId: string;
+	nodeId?: string;
+	initialVersion?: [number, number, number];
+}>) {
 	const { pushCommand, pushCommands, redo, undo } = useUndoRedo(appId, boardId);
 	const router = useRouter();
 	const backend = useBackend();
@@ -119,7 +127,10 @@ export function FlowBoard({
 	const { refetchLogs, setCurrentMetadata, currentMetadata } =
 		useLogAggregation();
 	const flowRef = useRef<any>(null);
-	const [version, setVersion] = useState<[number, number, number]>();
+	const [version, setVersion] = useState<[number, number, number] | undefined>(
+		initialVersion,
+	);
+	const [initialized, setInitialized] = useState(false);
 	const flowPanelRef = useRef<ImperativePanelHandle>(null);
 	const logPanelRef = useRef<ImperativePanelHandle>(null);
 	const varPanelRef = useRef<ImperativePanelHandle>(null);
@@ -200,6 +211,24 @@ export function FlowBoard({
 
 		if (size < 10) logPanelRef.current.resize(45);
 	}, [logPanelRef.current]);
+
+	const initializeFlow = useCallback(
+		async (instance: ReactFlowInstance) => {
+			if (initialized) return;
+			if (!nodeId || nodeId === "") return;
+
+			instance.fitView({
+				nodes: [
+					{
+						id: nodeId ?? "",
+					},
+				],
+				duration: 500,
+			});
+			setInitialized(true);
+		},
+		[nodeId, initialized],
+	);
 
 	function toggleVars() {
 		if (!varPanelRef.current) return;
@@ -1141,6 +1170,7 @@ export function FlowBoard({
 										onContextMenu={onContextMenuCB}
 										nodesDraggable={typeof version === "undefined"}
 										nodesConnectable={typeof version === "undefined"}
+										onInit={initializeFlow}
 										ref={flowRef}
 										colorMode={colorMode}
 										nodes={nodes}

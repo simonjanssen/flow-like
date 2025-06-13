@@ -11,7 +11,8 @@ use flow_like_model_provider::{
 };
 use flow_like_storage::files::store::FlowLikeStore;
 use flow_like_types::{
-    reqwest, tokio::{self, sync::Mutex as TokioMutex, task::JoinHandle, time::sleep}, Result
+    Result, reqwest,
+    tokio::{self, sync::Mutex as TokioMutex, task::JoinHandle, time::sleep},
 };
 use flow_like_types::{
     async_trait,
@@ -95,7 +96,6 @@ impl ModelLogic for LocalModel {
 }
 
 impl LocalModel {
-
     pub async fn check_health(port: &str) -> Result<bool> {
         let response = reqwest::get(format!("http://localhost:{}/health", port)).await?;
 
@@ -164,7 +164,7 @@ impl LocalModel {
                 "localhost",
                 "--port",
                 &port,
-                "--no-webui"
+                "--no-webui",
             ];
 
             let mut gpu_layer = 0;

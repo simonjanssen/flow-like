@@ -8,11 +8,11 @@
 		"boards",
 		"created_at",
 		"download_count",
+		"events",
 		"id",
 		"interactions_count",
 		"rating_count",
 		"rating_sum",
-		"releases",
 		"status",
 		"templates",
 		"updated_at",
@@ -46,7 +46,7 @@
 				"type": "string"
 			}
 		},
-		"releases": {
+		"events": {
 			"type": "array",
 			"items": {
 				"type": "string"

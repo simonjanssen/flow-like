@@ -198,10 +198,12 @@ function BoardConfig({
 	);
 }
 
-function VariableConfigCard({
+export function VariableConfigCard({
+	disabled,
 	variable,
 	onUpdate,
 }: Readonly<{
+	disabled?: boolean;
 	variable: IVariable;
 	onUpdate: (variable: IVariable) => Promise<void>;
 }>) {
@@ -232,6 +234,7 @@ function VariableConfigCard({
 				</div>
 				<div className="flex-shrink-0 z-0 opacity-60 group-hover:opacity-100 transition-opacity w-full">
 					<VariablesMenuEdit
+						disabled={disabled}
 						variable={variable}
 						updateVariable={async (updatedVariable) => {
 							console.log(parseUint8ArrayToJson(updatedVariable.default_value));
@@ -244,7 +247,7 @@ function VariableConfigCard({
 	);
 }
 
-function VariableTypeIndicator({
+export function VariableTypeIndicator({
 	type,
 	valueType,
 }: Readonly<{
@@ -252,8 +255,7 @@ function VariableTypeIndicator({
 	valueType: IVariableType;
 }>) {
 	const color = typeToColor(valueType);
-	const baseStyle =
-		"w-8 h-8 p-1 rounded-lg flex items-center justify-center border-2 bg-background";
+	const baseStyle = "w-6 h-6 p-1 flex items-center justify-center";
 
 	switch (type) {
 		case IValueType.Normal:

@@ -9,9 +9,14 @@ import {
 import { Button, Separator } from "../../ui";
 
 export function IntegerSetVariable({
+	disabled,
 	variable,
 	onChange,
-}: Readonly<{ variable: IVariable; onChange: (variable: IVariable) => void }>) {
+}: Readonly<{
+	disabled?: boolean;
+	variable: IVariable;
+	onChange: (variable: IVariable) => void;
+}>) {
 	const [newValue, setNewValue] = useState("");
 
 	// parse once per render
@@ -26,6 +31,7 @@ export function IntegerSetVariable({
 
 	// add a new integer
 	const handleAdd = useCallback(() => {
+		if (disabled) return;
 		const trimmed = newValue.trim();
 		if (!trimmed) return;
 		const num = Number.parseInt(trimmed, 10);
@@ -36,24 +42,26 @@ export function IntegerSetVariable({
 			default_value: convertJsonToUint8Array(Array.from(new Set(updated))),
 		});
 		setNewValue("");
-	}, [newValue, values, onChange, variable]);
+	}, [disabled, newValue, values, onChange, variable]);
 
 	// remove by index
 	const handleRemove = useCallback(
 		(index: number) => {
+			if (disabled) return;
 			const updated = values.filter((_, i) => i !== index);
 			onChange({
 				...variable,
 				default_value: convertJsonToUint8Array(Array.from(new Set(updated))),
 			});
 		},
-		[values, onChange, variable],
+		[disabled, values, onChange, variable],
 	);
 
 	return (
-		<div className="grid w-full max-w-sm items-center gap-1.5">
-			<div className="flex flex-row gap-2 items-center w-full sticky top-0 bg-background">
+		<div className="grid w-full items-center gap-1.5">
+			<div className="flex flex-row gap-2 items-center w-full sticky top-0">
 				<Input
+					disabled={disabled}
 					value={newValue}
 					onChange={(e) => setNewValue(e.target.value)}
 					onKeyDown={(e) => e.key === "Enter" && handleAdd()}
@@ -65,7 +73,9 @@ export function IntegerSetVariable({
 					size="icon"
 					variant="default"
 					onClick={handleAdd}
-					disabled={newValue.trim() === ""}
+					disabled={
+						newValue.trim() === "" || isNaN(Number(newValue)) || disabled
+					}
 				>
 					<PlusCircleIcon className="w-4 h-4" />
 				</Button>
@@ -80,6 +90,7 @@ export function IntegerSetVariable({
 				>
 					<p className="px-2 truncate">{value}</p>
 					<Button
+						disabled={disabled}
 						size="icon"
 						variant="destructive"
 						onClick={() => handleRemove(idx)}

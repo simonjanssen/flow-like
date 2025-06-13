@@ -3,9 +3,9 @@ import type {
 	IApp,
 	IBit,
 	IBitPack,
-	IBitTypes,
 	IBoard,
 	IDownloadProgress,
+	IEvent,
 	IExecutionStage,
 	IFileMetadata,
 	IGenericCommand,
@@ -122,16 +122,61 @@ export interface IBackendState {
 		commands: IGenericCommand[],
 	): Promise<IGenericCommand[]>;
 
-	registerEvent(
+	// Event Operations
+	getEvent(
 		appId: string,
-		boardId: string,
-		nodeId: string,
-		eventType: string,
 		eventId: string,
-		ttl?: number,
+		version?: [number, number, number],
+	): Promise<IEvent>;
+	getEvents(appId: string): Promise<IEvent[]>;
+	getEventVersions(
+		appId: string,
+		eventId: string,
+	): Promise<[number, number, number][]>;
+	upsertEvent(
+		appId: string,
+		event: IEvent,
+		versionType?: IVersionType,
+	): Promise<IEvent>;
+	deleteEvent(appId: string, eventId: string): Promise<void>;
+	validateEvent(
+		appId: string,
+		eventId: string,
+		version?: [number, number, number],
 	): Promise<void>;
 
-	removeEvent(eventId: string, eventType: string): Promise<void>;
+	// Template Operations
+
+	// Returns a list of templates for the given appId and language, if the appId is not given, returns all templates the user has access to.
+	getTemplates(
+		appId?: string,
+		language?: string,
+		// [appId, templateId, metadata]
+	): Promise<[string, string, IMetadata | undefined][]>;
+	getTemplate(
+		appId: string,
+		templateId: string,
+		version?: [number, number, number],
+	): Promise<IBoard>;
+	upsertTemplate(
+		appId: string,
+		boardId: string,
+		templateId?: string,
+		boardVersion?: [number, number, number],
+		versionType?: IVersionType,
+	): Promise<[string, [number, number, number]]>;
+	deleteTemplate(appId: string, templateId: string): Promise<void>;
+	getTemplateMeta(
+		appId: string,
+		templateId: string,
+		language?: string,
+	): Promise<IMetadata>;
+	pushTemplateMeta(
+		appId: string,
+		templateId: string,
+		metadata: IMetadata,
+		language?: string,
+	): Promise<void>;
 
 	// Additional Functionality
 	getPathMeta(folderPath: string): Promise<IFileMetadata[]>;

@@ -63,7 +63,7 @@ export default function Page() {
 		boards.data?.forEach((board) => {
 			parentRegister?.addBoardParent(
 				board.id,
-				`/library/config/logic?id=${id}`,
+				`/library/config/flows?id=${id}`,
 			);
 		});
 	}, [boards.data, id]);
@@ -76,7 +76,7 @@ export default function Page() {
 
 	return (
 		<main className="h-full flex flex-col overflow-hidden max-h-full">
-			<div className="container mx-auto px-6 py-8 flex flex-col h-full">
+			<div className="container mx-auto px-6 py-4 flex flex-col h-full">
 				{/* Header Section */}
 				<div className="flex flex-col space-y-6 flex-shrink-0">
 					<div className="flex items-center justify-between">
@@ -106,21 +106,21 @@ export default function Page() {
 							<DialogContent className="sm:max-w-md">
 								<DialogHeader>
 									<DialogTitle className="text-2xl">
-										Create New Board
+										Create New Flow
 									</DialogTitle>
 									<DialogDescription className="text-base">
-										Design a new workflow board for your application
+										Design a new flow for your application
 									</DialogDescription>
 								</DialogHeader>
 								<div className="space-y-4 py-4">
 									<div className="space-y-2">
 										<Label htmlFor="name" className="text-sm font-medium">
-											Board Name
+											Flow Name
 										</Label>
 										<Input
 											value={boardCreation.name}
 											id="name"
-											placeholder="Enter board name..."
+											placeholder="Enter flow name..."
 											className="h-11"
 											onChange={(e) => {
 												setBoardCreation((old) => ({
@@ -140,7 +140,7 @@ export default function Page() {
 										<Textarea
 											value={boardCreation.description}
 											id="description"
-											placeholder="Describe the purpose of this board..."
+											placeholder="Describe the purpose of this flow..."
 											className="min-h-[100px] resize-none"
 											onChange={(e) => {
 												setBoardCreation((old) => ({
@@ -281,8 +281,7 @@ export default function Page() {
 								<WorkflowIcon className="h-16 w-16 text-muted-foreground/50 mb-4" />
 								<h3 className="text-xl font-semibold mb-2">No boards yet</h3>
 								<p className="text-muted-foreground text-center mb-6 max-w-md">
-									Create your first workflow board to start building amazing
-									automations
+									Create your first flow to start building amazing automations
 								</p>
 								<Button
 									onClick={() =>

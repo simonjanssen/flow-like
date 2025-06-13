@@ -33,10 +33,14 @@ export {
 	type ISystemTime,
 } from "./flow/board";
 export type {
-	IRelease,
+	IEvent,
+	ICanaryEvent,
 	IReleaseNotes,
-	ICanaryRelease,
-} from "./flow/release";
+} from "./flow/event";
+export type { IEventPayload } from "./flow/event-payload";
+export type { IEventPayloadMail } from "./flow/event-payload-mail";
+export type { IEventPayloadChat } from "./flow/event-payload-chat";
+export type { IEventPayloadAPI } from "./flow/event-payload-api";
 export { IVersionType } from "./flow/version-type";
 export type { ICanary } from "./flow/canary";
 export {

@@ -64,46 +64,46 @@ export function AppCard({
 			<button
 				type="button"
 				onClick={onClick}
-				className={`group flex items-center gap-4 p-4 rounded-xl border border-border bg-card/60 backdrop-blur-sm hover:bg-card/90 hover:border-primary hover:shadow-lg transition-all duration-300 w-72 min-h-[88px] ${className}`}
+				className={`group flex items-center gap-3 p-2 rounded-lg border border-border bg-card/60 backdrop-blur-sm hover:bg-card/90 hover:border-primary hover:shadow-lg transition-all duration-300 w-56 min-h-[64px] ${className}`}
 			>
 				{/* App Icon */}
 				<div className="relative shrink-0">
-					<Avatar className="w-14 h-14 border-2 border-border/50 shadow-sm transition-all duration-300 group-hover:scale-105">
+					<Avatar className="w-9 h-9 border border-border/50 shadow-sm transition-all duration-300 group-hover:scale-105">
 						<AvatarImage
 							className="scale-105 transition-transform duration-300 group-hover:scale-110"
 							src={metadata?.icon ?? "/app-logo.webp"}
 							alt={`${metadata?.name ?? app.id} icon`}
 						/>
-						<AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-primary/20 to-primary/10">
+						<AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-primary/20 to-primary/10">
 							{(metadata?.name ?? app.id).substring(0, 2).toUpperCase()}
 						</AvatarFallback>
 					</Avatar>
 					{/* Visibility indicator on avatar */}
-					<div className="absolute -top-1 -right-1 bg-background border border-border rounded-full p-1 shadow-sm">
+					<div className="absolute -top-1 -right-1 bg-background border border-border rounded-full p-0.5 shadow-sm">
 						<VisibilityIcon visibility={app.visibility} />
 					</div>
 				</div>
 
 				{/* App Info */}
-				<div className="flex flex-col items-start text-left min-w-0 flex-1 gap-1">
+				<div className="flex flex-col items-start text-left min-w-0 flex-1 gap-0.5">
 					{/* Title and Price Row */}
 					<div className="flex items-center justify-between w-full">
-						<h4 className="font-semibold text-foreground text-base truncate flex-1 leading-tight h-5">
+						<h4 className="font-semibold text-foreground text-sm truncate flex-1 leading-tight h-4">
 							{metadata?.name ?? app.id}
 						</h4>
 						{app.visibility === IAppVisibility.Public && (
-							<div className="flex items-center gap-0 ml-3 shrink-0 h-4">
+							<div className="flex items-center gap-0 ml-2 shrink-0 h-4">
 								{app.price && app.price > 0 ? (
 									<Badge
 										variant="outline"
-										className="text-xs font-medium px-2 py-1 bg-primary/5"
+										className="text-[10px] font-medium px-1.5 py-0.5 bg-primary/5"
 									>
 										€{(app.price / 100).toFixed(2)}
 									</Badge>
 								) : (
 									<Badge
 										variant="outline"
-										className="text-xs font-medium px-2 py-1 bg-green-200/40 text-green-500 border-green-500 dark:bg-green-500/40 dark:text-green-200 dark:border-green-200"
+										className="text-[10px] font-medium px-1.5 py-0.5 bg-green-200/40 text-green-500 border-green-500 dark:bg-green-500/40 dark:text-green-200 dark:border-green-200"
 									>
 										Free
 									</Badge>
@@ -113,7 +113,7 @@ export function AppCard({
 					</div>
 
 					{/* Description */}
-					<p className="text-sm text-muted-foreground line-clamp-1 leading-relaxed w-full">
+					<p className="text-xs text-muted-foreground line-clamp-1 leading-relaxed w-full">
 						{metadata?.description ?? "No description available"}
 					</p>
 				</div>

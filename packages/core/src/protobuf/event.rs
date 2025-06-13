@@ -3,13 +3,13 @@ use std::time::SystemTime;
 use flow_like_types::{FromProto, Timestamp, ToProto};
 
 use crate::flow::{
-    release::{CanaryRelease, Release, ReleaseNotes},
+    event::{CanaryEvent, Event, ReleaseNotes},
     variable::Variable,
 };
 
-impl ToProto<flow_like_types::proto::Release> for Release {
-    fn to_proto(&self) -> flow_like_types::proto::Release {
-        flow_like_types::proto::Release {
+impl ToProto<flow_like_types::proto::Event> for Event {
+    fn to_proto(&self) -> flow_like_types::proto::Event {
+        flow_like_types::proto::Event {
             id: self.id.clone(),
             name: self.name.clone(),
             description: self.description.clone(),
@@ -30,16 +30,16 @@ impl ToProto<flow_like_types::proto::Release> for Release {
             canary: self.canary.as_ref().map(|c| c.to_proto()),
             notes: self.notes.as_ref().map(|n| match n {
                 ReleaseNotes::NOTES(s) => {
-                    flow_like_types::proto::release::Notes::ReleaseNotes(s.clone())
+                    flow_like_types::proto::event::Notes::ReleaseNotes(s.clone())
                 }
                 ReleaseNotes::URL(s) => {
-                    flow_like_types::proto::release::Notes::ReleaseNotesUrl(s.clone())
+                    flow_like_types::proto::event::Notes::ReleaseNotesUrl(s.clone())
                 }
             }),
-            release_version: Some(flow_like_types::proto::Version {
-                major: self.release_version.0,
-                minor: self.release_version.1,
-                patch: self.release_version.2,
+            event_version: Some(flow_like_types::proto::Version {
+                major: self.event_version.0,
+                minor: self.event_version.1,
+                patch: self.event_version.2,
             }),
             created_at: Some(Timestamp::from(self.created_at)),
             updated_at: Some(Timestamp::from(self.updated_at)),
@@ -47,7 +47,7 @@ impl ToProto<flow_like_types::proto::Release> for Release {
     }
 }
 
-impl ToProto<flow_like_types::proto::Canary> for CanaryRelease {
+impl ToProto<flow_like_types::proto::Canary> for CanaryEvent {
     fn to_proto(&self) -> flow_like_types::proto::Canary {
         flow_like_types::proto::Canary {
             board_id: self.board_id.clone(),
@@ -69,9 +69,9 @@ impl ToProto<flow_like_types::proto::Canary> for CanaryRelease {
     }
 }
 
-impl FromProto<flow_like_types::proto::Release> for Release {
-    fn from_proto(proto: flow_like_types::proto::Release) -> Self {
-        Release {
+impl FromProto<flow_like_types::proto::Event> for Event {
+    fn from_proto(proto: flow_like_types::proto::Event) -> Self {
+        Event {
             id: proto.id,
             name: proto.name,
             description: proto.description,
@@ -85,15 +85,15 @@ impl FromProto<flow_like_types::proto::Release> for Release {
                 .collect(),
             active: proto.active,
             config: proto.config,
-            canary: proto.canary.map(CanaryRelease::from_proto),
+            canary: proto.canary.map(CanaryEvent::from_proto),
             notes: proto.notes.map(|n| match n {
-                flow_like_types::proto::release::Notes::ReleaseNotes(s) => ReleaseNotes::NOTES(s),
-                flow_like_types::proto::release::Notes::ReleaseNotesUrl(s) => ReleaseNotes::URL(s),
+                flow_like_types::proto::event::Notes::ReleaseNotes(s) => ReleaseNotes::NOTES(s),
+                flow_like_types::proto::event::Notes::ReleaseNotesUrl(s) => ReleaseNotes::URL(s),
             }),
-            release_version: (
-                proto.release_version.unwrap().major,
-                proto.release_version.unwrap().minor,
-                proto.release_version.unwrap().patch,
+            event_version: (
+                proto.event_version.unwrap().major,
+                proto.event_version.unwrap().minor,
+                proto.event_version.unwrap().patch,
             ),
             created_at: proto
                 .created_at
@@ -107,9 +107,9 @@ impl FromProto<flow_like_types::proto::Release> for Release {
     }
 }
 
-impl FromProto<flow_like_types::proto::Canary> for CanaryRelease {
+impl FromProto<flow_like_types::proto::Canary> for CanaryEvent {
     fn from_proto(proto: flow_like_types::proto::Canary) -> Self {
-        CanaryRelease {
+        CanaryEvent {
             board_id: proto.board_id,
             board_version: proto.board_version.map(|v| (v.major, v.minor, v.patch)),
             node_id: proto.node_id,

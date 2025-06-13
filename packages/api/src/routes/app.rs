@@ -227,7 +227,7 @@ impl From<app::Model> for flow_like::app::App {
             authors: vec![],
             bits: vec![],
             boards: vec![],
-            releases: vec![],
+            events: vec![],
             templates: vec![],
             changelog: model.changelog,
             avg_rating: model.avg_rating,

@@ -30,7 +30,7 @@ pub async fn get_default_profiles(
     let default_hub = Hub::new(&default_hub, http_client.clone()).await?;
 
     let profiles = default_hub.get_profiles().await?;
-    println !("Profiles: {:?}", profiles);
+    println!("Profiles: {:?}", profiles);
     let profiles = get_bits(profiles.clone(), http_client).await?;
 
     println!("Default hub: {}", default_hub.domain);

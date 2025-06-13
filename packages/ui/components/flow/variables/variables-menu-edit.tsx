@@ -24,9 +24,11 @@ import { StringSetVariable } from "./string-set-variable";
 import { StringVariable } from "./string-variable";
 
 export function VariablesMenuEdit({
+	disabled,
 	variable,
 	updateVariable,
 }: Readonly<{
+	disabled?: boolean;
 	variable: IVariable;
 	updateVariable: (variable: IVariable) => Promise<void>;
 }>) {
@@ -43,6 +45,7 @@ export function VariablesMenuEdit({
 	) {
 		return (
 			<StringVariable
+				disabled={disabled}
 				variable={intermediateValue}
 				onChange={setIntermediateValue}
 			/>
@@ -55,6 +58,7 @@ export function VariablesMenuEdit({
 	) {
 		return (
 			<StringArrayVariable
+				disabled={disabled}
 				variable={intermediateValue}
 				onChange={setIntermediateValue}
 			/>
@@ -67,6 +71,7 @@ export function VariablesMenuEdit({
 	) {
 		return (
 			<StringSetVariable
+				disabled={disabled}
 				variable={intermediateValue}
 				onChange={setIntermediateValue}
 			/>
@@ -79,6 +84,7 @@ export function VariablesMenuEdit({
 	) {
 		return (
 			<BoolVariable
+				disabled={disabled}
 				variable={intermediateValue}
 				onChange={setIntermediateValue}
 			/>
@@ -91,6 +97,7 @@ export function VariablesMenuEdit({
 	) {
 		return (
 			<BoolArrayVariable
+				disabled={disabled}
 				variable={intermediateValue}
 				onChange={setIntermediateValue}
 			/>
@@ -103,6 +110,7 @@ export function VariablesMenuEdit({
 	) {
 		return (
 			<BoolSetVariable
+				disabled={disabled}
 				variable={intermediateValue}
 				onChange={setIntermediateValue}
 			/>
@@ -115,6 +123,7 @@ export function VariablesMenuEdit({
 	) {
 		return (
 			<DateVariable
+				disabled={disabled}
 				variable={intermediateValue}
 				onChange={setIntermediateValue}
 			/>
@@ -127,6 +136,7 @@ export function VariablesMenuEdit({
 	) {
 		return (
 			<DateArrayVariable
+				disabled={disabled}
 				variable={intermediateValue}
 				onChange={setIntermediateValue}
 			/>
@@ -139,6 +149,7 @@ export function VariablesMenuEdit({
 	) {
 		return (
 			<DateSetVariable
+				disabled={disabled}
 				variable={intermediateValue}
 				onChange={setIntermediateValue}
 			/>
@@ -151,6 +162,7 @@ export function VariablesMenuEdit({
 	) {
 		return (
 			<FloatVariable
+				disabled={disabled}
 				variable={intermediateValue}
 				onChange={setIntermediateValue}
 			/>
@@ -163,6 +175,7 @@ export function VariablesMenuEdit({
 	) {
 		return (
 			<FloatArrayVariable
+				disabled={disabled}
 				variable={intermediateValue}
 				onChange={setIntermediateValue}
 			/>
@@ -175,6 +188,7 @@ export function VariablesMenuEdit({
 	) {
 		return (
 			<FloatSetVariable
+				disabled={disabled}
 				variable={intermediateValue}
 				onChange={setIntermediateValue}
 			/>
@@ -187,6 +201,7 @@ export function VariablesMenuEdit({
 	) {
 		return (
 			<IntegerVariable
+				disabled={disabled}
 				variable={intermediateValue}
 				onChange={setIntermediateValue}
 			/>
@@ -199,6 +214,7 @@ export function VariablesMenuEdit({
 	) {
 		return (
 			<IntegerArrayVariable
+				disabled={disabled}
 				variable={intermediateValue}
 				onChange={setIntermediateValue}
 			/>
@@ -211,6 +227,7 @@ export function VariablesMenuEdit({
 	) {
 		return (
 			<IntegerSetVariable
+				disabled={disabled}
 				variable={intermediateValue}
 				onChange={setIntermediateValue}
 			/>
@@ -223,6 +240,7 @@ export function VariablesMenuEdit({
 	) {
 		return (
 			<PathbufVariable
+				disabled={disabled}
 				variable={intermediateValue}
 				onChange={setIntermediateValue}
 			/>
@@ -235,6 +253,7 @@ export function VariablesMenuEdit({
 	) {
 		return (
 			<PathbufArrayVariable
+				disabled={disabled}
 				variable={intermediateValue}
 				onChange={setIntermediateValue}
 			/>
@@ -247,6 +266,7 @@ export function VariablesMenuEdit({
 	) {
 		return (
 			<PathbufSetVariable
+				disabled={disabled}
 				variable={intermediateValue}
 				onChange={setIntermediateValue}
 			/>

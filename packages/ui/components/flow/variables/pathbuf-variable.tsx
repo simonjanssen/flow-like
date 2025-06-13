@@ -1,9 +1,8 @@
 import { FileIcon, FolderIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "../../../components/ui/button";
 import { Label } from "../../../components/ui/label";
 import { Switch } from "../../../components/ui/switch";
-import type { IFileMetadata } from "../../../lib/schema/files/file-metadata";
 import type { IVariable } from "../../../lib/schema/flow/variable";
 import {
 	convertJsonToUint8Array,
@@ -13,9 +12,14 @@ import { cn } from "../../../lib/utils";
 import { useBackend } from "../../../state/backend-state";
 
 export function PathbufVariable({
+	disabled,
 	variable,
 	onChange,
-}: Readonly<{ variable: IVariable; onChange: (variable: IVariable) => void }>) {
+}: Readonly<{
+	disabled?: boolean;
+	variable: IVariable;
+	onChange: (variable: IVariable) => void;
+}>) {
 	const backend = useBackend();
 	const [fileOrFolder, setFileOrFolder] = useState<string | undefined>(
 		parseUint8ArrayToJson(variable.default_value),
@@ -28,6 +32,7 @@ export function PathbufVariable({
 		<div className="grid w-full max-w-full grid-cols-6">
 			<div className="flex items-center space-x-2 max-w-full overflow-hidden col-span-2">
 				<Switch
+					disabled={disabled}
 					checked={isFolder}
 					onCheckedChange={(checked) => {
 						setIsFolder(checked);
@@ -38,6 +43,7 @@ export function PathbufVariable({
 			</div>
 			<Button
 				variant={"outline"}
+				disabled={disabled}
 				className={cn(
 					"w-full justify-start text-left font-normal max-w-full col-span-4",
 					(!fileOrFolder || fileOrFolder?.length === 0) &&

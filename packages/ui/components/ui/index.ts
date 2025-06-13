@@ -17,6 +17,8 @@ export * from "./collapsible";
 export * from "./command";
 export * from "./context-menu";
 export * from "./data-table";
+export * from "./event-card";
+export * from "./event-form";
 export * from "./dialog";
 export * from "./dropdown-menu";
 export * from "./dynamic-image";

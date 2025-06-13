@@ -15,12 +15,12 @@ import {
 	Button,
 	Card,
 	CardContent,
-	CardDescription,
 	CardHeader,
 	CardTitle,
 	HoverCard,
 	HoverCardContent,
 	HoverCardTrigger,
+	IAppVisibility,
 	type INode,
 	ScrollArea,
 	Separator,
@@ -29,22 +29,23 @@ import {
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-	humanFileSize,
 	toastError,
 	useBackend,
 	useInvoke,
 	useRunExecutionStore,
 } from "@tm9657/flow-like-ui";
 import {
-	AlertTriangle,
 	CableIcon,
 	ChartAreaIcon,
+	CircleUserIcon,
+	CloudAlertIcon,
 	CogIcon,
 	DatabaseIcon,
+	FlaskConicalIcon,
 	FolderArchiveIcon,
 	FolderClosedIcon,
 	GlobeIcon,
-	HardDriveIcon,
+	GlobeLockIcon,
 	LayoutGridIcon,
 	Maximize2Icon,
 	Minimize2Icon,
@@ -56,7 +57,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useTauriInvoke } from "../../../components/useInvoke";
 
 const navigationItems = [
@@ -73,8 +74,8 @@ const navigationItems = [
 		description: "App configuration and environment variables",
 	},
 	{
-		href: "/library/config/logic",
-		label: "Logic",
+		href: "/library/config/flows",
+		label: "Flows",
 		icon: WorkflowIcon,
 		description: "Business logic and workflow definitions",
 	},
@@ -142,6 +143,7 @@ export default function Id({
 		[id ?? ""],
 		typeof id === "string",
 	);
+	const app = useInvoke(backend.getApp, [id ?? ""], typeof id === "string");
 	const [isMaximized, setIsMaximized] = useState(false);
 	const appSize = useTauriInvoke<number>(
 		"get_app_size",
@@ -186,13 +188,17 @@ export default function Id({
 		await invoke("finalize_run", { id: runMeta });
 	}
 
-	const quickActions = boards.data
-		?.flatMap((board) =>
-			Object.values(board.nodes)
-				.filter((node) => node.start)
-				.map((node) => [board, node]),
-		)
-		.sort((a, b) => a[1].friendly_name.localeCompare(b[1].friendly_name));
+	const quickActions = useMemo(
+		() =>
+			boards.data
+				?.flatMap((board) =>
+					Object.values(board.nodes)
+						.filter((node) => node.start)
+						.map((node) => [board, node]),
+				)
+				.sort((a, b) => a[1].friendly_name.localeCompare(b[1].friendly_name)),
+		[boards.data],
+	);
 
 	return (
 		<TooltipProvider>
@@ -234,98 +240,134 @@ export default function Id({
 					</Card>
 				)}
 
-				{/* Enhanced Header - Hidden when maximized */}
-				{!isMaximized && (
-					<Card className="border-0 shadow-md">
-						<CardHeader className="pb-4 group">
-							<div className="flex flex-row items-center gap-3">
-								<Avatar className="w-14 h-14 border-2 border-border/50 shadow-sm transition-all duration-300 group-hover:scale-105">
-									<AvatarImage
-										src={metadata.data?.icon ?? "/app-logo.webp"}
-										className="scale-105 transition-transform duration-300 group-hover:scale-110"
-									/>
-									<AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20">
-										<WorkflowIcon className="h-6 w-6" />
-									</AvatarFallback>
-								</Avatar>
-								<div className="flex-1">
-									<CardTitle className="text-2xl flex flex-row items-center gap-3">
-										{metadata.isFetching ? (
-											<Skeleton className="h-8 w-48" />
-										) : (
-											metadata.data?.name
-										)}
-										<div className="flex items-center gap-2">
-											<Tooltip>
-												<TooltipTrigger asChild>
-													<Badge variant="outline" className="gap-1">
-														<HardDriveIcon className="w-3 h-3" />
-														{appSize.isFetching ? (
-															<Skeleton className="h-3 w-12" />
-														) : (
-															humanFileSize(appSize.data ?? 0)
-														)}
-													</Badge>
-												</TooltipTrigger>
-												<TooltipContent>App size on disk</TooltipContent>
-											</Tooltip>
-											{!isReady.data && !isReady.isFetching && (
-												<Tooltip>
-													<TooltipTrigger asChild>
-														<Badge variant="destructive" className="gap-1">
-															<AlertTriangle className="w-3 h-3" />
-															Setup Required
-														</Badge>
-													</TooltipTrigger>
-													<TooltipContent className="bg-destructive text-destructive-foreground">
-														Setup not complete yet
-													</TooltipContent>
-												</Tooltip>
-											)}
-										</div>
-									</CardTitle>
-									<div className="flex flex-wrap gap-2 mt-2">
-										{metadata.data?.tags.map((tag) => (
-											<Badge key={tag} variant="secondary" className="text-xs">
-												{tag}
-											</Badge>
-										))}
-									</div>
-								</div>
-							</div>
-							<CardDescription className="text-base leading-relaxed mt-2">
-								{metadata.isFetching ? (
-									<Skeleton className="h-4 w-full" />
-								) : (
-									metadata.data?.description
-								)}
-							</CardDescription>
-						</CardHeader>
-					</Card>
-				)}
-
 				{/* Enhanced Layout */}
 				<div
 					className={`grid w-full items-start gap-6 flex-grow overflow-hidden max-h-full transition-all duration-300 ${
 						isMaximized
 							? "grid-cols-1"
-							: "md:grid-cols-[280px_1fr] lg:grid-cols-[320px_1fr]"
+							: "md:grid-cols-[240px_1fr] lg:grid-cols-[260px_1fr]"
 					}`}
 				>
 					{/* Enhanced Navigation - Hidden when maximized */}
 					{!isMaximized && (
 						<Card className="h-full flex flex-col flex-grow max-h-full overflow-hidden">
-							<CardHeader className="pb-3">
-								<CardTitle className="text-sm font-medium text-muted-foreground">
-									Navigation
-								</CardTitle>
+							<CardHeader className="pb-3 pt-3 border-b">
+								<div className="flex flex-col gap-3">
+									<div className="flex items-center gap-2">
+										<div className="relative">
+											<Avatar className="w-9 h-9 border border-border/50 shadow-sm transition-all duration-300 group-hover:scale-105">
+												<AvatarImage
+													className="scale-105 transition-transform duration-300 group-hover:scale-110"
+													src={metadata.data?.icon ?? "/app-logo.webp"}
+													alt={`${metadata.data?.name ?? id} icon`}
+												/>
+												<AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-primary/20 to-primary/10">
+													{(metadata.data?.name ?? id ?? "Unknown")
+														.substring(0, 2)
+														.toUpperCase()}
+												</AvatarFallback>
+											</Avatar>
+											{/* Visibility Badge Overlay */}
+											{app.data?.visibility && (
+												<div className="absolute -bottom-1 -right-1">
+													{app.data?.visibility === IAppVisibility.Private && (
+														<div className="bg-secondary border border-background rounded-full p-0.5">
+															<CircleUserIcon className="w-2 h-2 text-secondary-foreground" />
+														</div>
+													)}
+													{app.data?.visibility ===
+														IAppVisibility.Prototype && (
+														<div className="bg-muted border border-background rounded-full p-0.5">
+															<FlaskConicalIcon className="w-4 h-4 text-muted-foreground" />
+														</div>
+													)}
+													{app.data?.visibility ===
+														IAppVisibility.PublicRequestAccess && (
+														<div className="bg-destructive border border-background rounded-full p-0.5">
+															<GlobeLockIcon className="w-2 h-2 text-destructive-foreground" />
+														</div>
+													)}
+													{app.data?.visibility === IAppVisibility.Offline && (
+														<div className="bg-muted-foreground/20 border border-background rounded-full p-0.5">
+															<CloudAlertIcon className="w-4 h-4 text-muted-foreground" />
+														</div>
+													)}
+												</div>
+											)}
+										</div>
+										<div className="flex-1 min-w-0">
+											<CardTitle className="text-sm truncate">
+												{metadata.isFetching ? (
+													<Skeleton className="h-4 w-24" />
+												) : (
+													metadata.data?.name
+												)}
+											</CardTitle>
+										</div>
+									</div>
+
+									{/* Description */}
+									{metadata.data?.description && (
+										<p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+											{metadata.data.description}
+										</p>
+									)}
+
+									{/* Tags and Status */}
+									<div className="flex flex-col gap-2">
+										{/* Tags */}
+										{metadata.data?.tags && metadata.data.tags.length > 0 && (
+											<div className="flex flex-wrap gap-1 mb-2">
+												{metadata.data.tags.slice(0, 2).map((tag) => (
+													<Badge
+														key={tag}
+														variant="secondary"
+														className="text-xs px-2 py-0.5"
+													>
+														{tag}
+													</Badge>
+												))}
+												{metadata.data.tags.length > 2 && (
+													<Tooltip>
+														<TooltipTrigger asChild>
+															<Badge
+																variant="outline"
+																className="text-xs px-2 py-0.5"
+															>
+																+{metadata.data.tags.length - 2}
+															</Badge>
+														</TooltipTrigger>
+														<TooltipContent side="right" className="max-w-xs">
+															<div className="space-y-1">
+																{metadata.data.tags.slice(2).map((tag) => (
+																	<Badge
+																		key={tag}
+																		variant="secondary"
+																		className="text-xs mr-1"
+																	>
+																		{tag}
+																	</Badge>
+																))}
+															</div>
+														</TooltipContent>
+													</Tooltip>
+												)}
+											</div>
+										)}
+									</div>
+								</div>
 							</CardHeader>
 							<CardContent className="flex-1 p-0 overflow-hidden">
 								<ScrollArea className="h-full px-3 flex-1">
+									<div className="pt-3">
+										<CardTitle className="text-sm font-medium text-muted-foreground mb-3">
+											Navigation
+										</CardTitle>
+									</div>
 									<nav className="flex flex-col gap-1 pb-4">
 										{navigationItems.map((item) => {
 											const isActive = currentRoute.endsWith(
-												item.href.split("/").pop() || "",
+												item.href.split("/").pop() ?? "",
 											);
 											const Icon = item.icon;
 

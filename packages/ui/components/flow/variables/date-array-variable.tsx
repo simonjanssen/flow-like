@@ -19,9 +19,14 @@ import {
 } from "../../ui";
 
 export function DateArrayVariable({
+	disabled,
 	variable,
 	onChange,
-}: Readonly<{ variable: IVariable; onChange: (v: IVariable) => void }>) {
+}: Readonly<{
+	disabled?: boolean;
+	variable: IVariable;
+	onChange: (v: IVariable) => void;
+}>) {
 	// parse once per render
 	const parsedTimes = useMemo<ISystemTime[]>(() => {
 		const p = parseUint8ArrayToJson(variable.default_value);
@@ -44,6 +49,7 @@ export function DateArrayVariable({
 	}, [newDate]);
 
 	const handleAdd = useCallback(() => {
+		if (disabled || !newDate || !newTime) return;
 		const [hrs, mins] = newTime.split(":").map((n) => Number.parseInt(n, 10));
 		const dt = new Date(
 			newDate.getFullYear(),
@@ -61,17 +67,18 @@ export function DateArrayVariable({
 			...variable,
 			default_value: convertJsonToUint8Array(updated),
 		});
-	}, [newDate, newTime, parsedTimes, variable, onChange]);
+	}, [disabled, newDate, newTime, parsedTimes, variable, onChange]);
 
 	const handleRemove = useCallback(
 		(idx: number) => {
+			if (disabled) return;
 			const updated = parsedTimes.filter((_, i) => i !== idx);
 			onChange({
 				...variable,
 				default_value: convertJsonToUint8Array(updated),
 			});
 		},
-		[parsedTimes, variable, onChange],
+		[disabled, parsedTimes, variable, onChange],
 	);
 
 	return (
@@ -79,8 +86,9 @@ export function DateArrayVariable({
 			{/* pick new date + time */}
 			<div className="flex items-center gap-2 sticky top-0 bg-background pb-2">
 				<Popover>
-					<PopoverTrigger asChild>
+					<PopoverTrigger disabled={disabled} asChild>
 						<Button
+							disabled={disabled}
 							variant={"outline"}
 							className={cn(
 								"w-full pl-3 text-left font-normal",
@@ -100,12 +108,14 @@ export function DateArrayVariable({
 							<div className="flex flex-row items-center gap-2">
 								<p className="text-nowrap">Time:</p>
 								<Input
+									disabled={disabled}
 									type="time"
 									value={newTime}
 									onChange={(e) => setNewTime(e.target.value)}
 								/>
 							</div>
 							<Calendar
+								disabled={disabled}
 								showOutsideDays
 								ISOWeek
 								captionLayout="dropdown"
@@ -119,7 +129,12 @@ export function DateArrayVariable({
 						</div>
 					</PopoverContent>
 				</Popover>
-				<Button size="icon" variant="default" onClick={handleAdd}>
+				<Button
+					disabled={disabled}
+					size="icon"
+					variant="default"
+					onClick={handleAdd}
+				>
 					<PlusCircleIcon className="w-4 h-4" />
 				</Button>
 			</div>
@@ -136,6 +151,7 @@ export function DateArrayVariable({
 						{format(dt, "PPP")} – {format(dt, "HH:mm")}
 					</span>
 					<Button
+						disabled={disabled}
 						size="icon"
 						variant="destructive"
 						onClick={() => handleRemove(idx)}

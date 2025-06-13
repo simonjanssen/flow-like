@@ -8,11 +8,16 @@ import {
 } from "../../../lib/uint8";
 
 export function FloatVariable({
+	disabled,
 	variable,
 	onChange,
-}: Readonly<{ variable: IVariable; onChange: (variable: IVariable) => void }>) {
+}: Readonly<{
+	disabled?: boolean;
+	variable: IVariable;
+	onChange: (variable: IVariable) => void;
+}>) {
 	return (
-		<div className="grid w-full max-w-sm items-center gap-1.5">
+		<div className="grid w-full items-center gap-1.5">
 			<Label htmlFor="default_value">Default Value</Label>
 			<Input
 				value={parseUint8ArrayToJson(variable.default_value)}
@@ -24,6 +29,7 @@ export function FloatVariable({
 						),
 					});
 				}}
+				disabled={disabled}
 				type={variable.secret ? "password" : "number"}
 				id="default_value"
 				placeholder="Default Value"

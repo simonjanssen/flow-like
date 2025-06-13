@@ -9,7 +9,7 @@ use flow_like::{
     state::FlowLikeState,
 };
 use flow_like_model_provider::history::{
-    Content, ContentType, HistoryMessage, ImageUrl, MessageContent, Role
+    Content, ContentType, HistoryMessage, ImageUrl, MessageContent, Role,
 };
 use flow_like_types::{Value, async_trait, json::json};
 use std::sync::Arc;
