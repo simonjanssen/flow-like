@@ -1,8 +1,11 @@
 /// # ONNX Object Detection Nodes
-use crate::{ai::ml::onnx::NodeOnnxSession, image::NodeImage};
+use crate::{
+    ai::ml::onnx::{NodeOnnxSession, Provider},
+    image::NodeImage,
+};
 use flow_like::{
     flow::{
-        execution::{LogLevel, context::ExecutionContext},
+        execution::context::ExecutionContext,
         node::{Node, NodeLogic},
         pin::PinOptions,
         variable::VariableType,
@@ -15,14 +18,186 @@ use flow_like_types::{
     json::{Deserialize, Serialize, json},
 };
 
+use flow_like_model_provider::ml::ort::session::{Session, SessionInputValue, SessionOutputs};
 use flow_like_model_provider::ml::{
-    ndarray::{Array3, Array4, ArrayView1, Axis, s},
+    ndarray::{Array2, Array3, Array4, ArrayView1, Axis, s},
     ort::inputs,
 };
+use std::borrow::Cow;
 use std::cmp::Ordering;
-use std::time::Instant;
 
-/// # Load DynamicImage as Array4
+// ## Object Detection Trait for Common Behavior
+pub trait ObjectDetection {
+    // Preprocessing
+    fn make_inputs(
+        &self,
+        img: &DynamicImage,
+    ) -> Result<Vec<(Cow<'_, str>, SessionInputValue<'_>)>, Error>;
+    // Postprocessing
+    fn make_results(
+        &self,
+        outputs: SessionOutputs<'_, '_>,
+        conf_thres: f32,
+        iou_thres: f32,
+        max_detect: usize,
+    ) -> Result<Vec<BoundingBox>, Error>;
+    // End-to-End Inference
+    fn run(
+        &self,
+        session: &Session,
+        img: &DynamicImage,
+        conf_thres: f32,
+        iou_thres: f32,
+        max_detect: usize,
+    ) -> Result<Vec<BoundingBox>, Error>;
+}
+
+// ## Implementation for D-FINE Models
+pub struct DfineLike {
+    pub input_width: u32,
+    pub input_height: u32,
+}
+
+impl ObjectDetection for DfineLike {
+    fn make_inputs(
+        &self,
+        img: &DynamicImage,
+    ) -> Result<Vec<(Cow<'_, str>, SessionInputValue<'_>)>, Error> {
+        let (img_width, img_height) = (img.width() as i64, img.height() as i64);
+        let images = img_to_arr(img, self.input_width, self.input_height)?;
+        let orig_target_size = Array2::from_shape_vec((1, 2), vec![img_width, img_height])?;
+        let session_inputs = inputs! {
+            "images" => images.view(),
+            "orig_target_sizes" => orig_target_size.view()
+        }?;
+        Ok(session_inputs)
+    }
+
+    fn make_results(
+        &self,
+        outputs: SessionOutputs<'_, '_>,
+        conf_thres: f32,
+        _iou_thres: f32,
+        max_detect: usize,
+    ) -> Result<Vec<BoundingBox>, Error> {
+        let labels = outputs["labels"].try_extract_tensor::<i64>()?;
+        let boxes = outputs["boxes"].try_extract_tensor::<f32>()?;
+        let scores = outputs["scores"].try_extract_tensor::<f32>()?;
+        let mut bboxes: Vec<BoundingBox> = boxes
+            .axis_iter(Axis(1))
+            .enumerate()
+            .map(|(i, bbox)| {
+                let bbox_xyxy = bbox.slice(s![0, ..]).to_vec();
+                let (x1, y1, x2, y2) = (bbox_xyxy[0], bbox_xyxy[1], bbox_xyxy[2], bbox_xyxy[3]);
+                let class_idx = labels.slice(s![.., i]).to_vec()[0];
+                let score = scores.slice(s![.., i]).to_vec()[0];
+                BoundingBox {
+                    class_idx: class_idx as i32,
+                    score,
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                    class_name: None,
+                }
+            })
+            .filter(|b| b.score > conf_thres)
+            .collect();
+        bboxes.sort_unstable_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+        bboxes.truncate(max_detect);
+        Ok(bboxes)
+    }
+
+    fn run(
+        &self,
+        session: &Session,
+        img: &DynamicImage,
+        conf_thres: f32,
+        iou_thres: f32,
+        max_detect: usize,
+    ) -> Result<Vec<BoundingBox>, Error> {
+        let session_inputs = self.make_inputs(img)?;
+        let session_outputs = session.run(session_inputs)?;
+        let bboxes = self.make_results(session_outputs, conf_thres, iou_thres, max_detect)?;
+        Ok(bboxes)
+    }
+}
+
+// ## Implementation for YOLO Models
+pub struct YoloLike {
+    pub input_width: u32,
+    pub input_height: u32,
+}
+
+impl ObjectDetection for YoloLike {
+    fn make_inputs(
+        &self,
+        img: &DynamicImage,
+    ) -> Result<Vec<(Cow<'_, str>, SessionInputValue<'_>)>, Error> {
+        let images = img_to_arr(img, self.input_width, self.input_height)?;
+        let session_inputs = inputs! {
+            "images" => images.view(),
+        }?;
+        Ok(session_inputs)
+    }
+
+    fn make_results(
+        &self,
+        outputs: SessionOutputs<'_, '_>,
+        conf_thres: f32,
+        iou_thres: f32,
+        max_detect: usize,
+    ) -> Result<Vec<BoundingBox>, Error> {
+        let output = outputs["output0"].try_extract_tensor::<f32>()?;
+        let view_candidates = output.slice(s![0, 4.., ..]);
+        let mask_candidates: Vec<bool> = view_candidates
+            .axis_iter(Axis(1))
+            .map(|col| col.iter().cloned().fold(f32::NEG_INFINITY, f32::max) > conf_thres)
+            .collect();
+        let idx_candidates: Vec<usize> = mask_candidates
+            .iter()
+            .enumerate()
+            .filter_map(|(i, &keep)| if keep { Some(i) } else { None })
+            .collect();
+        let candidates_image = output.select(Axis(2), &idx_candidates).squeeze();
+        let mut bboxes: Vec<BoundingBox> = Vec::with_capacity(candidates_image.len_of(Axis(1)));
+        for candidate in candidates_image.axis_iter(Axis(1)) {
+            let bbox = BoundingBox::from_array(candidate.to_shape(candidate.len()).unwrap().view());
+            bboxes.push(bbox);
+        }
+        let mut bboxes = nms(&bboxes, iou_thres);
+        bboxes.truncate(max_detect); // keep only max detections
+        Ok(bboxes)
+    }
+
+    fn run(
+        &self,
+        session: &Session,
+        img: &DynamicImage,
+        conf_thres: f32,
+        iou_thres: f32,
+        max_detect: usize,
+    ) -> Result<Vec<BoundingBox>, Error> {
+        let session_inputs = self.make_inputs(img)?;
+        let session_outputs = session.run(session_inputs)?;
+        let mut bboxes = self.make_results(session_outputs, conf_thres, iou_thres, max_detect)?;
+        let (target_w, target_h) = (img.width() as f32, img.height() as f32);
+        let scale_w = target_w / self.input_width as f32;
+        let scale_h = target_h / self.input_height as f32;
+        for bbox in &mut bboxes {
+            bbox.scale(scale_w, scale_h);
+        }
+        Ok(bboxes)
+    }
+}
+
+// ## Detection-Related Utilities
+
+/// Load DynamicImage as Array4
 /// Resulting normalized 4-dim array has shape [B, C, W, H] (batch size, channels, width, height)
 /// ONNX detection model requires Array4-shaped, 0..1 normalized input
 fn img_to_arr(img: &DynamicImage, width: u32, height: u32) -> Result<Array4<f32>, Error> {
@@ -291,135 +466,45 @@ impl NodeLogic for ObjectDetectionNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> Result<()> {
-        let t0 = Instant::now();
         context.deactivate_exec_pin("exec_out").await?;
 
         // fetch params
+        let node_session: NodeOnnxSession = context.evaluate_pin("model").await?;
+        let node_img: NodeImage = context.evaluate_pin("image_in").await?;
         let conf_thres: f32 = context.evaluate_pin("conf").await?;
         let iou_thres: f32 = context.evaluate_pin("iou").await?;
-        let max_detect: u32 = context.evaluate_pin("max").await?;
-
-        // fetch cached
-        let node_img: NodeImage = context.evaluate_pin("image_in").await?;
-        let img = node_img.get_image(context).await?;
-
-        let node_session: NodeOnnxSession = context.evaluate_pin("model").await?;
-        let session = node_session.get_session(context).await?;
-        let dt = t0.elapsed();
-        context.log_message(&format!("[init node]: {:?}", dt), LogLevel::Debug);
+        let max_detect: usize = context.evaluate_pin("max").await?;
 
         // run inference
-        let (candidates_image, img_width, img_height, input_width, input_height) = {
+        let predictions = {
+            let img = node_img.get_image(context).await?;
+            let img_guard = img.lock().await;
+            let session = node_session.get_session(context).await?;
             let session_guard = session.lock().await;
-
-            // prepare ONNX-model input
-            let input_width = session_guard.input_width;
-            let input_height = session_guard.input_height;
-
-            let t0 = Instant::now();
-            let (arr, img_width, img_height) = {
-                let img_guard = img.lock().await;
-                let (img_width, img_height) = (img_guard.width() as f32, img_guard.height() as f32);
-                let arr = img_to_arr(&img_guard, input_width, input_height)?;
-                (arr, img_width, img_height)
-            }; // drop img_guard
-
-            context.log_message(&format!("input array: {:?}", arr.shape()), LogLevel::Debug);
-            let inputs = match inputs![&session_guard.input_name => arr.view()] {
-                Ok(mapping) => Ok(mapping),
-                Err(_) => Err(anyhow!(
-                    "Failed to put input image into ONNX model input tensor"
+            let provider = &session_guard.provider;
+            match provider {
+                Provider::DfineLike(model) => model.run(
+                    &session_guard.session,
+                    &img_guard,
+                    conf_thres,
+                    iou_thres,
+                    max_detect,
+                ),
+                Provider::YoloLike(model) => model.run(
+                    &session_guard.session,
+                    &img_guard,
+                    conf_thres,
+                    iou_thres,
+                    max_detect,
+                ),
+                _ => Err(anyhow!(
+                    "Unknown/Incompatible ONNX-Model for Object Detection!"
                 )),
-            }?;
-            let dt = t0.elapsed();
-            context.log_message(&format!("[preprocessing]: {:?}", dt), LogLevel::Debug);
-
-            let t0 = Instant::now();
-            let outputs = session_guard.session.run(inputs)?;
-            let arr_out =
-                outputs[session_guard.output_name.as_str()].try_extract_tensor::<f32>()?;
-            let dt = t0.elapsed();
-            context.log_message(&format!("[inference]: {:?}", dt), LogLevel::Debug);
-
-            // postprocessing
-            let t0 = Instant::now();
-            let view_candidates = arr_out.slice(s![0, 4.., ..]);
-            context.log_message(
-                &format!("view candidates: {:?}", arr_out.shape()),
-                LogLevel::Debug,
-            );
-
-            // determine candidates for which the max over all class conf is > conf_thres
-            let mask_candidates: Vec<bool> = view_candidates
-                .axis_iter(Axis(1))
-                .map(|col| col.iter().cloned().fold(f32::NEG_INFINITY, f32::max) > conf_thres)
-                .collect();
-            context.log_message(
-                &format!("mask_candidates: {:?}", mask_candidates.len()),
-                LogLevel::Debug,
-            );
-
-            // get candidate rows
-            let idx_candidates: Vec<usize> = mask_candidates
-                .iter()
-                .enumerate()
-                .filter_map(|(i, &keep)| if keep { Some(i) } else { None })
-                .collect();
-            context.log_message(
-                &format!("idx_candidates: {:?}", idx_candidates.len()),
-                LogLevel::Debug,
-            );
-
-            // select candidates = all detections with at least one class conf > conf_thres
-            let candidates_image = arr_out.select(Axis(2), &idx_candidates).squeeze(); // todo: handle batch processing
-            context.log_message(
-                &format!("candidates_image: {:?}", candidates_image.shape()),
-                LogLevel::Debug,
-            );
-            let dt = t0.elapsed();
-            context.log_message(&format!("[output processing]: {:?}", dt), LogLevel::Debug);
-            (
-                candidates_image,
-                img_width,
-                img_height,
-                input_width,
-                input_height,
-            )
-        }; // drop ONNX session guard
-
-        // extract bboxes from output vectors
-        let t0 = Instant::now();
-        let mut bboxes: Vec<BoundingBox> = Vec::with_capacity(candidates_image.len_of(Axis(1)));
-        for candidate in candidates_image.axis_iter(Axis(1)) {
-            let bbox = BoundingBox::from_array(candidate.to_shape(candidate.len()).unwrap().view());
-            bboxes.push(bbox);
-        }
-        context.log_message(&format!("len bboxes: {:?}", bboxes.len()), LogLevel::Debug);
-
-        // apply nms
-        let mut bboxes = nms(&bboxes, iou_thres);
-        bboxes.truncate(max_detect as usize); // keep only max detections
-        context.log_message(
-            &format!("len bboxes nms: {:?}", bboxes.len()),
-            LogLevel::Debug,
-        );
-
-        // scale boxes to original input image dims
-        let (base_w, base_h) = (input_width as f32, input_height as f32);
-        let scale_w = img_width / base_w;
-        let scale_h = img_height / base_h;
-        for bbox in &mut bboxes {
-            bbox.scale(scale_w, scale_h);
-        }
-
-        let dt = t0.elapsed();
-        context.log_message(
-            &format!("[non-maxima suppression]: {:?}", dt),
-            LogLevel::Debug,
-        );
+            }?
+        };
 
         // set outputs
-        context.set_pin_value("bboxes", json!(bboxes)).await?;
+        context.set_pin_value("bboxes", json!(predictions)).await?;
         context.activate_exec_pin("exec_out").await?;
         Ok(())
     }
