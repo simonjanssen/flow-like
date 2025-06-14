@@ -321,9 +321,9 @@ function VariableTypeBadge({
 			variant="secondary"
 			className="text-xs font-mono bg-muted/50 hover:bg-muted transition-colors"
 			style={{
-				borderColor: baseColor + "60",
+				borderColor: `${baseColor}60`,
 				color: baseColor,
-				backgroundColor: baseColor + "10",
+				backgroundColor: `${baseColor}10`,
 			}}
 		>
 			{getTypeLabel()}

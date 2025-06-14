@@ -25,7 +25,7 @@ export function IntegerSetVariable({
 		if (!Array.isArray(parsed)) return [];
 		return parsed.map((v) => {
 			const n = Number.parseInt(String(v), 10);
-			return isNaN(n) ? 0 : n;
+			return Number.isNaN(n) ? 0 : n;
 		});
 	}, [variable.default_value]);
 
@@ -35,7 +35,7 @@ export function IntegerSetVariable({
 		const trimmed = newValue.trim();
 		if (!trimmed) return;
 		const num = Number.parseInt(trimmed, 10);
-		if (isNaN(num)) return;
+		if (Number.isNaN(num)) return;
 		const updated = [...values, num];
 		onChange({
 			...variable,
@@ -74,7 +74,7 @@ export function IntegerSetVariable({
 					variant="default"
 					onClick={handleAdd}
 					disabled={
-						newValue.trim() === "" || isNaN(Number(newValue)) || disabled
+						newValue.trim() === "" || Number.isNaN(Number(newValue)) || disabled
 					}
 				>
 					<PlusCircleIcon className="w-4 h-4" />

@@ -467,7 +467,7 @@ export default function Page() {
 						setBit((old) => ({ ...old, download_link: e.target.value.trim() }))
 					}
 					placeholder="File URL (ONNX)"
-				></Input>
+				/>
 			</div>
 			<br />
 			{bit.type === IBitTypes.Llm || bit.type === IBitTypes.Vlm ? (
@@ -601,7 +601,7 @@ export default function Page() {
 								{
 									...bit,
 									dependencies: dependencies.map(
-										(dep) => dep.hub + ":" + dep.id,
+										(dep) => `${dep.hub}:${dep.id}`,
 									),
 								},
 								auth,
@@ -609,7 +609,7 @@ export default function Page() {
 
 							const metaUpload = await put(
 								`admin/bit/${response.id}/en`,
-								bit.meta["en"],
+								bit.meta.en,
 								auth,
 							);
 						}
@@ -664,7 +664,7 @@ export default function Page() {
 									license: bit.license,
 									authors: bit.authors,
 									dependencies: dependencies.map(
-										(dep) => dep.hub + ":" + dep.id,
+										(dep) => `${dep.hub}:${dep.id}`,
 									),
 								},
 								auth,
@@ -690,7 +690,7 @@ export default function Page() {
 								{
 									...bit,
 									dependencies: dependencies.map(
-										(dep) => dep.hub + ":" + dep.id,
+										(dep) => `${dep.hub}:${dep.id}`,
 									),
 								},
 								auth,
@@ -698,7 +698,7 @@ export default function Page() {
 
 							const metaUpload = await put(
 								`admin/bit/${response.id}/en`,
-								bit.meta["en"],
+								bit.meta.en,
 								auth,
 							);
 						}
@@ -727,14 +727,14 @@ export default function Page() {
 								{
 									...bit,
 									dependencies: dependencies.map(
-										(dep) => dep.hub + ":" + dep.id,
+										(dep) => `${dep.hub}:${dep.id}`,
 									),
 								},
 								auth,
 							);
 							const metaUpload = await put(
 								`admin/bit/${response.id}/en`,
-								bit.meta["en"],
+								bit.meta.en,
 								auth,
 							);
 						}

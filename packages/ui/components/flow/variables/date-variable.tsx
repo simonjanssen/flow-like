@@ -81,7 +81,7 @@ export function DateVariable({
 					)}
 				>
 					{selected ? (
-						format(selected, "PPP") + " - " + timeValue
+						`${format(selected, "PPP")} - ${timeValue}`
 					) : (
 						<span>Pick a date</span>
 					)}

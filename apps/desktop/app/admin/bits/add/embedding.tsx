@@ -163,7 +163,7 @@ export function EmbeddingConfiguration({
 									value={parameters.input_length}
 									onChange={(e) => {
 										const value = Number.parseInt(e.target.value);
-										if (!isNaN(value) && value >= 100 && value <= 8192) {
+										if (!Number.isNaN(value) && value >= 100 && value <= 8192) {
 											updateParameters({ input_length: value });
 										}
 									}}
@@ -195,7 +195,7 @@ export function EmbeddingConfiguration({
 									value={parameters.vector_length}
 									onChange={(e) => {
 										const value = Number.parseInt(e.target.value);
-										if (!isNaN(value) && value >= 128 && value <= 4096) {
+										if (!Number.isNaN(value) && value >= 128 && value <= 4096) {
 											updateParameters({ vector_length: value });
 										}
 									}}

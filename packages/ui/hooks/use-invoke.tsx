@@ -38,9 +38,8 @@ export function useInvoke<T, Args extends any[]>(
 				console.error("Error invoking backend function:", error);
 				if (error instanceof Error) {
 					throw error;
-				} else {
-					throw new Error(String(error));
 				}
+				throw new Error(String(error));
 			}
 		},
 		enabled,
@@ -79,7 +78,7 @@ export function useInvalidateInvoke() {
 			...args,
 			...additionalDeps,
 		];
-		console.log(`Invalidating queries with prefix:`, queryKeyPrefix);
+		console.log("Invalidating queries with prefix:", queryKeyPrefix);
 		return queryClient.invalidateQueries({
 			queryKey: queryKeyPrefix,
 		});

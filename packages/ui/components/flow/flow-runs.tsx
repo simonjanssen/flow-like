@@ -247,7 +247,7 @@ const FlowRunsComponent = ({
 
 							setCurrentMetadata(run);
 							onVersionChange(
-								run.version === "v" + version.join("-")
+								run.version === `v${version.join("-")}`
 									? undefined
 									: (run.version.replace("v", "").split("-").map(Number) as [
 											number,
@@ -263,7 +263,7 @@ const FlowRunsComponent = ({
 									{nodes[run.node_id]?.friendly_name ?? "Deleted Event"}
 								</small>
 								<small className="text-muted-foreground">
-									{run.version === "v" + version.join("-")
+									{run.version === `v${version.join("-")}`
 										? "Latest"
 										: `${run.version}`}
 								</small>

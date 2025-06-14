@@ -294,9 +294,9 @@ export default function SettingsPage() {
 		addAllAsync(
 			allBits.map((item) => ({
 				...item,
-				name: item.meta?.["en"]?.name,
-				long_description: item.meta?.["en"]?.long_description,
-				description: item.meta?.["en"]?.description,
+				name: item.meta?.en?.name,
+				long_description: item.meta?.en?.long_description,
+				description: item.meta?.en?.description,
 			})),
 		);
 	}, [foundBits.data, blacklist, searchFilter, profile.data, installedBits]);
@@ -537,56 +537,52 @@ export default function SettingsPage() {
 							</BentoGrid>
 						</div>
 					)}
-					{!foundBits.isLoading && (
-						<>
-							{(searchTerm === "" ? bits : (searchResults ?? [])).length ===
-							0 ? (
-								<Card className="p-8 text-center max-w-md mx-auto mt-12">
-									<CardContent className="space-y-4 p-0">
-										<div className="w-16 h-16 mx-auto bg-muted rounded-full flex items-center justify-center">
-											<Search className="h-8 w-8 text-muted-foreground" />
-										</div>
-										<div className="space-y-2">
-											<h3 className="font-semibold text-lg">No models found</h3>
-											<p className="text-muted-foreground">
-												{searchTerm
-													? `No models match "${searchTerm}". Try adjusting your search or filters.`
-													: "No models available with the current filters."}
-											</p>
-										</div>
-										{(searchTerm || activeFilterCount > 0) && (
-											<Button
-												variant="outline"
-												onClick={() => {
-													setSearchTerm("");
-													search("");
-													setSearchFilter((old) => ({
-														...old,
-														appliedFilter: ["All"],
-													}));
-												}}
-												className="mt-4"
-											>
-												Clear filters
-											</Button>
-										)}
-									</CardContent>
-								</Card>
-							) : (
-								<BentoGrid className="mx-auto cursor-pointer w-full pb-20">
-									{(searchTerm === "" ? bits : (searchResults ?? [])).map(
-										(bit, i) => {
-											if (i === 0) counter = 0;
-											const wide = counter === 3 || counter === 6;
-											if (counter === 6) counter = 0;
-											else counter += 1;
-											return <BitCard key={bit.id} bit={bit} wide={wide} />;
-										},
+					{!foundBits.isLoading &&
+						((searchTerm === "" ? bits : (searchResults ?? [])).length === 0 ? (
+							<Card className="p-8 text-center max-w-md mx-auto mt-12">
+								<CardContent className="space-y-4 p-0">
+									<div className="w-16 h-16 mx-auto bg-muted rounded-full flex items-center justify-center">
+										<Search className="h-8 w-8 text-muted-foreground" />
+									</div>
+									<div className="space-y-2">
+										<h3 className="font-semibold text-lg">No models found</h3>
+										<p className="text-muted-foreground">
+											{searchTerm
+												? `No models match "${searchTerm}". Try adjusting your search or filters.`
+												: "No models available with the current filters."}
+										</p>
+									</div>
+									{(searchTerm || activeFilterCount > 0) && (
+										<Button
+											variant="outline"
+											onClick={() => {
+												setSearchTerm("");
+												search("");
+												setSearchFilter((old) => ({
+													...old,
+													appliedFilter: ["All"],
+												}));
+											}}
+											className="mt-4"
+										>
+											Clear filters
+										</Button>
 									)}
-								</BentoGrid>
-							)}
-						</>
-					)}
+								</CardContent>
+							</Card>
+						) : (
+							<BentoGrid className="mx-auto cursor-pointer w-full pb-20">
+								{(searchTerm === "" ? bits : (searchResults ?? [])).map(
+									(bit, i) => {
+										if (i === 0) counter = 0;
+										const wide = counter === 3 || counter === 6;
+										if (counter === 6) counter = 0;
+										else counter += 1;
+										return <BitCard key={bit.id} bit={bit} wide={wide} />;
+									},
+								)}
+							</BentoGrid>
+						))}
 				</div>
 			</div>
 		</main>
