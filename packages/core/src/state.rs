@@ -3,10 +3,15 @@ use flow_like_storage::lancedb::connection::ConnectBuilder;
 use flow_like_storage::object_store::path::Path;
 use flow_like_types::Ok;
 use flow_like_types::sync::{DashMap, Mutex, RwLock};
+#[cfg(feature = "flow-runtime")]
+use flow_like_types::tokio_util::sync::CancellationToken;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
+#[cfg(feature = "flow-runtime")]
+use std::time::Instant;
 
+use crate::flow::event::Event;
 #[cfg(feature = "flow-runtime")]
 use crate::flow::execution::{LogMeta, log::LogMessage};
 
@@ -14,9 +19,9 @@ use crate::flow::execution::{LogMeta, log::LogMessage};
 use crate::flow::board::Board;
 #[cfg(feature = "flow-runtime")]
 use crate::flow::execution::InternalRun;
-use crate::flow::node::Node;
 #[cfg(feature = "flow-runtime")]
 use crate::flow::node::NodeLogic;
+use crate::flow::node::{self, Node};
 
 use crate::models::embedding_factory::EmbeddingFactory;
 #[cfg(feature = "model")]
@@ -243,6 +248,54 @@ impl FlowNodeRegistry {
     }
 }
 
+#[derive(Clone)]
+pub struct RunData {
+    pub start_time: Instant,
+    pub board_id: Arc<str>,
+    pub node_id: Arc<str>,
+    pub event_id: Option<Arc<str>>,
+    pub cancellation_token: CancellationToken,
+}
+
+impl RunData {
+    pub fn new(
+        board_id: &str,
+        node_id: &str,
+        event_id: Option<String>,
+        cancellation_token: CancellationToken,
+    ) -> Self {
+        RunData {
+            start_time: Instant::now(),
+            board_id: Arc::from(board_id),
+            node_id: Arc::from(node_id),
+            event_id: event_id.map(|s| Arc::from(s.as_str())),
+            cancellation_token,
+        }
+    }
+
+    pub fn is_cancelled(&self) -> bool {
+        self.cancellation_token.is_cancelled()
+    }
+
+    pub fn cancel(&self) {
+        self.cancellation_token.cancel();
+    }
+
+    pub fn elapsed(&self) -> std::time::Duration {
+        self.start_time.elapsed()
+    }
+
+    pub fn from_event(event: &Event, cancellation_token: CancellationToken) -> Self {
+        RunData {
+            start_time: Instant::now(),
+            board_id: Arc::from(event.board_id.as_str()),
+            node_id: Arc::from(event.node_id.as_str()),
+            event_id: Some(Arc::from(event.id.as_str())),
+            cancellation_token,
+        }
+    }
+}
+
 // TODO: implement dashmap
 #[derive(Clone)]
 pub struct FlowLikeState {
@@ -265,7 +318,7 @@ pub struct FlowLikeState {
     #[cfg(feature = "flow-runtime")]
     pub board_registry: Arc<DashMap<String, Arc<Mutex<Board>>>>, // TODO: should board be wrapped in RWLock or Mutex?
     #[cfg(feature = "flow-runtime")]
-    pub board_run_registry: Arc<DashMap<String, Arc<Mutex<InternalRun>>>>,
+    pub board_run_registry: Arc<DashMap<String, Arc<RunData>>>,
 }
 
 impl FlowLikeState {
@@ -388,23 +441,40 @@ impl FlowLikeState {
     }
 
     #[cfg(feature = "flow-runtime")]
-    pub fn board_run_registry(&self) -> Arc<DashMap<String, Arc<Mutex<InternalRun>>>> {
+    pub fn board_run_registry(&self) -> Arc<DashMap<String, Arc<RunData>>> {
         self.board_run_registry.clone()
     }
 
     #[cfg(feature = "flow-runtime")]
-    pub fn register_run(&self, run_id: &str, run: Arc<Mutex<InternalRun>>) {
-        self.board_run_registry.insert(run_id.to_string(), run);
+    pub fn list_runs(&self) -> flow_like_types::Result<Vec<(String, Arc<RunData>)>> {
+        let runs = self
+            .board_run_registry
+            .iter()
+            .map(|entry| (entry.key().clone(), entry.value().clone()))
+            .collect::<Vec<_>>();
+        Ok(runs)
     }
 
     #[cfg(feature = "flow-runtime")]
-    pub fn remove_run(&self, run_id: &str) -> Option<Arc<Mutex<InternalRun>>> {
+    pub fn register_run(&self, run_id: &str, run: RunData) {
+        self.board_run_registry
+            .insert(run_id.to_string(), Arc::new(run));
+    }
+
+    #[cfg(feature = "flow-runtime")]
+    pub fn remove_and_cancel_run(&self, run_id: &str) -> flow_like_types::Result<()> {
         let removed = self.board_run_registry.remove(run_id);
-        removed.map(|(_id, run)| run)
+        if let Some((_id, run)) = removed {
+            if !run.is_cancelled() {
+                run.cancel();
+            }
+        }
+
+        Ok(())
     }
 
     #[cfg(feature = "flow-runtime")]
-    pub fn get_run(&self, run_id: &str) -> flow_like_types::Result<Arc<Mutex<InternalRun>>> {
+    pub fn get_run(&self, run_id: &str) -> flow_like_types::Result<Arc<RunData>> {
         let run = self.board_run_registry.try_get(run_id);
 
         match run.try_unwrap() {

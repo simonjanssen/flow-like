@@ -11,6 +11,7 @@ import {
 	AlignVerticalJustifyEndIcon,
 	AlignVerticalJustifyStartIcon,
 	BanIcon,
+	CircleStopIcon,
 	CircleXIcon,
 	ClockIcon,
 	CopyIcon,
@@ -27,7 +28,6 @@ import {
 import { useTheme } from "next-themes";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PuffLoader from "react-spinners/PuffLoader";
-import { toast } from "sonner";
 import { useLogAggregation } from "../..";
 import {
 	ContextMenu,
@@ -56,10 +56,7 @@ import type { IComment, ILayer } from "../../lib/schema/flow/board";
 import { ILayerType } from "../../lib/schema/flow/board/commands/upsert-layer";
 import type { INode } from "../../lib/schema/flow/node";
 import { type IPin, IVariableType } from "../../lib/schema/flow/pin";
-import {
-	convertJsonToUint8Array,
-	parseUint8ArrayToJson,
-} from "../../lib/uint8";
+import { convertJsonToUint8Array } from "../../lib/uint8";
 import { useBackend } from "../../state/backend-state";
 import { useRunExecutionStore } from "../../state/run-execution-state";
 import {
@@ -70,8 +67,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
-	Input,
-	Label,
 	Textarea,
 } from "../ui";
 import { DynamicImage } from "../ui/dynamic-image";
@@ -122,13 +117,13 @@ const FlowNodeInner = memo(
 		});
 		const [executing, setExecuting] = useState(false);
 		const [isExec, setIsExec] = useState(false);
-		const [eventId, setEventId] = useState("");
 		const [inputPins, setInputPins] = useState<(IPin | IPinAction)[]>([]);
 		const [outputPins, setOutputPins] = useState<(IPin | IPinAction)[]>([]);
 		const { runs } = useRunExecutionStore();
 		const [executionState, setExecutionState] = useState<
 			"done" | "running" | "none"
 		>("none");
+		const [runId, setRunId] = useState<string | undefined>(undefined);
 		const debouncedExecutionState = useDebounce(executionState, 100);
 		const div = useRef<HTMLDivElement>(null);
 		const reactFlow = useReactFlow();
@@ -150,71 +145,6 @@ const FlowNodeInner = memo(
 
 			return [false, severity];
 		}, [props.data.node, currentMetadata]);
-
-		const eventRegistration = useMemo(() => {
-			if (!props.data.node.start) return undefined;
-			const typeNode = Object.values(props.data.node.pins).find(
-				(pin) => pin.name === "type" && pin.pin_type === IPinType.Input,
-			);
-			if (!typeNode) return undefined;
-			const otherPin = Object.values(props.data.node.pins).find(
-				(pin) => pin.name !== "type" && pin.pin_type === IPinType.Input,
-			);
-			if (!otherPin) return undefined;
-			const defaultValue = parseUint8ArrayToJson(otherPin.default_value);
-			if (typeof defaultValue !== "undefined" && defaultValue !== null)
-				return undefined;
-			return {
-				type: parseUint8ArrayToJson(typeNode.default_value),
-				pin: otherPin,
-			};
-		}, [props.data.node]);
-
-		const registerEvent = useCallback(async () => {
-			if (!eventId) return;
-			if (!eventRegistration) return;
-			try {
-				const node = props.data.node;
-				const pin = eventRegistration.pin;
-				const appId = props.data.appId;
-				const boardId = props.data.boardId;
-				const nodeId = props.data.node.id;
-				const eventType = eventRegistration.type;
-
-				await backend.registerEvent(appId, boardId, nodeId, eventType, eventId);
-
-				const command = updateNodeCommand({
-					node: {
-						...node,
-						pins: {
-							...node.pins,
-							[pin.id]: {
-								...pin,
-								default_value: convertJsonToUint8Array(eventId),
-							},
-						},
-					},
-				});
-
-				const result = await backend.executeCommand(appId, boardId, command);
-				await pushCommand(result, false);
-				await invalidate(backend.getBoard, [appId, boardId]);
-			} catch (e) {
-				console.warn(e);
-				toast.error(
-					`Failed to register event. Try a different ${eventRegistration.pin.friendly_name}`,
-				);
-			}
-		}, [
-			backend,
-			eventId,
-			eventRegistration,
-			props.data.appId,
-			props.data.boardId,
-			props.data.node,
-			pushCommand,
-			invalidate,
-		]);
 
 		const isReroute = useMemo(() => {
 			return props.data.node.name === "reroute";
@@ -264,14 +194,16 @@ const FlowNodeInner = memo(
 			let isRunning = false;
 			let already_executed = false;
 
-			for (const [_, run] of runs) {
+			for (const [runId, run] of runs) {
 				if (run.nodes.has(props.id)) {
 					isRunning = true;
+					setRunId(runId);
 					break;
 				}
 
 				if (run.already_executed.has(props.id)) {
 					already_executed = true;
+					setRunId(runId);
 				}
 			}
 
@@ -456,7 +388,18 @@ const FlowNodeInner = memo(
 		}
 
 		const playNode = useMemo(() => {
-			if (!props.data.node.start || executing) return null;
+			if (!props.data.node.start) return null;
+			if (executionState === "done" || executing)
+				return (
+					<button
+						className="bg-background hover:bg-card group/play transition-all rounded-md hover:rounded-lg border p-1 absolute left-0 bottom-50 top-50 translate-x-[calc(-120%)] !opacity-[200%]"
+						onClick={async (e) => {
+							if (runId) await backend.cancelExecution(runId);
+						}}
+					>
+						<CircleStopIcon className="w-3 h-3 group-hover/play:scale-110 text-primary" />
+					</button>
+				);
 			if (Object.keys(props.data.node.pins).length <= 1)
 				return (
 					<button
@@ -521,7 +464,9 @@ const FlowNodeInner = memo(
 		}, [
 			props.data.node.start,
 			payload,
+			runId,
 			executing,
+			executionState,
 			props.data.onExecute,
 			props.data.node,
 		]);
@@ -536,33 +481,6 @@ const FlowNodeInner = memo(
 				onMouseLeave={() => onHover(false)}
 			>
 				{playNode}
-				{eventRegistration && (
-					<Dialog open={typeof eventRegistration !== "undefined"}>
-						<DialogContent>
-							<DialogHeader>
-								<DialogTitle>Event Registration</DialogTitle>
-								<DialogDescription>
-									The Node you placed requires an Event Configuration. Please
-									provide a unique {eventRegistration.pin.friendly_name}.
-									{eventRegistration.pin.description}
-								</DialogDescription>
-							</DialogHeader>
-							<div className="grid w-full items-center gap-1.5">
-								<Label htmlFor="eventid">
-									{eventRegistration.pin.friendly_name}
-								</Label>
-								<Input
-									id="eventid"
-									value={eventId}
-									onChange={(e) => setEventId(e.target.value)}
-								/>
-							</div>
-							<Button onClick={async () => await registerEvent()}>
-								Register Event
-							</Button>
-						</DialogContent>
-					</Dialog>
-				)}
 				{props.data.node.long_running && (
 					<div className="absolute top-0 z-10 translate-y-[calc(-50%)] translate-x-[calc(-50%)] left-0 text-center bg-background rounded-full">
 						{useMemo(

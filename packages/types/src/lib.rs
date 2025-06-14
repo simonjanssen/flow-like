@@ -38,6 +38,7 @@ pub use reqwest_eventsource;
 pub use schemars::JsonSchema;
 pub use serde;
 pub use serde_json::Value;
+pub use tokio_util;
 pub mod json {
     pub use serde::{Deserialize, Serialize, de::DeserializeOwned};
     pub use serde_json::{

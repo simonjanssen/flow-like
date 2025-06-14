@@ -139,29 +139,98 @@ export class TauriBackend implements IBackendState {
 		appId: string,
 		boardId: string,
 		payload: IRunPayload,
+		streamState?: boolean,
+		eventId?: (id: string) => void,
 		cb?: (event: IIntercomEvent[]) => void,
 	): Promise<ILogMetadata | undefined> {
 		const channel = new Channel<IIntercomEvent[]>();
 		let closed = false;
+		let foundRunId = false;
 
 		channel.onmessage = (events: IIntercomEvent[]) => {
 			if (closed) {
 				console.warn("Channel closed, ignoring events");
 				return;
 			}
+
+			if (!foundRunId && events.length > 0 && eventId) {
+				const runId_event = events.find(
+					(event) => event.event_type === "run_initiated",
+				);
+
+				if (runId_event) {
+					const runId = runId_event.payload.run_id;
+					eventId(runId);
+					foundRunId = true;
+				}
+			}
+
 			if (cb) cb(events);
 		};
 
-		const runId: ILogMetadata | undefined = await invoke("execute_board", {
+		const metadata: ILogMetadata | undefined = await invoke("execute_board", {
 			appId: appId,
 			boardId: boardId,
 			payload: payload,
 			events: channel,
+			streamState: streamState,
 		});
 
 		closed = true;
 
-		return runId;
+		return metadata;
+	}
+
+	async executeEvent(
+		appId: string,
+		event: IEvent,
+		payload: IRunPayload,
+		streamState?: boolean,
+		eventId?: (id: string) => void,
+		cb?: (event: IIntercomEvent[]) => void,
+	): Promise<ILogMetadata | undefined> {
+		const channel = new Channel<IIntercomEvent[]>();
+		let closed = false;
+		let foundRunId = false;
+
+		channel.onmessage = (events: IIntercomEvent[]) => {
+			if (closed) {
+				console.warn("Channel closed, ignoring events");
+				return;
+			}
+
+			if (!foundRunId && events.length > 0 && eventId) {
+				const runId_event = events.find(
+					(event) => event.event_type === "run_initiated",
+				);
+
+				if (runId_event) {
+					const runId = runId_event.payload.run_id;
+					eventId(runId);
+					foundRunId = true;
+				}
+			}
+
+			if (cb) cb(events);
+		};
+
+		const metadata: ILogMetadata | undefined = await invoke("execute_event", {
+			appId: appId,
+			event: event,
+			payload: payload,
+			events: channel,
+			streamState: streamState,
+		});
+
+		closed = true;
+
+		return metadata;
+	}
+
+	async cancelExecution(runId: string): Promise<void> {
+		await invoke("cancel_execution", {
+			runId: runId,
+		});
 	}
 
 	async listRuns(
@@ -202,13 +271,6 @@ export class TauriBackend implements IBackendState {
 			offset: offset,
 		});
 		return runs;
-	}
-
-	async finalizeRun(appId: string, runId: string) {
-		await invoke("finalize_run", {
-			appId: appId,
-			runId: runId,
-		});
 	}
 
 	async undoBoard(appId: string, boardId: string, commands: IGenericCommand[]) {

@@ -61,8 +61,21 @@ export interface IBackendState {
 		appId: string,
 		boardId: string,
 		payload: IRunPayload,
+		streamState?: boolean,
+		eventId?: (id: string) => void,
 		cb?: (event: IIntercomEvent[]) => void,
 	): Promise<ILogMetadata | undefined>;
+
+	executeEvent(
+		appId: string,
+		event: IEvent,
+		payload: IRunPayload,
+		streamState?: boolean,
+		eventId?: (id: string) => void,
+		cb?: (event: IIntercomEvent[]) => void,
+	): Promise<ILogMetadata | undefined>;
+
+	cancelExecution(runId: string): Promise<void>;
 
 	listRuns(
 		appId: string,
@@ -82,7 +95,6 @@ export interface IBackendState {
 		offset?: number,
 	): Promise<ILog[]>;
 
-	finalizeRun(appId: string, runId: string): Promise<void>;
 	undoBoard(
 		appId: string,
 		boardId: string,

@@ -171,6 +171,8 @@ export default function Id({
 			{
 				id: node.id,
 			},
+			false,
+			undefined,
 			(events) => {},
 		);
 
@@ -179,13 +181,7 @@ export default function Id({
 				"Failed to execute board",
 				<PlayCircleIcon className="w-4 h-4" />,
 			);
-			return;
 		}
-		await addRun(runMeta.run_id, boardId, [node.id]);
-		await invoke("execute_run", { id: runMeta });
-		removeRun(runMeta.run_id);
-		await invoke("get_run", { id: runMeta });
-		await invoke("finalize_run", { id: runMeta });
 	}
 
 	const quickActions = useMemo(

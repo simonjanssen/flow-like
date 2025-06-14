@@ -1,4 +1,5 @@
 use super::board::ExecutionStage;
+use super::event::Event;
 use super::{board::Board, node::NodeState, variable::Variable};
 use crate::profile::Profile;
 use crate::state::FlowLikeState;
@@ -117,6 +118,8 @@ pub struct LogMeta {
     pub nodes: Option<Vec<(String, u8)>>,
     pub logs: Option<u64>,
     pub node_id: String,
+    pub event_version: Option<String>,
+    pub event_id: String,
     pub payload: Vec<u8>,
 }
 
@@ -158,6 +161,13 @@ impl LogMeta {
                 .await?;
             let iter = RecordBatchIterator::new(vec![arrow_batch].into_iter().map(Ok), schema);
             table.add(iter).execute().await?;
+            table
+                .create_index(
+                    &["event_id"],
+                    flow_like_storage::lancedb::index::Index::Bitmap(BitmapIndexBuilder {}),
+                )
+                .execute()
+                .await?;
             table
                 .create_index(
                     &["node_id"],
@@ -205,6 +215,10 @@ pub struct Run {
     pub highest_log_level: LogLevel,
     pub log_initialized: bool,
     pub logs: u64,
+    pub stream_state: bool,
+
+    pub event_id: Option<String>,
+    pub event_version: Option<String>,
 
     pub visited_nodes: HashMap<String, LogLevel>,
     pub log_store: Option<FlowLikeStore>,
@@ -306,6 +320,8 @@ impl Run {
             nodes: Some(visited_nodes),
             logs: Some(self.logs),
             node_id: self.payload.id.clone(),
+            event_id: self.event_id.clone().unwrap_or("".to_string()),
+            event_version: self.event_version.clone(),
             payload,
         };
 
@@ -386,10 +402,12 @@ impl InternalRun {
     pub async fn new(
         app_id: &str,
         board: Arc<Board>,
+        event: Option<Event>,
         handler: &Arc<Mutex<FlowLikeState>>,
         profile: &Profile,
-        payload: RunPayload,
+        payload: &RunPayload,
         sub: Option<String>,
+        stream_state: bool,
         callback: InterComCallback,
     ) -> flow_like_types::Result<Self> {
         let before = Instant::now();
@@ -417,6 +435,13 @@ impl InternalRun {
             highest_log_level: LogLevel::Debug,
             log_initialized: false,
             logs: 0,
+            stream_state,
+
+            event_id: event.as_ref().map(|e| e.id.clone()),
+            event_version: event.as_ref().map(|e| {
+                let (major, minor, patch) = e.event_version;
+                format!("{}.{}.{}", major, minor, patch)
+            }),
 
             visited_nodes: HashMap::with_capacity(board.nodes.len()),
             log_store,
@@ -427,12 +452,27 @@ impl InternalRun {
 
         let mut dependencies = HashMap::with_capacity(board.nodes.len());
 
+        let event_variables = event
+            .as_ref()
+            .map(|e| e.variables.clone())
+            .unwrap_or_default();
+
         let variables = Arc::new(Mutex::new({
             let mut map = HashMap::with_capacity(board.variables.len());
-            for (variable_id, variable) in &board.variables {
-                let value = variable.default_value.as_ref().map_or(Value::Null, |v| {
-                    flow_like_types::json::from_slice::<Value>(v).unwrap()
-                });
+            for (variable_id, board_variable) in &board.variables {
+                let variable = if board_variable.exposed {
+                    event_variables.get(variable_id).unwrap_or(board_variable)
+                } else {
+                    board_variable
+                };
+
+                let value = match &variable.default_value {
+                    Some(bytes) => {
+                        flow_like_types::json::from_slice::<Value>(bytes).unwrap_or(Value::Null)
+                    }
+                    None => Value::Null,
+                };
+
                 let mut var = variable.clone();
                 var.value = Arc::new(Mutex::new(value));
                 map.insert(variable_id.clone(), var);
@@ -838,6 +878,31 @@ impl InternalRun {
                 eprintln!("[Error] executing completion callback: {:?}", err);
             }
         }
+    }
+
+    // ONLY CALL THIS IF WE ARE BEING CANCELLED
+    pub async fn flush_logs_cancelled(&mut self) -> flow_like_types::Result<Option<LogMeta>> {
+        let mut run = self.run.lock().await;
+        run.highest_log_level = LogLevel::Fatal;
+        run.status = RunStatus::Stopped;
+        run.end = SystemTime::now();
+
+        let cancel_log = LogMessage::new("Run cancelled", LogLevel::Fatal, None);
+        if let Some(trace) = run.traces.last_mut() {
+            trace.logs.push(cancel_log);
+        } else {
+            // Create a system trace if no traces exist
+            let mut system_trace = Trace::new(
+                run.visited_nodes
+                    .keys()
+                    .next()
+                    .unwrap_or(&"system".to_string()),
+            );
+            system_trace.logs.push(cancel_log);
+            run.traces.push(system_trace);
+        }
+
+        run.flush_logs(true).await
     }
 }
 

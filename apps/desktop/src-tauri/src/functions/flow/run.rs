@@ -1,12 +1,17 @@
+use flow_like::flow::event::Event;
 use flow_like::flow::execution::log::LogMessage;
 use flow_like::flow::execution::{InternalRun, RunStatus};
 use flow_like::flow::execution::{LogLevel, LogMeta, RunPayload};
 use flow_like::flow_like_storage::lancedb::query::{ExecutableQuery, QueryBase};
 use flow_like::flow_like_storage::{Path, serde_arrow};
+use flow_like::state::RunData;
 use flow_like_types::intercom::{BufferedInterComHandler, InterComEvent};
 use flow_like_types::sync::Mutex;
+use flow_like_types::tokio_util::sync::CancellationToken;
+use flow_like_types::{create_id, json, tokio};
 use futures::TryStreamExt;
 use std::sync::Arc;
+use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 
 use crate::{
@@ -14,13 +19,14 @@ use crate::{
     state::{TauriFlowLikeState, TauriSettingsState},
 };
 
-#[tauri::command(async)]
-pub async fn execute_board(
+async fn execute_internal(
     app_handle: AppHandle,
     app_id: String,
     board_id: String,
     payload: RunPayload,
     events: tauri::ipc::Channel<Vec<InterComEvent>>,
+    event: Option<Event>,
+    stream_state: bool,
 ) -> Result<Option<LogMeta>, TauriFunctionError> {
     let (board, flow_like_state) =
         TauriFlowLikeState::get_board_and_state(&app_handle, &board_id).await?;
@@ -58,15 +64,53 @@ pub async fn execute_board(
     let mut internal_run = InternalRun::new(
         &app_id,
         board,
+        event,
         &flow_like_state,
         &profile.hub_profile,
-        payload,
+        &payload,
         None,
+        stream_state,
         buffered_sender.into_callback(),
     )
     .await?;
     let run_id = internal_run.run.lock().await.id.clone();
-    let meta = internal_run.execute(flow_like_state.clone()).await;
+
+    buffered_sender
+        .send(InterComEvent::with_type(
+            "run_initiated",
+            json::json!({ "run_id": run_id.clone()}),
+        ))
+        .await;
+
+    let cancellation_token = CancellationToken::new();
+    let run_data = RunData::new(&board_id, &payload.id, None, cancellation_token.clone());
+
+    flow_like_state.lock().await.register_run(&run_id, run_data);
+
+    let meta = tokio::select! {
+        result = internal_run.execute(flow_like_state.clone()) => result,
+        _ = cancellation_token.cancelled() => {
+            println!("Board execution cancelled for run: {}", run_id);
+            match tokio::time::timeout(Duration::from_secs(30), internal_run.flush_logs_cancelled()).await {
+                Ok(Ok(Some(meta))) => {
+                    Some(meta)
+                },
+                Ok(Ok(None)) => {
+                    println!("No meta flushing early");
+                    None
+                },
+                Ok(Err(e)) => {
+                    println!("Error flushing logs early for run: {}, {:?}", run_id, e);
+                    None
+                },
+                Err(_) => {
+                    println!("Timeout while flushing logs early for run: {}", run_id);
+                    None
+                }
+            }
+        }
+    };
+
     if let Err(err) = buffered_sender.flush().await {
         println!("Error flushing buffered sender: {}", err);
     }
@@ -82,41 +126,72 @@ pub async fn execute_board(
             .as_ref()
             .ok_or_else(|| flow_like_types::anyhow!("No log database configured"))?;
         let base_path = Path::from("runs").child(app_id).child(board_id);
-        let db = db_fn(base_path.clone())
-            .execute()
-            .await
-            .map_err(|_| flow_like_types::anyhow!("Failed to open database: {}", base_path))?;
+        let db = db_fn(base_path.clone()).execute().await.map_err(|e| {
+            flow_like_types::anyhow!("Failed to open database: {}, {:?}", base_path, e)
+        })?;
         meta.flush(db)
             .await
-            .map_err(|_| flow_like_types::anyhow!("Failed to flush run: {}", base_path))?;
+            .map_err(|e| flow_like_types::anyhow!("Failed to flush run: {}, {:?}", base_path, e))?;
     }
 
-    flow_like_state
-        .lock()
-        .await
-        .register_run(&run_id, Arc::new(Mutex::new(internal_run)));
+    let _res = flow_like_state.lock().await.remove_and_cancel_run(&run_id);
 
     Ok(meta)
 }
 
 #[tauri::command(async)]
-pub async fn debug_step_run(app_handle: AppHandle, id: String) -> Result<(), TauriFunctionError> {
-    let (run, flow_like_state) = TauriFlowLikeState::get_run_and_state(&app_handle, &id).await?;
-    let mut run = run.lock().await;
-    run.debug_step(flow_like_state).await;
-    Ok(())
+pub async fn execute_board(
+    app_handle: AppHandle,
+    app_id: String,
+    board_id: String,
+    payload: RunPayload,
+    stream_state: Option<bool>,
+    events: tauri::ipc::Channel<Vec<InterComEvent>>,
+) -> Result<Option<LogMeta>, TauriFunctionError> {
+    let stream_state = stream_state.unwrap_or(true);
+    execute_internal(
+        app_handle,
+        app_id,
+        board_id,
+        payload,
+        events,
+        None,
+        stream_state,
+    )
+    .await
 }
 
 #[tauri::command(async)]
-pub async fn get_run_status(
+pub async fn execute_event(
     app_handle: AppHandle,
-    id: String,
-) -> Result<RunStatus, TauriFunctionError> {
-    let (run, _) = TauriFlowLikeState::get_run_and_state(&app_handle, &id).await?;
-    let run = run.lock().await;
+    app_id: String,
+    event: Event,
+    payload: RunPayload,
+    stream_state: Option<bool>,
+    events: tauri::ipc::Channel<Vec<InterComEvent>>,
+) -> Result<Option<LogMeta>, TauriFunctionError> {
+    let board_id = event.board_id.clone();
+    let stream_state = stream_state.unwrap_or(false);
+    execute_internal(
+        app_handle,
+        app_id,
+        board_id,
+        payload,
+        events,
+        Some(event),
+        stream_state,
+    )
+    .await
+}
 
-    let status = run.get_status().await;
-    Ok(status)
+#[tauri::command(async)]
+pub async fn cancel_execution(
+    app_handle: AppHandle,
+    run_id: String,
+) -> Result<(), TauriFunctionError> {
+    let flow_like_state = TauriFlowLikeState::construct(&app_handle).await?;
+    flow_like_state.lock().await.remove_and_cancel_run(&run_id);
+    Ok(())
 }
 
 #[tauri::command(async)]
@@ -270,19 +345,4 @@ pub async fn query_run(
         .query_run(&log_meta, &query, limit, offset)
         .await?;
     Ok(logs)
-}
-
-#[tauri::command(async)]
-pub async fn finalize_run(
-    app_state: AppHandle,
-    app_id: String,
-    run_id: String,
-) -> Result<(), TauriFunctionError> {
-    let flow_like_state = TauriFlowLikeState::construct(&app_state).await?;
-    flow_like_state
-        .lock()
-        .await
-        .remove_run(&run_id)
-        .ok_or(TauriFunctionError::new("Run not found"))?;
-    Ok(())
 }
