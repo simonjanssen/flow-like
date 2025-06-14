@@ -1,12 +1,71 @@
 "use client";
 import {
 	type IBoard,
+	type IEvent,
 	type IEventPayload,
+	type INode,
 	Input,
 	Label,
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
 	Switch,
 } from "@tm9657/flow-like-ui";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+const EVENT_TYPE_LOOKUP: Record<string, string[]> = {
+	events_chat: ["simple_chat", "complex_chat"],
+	events_mail: ["user_mail"],
+	events_api: ["api"],
+	events_simple: ["quick_action", "webhook"],
+};
+
+export function EventTypeConfiguration({
+	node,
+	event,
+	disabled,
+	onUpdate,
+}: Readonly<{
+	node: INode;
+	disabled: boolean;
+	event: IEvent;
+	onUpdate: (type: string) => void;
+}>) {
+	const availableTypes = EVENT_TYPE_LOOKUP[node.name] || [];
+
+	useEffect(() => {
+		const eventTypes = EVENT_TYPE_LOOKUP[node.name] || [];
+
+		if (!eventTypes.includes(event.event_type)) {
+			onUpdate(eventTypes[0]);
+		}
+	}, [node.name, event.event_type]);
+
+	if (availableTypes.length <= 1) return null;
+	return (
+		<div className="space-y-3">
+			<Label htmlFor="event_type">Event Type</Label>
+			<Select
+				disabled={disabled}
+				value={event.event_type}
+				onValueChange={onUpdate}
+			>
+				<SelectTrigger className="w-full">
+					<SelectValue placeholder="Select event type" />
+				</SelectTrigger>
+				<SelectContent>
+					{availableTypes.map((type) => (
+						<SelectItem key={type} value={type}>
+							{type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+						</SelectItem>
+					))}
+				</SelectContent>
+			</Select>
+		</div>
+	);
+}
 
 export function EventTranslation({
 	editing,
@@ -42,6 +101,8 @@ export function EventTranslation({
 		},
 		[currentPayload, onUpdate],
 	);
+
+	useEffect(() => {}, [node.data]);
 
 	if (!node) return <p className="text-red-500">Node not found.</p>;
 
@@ -110,7 +171,7 @@ export function EventTranslation({
 						/>
 					) : (
 						<div className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm">
-							{currentPayload?.mail || "Not configured"}
+							{currentPayload?.mail ?? "Not configured"}
 						</div>
 					)}
 					<p className="text-sm text-muted-foreground">
@@ -130,7 +191,7 @@ export function EventTranslation({
 						/>
 					) : (
 						<div className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm">
-							{currentPayload?.sender_name || "Not configured"}
+							{currentPayload?.sender_name ?? "Not configured"}
 						</div>
 					)}
 					<p className="text-sm text-muted-foreground">
@@ -161,8 +222,6 @@ export function EventTranslation({
 						Password or app-specific password for IMAP
 					</p>
 				</div>
-
-				{/* Apply same pattern to remaining fields */}
 			</div>
 		);
 	}

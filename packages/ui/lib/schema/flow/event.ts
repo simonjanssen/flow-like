@@ -6,11 +6,13 @@ export interface IEvent {
 	config: number[];
 	created_at: ISystemTime;
 	description: string;
+	event_type: string;
 	event_version: number[];
 	id: string;
 	name: string;
 	node_id: string;
 	notes?: IReleaseNotes | null;
+	priority: number;
 	updated_at: ISystemTime;
 	variables: { [key: string]: IVariable };
 	[property: string]: any;

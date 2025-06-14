@@ -54,7 +54,7 @@ import {
 	VariableConfigCard,
 	VariableTypeIndicator,
 } from "../configuration/page";
-import { EventTranslation } from "./event-translation";
+import { EventTranslation, EventTypeConfiguration } from "./event-translation";
 
 export default function Page() {
 	const searchParams = useSearchParams();
@@ -97,6 +97,8 @@ export default function Page() {
 			event_version: [0, 0, 0],
 			node_id: newEvent.node_id ?? "",
 			variables: newEvent.variables ?? {},
+			event_type: newEvent.event_type ?? "default",
+			priority: events.data?.length ?? 0,
 			canary: null,
 			notes: null,
 		};
@@ -133,8 +135,8 @@ export default function Page() {
 				appId={id}
 				event={editingEvent}
 				onDone={() => handleEditingEvent()}
-				onReload={() => {
-					events.refetch();
+				onReload={async () => {
+					await events.refetch();
 				}}
 			/>
 		);
@@ -290,6 +292,10 @@ function EventConfiguration({
 	);
 
 	const handleInputChange = (field: keyof IEvent, value: any) => {
+		console.dir({
+			field,
+			value,
+		});
 		setFormData((prev) => ({ ...prev, [field]: value }));
 	};
 
@@ -359,7 +365,17 @@ function EventConfiguration({
 						Event Status
 					</CardTitle>
 				</CardHeader>
-				<CardContent>
+				<CardContent className="flex flex-col space-y-4">
+					<div>
+						{board.data?.nodes?.[formData.node_id] && formData.node_id && (
+							<EventTypeConfiguration
+								disabled={!isEditing}
+								node={board.data?.nodes?.[formData.node_id]}
+								event={formData}
+								onUpdate={(type) => handleInputChange("event_type", type)}
+							/>
+						)}
+					</div>
 					<div className="flex items-center justify-between">
 						<div className="flex items-center gap-3">
 							<div

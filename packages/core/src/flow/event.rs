@@ -45,6 +45,8 @@ pub struct Event {
 
     pub canary: Option<CanaryEvent>,
 
+    pub priority: u32,
+    pub event_type: String,
     pub notes: Option<ReleaseNotes>,
     pub event_version: (u32, u32, u32),
     pub created_at: std::time::SystemTime,
@@ -140,20 +142,17 @@ impl Event {
                     ),
                 };
             }
-            old_event.active = self.active;
-            old_event.updated_at = SystemTime::now();
-            old_event.node_id = self.node_id.clone();
-            old_event.board_id = self.board_id.clone();
-            old_event.canary = self.canary.clone();
-            old_event.variables = self.variables.clone();
-            old_event.config = self.config.clone();
-            old_event.notes = self.notes.clone();
-            old_event.name = self.name.clone();
-            old_event.description = self.description.clone();
-            old_event.board_version = self.board_version;
 
-            old_event.save(app, None).await?;
-            return Ok(old_event.clone());
+            let updated_event = Event {
+                id: old_event.id,
+                event_version: old_event.event_version,
+                created_at: old_event.created_at,
+                updated_at: SystemTime::now(),
+                ..self.clone()
+            };
+
+            updated_event.save(app, None).await?;
+            return Ok(updated_event.clone());
         }
 
         self.id = create_id();

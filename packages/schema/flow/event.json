@@ -8,10 +8,12 @@
 		"config",
 		"created_at",
 		"description",
+		"event_type",
 		"event_version",
 		"id",
 		"name",
 		"node_id",
+		"priority",
 		"updated_at",
 		"variables"
 	],
@@ -79,6 +81,14 @@
 					"type": "null"
 				}
 			]
+		},
+		"priority": {
+			"type": "integer",
+			"format": "uint32",
+			"minimum": 0.0
+		},
+		"event_type": {
+			"type": "string"
 		},
 		"notes": {
 			"anyOf": [

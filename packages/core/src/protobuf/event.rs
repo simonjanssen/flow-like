@@ -41,8 +41,10 @@ impl ToProto<flow_like_types::proto::Event> for Event {
                 minor: self.event_version.1,
                 patch: self.event_version.2,
             }),
+            priority: self.priority.clone(),
             created_at: Some(Timestamp::from(self.created_at)),
             updated_at: Some(Timestamp::from(self.updated_at)),
+            event_type: self.event_type.clone(),
         }
     }
 }
@@ -95,6 +97,7 @@ impl FromProto<flow_like_types::proto::Event> for Event {
                 proto.event_version.unwrap().minor,
                 proto.event_version.unwrap().patch,
             ),
+            priority: proto.priority.into(),
             created_at: proto
                 .created_at
                 .map(|t| SystemTime::try_from(t).unwrap_or(SystemTime::UNIX_EPOCH))
@@ -103,6 +106,7 @@ impl FromProto<flow_like_types::proto::Event> for Event {
                 .updated_at
                 .map(|t| SystemTime::try_from(t).unwrap_or(SystemTime::UNIX_EPOCH))
                 .unwrap_or(SystemTime::UNIX_EPOCH),
+            event_type: proto.event_type.into()
         }
     }
 }

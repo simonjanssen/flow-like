@@ -51,6 +51,8 @@ import {
 	Minimize2Icon,
 	PlayCircleIcon,
 	Share2Icon,
+	SparkleIcon,
+	SparklesIcon,
 	SquarePenIcon,
 	WorkflowIcon,
 	ZapIcon,
@@ -123,6 +125,8 @@ const navigationItems = [
 	},
 ];
 
+const USABLE_EVENTS = new Set(["simple_chat", "complex_chat"]);
+
 export default function Id({
 	children,
 }: Readonly<{
@@ -132,12 +136,6 @@ export default function Id({
 	const searchParams = useSearchParams();
 	const id = searchParams.get("id");
 	const currentRoute = usePathname();
-	const isReady = useTauriInvoke<boolean>(
-		"app_configured",
-		{ appId: id },
-		[id ?? ""],
-		typeof id === "string",
-	);
 	const metadata = useInvoke(
 		backend.getAppMeta,
 		[id ?? ""],
@@ -145,18 +143,13 @@ export default function Id({
 	);
 	const app = useInvoke(backend.getApp, [id ?? ""], typeof id === "string");
 	const [isMaximized, setIsMaximized] = useState(false);
-	const appSize = useTauriInvoke<number>(
-		"get_app_size",
-		{ appId: id },
-		[id ?? ""],
-		typeof id === "string",
-	);
+	const events = useInvoke(backend.getEvents, [id ?? ""], (id ?? "") !== "");
+
 	const boards = useInvoke(
 		backend.getBoards,
 		[id ?? ""],
 		typeof id === "string",
 	);
-	const { addRun, removeRun } = useRunExecutionStore();
 
 	async function executeBoard(boardId: string, node: INode) {
 		if (!id) return;
@@ -202,7 +195,7 @@ export default function Id({
 				{/* Enhanced Breadcrumb - Hidden when maximized */}
 				{!isMaximized && (
 					<Card className="border-0 shadow-sm bg-gradient-to-r from-background to-muted/20">
-						<CardContent className="p-4">
+						<CardContent className="p-4 flex flex-row items-center justify-between">
 							<Breadcrumb>
 								<BreadcrumbList>
 									<BreadcrumbItem>
@@ -232,6 +225,22 @@ export default function Id({
 									</BreadcrumbItem>
 								</BreadcrumbList>
 							</Breadcrumb>
+							{/* Use App */}
+							{events.data?.find((event) =>
+								USABLE_EVENTS.has(event.event_type),
+							) && (
+								<div>
+									<Link href={`/use?id=${id}`} className="w-full">
+										<Button
+											size={"sm"}
+											className="flex items-center gap-2 w-full rounded-full px-4"
+										>
+											<SparklesIcon className="w-4 h-4" />
+											<h4 className="text-sm font-medium">Use App</h4>
+										</Button>
+									</Link>
+								</div>
+							)}
 						</CardContent>
 					</Card>
 				)}
