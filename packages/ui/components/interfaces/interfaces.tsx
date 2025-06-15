@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
 
-interface IToolBarActions {
+export interface IToolBarActions {
 	pushElements: (elements: ReactElement[]) => void;
 }
