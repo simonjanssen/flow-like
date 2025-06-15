@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { IEventPayloadChat } from "../../../lib";
 import type { Message } from "../chat-default";
 import { ChatBox, type ChatBoxRef } from "./chatbox";
 import { MessageComponent } from "./message";
-import type { IEventPayloadChat } from "../../../lib";
 
 interface ChatProps {
 	messages: Message[];
@@ -53,15 +53,17 @@ export function Chat({
 
 	return (
 		<main className="flex flex-col h-full w-full items-center flex-grow bg-background max-h-full overflow-hidden ">
-			<div className="h-full flex-grow flex flex-col bg-background max-h-full w-full overflow-hidden max-w-screen-xl">
+			<div className="h-full flex-grow flex flex-col bg-background max-h-full w-full overflow-auto">
 				{/* Messages Container */}
 				<div
 					ref={scrollContainerRef}
 					onScroll={handleScroll}
-					className="flex-1 overflow-y-auto p-4 space-y-4 mx-4 flex flex-col flex-grow max-h-full overflow-hidden "
+					className="flex-1 overflow-y-auto p-4 space-y-8  flex flex-col items-center flex-grow max-h-full overflow-hidden"
 				>
 					{messages.map((message) => (
-						<MessageComponent key={message.id} message={message} />
+						<div className="w-full max-w-screen-lg px-4" key={message.id}>
+							<MessageComponent message={message} />
+						</div>
 					))}
 					{isLoading && (
 						<div className="flex justify-start">
@@ -84,17 +86,17 @@ export function Chat({
 				</div>
 
 				{/* ChatBox */}
-				<div className="bg-transparent pb-4">
-					<ChatBox ref={chatBox}
+				<div className="bg-transparent pb-4 max-w-screen-lg w-full mx-auto">
+					<ChatBox
+						ref={chatBox}
 						availableTools={config.tools ?? []}
 						defaultActiveTools={config.default_tools ?? []}
 						onSendMessage={onSendMessage}
 						fileUpload={config.allow_file_upload ?? false}
 						audioInput={config.allow_voice_input ?? true}
-						/>
+					/>
 				</div>
 			</div>
 		</main>
-
 	);
 }

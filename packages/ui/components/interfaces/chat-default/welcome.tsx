@@ -111,10 +111,7 @@ export function ChatWelcome({
 
 			return parts.map((part, index) =>
 				regex.test(part) ? (
-					<span
-						key={index}
-						className="bg-primary/20 text-primary rounded-sm"
-					>
+					<span key={index} className="bg-primary/20 text-primary rounded-sm">
 						{part}
 					</span>
 				) : (
@@ -181,15 +178,17 @@ export function ChatWelcome({
 						/>
 
 						{/* Example Prompts List */}
-						{filteredExamples.length > 0 && (
+						{(filteredExamples.length > 0 || currentMessage.trim()) && (
 							<div className="space-y-2 pt-2 px-2">
-								<p className="text-xs text-muted-foreground uppercase tracking-wide">
-									Suggestions
-								</p>
-								<div className="space-y-1">
+								{filteredExamples.length > 0 && (
+									<p className="text-xs text-muted-foreground uppercase tracking-wide">
+										Suggestions
+									</p>
+								)}
+								<div className="space-y-1 min-h-[200px]">
 									{filteredExamples.map((example, index) => (
 										<button
-											key={index}
+											key={`example-${index}`}
 											className="w-full text-left text-sm text-muted-foreground bg-muted/10 hover:text-foreground hover:bg-muted/50 rounded-md px-3 py-2 transition-colors cursor-pointer"
 											onClick={() => chatBox.current?.setInput(example)}
 										>

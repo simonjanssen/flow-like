@@ -664,7 +664,9 @@ export default function Id() {
 						<CalendarIcon className="w-5 h-5" />
 						Changelog
 					</CardTitle>
-					<CardDescription>Document what&apos;s new in this version</CardDescription>
+					<CardDescription>
+						Document what&apos;s new in this version
+					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
 					<div className="space-y-2">

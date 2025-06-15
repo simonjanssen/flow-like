@@ -1,21 +1,19 @@
 import {
+	Badge,
 	Button,
-	type IBit,
-	type IMetadata,
-	Input,
-	Slider,
-	Textarea,
-	humanFileSize,
-} from "@tm9657/flow-like-ui";
-import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
+	type IBit,
+	type IMetadata,
+	Input,
+	Label,
+	Slider,
+	Textarea,
+	humanFileSize,
 } from "@tm9657/flow-like-ui";
-import { Label } from "@tm9657/flow-like-ui";
-import { Badge } from "@tm9657/flow-like-ui";
 import { X } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 
@@ -449,7 +447,9 @@ export function MetaConfiguration({
 			<Card>
 				<CardHeader>
 					<CardTitle>Release Notes</CardTitle>
-					<CardDescription>Document what&apos;s new in this version</CardDescription>
+					<CardDescription>
+						Document what&apos;s new in this version
+					</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<div className="space-y-2">

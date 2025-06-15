@@ -112,6 +112,7 @@ export function ChatInterface({
 			messages={messages}
 			onSendMessage={handleSendMessage}
 			isLoading={isLoading}
+			config={config}
 		/>
 	);
 }

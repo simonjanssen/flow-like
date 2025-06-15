@@ -106,7 +106,7 @@ impl FromProto<flow_like_types::proto::Event> for Event {
                 .updated_at
                 .map(|t| SystemTime::try_from(t).unwrap_or(SystemTime::UNIX_EPOCH))
                 .unwrap_or(SystemTime::UNIX_EPOCH),
-            event_type: proto.event_type.into()
+            event_type: proto.event_type.into(),
         }
     }
 }

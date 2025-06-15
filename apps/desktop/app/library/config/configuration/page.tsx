@@ -71,8 +71,8 @@ export default function ConfigurationPage() {
 						✅ No Configuration Needed
 					</h3>
 					<p className="text-muted-foreground">
-						Your application doesn&apos;t have any configurable parameters. You&apos;re
-						ready to go! 🚀
+						Your application doesn&apos;t have any configurable parameters.
+						You&apos;re ready to go! 🚀
 					</p>
 				</div>
 			</main>
@@ -198,5 +198,3 @@ function BoardConfig({
 		</Card>
 	);
 }
-
-

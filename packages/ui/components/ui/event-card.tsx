@@ -142,12 +142,10 @@ export function EventCard({
 						</div>
 						<Button
 							variant="outline"
-							size="sm"
+							size="icon"
 							onClick={() => navigateToNode(event.node_id)}
-							className="gap-2 hover:bg-primary hover:text-primary-foreground transition-all duration-200 shadow-md hover:shadow-lg"
 						>
 							<ExternalLinkIcon className="h-3 w-3" />
-							View Node
 						</Button>
 					</div>
 				</CardContent>

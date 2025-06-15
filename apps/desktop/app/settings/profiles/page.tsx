@@ -48,7 +48,10 @@ export default function SettingsPage() {
 								className="rounded-md"
 								width={256}
 								height={256}
-								src={currentProfile.data.hub_profile.thumbnail ?? "/placeholder-thumbnail.webp"}
+								src={
+									currentProfile.data.hub_profile.thumbnail ??
+									"/placeholder-thumbnail.webp"
+								}
 								alt="thumbnail"
 							/>
 							<div className="w-full px-4 gap-4 flex flex-col">

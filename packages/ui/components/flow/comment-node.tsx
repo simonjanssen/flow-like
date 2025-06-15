@@ -33,7 +33,6 @@ import {
 } from "../ui/dialog";
 import { MarkdownComponent } from "../ui/markdown";
 import { Textarea } from "../ui/textarea";
-import { CommentDialog } from "./comment-dialog";
 
 export type CommentNode = Node<
 	{

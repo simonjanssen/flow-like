@@ -121,6 +121,8 @@ export const ChatBox = forwardRef<ChatBoxRef, ChatBoxProps>(
 				clearInput: () => {
 					setInput("");
 					setAttachedFiles([]);
+					setRecordedAudio(null);
+					setRecordingTime(0);
 				},
 				getInput: () => input,
 				getAttachedFiles: () => attachedFiles,
@@ -143,6 +145,8 @@ export const ChatBox = forwardRef<ChatBoxRef, ChatBoxProps>(
 				);
 				setInput("");
 				setAttachedFiles([]);
+				setRecordedAudio(null);
+				setRecordingTime(0);
 			}
 		};
 
@@ -354,7 +358,7 @@ export const ChatBox = forwardRef<ChatBoxRef, ChatBoxProps>(
 		};
 
 		return (
-			<div className="w-full max-w-screen-xl mx-auto">
+			<div className="w-full max-w-screen-xl px-2">
 				{/* Attachments Preview */}
 				{(activeTools.length > 0 ||
 					attachedFiles.length > 0 ||

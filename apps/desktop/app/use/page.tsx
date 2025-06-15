@@ -28,8 +28,8 @@ import {
 	useRef,
 	useState,
 } from "react";
-import NotFound from "../library/config/not-found";
 import { USABLE_EVENTS } from "../events";
+import NotFound from "../library/config/not-found";
 interface HeaderProps {
 	currentEvent: any;
 	sortedEvents: any[];

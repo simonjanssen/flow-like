@@ -4,27 +4,18 @@ import { createId } from "@paralleldrive/cuid2";
 import {
 	Button,
 	type IBit,
-	IBitModelClassification,
 	IBitTypes,
 	type IEmbeddingModelParameters,
 	type ILlmParameters,
-	IModelProvider,
 	IPooling,
 	Input,
-	Progress,
 	Separator,
 	nowSystemTime,
 	useBackend,
 	useInvoke,
 } from "@tm9657/flow-like-ui";
 import { Loader2Icon } from "lucide-react";
-import {
-	Dispatch,
-	SetStateAction,
-	useCallback,
-	useEffect,
-	useState,
-} from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "react-oidc-context";
 import { toast } from "sonner";
 import { put } from "../../../../lib/api";
@@ -121,7 +112,7 @@ const DEFAULT_BIT: IBit = {
 };
 
 export default function Page() {
-	const backend = useBackend()
+	const backend = useBackend();
 	const profile = useInvoke(backend.getProfile, [], true);
 	const [type, setType] = useState<IBitTypes>(IBitTypes.Llm);
 	const [bit, setBit] = useState<IBit>(DEFAULT_BIT);
