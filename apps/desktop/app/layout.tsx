@@ -1,6 +1,7 @@
 "use client";
 import "@tm9657/flow-like-ui/globals.css";
 import {
+	LoadingScreen,
 	PersistQueryClientProvider,
 	QueryClient,
 	ReactFlowProvider,
@@ -43,28 +44,29 @@ export default function RootLayout({
 					<TooltipProvider>
 						<Toaster />
 						<body className={inter.className}>
-							<Suspense
+							{/* <Suspense
 								fallback={
-									<div className="flex flex-1 justify-center items-center">
-										{"Loading..."}
+									<div className="min-w-screen min-h-screen h-full w-full flex flex-col">
+										<LoadingScreen/>
 									</div>
 								}
-							>
-								<ToastProvider />
-								<TauriProvider>
-									<DesktopAuthProvider>
-										<PostHogPageView />
-										<ThemeProvider
-											attribute="class"
-											defaultTheme="system"
-											enableSystem
-											disableTransitionOnChange
-										>
-											<AppSidebar>{children}</AppSidebar>
-										</ThemeProvider>
-									</DesktopAuthProvider>
-								</TauriProvider>
-							</Suspense>
+							> */}
+							<ToastProvider />
+							<TauriProvider>
+								<DesktopAuthProvider>
+									<PostHogPageView />
+									<ThemeProvider
+										attribute="class"
+										defaultTheme="system"
+										enableSystem
+										storageKey="theme"
+										disableTransitionOnChange
+									>
+										<AppSidebar>{children}</AppSidebar>
+									</ThemeProvider>
+								</DesktopAuthProvider>
+							</TauriProvider>
+							{/* </Suspense> */}
 						</body>
 					</TooltipProvider>
 				</PersistQueryClientProvider>

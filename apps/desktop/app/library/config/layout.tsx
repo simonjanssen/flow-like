@@ -125,7 +125,7 @@ const navigationItems = [
 	},
 ];
 
-const USABLE_EVENTS = new Set(["simple_chat", "complex_chat"]);
+export const USABLE_EVENTS = new Set(["simple_chat", "complex_chat"]);
 
 export default function Id({
 	children,
@@ -230,7 +230,14 @@ export default function Id({
 								USABLE_EVENTS.has(event.event_type),
 							) && (
 								<div>
-									<Link href={`/use?id=${id}`} className="w-full">
+									<Link
+										href={`/use?id=${id}&eventId=${
+											events.data?.find((event) =>
+												USABLE_EVENTS.has(event.event_type),
+											)?.id
+										}`}
+										className="w-full"
+									>
 										<Button
 											size={"sm"}
 											className="flex items-center gap-2 w-full rounded-full px-4"
