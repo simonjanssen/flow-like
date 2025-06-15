@@ -61,6 +61,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
 import { useTauriInvoke } from "../../../components/useInvoke";
+import { USABLE_EVENTS } from "../../events";
 
 const navigationItems = [
 	{
@@ -124,8 +125,6 @@ const navigationItems = [
 		description: "Backup and restore functionality",
 	},
 ];
-
-export const USABLE_EVENTS = new Set(["simple_chat", "complex_chat"]);
 
 export default function Id({
 	children,

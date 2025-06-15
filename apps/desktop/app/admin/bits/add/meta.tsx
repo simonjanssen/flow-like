@@ -22,7 +22,7 @@ import type { Dispatch, SetStateAction } from "react";
 export function MetaConfiguration({
 	bit,
 	setBit,
-}: { bit: IBit; setBit: Dispatch<SetStateAction<IBit>> }) {
+}: Readonly<{ bit: IBit; setBit: Dispatch<SetStateAction<IBit>> }>) {
 	const getMeta = (field: keyof IMetadata) => {
 		return bit.meta?.["en"]?.[field];
 	};
@@ -449,7 +449,7 @@ export function MetaConfiguration({
 			<Card>
 				<CardHeader>
 					<CardTitle>Release Notes</CardTitle>
-					<CardDescription>Document what's new in this version</CardDescription>
+					<CardDescription>Document what&apos;s new in this version</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<div className="space-y-2">

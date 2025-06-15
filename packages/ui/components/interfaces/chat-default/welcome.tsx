@@ -77,7 +77,7 @@ export function ChatWelcome({
 
 	// Filter examples based on current message and show max 5
 	const filteredExamples = useMemo(() => {
-		const examples = config.example_messages ?? defaultExamples;
+		const examples = config?.example_messages ?? defaultExamples;
 		if (!currentMessage.trim()) {
 			return examples.slice(0, 4);
 		}
@@ -95,7 +95,7 @@ export function ChatWelcome({
 			.map((item) => item.text);
 
 		return scoredExamples.slice(0, 5);
-	}, [currentMessage, config.example_messages, fuzzyScore]);
+	}, [currentMessage, config?.example_messages, fuzzyScore]);
 
 	// Function to highlight matching text with fuzzy highlighting
 	const highlightMatch = (text: string, searchTerm: string) => {
@@ -113,7 +113,7 @@ export function ChatWelcome({
 				regex.test(part) ? (
 					<span
 						key={index}
-						className="bg-primary/20 text-primary rounded-sm px-0.5"
+						className="bg-primary/20 text-primary rounded-sm"
 					>
 						{part}
 					</span>

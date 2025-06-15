@@ -664,11 +664,11 @@ export default function Id() {
 						<CalendarIcon className="w-5 h-5" />
 						Changelog
 					</CardTitle>
-					<CardDescription>Document what's new in this version</CardDescription>
+					<CardDescription>Document what&apos;s new in this version</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
 					<div className="space-y-2">
-						<Label htmlFor="changelog">What's New</Label>
+						<Label htmlFor="changelog">What&apos;s New</Label>
 						<Textarea
 							id="changelog"
 							placeholder="What's new in this version..."
@@ -773,7 +773,7 @@ export default function Id() {
 							<EyeIcon className="w-5 h-5" />
 							<span className="font-medium">Read-only mode</span>
 							<span className="text-sm">
-								You don't have edit permissions for this application
+								You don&apos;t have edit permissions for this application
 							</span>
 						</div>
 					</CardContent>

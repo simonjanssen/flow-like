@@ -168,7 +168,7 @@ export default function CreateAppPage() {
 									<CardTitle>App Details</CardTitle>
 								</div>
 								<CardDescription>
-									Define your app's identity and purpose
+									Define your app&apos;s identity and purpose
 								</CardDescription>
 							</CardHeader>
 							<CardContent className="space-y-4">

@@ -26,6 +26,8 @@ import {
 	Textarea,
 	useBackend,
 	useInvoke,
+	VariableConfigCard,
+	VariableTypeIndicator,
 } from "@tm9657/flow-like-ui";
 import {
 	convertJsonToUint8Array,
@@ -50,10 +52,6 @@ import {
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import {
-	VariableConfigCard,
-	VariableTypeIndicator,
-} from "../configuration/page";
 import { EventTranslation, EventTypeConfiguration } from "./event-translation";
 
 export default function Page() {
