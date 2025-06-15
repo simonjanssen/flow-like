@@ -327,11 +327,18 @@ function EventConfiguration({
 			</div>
 
 			{/* Header */}
-			<div className="flex items-center justify-between">
+			<div
+				className={`flex items-center justify-between ${isEditing ? "sticky top-0 bg-background z-10 py-4 border-b shadow-sm" : ""}`}
+			>
 				<div className="space-y-1">
 					<h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
 						<Settings className="h-8 w-8" />
 						{event.name}
+						{isEditing && (
+							<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+								Editing
+							</span>
+						)}
 					</h1>
 					<p className="text-muted-foreground">
 						Configure event properties and settings
@@ -343,7 +350,10 @@ function EventConfiguration({
 							<Button variant="outline" onClick={handleCancel}>
 								Cancel
 							</Button>
-							<Button onClick={handleSave} className="gap-2">
+							<Button
+								onClick={handleSave}
+								className="gap-2 bg-orange-600 hover:bg-orange-700"
+							>
 								<SaveIcon className="h-4 w-4" />
 								Save Changes
 							</Button>
@@ -356,6 +366,25 @@ function EventConfiguration({
 					)}
 				</div>
 			</div>
+			{/* Floating Save Button for mobile/small screens */}
+			{isEditing && (
+				<div className="fixed bottom-6 right-6 flex items-center gap-2 z-50 md:hidden">
+					<Button
+						variant="outline"
+						onClick={handleCancel}
+						className="shadow-lg"
+					>
+						Cancel
+					</Button>
+					<Button
+						onClick={handleSave}
+						className="gap-2 shadow-lg bg-orange-600 hover:bg-orange-700"
+					>
+						<SaveIcon className="h-4 w-4" />
+						Save Changes
+					</Button>
+				</div>
+			)}
 
 			{/* Status Card */}
 			<Card>

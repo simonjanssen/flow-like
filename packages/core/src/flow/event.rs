@@ -57,6 +57,11 @@ pub struct Event {
 pub struct ChatEventParameters {
     pub history_elements: Option<u32>,
     pub allow_file_upload: Option<bool>,
+    pub allow_voice_input: Option<bool>,
+    pub allow_voice_output: Option<bool>,
+    pub tools: Option<Vec<String>>,
+    pub default_tools: Option<Vec<String>>,
+    pub example_messages: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]

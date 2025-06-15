@@ -126,6 +126,23 @@ export function EventTranslation({
 					</p>
 				</div>
 
+				<div className="space-y-4">
+					<div className="flex items-center space-x-2">
+						<Switch
+							disabled={!editing}
+							id="allow_voice_input"
+							checked={currentPayload?.allow_voice_input ?? false}
+							onCheckedChange={(checked) => {
+								setValue("allow_voice_input", checked);
+							}}
+						/>
+						<Label htmlFor="allow_voice_input">Allow Voice Input</Label>
+					</div>
+					<p className="text-sm text-muted-foreground">
+						Enable users to use voice input for chat messages
+					</p>
+				</div>
+
 				<div className="space-y-3">
 					<Label htmlFor="history_elements">History Elements</Label>
 					{editing ? (
@@ -150,6 +167,213 @@ export function EventTranslation({
 					)}
 					<p className="text-sm text-muted-foreground">
 						Number of previous messages to include in chat context
+					</p>
+				</div>
+
+				<div className="space-y-3">
+					<Label htmlFor="tools">Available Tools</Label>
+					{editing ? (
+						<div className="space-y-2">
+							<div className="flex flex-wrap gap-2">
+								{(currentPayload?.tools || []).map((tool, index) => (
+									<div
+										key={index}
+										className="inline-flex items-center gap-1 bg-secondary text-secondary-foreground px-2 py-1 rounded-md text-sm"
+									>
+										<span>{tool}</span>
+										<button
+											type="button"
+											onClick={() => {
+												const newTools = [...(currentPayload?.tools || [])];
+												newTools.splice(index, 1);
+												setValue("tools", newTools);
+											}}
+											className="text-secondary-foreground/70 hover:text-secondary-foreground"
+										>
+											×
+										</button>
+									</div>
+								))}
+							</div>
+							<Input
+								placeholder="Type a tool name and press Enter"
+								onKeyDown={(e) => {
+									if (e.key === "Enter" && e.currentTarget.value.trim()) {
+										e.preventDefault();
+										const newTool = e.currentTarget.value.trim();
+										const currentTools = currentPayload?.tools || [];
+										if (!currentTools.includes(newTool)) {
+											setValue("tools", [...currentTools, newTool]);
+										}
+										e.currentTarget.value = "";
+									}
+								}}
+							/>
+						</div>
+					) : (
+						<div className="space-y-2">
+							{(currentPayload?.tools || []).length > 0 ? (
+								<div className="flex flex-wrap gap-2">
+									{(currentPayload?.tools || []).map((tool, index) => (
+										<div
+											key={index}
+											className="inline-flex items-center bg-muted text-muted-foreground px-2 py-1 rounded-md text-sm"
+										>
+											{tool}
+										</div>
+									))}
+								</div>
+							) : (
+								<div className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm">
+									No tools configured
+								</div>
+							)}
+						</div>
+					)}
+					<p className="text-sm text-muted-foreground">
+						Tools available for this chat. Press Enter to add a new tool.
+					</p>
+				</div>
+
+				<div className="space-y-3">
+					<Label htmlFor="default_tools">Default Tools</Label>
+					{editing ? (
+						<div className="space-y-2">
+							<div className="flex flex-wrap gap-2">
+								{(currentPayload?.default_tools || []).map((tool, index) => (
+									<div
+										key={index}
+										className="inline-flex items-center gap-1 bg-primary text-primary-foreground px-2 py-1 rounded-md text-sm"
+									>
+										<span>{tool}</span>
+										<button
+											type="button"
+											onClick={() => {
+												const newTools = [
+													...(currentPayload?.default_tools || []),
+												];
+												newTools.splice(index, 1);
+												setValue("default_tools", newTools);
+											}}
+											className="text-primary-foreground/70 hover:text-primary-foreground"
+										>
+											×
+										</button>
+									</div>
+								))}
+							</div>
+							<Input
+								placeholder="Type a tool name and press Enter"
+								onKeyDown={(e) => {
+									if (e.key === "Enter" && e.currentTarget.value.trim()) {
+										e.preventDefault();
+										const newTool = e.currentTarget.value.trim();
+										const currentTools = currentPayload?.default_tools || [];
+										if (!currentTools.includes(newTool)) {
+											setValue("default_tools", [...currentTools, newTool]);
+										}
+										e.currentTarget.value = "";
+									}
+								}}
+							/>
+						</div>
+					) : (
+						<div className="space-y-2">
+							{(currentPayload?.default_tools || []).length > 0 ? (
+								<div className="flex flex-wrap gap-2">
+									{(currentPayload?.default_tools || []).map((tool, index) => (
+										<div
+											key={index}
+											className="inline-flex items-center bg-muted text-muted-foreground px-2 py-1 rounded-md text-sm"
+										>
+											{tool}
+										</div>
+									))}
+								</div>
+							) : (
+								<div className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm">
+									No default tools
+								</div>
+							)}
+						</div>
+					)}
+					<p className="text-sm text-muted-foreground">
+						Tools enabled by default. Press Enter to add a new tool.
+					</p>
+				</div>
+
+				<div className="space-y-3">
+					<Label htmlFor="example_messages">Example Messages</Label>
+					{editing ? (
+						<div className="space-y-2">
+							<div className="flex flex-wrap gap-2">
+								{(currentPayload?.example_messages || []).map(
+									(message, index) => (
+										<div
+											key={index}
+											className="inline-flex items-center gap-1 bg-secondary text-secondary-foreground px-2 py-1 rounded-md text-sm max-w-xs"
+										>
+											<span className="truncate">{message}</span>
+											<button
+												type="button"
+												onClick={() => {
+													const newMessages = [
+														...(currentPayload?.example_messages || []),
+													];
+													newMessages.splice(index, 1);
+													setValue("example_messages", newMessages);
+												}}
+												className="text-secondary-foreground/70 hover:text-secondary-foreground flex-shrink-0"
+											>
+												×
+											</button>
+										</div>
+									),
+								)}
+							</div>
+							<Input
+								placeholder="Type an example message and press Enter"
+								onKeyDown={(e) => {
+									if (e.key === "Enter" && e.currentTarget.value.trim()) {
+										e.preventDefault();
+										const newMessage = e.currentTarget.value.trim();
+										const currentMessages =
+											currentPayload?.example_messages || [];
+										if (!currentMessages.includes(newMessage)) {
+											setValue("example_messages", [
+												...currentMessages,
+												newMessage,
+											]);
+										}
+										e.currentTarget.value = "";
+									}
+								}}
+							/>
+						</div>
+					) : (
+						<div className="space-y-2">
+							{(currentPayload?.example_messages || []).length > 0 ? (
+								<div className="flex flex-wrap gap-2">
+									{(currentPayload?.example_messages || []).map(
+										(message, index) => (
+											<div
+												key={index}
+												className="inline-flex items-center bg-muted text-muted-foreground px-2 py-1 rounded-md text-sm max-w-xs"
+											>
+												<span className="truncate">{message}</span>
+											</div>
+										),
+									)}
+								</div>
+							) : (
+								<div className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm">
+									No example messages
+								</div>
+							)}
+						</div>
+					)}
+					<p className="text-sm text-muted-foreground">
+						Example messages to show users. Press Enter to add a new message.
 					</p>
 				</div>
 			</div>
