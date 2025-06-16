@@ -2,10 +2,10 @@
 
 import { useMemo, useRef, useState } from "react";
 import type { IEvent, IEventPayloadChat } from "../../../lib";
-import { ChatBox, type ChatBoxRef } from "./chatbox";
+import { ChatBox, type ChatBoxRef, type ISendMessageFunction } from "./chatbox";
 
 interface ChatWelcomeProps {
-	onSendMessage: (content: string) => void;
+	onSendMessage: ISendMessageFunction;
 	event: IEvent;
 	config?: Partial<IEventPayloadChat>;
 }

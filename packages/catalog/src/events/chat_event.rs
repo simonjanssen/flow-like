@@ -160,10 +160,22 @@ impl NodeLogic for ChatEventNode {
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
+pub struct ComplexAttachment {
+    pub url: String,
+    pub preview_text: Option<String>,
+    pub thumbnail_url: Option<String>,
+    pub name: Option<String>,
+    pub size: Option<u64>,
+    pub r#type: Option<String>,
+    pub anchor: Option<String>,
+    pub page: Option<u32>,
+}
+
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 #[serde(untagged)]
 pub enum Attachment {
     Url(String),
-    Reference { id: String, resource_type: String },
+    Complex(ComplexAttachment),
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]

@@ -1,5 +1,5 @@
 "use client";
-import { Channel, invoke } from "@tauri-apps/api/core";
+import { Channel, convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { type Event, type UnlistenFn, listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
 import {
@@ -29,7 +29,6 @@ import {
 import type { IBitSearchQuery } from "@tm9657/flow-like-ui/lib/schema/hub/bit-search-query";
 import { useEffect, useState } from "react";
 import type { AuthContextProps } from "react-oidc-context";
-
 export class TauriBackend implements IBackendState {
 	constructor(private auth?: AuthContextProps) {}
 
@@ -615,6 +614,18 @@ export class TauriBackend implements IBackendState {
 			appId: appId,
 		});
 		return boards;
+	}
+
+	async fileToUrl(file: File): Promise<string> {
+		// TODO: Determine where the execution will happen. If on server, just use signed urls
+
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.readAsDataURL(file);
+			reader.onload = () => resolve(reader.result as string);
+			reader.onerror = (error) =>
+				reject(new Error("Error converting file to base64"));
+		});
 	}
 }
 

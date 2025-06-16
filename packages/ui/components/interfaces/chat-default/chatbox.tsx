@@ -31,13 +31,15 @@ import {
 } from "../../ui";
 import { FileManagerDialog } from "./chatbox/file-dialog";
 
+export type ISendMessageFunction = (
+	content: string,
+	filesAttached?: File[],
+	activeTools?: string[],
+	audioFile?: File,
+) => Promise<void>;
+
 interface ChatBoxProps {
-	onSendMessage: (
-		content: string,
-		filesAttached?: File[],
-		activeTools?: string[],
-		audioFile?: File,
-	) => void;
+	onSendMessage: ISendMessageFunction;
 	onContentChange?: (
 		content: string,
 		filesAttached?: File[],
@@ -61,6 +63,7 @@ export interface ChatBoxRef {
 	getAttachedFiles: () => File[];
 	getActiveTools: () => string[];
 	setActiveTools?: (tools: string[]) => void;
+	focusInput?: () => void;
 }
 
 export const ChatBox = forwardRef<ChatBoxRef, ChatBoxProps>(
@@ -85,6 +88,7 @@ export const ChatBox = forwardRef<ChatBoxRef, ChatBoxProps>(
 		const [recordedAudio, setRecordedAudio] = useState<File | null>(null);
 		const [recordingTime, setRecordingTime] = useState(0);
 
+		const chatboxRef = useRef<HTMLTextAreaElement | null>(null);
 		const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 		const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 		const audioChunksRef = useRef<Blob[]>([]);
@@ -129,6 +133,11 @@ export const ChatBox = forwardRef<ChatBoxRef, ChatBoxProps>(
 				getActiveTools: () => activeTools,
 				setActiveTools: (tools: string[]) => {
 					setActiveTools(tools);
+				},
+				focusInput: () => {
+					if (chatboxRef.current) {
+						chatboxRef.current.focus();
+					}
 				},
 			}),
 			[],
@@ -499,6 +508,7 @@ export const ChatBox = forwardRef<ChatBoxRef, ChatBoxProps>(
 						{/* Text Input */}
 						<div className="flex-1 py-2 w-full pr-2">
 							<Textarea
+								ref={chatboxRef}
 								value={input}
 								onChange={(e) => setInput(e.target.value)}
 								onKeyDown={handleKeyDown}

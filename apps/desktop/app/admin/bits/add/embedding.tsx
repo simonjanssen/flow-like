@@ -1,31 +1,23 @@
 import {
-	type IBit,
-	IBitModelClassification,
-	type IEmbeddingModelParameters,
-	ILlmParameters,
-	IModelProvider,
-	Input,
-	Slider,
-	humanFileSize,
-} from "@tm9657/flow-like-ui";
-import {
+	Badge,
+	Button,
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "@tm9657/flow-like-ui";
-import { Label } from "@tm9657/flow-like-ui";
-import {
+	type IBit,
+	type IEmbeddingModelParameters,
+	Input,
+	Label,
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
+	Slider,
+	Textarea,
 } from "@tm9657/flow-like-ui";
-import { Textarea } from "@tm9657/flow-like-ui";
-import { Badge } from "@tm9657/flow-like-ui";
-import { Button } from "@tm9657/flow-like-ui";
 import { X } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 

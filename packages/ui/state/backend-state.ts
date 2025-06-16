@@ -215,6 +215,8 @@ export interface IBackendState {
 	getBitSize(bit: IBit): Promise<number>;
 	searchBits(type: IBitSearchQuery): Promise<IBit[]>;
 	isBitInstalled(bit: IBit): Promise<boolean>;
+
+	fileToUrl(file: File): Promise<string>;
 }
 
 interface BackendStoreState {
