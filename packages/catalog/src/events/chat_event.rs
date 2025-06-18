@@ -73,6 +73,14 @@ impl NodeLogic for ChatEventNode {
             VariableType::Struct,
         );
 
+        node.add_output_pin(
+            "tools",
+            "Tools",
+            "Tools requested by the user",
+            VariableType::String,
+        )
+        .set_value_type(flow_like::flow::pin::ValueType::Array);
+
         node.add_output_pin("actions", "Actions", "User Actions", VariableType::Struct)
             .set_schema::<ChatAction>()
             .set_value_type(flow_like::flow::pin::ValueType::Array)
@@ -122,6 +130,9 @@ impl NodeLogic for ChatEventNode {
                 "global_session",
                 chat.global_session.unwrap_or(from_str("{}")?),
             )
+            .await?;
+        context
+            .set_pin_value("tools", json!(chat.tools.unwrap_or_default()))
             .await?;
         context
             .set_pin_value("actions", json!(chat.actions.unwrap_or_default()))
@@ -203,6 +214,7 @@ pub struct Chat {
     pub local_session: Option<Value>,
     pub global_session: Option<Value>,
     pub actions: Option<Vec<ChatAction>>,
+    pub tools: Option<Vec<String>>,
     pub user: Option<User>,
     pub attachments: Option<Vec<Attachment>>,
 }

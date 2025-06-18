@@ -251,13 +251,13 @@ impl Event {
             .await?
             .as_generic();
 
-        let mut event_path = storage_root.child(format!("{}.event", id));
-        if let Some(version) = version {
-            event_path = event_path
+        let event_path = match version {
+            Some(version) => storage_root
                 .child("versions")
                 .child(id)
-                .child(format!("{}.{}.{}", version.0, version.1, version.2));
-        }
+                .child(format!("{}.{}.{}", version.0, version.1, version.2)),
+            None => storage_root.child(format!("{}.event", id)),
+        };
 
         let event_proto: proto::Event = from_compressed(store, event_path).await?;
         let event = Event::from_proto(event_proto);
@@ -279,13 +279,13 @@ impl Event {
             .await?
             .as_generic();
 
-        let mut event_path = storage_root.child(format!("{}.event", self.id));
-        if let Some(version) = version {
-            event_path = event_path
+        let event_path = match version {
+            Some(version) => storage_root
                 .child("versions")
                 .child(self.id.clone())
-                .child(format!("{}.{}.{}", version.0, version.1, version.2));
-        }
+                .child(format!("{}.{}.{}", version.0, version.1, version.2)),
+            None => storage_root.child(format!("{}.event", self.id)),
+        };
 
         compress_to_file(store, event_path, &self.to_proto()).await?;
         Ok(())

@@ -80,7 +80,7 @@ export function EventTranslation({
 	nodeId?: string;
 	onUpdate?: (payload: Partial<IEventPayload>) => void;
 }>) {
-	const node = board.nodes[nodeId ?? ""];
+	const node: INode | undefined = board.nodes[nodeId ?? ""];
 	const [currentPayload, setCurrentPayload] = useState<Partial<IEventPayload>>(
 		payload ?? {},
 	);
@@ -101,8 +101,6 @@ export function EventTranslation({
 		},
 		[currentPayload, onUpdate],
 	);
-
-	useEffect(() => {}, [node.data]);
 
 	if (!node) return <p className="text-red-500">Node not found.</p>;
 

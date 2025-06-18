@@ -117,9 +117,14 @@ const ChatInner = forwardRef<IChatRef, IChatProps>(
 
 		// When user sends a message, always scroll to bottom and enable auto-scroll
 		const handleSendMessage = useCallback(
-			async (content: string) => {
+			async (
+				content: string,
+				filesAttached?: File[],
+				activeTools?: string[],
+				audioFile?: File,
+			) => {
 				setShouldAutoScroll(true);
-				await onSendMessage(content);
+				await onSendMessage(content, filesAttached, activeTools, audioFile);
 				// Scroll after a brief delay to ensure the message is rendered
 				setTimeout(() => {
 					scrollToBottom();
@@ -182,7 +187,7 @@ const ChatInner = forwardRef<IChatRef, IChatProps>(
 									className="mt-2 absolute left-0 top-0 translate-y-[2.5rem] translate-x-[-100%]"
 									size={30}
 								/>
-								<MessageComponent message={currentMessage} />
+								<MessageComponent noToolbar message={currentMessage} />
 							</div>
 						)}
 						<div ref={messagesEndRef} />

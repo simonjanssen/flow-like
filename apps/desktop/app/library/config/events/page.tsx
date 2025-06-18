@@ -217,7 +217,7 @@ export default function Page() {
 			{/* Events List */}
 			<div className="space-y-4 flex flex-col flex-grow overflow-hidden max-h-full">
 				<h2 className="text-2xl font-semibold">Events</h2>
-				<div className="flex flex-col overflow-auto overflow-x-hidden flex-grow h-full max-h-full">
+				<div className="flex flex-col overflow-auto overflow-x-visible flex-grow h-full max-h-full p-1">
 					{events.data?.length === 0 ? (
 						<Card>
 							<CardContent className="py-12 text-center">
@@ -238,7 +238,7 @@ export default function Page() {
 							</CardContent>
 						</Card>
 					) : (
-						<div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-6">
+						<div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-6 p-2">
 							{events.data?.map((event) => (
 								<EventCard
 									key={event.id}
@@ -532,7 +532,7 @@ function EventConfiguration({
 										</Link>
 									</Label>
 									<p className="mt-1 text-sm text-muted-foreground font-mono">
-										{board.data?.nodes?.[event.node_id].friendly_name ??
+										{board.data?.nodes?.[event.node_id]?.friendly_name ??
 											"Node not found"}{" "}
 										({event.node_id})
 									</p>

@@ -69,6 +69,10 @@ export function ChatHistory({
 				.equals(sessionIdToDelete)
 				.delete();
 			await chatDb.sessions.delete(sessionIdToDelete);
+			await chatDb.localStage
+				.where("sessionId")
+				.equals(sessionIdToDelete)
+				.delete();
 
 			if (sessionIdToDelete === sessionId) {
 				handleNewChat();

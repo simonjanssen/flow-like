@@ -32,6 +32,7 @@ import type { IAttachment, IMessage } from "./chat-db";
 
 interface MessageProps {
 	message: IMessage;
+	noToolbar?: boolean;
 	onMessageUpdate?: (
 		messageId: string,
 		updates: Partial<IMessage>,
@@ -40,6 +41,7 @@ interface MessageProps {
 
 export function MessageComponent({
 	message,
+	noToolbar,
 	onMessageUpdate,
 }: Readonly<MessageProps>) {
 	const isUser = message.inner.role === IRole.User;
@@ -457,52 +459,57 @@ export function MessageComponent({
 						))}
 					</div>
 				)}
-			</div>
-			<div
-				className={cn(
-					"flex flex-row items-center gap-3 px-4 h-6",
-					isUser ? "ml-auto px-2 pt-2" : "mr-auto",
-				)}
-			>
-				{/* References Badge for hidden files */}
-				{allHiddenFiles.length > 0 && (
-					<FileDialog
-						files={processedAttachments}
-						handleFileClick={handleFileClick}
-					/>
-				)}
-				{!isUser && (
-					<button
-						onClick={() => upsertFeedback(1)}
-						className={`transition-colors ${(message.rating ?? 0) > 0 ? "text-emerald-500 dark:text-emerald-400 hover:text-emerald-300 dark:hover:text-emerald-300" : "text-muted-foreground hover:text-foreground"}`}
+
+				{!(noToolbar ?? false) && (
+					<div
+						className={cn(
+							"flex flex-row items-center gap-3 h-6 w-full mt-2",
+							isUser ? "justify-end px-2 pt-2" : "justify-start",
+						)}
 					>
-						<ThumbsUpIcon className={`w-4 h-4`} />
-					</button>
-				)}
-				{!isUser && (
-					<button
-						onClick={() => upsertFeedback(-1)}
-						className={`transition-colors ${(message.rating ?? 0) < 0 ? "text-primary hover:text-primary/80" : "text-muted-foreground hover:text-foreground"}`}
-					>
-						<ThumbsDownIcon className={`w-4 h-4`} />
-					</button>
-				)}
-				{(message.rating ?? 0) !== 0 && (
-					<button onClick={() => setShowFeedbackDialog(true)}>
-						<Badge
-							variant={gaveMoreFeedback ? "outline" : "default"}
-							className="h-6 rounded-full"
+						{/* References Badge for hidden files */}
+						{allHiddenFiles.length > 0 && (
+							<FileDialog
+								files={processedAttachments}
+								handleFileClick={handleFileClick}
+							/>
+						)}
+						{!isUser && (
+							<button
+								onClick={() => upsertFeedback(1)}
+								className={`transition-colors ${(message.rating ?? 0) > 0 ? "text-emerald-500 dark:text-emerald-400 hover:text-emerald-300 dark:hover:text-emerald-300" : "text-muted-foreground hover:text-foreground"}`}
+							>
+								<ThumbsUpIcon className={`w-4 h-4`} />
+							</button>
+						)}
+						{!isUser && (
+							<button
+								onClick={() => upsertFeedback(-1)}
+								className={`transition-colors ${(message.rating ?? 0) < 0 ? "text-primary hover:text-primary/80" : "text-muted-foreground hover:text-foreground"}`}
+							>
+								<ThumbsDownIcon className={`w-4 h-4`} />
+							</button>
+						)}
+						{(message.rating ?? 0) !== 0 && (
+							<button onClick={() => setShowFeedbackDialog(true)}>
+								<Badge
+									variant={gaveMoreFeedback ? "outline" : "default"}
+									className="h-6 rounded-full"
+								>
+									{gaveMoreFeedback
+										? "✅ Feedback provided"
+										: "Provide feedback"}
+								</Badge>
+							</button>
+						)}
+						<button
+							onClick={copyToClipboard}
+							className="text-muted-foreground hover:text-foreground transition-colors"
 						>
-							{gaveMoreFeedback ? "✅ Feedback provided" : "Provide feedback"}
-						</Badge>
-					</button>
+							<CopyIcon className="w-4 h-4" />
+						</button>
+					</div>
 				)}
-				<button
-					onClick={copyToClipboard}
-					className="text-muted-foreground hover:text-foreground transition-colors"
-				>
-					<CopyIcon className="w-4 h-4" />
-				</button>
 			</div>
 
 			{/* Fullscreen Modal */}

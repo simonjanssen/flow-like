@@ -182,10 +182,10 @@ export class TauriBackend implements IBackendState {
 
 	async executeEvent(
 		appId: string,
-		event: IEvent,
+		eventId: string,
 		payload: IRunPayload,
 		streamState?: boolean,
-		eventId?: (id: string) => void,
+		onEventId?: (id: string) => void,
 		cb?: (event: IIntercomEvent[]) => void,
 	): Promise<ILogMetadata | undefined> {
 		const channel = new Channel<IIntercomEvent[]>();
@@ -205,7 +205,7 @@ export class TauriBackend implements IBackendState {
 
 				if (runId_event) {
 					const runId = runId_event.payload.run_id;
-					eventId(runId);
+					onEventId?.(runId);
 					foundRunId = true;
 				}
 			}
@@ -215,7 +215,7 @@ export class TauriBackend implements IBackendState {
 
 		const metadata: ILogMetadata | undefined = await invoke("execute_event", {
 			appId: appId,
-			event: event,
+			eventId: eventId,
 			payload: payload,
 			events: channel,
 			streamState: streamState,

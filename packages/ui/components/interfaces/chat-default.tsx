@@ -12,16 +12,20 @@ import {
 	useMemo,
 	useRef,
 } from "react";
-import { type IEvent, type IEventPayloadChat, IRole } from "../../lib";
-import { useSetQueryParams } from "../../lib/set-query-params";
-import { useBackend } from "../../state/backend-state";
+import { toast } from "sonner";
 import {
-	Button,
-	HoverCard,
-	HoverCardContent,
-	HoverCardTrigger,
-	LoadingScreen,
-} from "../ui";
+	type IContent,
+	IContentType,
+	type IEvent,
+	type IEventPayloadChat,
+	type IHistoryMessage,
+	IRole,
+	Response,
+} from "../../lib";
+import { useSetQueryParams } from "../../lib/set-query-params";
+import { parseUint8ArrayToJson } from "../../lib/uint8";
+import { useBackend } from "../../state/backend-state";
+import { Button, HoverCard, HoverCardContent, HoverCardTrigger } from "../ui";
 import { fileToAttachment } from "./chat-default/attachment";
 import { Chat, type IChatRef } from "./chat-default/chat";
 import { type IMessage, chatDb } from "./chat-default/chat-db";
@@ -45,9 +49,16 @@ export const ChatInterface = memo(function ChatInterface({
 }>) {
 	const backend = useBackend();
 	const searchParams = useSearchParams();
-	const sessionIdParameter = searchParams.get("sessionId") ?? createId();
+	const sessionIdParameter = searchParams.get("sessionId") ?? "";
 	const setQueryParams = useSetQueryParams();
 	const chatRef = useRef<IChatRef>(null);
+
+	useEffect(() => {
+		if (!sessionIdParameter || sessionIdParameter === "") {
+			const newSessionId = createId();
+			setQueryParams("sessionId", newSessionId);
+		}
+	}, [sessionIdParameter, setQueryParams]);
 
 	const messages = useLiveQuery(
 		() =>
@@ -179,19 +190,59 @@ export const ChatInterface = memo(function ChatInterface({
 			activeTools?: string[],
 			audioFile?: File,
 		) => {
-			const files = await fileToAttachment(filesAttached ?? [], backend);
-			if (audioFile) {
-				files.push(...(await fileToAttachment([audioFile], backend)));
+			const history_elements =
+				parseUint8ArrayToJson(event.config)?.history_elements ?? 5;
+
+			const lastMessages = messages?.slice(-history_elements) ?? [];
+
+			if (!sessionIdParameter || sessionIdParameter === "") {
+				toast.error("Session ID is not set. Please start a new chat.");
+				return;
 			}
+			const imageFiles =
+				filesAttached?.filter((file) => file.type.startsWith("image/")) ?? [];
+			const otherFiles =
+				filesAttached?.filter((file) => !file.type.startsWith("image/")) ?? [];
+			const imageAttachments = await fileToAttachment(
+				imageFiles ?? [],
+				backend,
+			);
+			const otherAttachments = await fileToAttachment(
+				otherFiles ?? [],
+				backend,
+			);
+			if (audioFile) {
+				otherAttachments.push(
+					...(await fileToAttachment([audioFile], backend)),
+				);
+			}
+
+			const historyMessage: IHistoryMessage = {
+				content: [
+					{
+						type: IContentType.Text,
+						text: content,
+					},
+				],
+				role: IRole.User,
+			};
+
+			for (const image of imageAttachments) {
+				const url = typeof image === "string" ? image : image.url;
+				(historyMessage.content as IContent[]).push({
+					type: IContentType.IImageURL,
+					image_url: {
+						url: url,
+					},
+				});
+			}
+
 			const userMessage: IMessage = {
 				id: createId(),
 				sessionId: sessionIdParameter,
 				appId,
-				files: files,
-				inner: {
-					role: IRole.User,
-					content: content,
-				},
+				files: otherAttachments,
+				inner: historyMessage,
 				timestamp: Date.now(),
 				tools: activeTools ?? [],
 				actions: [],
@@ -218,6 +269,31 @@ export const ChatInterface = memo(function ChatInterface({
 
 			await chatDb.messages.add(userMessage);
 
+			let intermediateResponse = Response.default();
+
+			const payload = {
+				chat_id: userMessage.sessionId,
+				messages: [
+					...lastMessages.map((msg) => ({
+						role: msg.inner.role,
+						content:
+							typeof msg.inner.content === "string"
+								? msg.inner.content
+								: msg.inner.content?.map((c) => ({
+										type: c.type,
+										text: c.text,
+										image_url: c.image_url,
+									})),
+					})),
+					historyMessage,
+				],
+				local_session: localState?.localState ?? {},
+				global_session: globalState?.globalState ?? {},
+				actions: [],
+				tools: activeTools ?? [],
+				attachments: otherAttachments,
+			};
+
 			const responseMessage: IMessage = {
 				id: createId(),
 				sessionId: sessionIdParameter,
@@ -233,23 +309,130 @@ export const ChatInterface = memo(function ChatInterface({
 				actions: [],
 			};
 
+			let done = false;
+			responseMessage.inner.content = "";
 			chatRef.current?.pushCurrentMessageUpdate({ ...responseMessage });
+			chatRef.current?.scrollToBottom();
 
-			let chunk = 0;
-			while (chunk < 20) {
-				await new Promise((resolve) => setTimeout(resolve, 500));
-				responseMessage.inner.content += ` This is a simulated response chunk ${chunk + 1}.`;
-				chatRef.current?.pushCurrentMessageUpdate({ ...responseMessage });
-				chatRef.current?.scrollToBottom();
-				chunk++;
+			let tmpLocalState = localState;
+			let tmpGlobalState = globalState;
+
+			await backend.executeEvent(
+				appId,
+				event.id,
+				{
+					id: event.node_id,
+					payload: payload,
+				},
+				false,
+				(execution_id: string) => {},
+				(events) => {
+					for (const ev of events) {
+						if (ev.event_type === "chat_stream_partial") {
+							if (done) continue;
+							if (ev.payload.chunk)
+								intermediateResponse.pushChunk(ev.payload.chunk);
+							const lastMessage = intermediateResponse.lastMessageOfRole(
+								IRole.Assistant,
+							);
+							if (lastMessage) {
+								responseMessage.inner.content = lastMessage.content ?? "";
+								chatRef.current?.pushCurrentMessageUpdate({
+									...responseMessage,
+								});
+								chatRef.current?.scrollToBottom();
+							}
+							continue;
+						}
+						if (ev.event_type === "chat_stream") {
+							if (done) continue;
+							if (ev.payload.response) {
+								intermediateResponse = Response.fromObject(ev.payload.response);
+								const lastMessage = intermediateResponse.lastMessageOfRole(
+									IRole.Assistant,
+								);
+								if (lastMessage) {
+									responseMessage.inner.content = lastMessage.content ?? "";
+									chatRef.current?.pushCurrentMessageUpdate({
+										...responseMessage,
+									});
+									chatRef.current?.scrollToBottom();
+								}
+								continue;
+							}
+						}
+						if (ev.event_type === "chat_out") {
+							done = true;
+							if (ev.payload.response) {
+								intermediateResponse = Response.fromObject(ev.payload.response);
+							}
+						}
+
+						if (ev.event_type === "chat_local_session") {
+							if (tmpLocalState) {
+								tmpLocalState = {
+									...tmpLocalState,
+									localState: ev.payload,
+								};
+							} else {
+								tmpLocalState = {
+									id: createId(),
+									appId,
+									eventId: event.id,
+									sessionId: sessionIdParameter,
+									localState: ev.payload,
+								};
+							}
+						}
+
+						if (ev.event_type === "chat_global_session") {
+							if (tmpGlobalState) {
+								tmpGlobalState = {
+									...tmpGlobalState,
+									globalState: ev.payload,
+								};
+							} else {
+								tmpGlobalState = {
+									id: createId(),
+									appId,
+									eventId: event.id,
+									globalState: ev.payload,
+								};
+							}
+						}
+						console.log("Event received:", ev);
+					}
+				},
+			);
+
+			if (tmpLocalState) {
+				await chatDb.localStage.put(tmpLocalState);
 			}
 
-			chatRef.current?.clearCurrentMessageUpdate();
+			if (tmpGlobalState) {
+				await chatDb.globalState.put(tmpGlobalState);
+			}
+
+			const lastMessage = intermediateResponse.lastMessageOfRole(
+				IRole.Assistant,
+			);
+			if (lastMessage) {
+				responseMessage.inner.content = lastMessage.content ?? "";
+			}
 			await chatDb.messages.add(responseMessage);
+			chatRef.current?.clearCurrentMessageUpdate();
 			await new Promise((resolve) => setTimeout(resolve, 100));
 			chatRef.current?.scrollToBottom();
 		},
-		[backend, sessionIdParameter, appId, event.name],
+		[
+			backend,
+			sessionIdParameter,
+			appId,
+			event.name,
+			messages,
+			localState,
+			globalState,
+		],
 	);
 
 	const onMessageUpdate = useCallback(

@@ -68,10 +68,10 @@ export interface IBackendState {
 
 	executeEvent(
 		appId: string,
-		event: IEvent,
+		eventId: string,
 		payload: IRunPayload,
 		streamState?: boolean,
-		eventId?: (id: string) => void,
+		onEventId?: (id: string) => void,
 		cb?: (event: IIntercomEvent[]) => void,
 	): Promise<ILogMetadata | undefined>;
 
