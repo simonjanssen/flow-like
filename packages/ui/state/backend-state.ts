@@ -156,6 +156,20 @@ export interface IBackendState {
 		eventId: string,
 		version?: [number, number, number],
 	): Promise<void>;
+	upsertEventFeedback(
+		appId: string,
+		eventId: string,
+		messageId: string,
+		feedback: {
+			// 0: remove, 1: positive, -1: negative
+			rating: number;
+			history?: any[];
+			globalState?: Record<string, any>;
+			localState?: Record<string, any>;
+			comment?: string;
+			sub?: boolean;
+		},
+	): Promise<void>;
 
 	// Template Operations
 

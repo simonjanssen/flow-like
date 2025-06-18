@@ -409,6 +409,22 @@ export class TauriBackend implements IBackendState {
 		});
 	}
 
+	async upsertEventFeedback(
+		appId: string,
+		eventId: string,
+		messageId: string,
+		feedback: {
+			rating: number;
+			history?: any[];
+			globalState?: Record<string, any>;
+			localState?: Record<string, any>;
+			comment?: string;
+			sub?: boolean;
+		},
+	): Promise<void> {
+		// TODO: Only relevant for online events
+	}
+
 	// Template Operations
 
 	async getTemplates(
@@ -618,6 +634,7 @@ export class TauriBackend implements IBackendState {
 
 	async fileToUrl(file: File): Promise<string> {
 		// TODO: Determine where the execution will happen. If on server, just use signed urls
+		// Copy it into the tauri app's storage and return the file path as signed url
 
 		return new Promise((resolve, reject) => {
 			const reader = new FileReader();

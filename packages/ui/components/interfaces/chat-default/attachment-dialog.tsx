@@ -138,7 +138,7 @@ export function FileDialog({
 
 	return (
 		<TooltipProvider>
-			<div className="mt-2">
+			<div>
 				<Dialog>
 					<DialogTrigger asChild>
 						<Badge
@@ -407,8 +407,8 @@ export function FileDialog({
 										</div>
 									</ResizablePanel>
 									<ResizableHandle className="mx-2" />
-									<ResizablePanel className="flex flex-col gap-2 overflow-hidden p-4 bg-background">
-										<div className="flex flex-col  overflow-auto bg-muted/50 rounded-md border">
+									<ResizablePanel className="flex flex-col gap-2 flex-grow overflow-y-hidden max-h-full h-full p-4 bg-background">
+										<div className="flex flex-col flex-grow overflow-auto max-h-full h-full bg-muted/50 rounded-md border">
 											<div className="p-2 border-b bg-background rounded-t-md flex items-center justify-between">
 												<h3 className="font-medium text-sm">Preview</h3>
 												<Button
@@ -420,8 +420,11 @@ export function FileDialog({
 													<MaximizeIcon className="h-3 w-3" />
 												</Button>
 											</div>
-											<div className="overflow-auto">
-												<FileDialogPreview file={selectedFile} />
+											<div className="flex-grow overflow-auto h-full flex flex-row min-h-full">
+												<FileDialogPreview
+													key={selectedFile.url}
+													file={selectedFile}
+												/>
 											</div>
 										</div>
 									</ResizablePanel>
@@ -674,10 +677,7 @@ interface FileDialogPreviewProps {
 	maximized?: boolean;
 }
 
-export function FileDialogPreview({
-	file,
-	maximized = false,
-}: Readonly<FileDialogPreviewProps>) {
+export function FileDialogPreview({ file }: Readonly<FileDialogPreviewProps>) {
 	const handleFileClick = (file: ProcessedAttachment) => {
 		if (file.isDataUrl) {
 			if (file.type === "image") {
@@ -700,40 +700,20 @@ export function FileDialogPreview({
 		}
 	};
 
-	const imageClasses = maximized
-		? "max-w-full h-full object-contain rounded-md"
-		: "max-w-full max-h-[70vh] object-contain rounded-md";
-
-	const videoClasses = maximized
-		? "max-w-full h-full rounded-md"
-		: "max-w-full max-h-[70vh] rounded-md";
-
-	const iframeClasses = maximized
-		? "w-full h-full border rounded-md"
-		: "w-full h-[70vh] border rounded-md";
+	const imageClasses = "max-w-full h-full object-contain rounded-md";
+	const videoClasses = "max-w-full h-full rounded-md";
+	const iframeClasses = "w-full h-full border rounded-md";
 
 	switch (file.type) {
 		case "image":
 			return (
-				<div
-					className={
-						maximized
-							? "flex justify-center items-center h-full p-4"
-							: "flex justify-center p-4"
-					}
-				>
+				<div className={"flex justify-center items-center h-full p-4"}>
 					<img src={file.url} alt={file.name} className={imageClasses} />
 				</div>
 			);
 		case "video":
 			return (
-				<div
-					className={
-						maximized
-							? "flex justify-center items-center h-full p-4"
-							: "flex justify-center p-4"
-					}
-				>
+				<div className={"flex justify-center items-center h-full p-4"}>
 					<video controls className={videoClasses} poster={file.thumbnailUrl}>
 						<source src={file.url} />
 						Your browser does not support the video tag.
@@ -744,9 +724,7 @@ export function FileDialogPreview({
 			return (
 				<div
 					className={
-						maximized
-							? "flex flex-col items-center justify-center gap-4 h-full p-8"
-							: "flex flex-col items-center gap-4 p-8"
+						"flex flex-col items-center justify-center gap-4 h-full p-8"
 					}
 				>
 					<Music className="w-16 h-16 text-muted-foreground" />
@@ -759,9 +737,7 @@ export function FileDialogPreview({
 			);
 		case "pdf":
 			return (
-				<div
-					className={maximized ? "w-full h-full p-4" : "w-full h-[70vh] p-4"}
-				>
+				<div className={"w-full h-full p-4"}>
 					<iframe src={file.url} className={iframeClasses} title={file.name} />
 				</div>
 			);
@@ -769,9 +745,7 @@ export function FileDialogPreview({
 			return (
 				<div
 					className={
-						maximized
-							? "flex flex-col items-center justify-center gap-4 h-full p-8"
-							: "flex flex-col items-center gap-4 p-8"
+						"flex flex-col items-center justify-center gap-4 h-full p-8"
 					}
 				>
 					{getFileIcon(file.type)}

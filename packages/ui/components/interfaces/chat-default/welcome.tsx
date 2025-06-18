@@ -111,7 +111,10 @@ export function ChatWelcome({
 
 			return parts.map((part, index) =>
 				regex.test(part) ? (
-					<span key={index} className="bg-primary/20 text-primary rounded-sm">
+					<span
+						key={part + index}
+						className="bg-primary/20 text-primary rounded-sm"
+					>
 						{part}
 					</span>
 				) : (
@@ -167,14 +170,14 @@ export function ChatWelcome({
 					<div className="max-w-2xl mx-auto space-y-4">
 						<ChatBox
 							ref={chatBox}
-							availableTools={config.tools ?? []}
-							defaultActiveTools={config.default_tools ?? []}
+							availableTools={config?.tools ?? []}
+							defaultActiveTools={config?.default_tools ?? []}
 							onSendMessage={onSendMessage}
 							onContentChange={(content) => {
 								setCurrentMessage(content);
 							}}
-							fileUpload={config.allow_file_upload ?? false}
-							audioInput={config.allow_voice_input ?? true}
+							fileUpload={config?.allow_file_upload ?? false}
+							audioInput={config?.allow_voice_input ?? true}
 						/>
 
 						{/* Example Prompts List */}
@@ -188,7 +191,7 @@ export function ChatWelcome({
 								<div className="space-y-1 min-h-[200px]">
 									{filteredExamples.map((example, index) => (
 										<button
-											key={`example-${index}`}
+											key={example + index}
 											className="w-full text-left text-sm text-muted-foreground bg-muted/10 hover:text-foreground hover:bg-muted/50 rounded-md px-3 py-2 transition-colors cursor-pointer"
 											onClick={() => chatBox.current?.setInput(example)}
 										>

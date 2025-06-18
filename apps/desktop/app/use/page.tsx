@@ -1,109 +1,30 @@
 "use client";
 
 import {
-	Button,
 	ChatInterface,
+	Container,
+	Header,
 	type IToolBarActions,
 	LoadingScreen,
 	NoDefaultInterface,
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
 	useBackend,
 	useInvoke,
+	useSetQueryParams,
 } from "@tm9657/flow-like-ui";
+import type { ISidebarActions } from "@tm9657/flow-like-ui/components/interfaces/interfaces";
 import { parseUint8ArrayToJson } from "@tm9657/flow-like-ui/lib/uint8";
-import { HistoryIcon, SettingsIcon, SidebarOpenIcon } from "lucide-react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-	type ReactNode,
-	forwardRef,
-	useCallback,
-	useEffect,
-	useImperativeHandle,
-	useMemo,
-	useRef,
-	useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { USABLE_EVENTS } from "../events";
 import NotFound from "../library/config/not-found";
-interface HeaderProps {
-	currentEvent: any;
-	sortedEvents: any[];
-	metadata: any;
-	appId: string;
-	switchEvent: (eventId: string) => void;
-}
-
-const Header = forwardRef<IToolBarActions, HeaderProps>(
-	({ currentEvent, sortedEvents, metadata, appId, switchEvent }, ref) => {
-		const [toolbarElements, setToolbarElements] = useState<ReactNode[]>([]);
-
-		useImperativeHandle(ref, () => ({
-			pushElements: (elements: ReactNode[]) => {
-				setToolbarElements(elements);
-			},
-		}));
-
-		if (!currentEvent) return null;
-
-		return (
-			<div className="flex items-center justify-between p-4 bg-background backdrop-blur-sm">
-				<div className="flex items-center gap-1">
-					<Select value={currentEvent.id} onValueChange={switchEvent}>
-						<SelectTrigger className="max-w-[200px] flex flex-row justify-between h-8 bg-muted/20 border-transparent">
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							{sortedEvents
-								.filter((event) => USABLE_EVENTS.has(event.event_type))
-								.map((event) => (
-									<SelectItem key={event.id} value={event.id}>
-										{event.name || event.event_type}
-									</SelectItem>
-								))}
-						</SelectContent>
-					</Select>
-					<div className="flex items-center gap-1">
-						{toolbarElements.map((element, index) => (
-							<div key={index}>{element}</div>
-						))}
-					</div>
-				</div>
-				<div className="flex items-center gap-2">
-					<h1 className="text-lg font-semibold">{metadata?.name}</h1>
-					<Link
-						href={`/library/config/events?id=${appId}&eventId=${currentEvent.id}`}
-					>
-						<Button
-							variant="ghost"
-							size="icon"
-							onClick={() => {
-								// Handle chat history toggle
-								console.log("Open chat history");
-							}}
-							className="h-8 w-8 p-0"
-						>
-							<SettingsIcon className="h-4 w-4" />
-						</Button>
-					</Link>
-				</div>
-			</div>
-		);
-	},
-);
-
-Header.displayName = "Header";
 
 export default function Page() {
 	const backend = useBackend();
 	const searchParams = useSearchParams();
 	const appId = searchParams.get("id");
 	const headerRef = useRef<IToolBarActions>(null);
-
+	const sidebarRef = useRef<ISidebarActions>(null);
+	const setQueryParams = useSetQueryParams();
 	const router = useRouter();
 
 	const metadata = useInvoke(
@@ -111,6 +32,7 @@ export default function Page() {
 		[appId ?? ""],
 		typeof appId === "string",
 	);
+
 	const eventId = searchParams.get("eventId");
 	const events = useInvoke(
 		backend.getEvents,
@@ -136,11 +58,10 @@ export default function Page() {
 			if (newEventId === "") return;
 
 			// Clear toolbar elements when switching events
-			headerRef.current?.pushElements([]);
-
-			router.push(`/use?id=${appId}&eventId=${newEventId}`);
+			headerRef.current?.pushToolbarElements([]);
+			setQueryParams("eventId", newEventId);
 		},
-		[appId, router, eventId],
+		[appId, router, eventId, setQueryParams],
 	);
 
 	const config = useMemo(() => {
@@ -183,58 +104,46 @@ export default function Page() {
 		localStorage.setItem(`lastUsedEvent-${appId}`, eventId ?? "");
 	}, [appId, eventId, sortedEvents, currentEvent, switchEvent]);
 
-	if (!appId) {
-		return <NotFound />;
-	}
+	const inner = useMemo(() => {
+		if (!appId) return <NotFound />;
+		if (!currentEvent) return <LoadingScreen />;
 
-	if (!currentEvent) {
-		return (
-			<main className="flex flex-col h-full min-h-dvh max-h-dvh">
-				<Header
-					ref={headerRef}
-					currentEvent={currentEvent}
-					sortedEvents={sortedEvents}
-					metadata={metadata.data}
-					appId={appId}
-					switchEvent={switchEvent}
-				/>
-				<NoDefaultInterface appId={appId} eventId={eventId ?? undefined} />
-			</main>
-		);
-	}
-
-	if (currentEvent.event_type === "simple_chat") {
-		return (
-			<main className="flex flex-col h-full min-h-dvh max-h-dvh">
-				<Header
-					ref={headerRef}
-					currentEvent={currentEvent}
-					sortedEvents={sortedEvents}
-					metadata={metadata.data}
-					appId={appId}
-					switchEvent={switchEvent}
-				/>
+		if (currentEvent.event_type === "simple_chat") {
+			return (
 				<ChatInterface
+					key={currentEvent.id}
 					appId={appId}
 					event={currentEvent}
 					config={config}
 					toolbarRef={headerRef}
+					sidebarRef={sidebarRef}
 				/>
-			</main>
-		);
+			);
+		}
+
+		return <NoDefaultInterface appId={appId} eventId={eventId ?? undefined} />;
+	}, [appId, currentEvent, config, eventId, headerRef, sidebarRef]);
+
+	if (!appId) {
+		return <NotFound />;
 	}
 
 	return (
-		<main className="flex flex-col h-full min-h-dvh max-h-dvh">
-			<Header
-				ref={headerRef}
-				currentEvent={currentEvent}
-				sortedEvents={sortedEvents}
-				metadata={metadata.data}
-				appId={appId}
-				switchEvent={switchEvent}
-			/>
-			<NoDefaultInterface appId={appId} eventId={eventId ?? undefined} />
+		<main className="flex flex-col h-full min-h-dvh max-h-dvh overflow-hidden">
+			<Container ref={sidebarRef}>
+				<div className="flex flex-col flex-grow h-full w-full max-h-full overflow-hidden">
+					<Header
+						ref={headerRef}
+						usableEvents={USABLE_EVENTS}
+						currentEvent={currentEvent}
+						sortedEvents={sortedEvents}
+						metadata={metadata.data}
+						appId={appId}
+						switchEvent={switchEvent}
+					/>
+					{inner}
+				</div>
+			</Container>
 		</main>
 	);
 }

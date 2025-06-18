@@ -24,7 +24,21 @@ export interface IMessage {
 	actions?: string[];
 	tools?: string[];
 	explicit_name?: string;
+	rating?: number;
+	ratingSettings?: {
+		includeChatHistory?: boolean;
+		comment?: string;
+		canContact?: boolean;
+	};
 	timestamp: number;
+}
+
+export interface ISession {
+	id: string;
+	appId: string;
+	summarization: string;
+	createdAt: number;
+	updatedAt: number;
 }
 
 export interface ILocalChatState {
@@ -42,14 +56,16 @@ export interface IGlobalState {
 	globalState: Record<string, any>;
 }
 
-const chatDb = new Dexie("ChatHistoryDatabase") as Dexie & {
+const chatDb = new Dexie("Chat-History") as Dexie & {
+	sessions: EntityTable<ISession, "id">;
 	messages: EntityTable<IMessage, "id">;
 	localStage: EntityTable<ILocalChatState, "id">;
 	globalState: EntityTable<IGlobalState, "id">;
 };
 
 // Schema declaration:
-chatDb.version(1).stores({
+chatDb.version(2).stores({
+	sessions: "id, appId, updatedAt, [updatedAt+appId]",
 	messages: "id, sessionId",
 	localStage: "sessionId, appId, eventId, [sessionId+eventId], timestamp",
 	globalState: "appId, eventId, [appId+eventId]",

@@ -2,56 +2,71 @@
 
 import { createId } from "@paralleldrive/cuid2";
 import { useLiveQuery } from "dexie-react-hooks";
-import { SidebarOpenIcon, SquarePenIcon } from "lucide-react";
+import { SidebarIcon, SidebarOpenIcon, SquarePenIcon } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import {
 	type RefObject,
+	memo,
 	useCallback,
 	useEffect,
+	useMemo,
 	useRef,
-	useState,
 } from "react";
-import {
-	type IEvent,
-	type IEventPayloadChat,
-	type IHistoryMessage,
-	IRole,
-} from "../../lib";
+import { type IEvent, type IEventPayloadChat, IRole } from "../../lib";
+import { useSetQueryParams } from "../../lib/set-query-params";
 import { useBackend } from "../../state/backend-state";
-import { Button, HoverCard, HoverCardContent, HoverCardTrigger } from "../ui";
+import {
+	Button,
+	HoverCard,
+	HoverCardContent,
+	HoverCardTrigger,
+	LoadingScreen,
+} from "../ui";
 import { fileToAttachment } from "./chat-default/attachment";
-import { Chat, type IChatProps, type IChatRef } from "./chat-default/chat";
+import { Chat, type IChatRef } from "./chat-default/chat";
 import { type IMessage, chatDb } from "./chat-default/chat-db";
 import type { ISendMessageFunction } from "./chat-default/chatbox";
+import { ChatHistory } from "./chat-default/history";
 import { ChatWelcome } from "./chat-default/welcome";
-import type { IToolBarActions } from "./interfaces";
+import type { ISidebarActions, IToolBarActions } from "./interfaces";
 
-export function ChatInterface({
+export const ChatInterface = memo(function ChatInterface({
 	appId,
 	event,
 	config = {},
 	toolbarRef,
+	sidebarRef,
 }: Readonly<{
 	appId: string;
 	event: IEvent;
 	config?: Partial<IEventPayloadChat>;
 	toolbarRef?: RefObject<IToolBarActions | null>;
+	sidebarRef?: RefObject<ISidebarActions | null>;
 }>) {
 	const backend = useBackend();
-	const [sessionId, setSessionId] = useState<string>(createId());
+	const searchParams = useSearchParams();
+	const sessionIdParameter = searchParams.get("sessionId") ?? createId();
+	const setQueryParams = useSetQueryParams();
 	const chatRef = useRef<IChatRef>(null);
+
 	const messages = useLiveQuery(
 		() =>
-			chatDb.messages.where("sessionId").equals(sessionId).sortBy("timestamp"),
-		[sessionId],
+			chatDb.messages
+				.where("sessionId")
+				.equals(sessionIdParameter)
+				.sortBy("timestamp"),
+		[sessionIdParameter],
 	);
+
 	const localState = useLiveQuery(
 		() =>
 			chatDb.localStage
 				.where("[sessionId+eventId]")
-				.equals([sessionId, event.id])
+				.equals([sessionIdParameter, event.id])
 				.first(),
-		[sessionId, event.id],
+		[sessionIdParameter, event.id],
 	);
+
 	const globalState = useLiveQuery(
 		() =>
 			chatDb.globalState
@@ -61,22 +76,50 @@ export function ChatInterface({
 		[appId, event.id],
 	);
 
-	useEffect(() => {
-		toolbarRef?.current?.pushElements([
+	const updateSessionId = useCallback(
+		(newSessionId: string) => {
+			setQueryParams("sessionId", newSessionId);
+		},
+		[setQueryParams],
+	);
+
+	const handleSidebarToggle = useCallback(() => {
+		sidebarRef?.current?.toggleOpen();
+	}, [sidebarRef]);
+
+	const handleNewChat = useCallback(() => {
+		updateSessionId(createId());
+	}, [updateSessionId]);
+
+	const handleSessionChange = useCallback(
+		(newSessionId: string) => {
+			updateSessionId(newSessionId);
+			chatRef.current?.scrollToBottom();
+		},
+		[updateSessionId],
+	);
+
+	const toolbarElements = useMemo(
+		() => [
 			<HoverCard key="chat-history" openDelay={200} closeDelay={100}>
 				<HoverCardTrigger asChild>
 					<Button
 						variant="ghost"
 						size="icon"
 						className="hover:bg-accent hover:text-accent-foreground transition-colors"
+						onClick={handleSidebarToggle}
 					>
-						<SidebarOpenIcon className="w-4 h-4" />
+						<SidebarIcon className="w-4 h-4" />
 					</Button>
 				</HoverCardTrigger>
 				<HoverCardContent
 					side="bottom"
 					align="center"
 					className="w-auto p-2 bg-popover border shadow-lg"
+					onClick={() => {
+						// Handle chat history toggle
+						console.log("Open chat history");
+					}}
 				>
 					<div className="flex items-center gap-2 text-sm font-medium">
 						<SidebarOpenIcon className="w-3 h-3" />
@@ -87,9 +130,7 @@ export function ChatInterface({
 			<HoverCard key="new-chat" openDelay={200} closeDelay={100}>
 				<HoverCardTrigger asChild>
 					<Button
-						onClick={() => {
-							setSessionId(createId());
-						}}
+						onClick={handleNewChat}
 						variant="ghost"
 						size="icon"
 						className="hover:bg-accent hover:text-accent-foreground transition-colors"
@@ -101,6 +142,7 @@ export function ChatInterface({
 					side="bottom"
 					align="center"
 					className="w-auto p-2 bg-popover border shadow-lg"
+					onClick={handleNewChat}
 				>
 					<div className="flex items-center gap-2 text-sm font-medium">
 						<SquarePenIcon className="w-3 h-3" />
@@ -108,8 +150,27 @@ export function ChatInterface({
 					</div>
 				</HoverCardContent>
 			</HoverCard>,
-		]);
-	}, []);
+		],
+		[handleSidebarToggle, handleNewChat],
+	);
+
+	const sidebarContent = useMemo(
+		() => (
+			<ChatHistory
+				key={sessionIdParameter}
+				appId={appId}
+				sessionId={sessionIdParameter}
+				onSessionChange={handleSessionChange}
+				sidebarRef={sidebarRef}
+			/>
+		),
+		[sessionIdParameter, appId, handleSessionChange, sidebarRef],
+	);
+
+	useEffect(() => {
+		toolbarRef?.current?.pushToolbarElements(toolbarElements);
+		sidebarRef?.current?.pushSidebar(sidebarContent);
+	}, [toolbarElements, sidebarContent, toolbarRef, sidebarRef]);
 
 	const handleSendMessage: ISendMessageFunction = useCallback(
 		async (
@@ -124,7 +185,7 @@ export function ChatInterface({
 			}
 			const userMessage: IMessage = {
 				id: createId(),
-				sessionId,
+				sessionId: sessionIdParameter,
 				appId,
 				files: files,
 				inner: {
@@ -136,11 +197,30 @@ export function ChatInterface({
 				actions: [],
 			};
 
+			const sessionExists = await chatDb.sessions
+				.where("id")
+				.equals(sessionIdParameter)
+				.count();
+
+			if (sessionExists <= 0) {
+				await chatDb.sessions.add({
+					id: sessionIdParameter,
+					appId,
+					summarization: content,
+					createdAt: Date.now(),
+					updatedAt: Date.now(),
+				});
+			} else {
+				await chatDb.sessions.update(sessionIdParameter, {
+					updatedAt: Date.now(),
+				});
+			}
+
 			await chatDb.messages.add(userMessage);
 
 			const responseMessage: IMessage = {
 				id: createId(),
-				sessionId,
+				sessionId: sessionIdParameter,
 				appId,
 				files: [],
 				inner: {
@@ -169,25 +249,46 @@ export function ChatInterface({
 			await new Promise((resolve) => setTimeout(resolve, 100));
 			chatRef.current?.scrollToBottom();
 		},
-		[chatDb, sessionId, event.id, appId, chatRef.current],
+		[backend, sessionIdParameter, appId, event.name],
 	);
 
-	if (!messages || messages?.length === 0) {
-		return (
-			<ChatWelcome
-				onSendMessage={handleSendMessage}
-				event={event}
-				config={config}
-			/>
-		);
+	const onMessageUpdate = useCallback(
+		async (messageId: string, message: Partial<IMessage>) => {
+			await chatDb.messages.update(messageId, {
+				...message,
+			});
+		},
+		[],
+	);
+
+	const showWelcome = useMemo(
+		() => !messages || messages?.length === 0,
+		[messages],
+	);
+
+	if (!messages) {
+		return null;
 	}
 
 	return (
-		<Chat
-			ref={chatRef}
-			messages={messages}
-			onSendMessage={handleSendMessage}
-			config={config}
-		/>
+		<>
+			{showWelcome ? (
+				<ChatWelcome
+					onSendMessage={handleSendMessage}
+					event={event}
+					config={config}
+				/>
+			) : (
+				<Chat
+					key={sessionIdParameter}
+					ref={chatRef}
+					sessionId={sessionIdParameter}
+					messages={messages}
+					onSendMessage={handleSendMessage}
+					onMessageUpdate={onMessageUpdate}
+					config={config}
+				/>
+			)}
+		</>
 	);
-}
+});

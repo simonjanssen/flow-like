@@ -16,3 +16,4 @@ export * from "./command/generic-command";
 export * from "./permission/global-permission";
 export * from "./permission/role-permission";
 export * from "./time/now";
+export * from "./set-query-params";

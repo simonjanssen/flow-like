@@ -141,7 +141,7 @@ export default function Page() {
 	}
 
 	return (
-		<div className="container mx-auto py-8 space-y-8">
+		<div className="container mx-auto py-8 space-y-8 max-h-full flex flex-col flex-grow max-h-full">
 			{/* Header */}
 			<div className="flex items-center justify-between">
 				<div>
@@ -215,44 +215,46 @@ export default function Page() {
 			</div>
 
 			{/* Events List */}
-			<div className="space-y-4">
+			<div className="space-y-4 flex flex-col flex-grow overflow-hidden max-h-full">
 				<h2 className="text-2xl font-semibold">Events</h2>
-				{events.data?.length === 0 ? (
-					<Card>
-						<CardContent className="py-12 text-center">
-							<Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-							<h3 className="text-lg font-semibold mb-2">
-								No events configured
-							</h3>
-							<p className="text-muted-foreground mb-4">
-								Get started by creating your first event
-							</p>
-							<Button
-								onClick={() => setIsCreateDialogOpen(true)}
-								className="gap-2"
-							>
-								<Plus className="h-4 w-4" />
-								Create Event
-							</Button>
-						</CardContent>
-					</Card>
-				) : (
-					<div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-6">
-						{events.data?.map((event) => (
-							<EventCard
-								key={event.id}
-								event={event}
-								onEdit={() => handleEditingEvent(event)}
-								onDelete={() => handleDeleteEvent(event.id)}
-								navigateToNode={(nodeId) => {
-									router.push(
-										`/flow?id=${event.board_id}&app=${id}&node=${nodeId}${event.board_version ? `&version=${event.board_version.join("_")}` : ""}`,
-									);
-								}}
-							/>
-						))}
-					</div>
-				)}
+				<div className="flex flex-col overflow-auto overflow-x-hidden flex-grow h-full max-h-full">
+					{events.data?.length === 0 ? (
+						<Card>
+							<CardContent className="py-12 text-center">
+								<Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+								<h3 className="text-lg font-semibold mb-2">
+									No events configured
+								</h3>
+								<p className="text-muted-foreground mb-4">
+									Get started by creating your first event
+								</p>
+								<Button
+									onClick={() => setIsCreateDialogOpen(true)}
+									className="gap-2"
+								>
+									<Plus className="h-4 w-4" />
+									Create Event
+								</Button>
+							</CardContent>
+						</Card>
+					) : (
+						<div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-6">
+							{events.data?.map((event) => (
+								<EventCard
+									key={event.id}
+									event={event}
+									onEdit={() => handleEditingEvent(event)}
+									onDelete={() => handleDeleteEvent(event.id)}
+									navigateToNode={(nodeId) => {
+										router.push(
+											`/flow?id=${event.board_id}&app=${id}&node=${nodeId}${event.board_version ? `&version=${event.board_version.join("_")}` : ""}`,
+										);
+									}}
+								/>
+							))}
+						</div>
+					)}
+				</div>
 			</div>
 		</div>
 	);
