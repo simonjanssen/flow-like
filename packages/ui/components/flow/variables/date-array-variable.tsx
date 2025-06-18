@@ -96,7 +96,7 @@ export function DateArrayVariable({
 							)}
 						>
 							{newDate ? (
-								format(newDate, "PPP") + " - " + newTime
+								`${format(newDate, "PPP")} - ${newTime}`
 							) : (
 								<span>Pick a date</span>
 							)}

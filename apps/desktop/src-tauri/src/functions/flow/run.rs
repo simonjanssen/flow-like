@@ -1,14 +1,14 @@
+use flow_like::app::App;
 use flow_like::flow::event::Event;
+use flow_like::flow::execution::InternalRun;
 use flow_like::flow::execution::log::LogMessage;
-use flow_like::flow::execution::{InternalRun, RunStatus};
 use flow_like::flow::execution::{LogLevel, LogMeta, RunPayload};
 use flow_like::flow_like_storage::lancedb::query::{ExecutableQuery, QueryBase};
 use flow_like::flow_like_storage::{Path, serde_arrow};
 use flow_like::state::RunData;
 use flow_like_types::intercom::{BufferedInterComHandler, InterComEvent};
-use flow_like_types::sync::Mutex;
 use flow_like_types::tokio_util::sync::CancellationToken;
-use flow_like_types::{create_id, json, tokio};
+use flow_like_types::{json, tokio};
 use futures::TryStreamExt;
 use std::sync::Arc;
 use std::time::Duration;
@@ -22,15 +22,33 @@ use crate::{
 async fn execute_internal(
     app_handle: AppHandle,
     app_id: String,
-    board_id: String,
-    payload: RunPayload,
+    mut board_id: String,
+    mut payload: RunPayload,
     events: tauri::ipc::Channel<Vec<InterComEvent>>,
-    event: Option<Event>,
+    event_id: Option<String>,
     stream_state: bool,
 ) -> Result<Option<LogMeta>, TauriFunctionError> {
-    let (board, flow_like_state) =
-        TauriFlowLikeState::get_board_and_state(&app_handle, &board_id).await?;
+    let mut event = None;
+    let flow_like_state = TauriFlowLikeState::construct(&app_handle).await?;
+    let mut version = None;
+    let Ok(app) = App::load(app_id.clone(), flow_like_state.clone()).await else {
+        return Err(TauriFunctionError::new("App not found"));
+    };
+
+    if let Some(event_id) = &event_id {
+        let intermediate_event = app.get_event(&event_id, None).await?;
+        payload.id = intermediate_event.node_id.clone();
+        version = intermediate_event.board_version.clone();
+        board_id = intermediate_event.board_id.clone();
+        event = Some(intermediate_event);
+    }
+
+    let Ok(board) = app.open_board(board_id.clone(), Some(false), version).await else {
+        return Err(TauriFunctionError::new("Board not found"));
+    };
+
     let board = Arc::new(board.lock().await.clone());
+
     let profile = TauriSettingsState::current_profile(&app_handle).await?;
 
     println!("Executing board: {:?}", payload);
@@ -75,7 +93,7 @@ async fn execute_internal(
     .await?;
     let run_id = internal_run.run.lock().await.id.clone();
 
-    buffered_sender
+    let _send_result = buffered_sender
         .send(InterComEvent::with_type(
             "run_initiated",
             json::json!({ "run_id": run_id.clone()}),
@@ -165,20 +183,19 @@ pub async fn execute_board(
 pub async fn execute_event(
     app_handle: AppHandle,
     app_id: String,
-    event: Event,
+    event_id: String,
     payload: RunPayload,
     stream_state: Option<bool>,
     events: tauri::ipc::Channel<Vec<InterComEvent>>,
 ) -> Result<Option<LogMeta>, TauriFunctionError> {
-    let board_id = event.board_id.clone();
     let stream_state = stream_state.unwrap_or(false);
     execute_internal(
         app_handle,
         app_id,
-        board_id,
+        String::new(), // Will be read from the event anyways
         payload,
         events,
-        Some(event),
+        Some(event_id),
         stream_state,
     )
     .await
@@ -190,7 +207,7 @@ pub async fn cancel_execution(
     run_id: String,
 ) -> Result<(), TauriFunctionError> {
     let flow_like_state = TauriFlowLikeState::construct(&app_handle).await?;
-    flow_like_state.lock().await.remove_and_cancel_run(&run_id);
+    let _cancel_result = flow_like_state.lock().await.remove_and_cancel_run(&run_id);
     Ok(())
 }
 

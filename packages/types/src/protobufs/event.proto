@@ -39,4 +39,6 @@ message Event {
   google.protobuf.Timestamp created_at = 13;
   google.protobuf.Timestamp updated_at = 14;
   bool active = 15;
+  string event_type = 16;
+  uint32 priority = 17;
 }

@@ -54,7 +54,7 @@ export function LayerNode(props: NodeProps<LayerNode>) {
 
 		if (divRef.current) {
 			divRef.current.style.height = `calc(${height * 15}px + 1.25rem + 0.5rem)`;
-			divRef.current.style.minHeight = `calc(15px + 1.25rem + 0.5rem)`;
+			divRef.current.style.minHeight = "calc(15px + 1.25rem + 0.5rem)";
 		}
 	}, []);
 

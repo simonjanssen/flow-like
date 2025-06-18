@@ -1,39 +1,33 @@
 import {
-	type IBit,
-	IMetadata,
-	Input,
-	Slider,
-	Textarea,
-	humanFileSize,
-} from "@tm9657/flow-like-ui";
-import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
+	type IBit,
+	Input,
+	Label,
+	humanFileSize,
 } from "@tm9657/flow-like-ui";
-import { Label } from "@tm9657/flow-like-ui";
 import {
 	type Dispatch,
 	type SetStateAction,
 	useCallback,
 	useEffect,
-	useState,
 } from "react";
-import { getModelSize, getOriginalRepo } from "../utils";
+import { getModelSize } from "../utils";
 
 export function DependencyConfiguration({
 	name,
 	defaultBit,
 	bit,
 	setBit,
-}: {
+}: Readonly<{
 	name: string;
 	defaultBit: IBit;
 	bit: IBit;
 	setBit: Dispatch<SetStateAction<IBit | undefined>>;
-}) {
+}>) {
 	const prefillData = useCallback(async () => {
 		if (!bit.download_link) return;
 
@@ -43,18 +37,18 @@ export function DependencyConfiguration({
 
 		const size = await getModelSize(bit.download_link);
 		const downloadLink = bit.download_link.trim();
-		const fileName = downloadLink.split("/").pop()?.split("?")[0] || "";
+		const fileName = downloadLink.split("/").pop()?.split("?")[0] ?? "";
 
 		setBit((old) => ({
 			...(old ?? defaultBit),
 			size: size,
 			file_name: old?.file_name === "" ? fileName : old?.file_name,
 		}));
-	}, [bit]);
+	}, [bit, defaultBit]);
 
 	useEffect(() => {
 		prefillData();
-	}, [prefillData, bit.download_link]);
+	}, [prefillData]);
 
 	return (
 		<div className="space-y-6 w-full max-w-screen-lg">

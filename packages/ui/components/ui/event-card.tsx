@@ -52,7 +52,7 @@ export function EventCard({
 	const eventType = getEventTypeFromBoardId(event.board_id);
 
 	return (
-		<Card className="relative group hover:shadow-2xl transition-all duration-300 hover:scale-[1.03] bg-card">
+		<Card className="relative group transition-all duration-300 hover:scale-[1.03] bg-card">
 			{/* Gradient overlay for active events */}
 			{event.active && (
 				<div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -72,9 +72,7 @@ export function EventCard({
 							<Badge
 								variant={event.active ? "default" : "secondary"}
 								className={`gap-2 transition-all duration-200 ${
-									event.active
-										? "bg-primary shadow-md shadow-primary/20"
-										: "bg-muted"
+									event.active ? "bg-primary" : "bg-muted"
 								}`}
 							>
 								<div
@@ -119,36 +117,36 @@ export function EventCard({
 					</div>
 
 					{/* Action buttons with enhanced styling */}
-					<div className="flex items-center justify-between pt-4 border-t opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
-						<div className="flex items-center gap-2">
+					<div className="overflow-hidden transition-all duration-300 group-hover:max-h-16 max-h-0">
+						<div className="flex items-center justify-between pt-4 border-t opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-75">
+							<div className="flex items-center gap-2">
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={onEdit}
+									className="gap-2 hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all duration-200"
+								>
+									<Edit2 className="h-3 w-3" />
+									Edit
+								</Button>
+								<Button
+									variant="destructive"
+									size="sm"
+									onClick={onDelete}
+									className="gap-2"
+								>
+									<Trash2 className="h-3 w-3" />
+									Delete
+								</Button>
+							</div>
 							<Button
 								variant="outline"
-								size="sm"
-								onClick={onEdit}
-								className="gap-2 hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all duration-200"
+								size="icon"
+								onClick={() => navigateToNode(event.node_id)}
 							>
-								<Edit2 className="h-3 w-3" />
-								Edit
-							</Button>
-							<Button
-								variant="destructive"
-								size="sm"
-								onClick={onDelete}
-								className="gap-2"
-							>
-								<Trash2 className="h-3 w-3" />
-								Delete
+								<ExternalLinkIcon className="h-3 w-3" />
 							</Button>
 						</div>
-						<Button
-							variant="outline"
-							size="sm"
-							onClick={() => navigateToNode(event.node_id)}
-							className="gap-2 hover:bg-primary hover:text-primary-foreground transition-all duration-200 shadow-md hover:shadow-lg"
-						>
-							<ExternalLinkIcon className="h-3 w-3" />
-							View Node
-						</Button>
 					</div>
 				</CardContent>
 			</div>

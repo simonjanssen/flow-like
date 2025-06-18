@@ -68,10 +68,10 @@ export interface IBackendState {
 
 	executeEvent(
 		appId: string,
-		event: IEvent,
+		eventId: string,
 		payload: IRunPayload,
 		streamState?: boolean,
-		eventId?: (id: string) => void,
+		onEventId?: (id: string) => void,
 		cb?: (event: IIntercomEvent[]) => void,
 	): Promise<ILogMetadata | undefined>;
 
@@ -156,6 +156,20 @@ export interface IBackendState {
 		eventId: string,
 		version?: [number, number, number],
 	): Promise<void>;
+	upsertEventFeedback(
+		appId: string,
+		eventId: string,
+		messageId: string,
+		feedback: {
+			// 0: remove, 1: positive, -1: negative
+			rating: number;
+			history?: any[];
+			globalState?: Record<string, any>;
+			localState?: Record<string, any>;
+			comment?: string;
+			sub?: boolean;
+		},
+	): Promise<void>;
 
 	// Template Operations
 
@@ -215,6 +229,8 @@ export interface IBackendState {
 	getBitSize(bit: IBit): Promise<number>;
 	searchBits(type: IBitSearchQuery): Promise<IBit[]>;
 	isBitInstalled(bit: IBit): Promise<boolean>;
+
+	fileToUrl(file: File): Promise<string>;
 }
 
 interface BackendStoreState {

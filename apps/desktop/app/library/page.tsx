@@ -92,39 +92,38 @@ export default function YoursPage() {
 					))}
 				</div>
 			);
-		} else {
-			const [left, right] = splitIntoColumns(items);
-			return (
-				<div className="flex flex-row gap-6">
-					<div className="flex flex-col gap-2 flex-1">
-						{left.map((meta) => (
-							<div key={"left" + meta.id} className="group">
-								<AppCard
-									app={meta.app}
-									metadata={meta as IMetadata}
-									variant="small"
-									onClick={() => router.push(`/library/config?id=${meta.id}`)}
-									className="w-full"
-								/>
-							</div>
-						))}
-					</div>
-					<div className="flex flex-col gap-2 flex-1">
-						{right.map((meta) => (
-							<div key={"right" + meta.id} className="group">
-								<AppCard
-									app={meta.app}
-									metadata={meta as IMetadata}
-									variant="small"
-									onClick={() => router.push(`/library/config?id=${meta.id}`)}
-									className="w-full"
-								/>
-							</div>
-						))}
-					</div>
-				</div>
-			);
 		}
+		const [left, right] = splitIntoColumns(items);
+		return (
+			<div className="flex flex-row gap-6">
+				<div className="flex flex-col gap-2 flex-1">
+					{left.map((meta) => (
+						<div key={`left${meta.id}`} className="group">
+							<AppCard
+								app={meta.app}
+								metadata={meta as IMetadata}
+								variant="small"
+								onClick={() => router.push(`/library/config?id=${meta.id}`)}
+								className="w-full"
+							/>
+						</div>
+					))}
+				</div>
+				<div className="flex flex-col gap-2 flex-1">
+					{right.map((meta) => (
+						<div key={`right${meta.id}`} className="group">
+							<AppCard
+								app={meta.app}
+								metadata={meta as IMetadata}
+								variant="small"
+								onClick={() => router.push(`/library/config?id=${meta.id}`)}
+								className="w-full"
+							/>
+						</div>
+					))}
+				</div>
+			</div>
+		);
 	};
 
 	return (

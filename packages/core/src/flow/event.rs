@@ -45,6 +45,8 @@ pub struct Event {
 
     pub canary: Option<CanaryEvent>,
 
+    pub priority: u32,
+    pub event_type: String,
     pub notes: Option<ReleaseNotes>,
     pub event_version: (u32, u32, u32),
     pub created_at: std::time::SystemTime,
@@ -55,6 +57,11 @@ pub struct Event {
 pub struct ChatEventParameters {
     pub history_elements: Option<u32>,
     pub allow_file_upload: Option<bool>,
+    pub allow_voice_input: Option<bool>,
+    pub allow_voice_output: Option<bool>,
+    pub tools: Option<Vec<String>>,
+    pub default_tools: Option<Vec<String>>,
+    pub example_messages: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
@@ -140,20 +147,17 @@ impl Event {
                     ),
                 };
             }
-            old_event.active = self.active;
-            old_event.updated_at = SystemTime::now();
-            old_event.node_id = self.node_id.clone();
-            old_event.board_id = self.board_id.clone();
-            old_event.canary = self.canary.clone();
-            old_event.variables = self.variables.clone();
-            old_event.config = self.config.clone();
-            old_event.notes = self.notes.clone();
-            old_event.name = self.name.clone();
-            old_event.description = self.description.clone();
-            old_event.board_version = self.board_version;
 
-            old_event.save(app, None).await?;
-            return Ok(old_event.clone());
+            let updated_event = Event {
+                id: old_event.id,
+                event_version: old_event.event_version,
+                created_at: old_event.created_at,
+                updated_at: SystemTime::now(),
+                ..self.clone()
+            };
+
+            updated_event.save(app, None).await?;
+            return Ok(updated_event.clone());
         }
 
         self.id = create_id();
@@ -247,13 +251,13 @@ impl Event {
             .await?
             .as_generic();
 
-        let mut event_path = storage_root.child(format!("{}.event", id));
-        if let Some(version) = version {
-            event_path = event_path
+        let event_path = match version {
+            Some(version) => storage_root
                 .child("versions")
                 .child(id)
-                .child(format!("{}.{}.{}", version.0, version.1, version.2));
-        }
+                .child(format!("{}.{}.{}", version.0, version.1, version.2)),
+            None => storage_root.child(format!("{}.event", id)),
+        };
 
         let event_proto: proto::Event = from_compressed(store, event_path).await?;
         let event = Event::from_proto(event_proto);
@@ -275,13 +279,13 @@ impl Event {
             .await?
             .as_generic();
 
-        let mut event_path = storage_root.child(format!("{}.event", self.id));
-        if let Some(version) = version {
-            event_path = event_path
+        let event_path = match version {
+            Some(version) => storage_root
                 .child("versions")
                 .child(self.id.clone())
-                .child(format!("{}.{}.{}", version.0, version.1, version.2));
-        }
+                .child(format!("{}.{}.{}", version.0, version.1, version.2)),
+            None => storage_root.child(format!("{}.event", self.id)),
+        };
 
         compress_to_file(store, event_path, &self.to_proto()).await?;
         Ok(())

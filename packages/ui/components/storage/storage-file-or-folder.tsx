@@ -172,15 +172,14 @@ export function FileOrFolder({
 			if (isFolder) {
 				const location = file.location.split("/").pop()?.slice(1, -7) ?? "";
 				const parentPath = file.location.split("/").slice(3, -1).join("/");
-				TEMPLATE.nodes[childNode].pins[
-					"w8k4qi9sq7265ium4c3l6qg8"
-				].default_value = convertJsonToUint8Array(`${parentPath}/${location}`);
+				TEMPLATE.nodes[childNode].pins.w8k4qi9sq7265ium4c3l6qg8.default_value =
+					convertJsonToUint8Array(`${parentPath}/${location}`);
 				navigator.clipboard.writeText(JSON.stringify(TEMPLATE));
 				toast.success("Path copied to clipboard");
 				return;
 			}
 
-			TEMPLATE.nodes[childNode].pins["x56ex8kn2uoq37rd8xitawbh"].default_value =
+			TEMPLATE.nodes[childNode].pins.x56ex8kn2uoq37rd8xitawbh.default_value =
 				convertJsonToUint8Array(file.location.split("/").slice(3).join("/"));
 			navigator.clipboard.writeText(JSON.stringify(TEMPLATE));
 			toast.success("Path copied to clipboard");

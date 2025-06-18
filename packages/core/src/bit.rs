@@ -60,6 +60,7 @@ pub enum BitTypes {
 }
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, Default)]
 pub struct BitModelPreference {
+    pub multimodal: Option<bool>,
     pub cost_weight: Option<f32>,
     pub speed_weight: Option<f32>,
     pub reasoning_weight: Option<f32>,
@@ -178,6 +179,12 @@ impl BitModelClassification {
     pub fn score(&self, preference: &BitModelPreference, bit: &Bit) -> f32 {
         let mut total_score = 0.0;
         let name_similarity_weight = 0.2;
+
+        if let Some(multimodal) = preference.multimodal {
+            if multimodal && !bit.is_multimodal() {
+                return 0.0;
+            }
+        }
 
         // Map weights to model fields dynamically
         let field_weight_pairs = vec![

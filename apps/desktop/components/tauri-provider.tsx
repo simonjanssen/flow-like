@@ -1,5 +1,5 @@
 "use client";
-import { Channel, invoke } from "@tauri-apps/api/core";
+import { Channel, convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { type Event, type UnlistenFn, listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
 import {
@@ -23,13 +23,13 @@ import {
 	type IRunPayload,
 	type ISettingsProfile,
 	type IVersionType,
+	LoadingScreen,
 	useBackendStore,
 	useDownloadManager,
 } from "@tm9657/flow-like-ui";
 import type { IBitSearchQuery } from "@tm9657/flow-like-ui/lib/schema/hub/bit-search-query";
 import { useEffect, useState } from "react";
 import type { AuthContextProps } from "react-oidc-context";
-
 export class TauriBackend implements IBackendState {
 	constructor(private auth?: AuthContextProps) {}
 
@@ -183,10 +183,10 @@ export class TauriBackend implements IBackendState {
 
 	async executeEvent(
 		appId: string,
-		event: IEvent,
+		eventId: string,
 		payload: IRunPayload,
 		streamState?: boolean,
-		eventId?: (id: string) => void,
+		onEventId?: (id: string) => void,
 		cb?: (event: IIntercomEvent[]) => void,
 	): Promise<ILogMetadata | undefined> {
 		const channel = new Channel<IIntercomEvent[]>();
@@ -206,7 +206,7 @@ export class TauriBackend implements IBackendState {
 
 				if (runId_event) {
 					const runId = runId_event.payload.run_id;
-					eventId(runId);
+					onEventId?.(runId);
 					foundRunId = true;
 				}
 			}
@@ -216,7 +216,7 @@ export class TauriBackend implements IBackendState {
 
 		const metadata: ILogMetadata | undefined = await invoke("execute_event", {
 			appId: appId,
-			event: event,
+			eventId: eventId,
 			payload: payload,
 			events: channel,
 			streamState: streamState,
@@ -408,6 +408,22 @@ export class TauriBackend implements IBackendState {
 			eventId: eventId,
 			version: version,
 		});
+	}
+
+	async upsertEventFeedback(
+		appId: string,
+		eventId: string,
+		messageId: string,
+		feedback: {
+			rating: number;
+			history?: any[];
+			globalState?: Record<string, any>;
+			localState?: Record<string, any>;
+			comment?: string;
+			sub?: boolean;
+		},
+	): Promise<void> {
+		// TODO: Only relevant for online events
 	}
 
 	// Template Operations
@@ -616,6 +632,19 @@ export class TauriBackend implements IBackendState {
 		});
 		return boards;
 	}
+
+	async fileToUrl(file: File): Promise<string> {
+		// TODO: Determine where the execution will happen. If on server, just use signed urls
+		// Copy it into the tauri app's storage and return the file path as signed url
+
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.readAsDataURL(file);
+			reader.onload = () => resolve(reader.result as string);
+			reader.onerror = (error) =>
+				reject(new Error("Error converting file to base64"));
+		});
+	}
 }
 
 export function TauriProvider({
@@ -650,7 +679,7 @@ export function TauriProvider({
 	}, []);
 
 	if (!loaded) {
-		return <p>Loading...</p>;
+		return <LoadingScreen />;
 	}
 
 	return children;

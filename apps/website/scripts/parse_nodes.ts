@@ -1,4 +1,4 @@
-import fs from "fs";
+import fs from "node:fs";
 import type { Edge, IComment, INode, IPin, Node } from "@tm9657/flow-like-ui";
 import { typeToColor } from "@tm9657/flow-like-ui/components/flow/utils";
 

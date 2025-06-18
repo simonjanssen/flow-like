@@ -71,7 +71,7 @@ export default function Onboarding() {
 					<h1 className="text-5xl font-bold text-foreground tracking-tight">
 						Welcome to <span className="highlight">Flow-Like</span>
 					</h1>
-					<div className="w-24 h-1 bg-gradient-to-r from-primary to-primary/70 mx-auto rounded-full"></div>
+					<div className="w-24 h-1 bg-gradient-to-r from-primary to-primary/70 mx-auto rounded-full" />
 				</div>
 				<h2 className="text-2xl text-muted-foreground font-medium mt-6">
 					Select your starting profile

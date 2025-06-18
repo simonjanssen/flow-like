@@ -125,11 +125,12 @@ export function StorageSystem({
 					case "size":
 						comparison = (a.size ?? 0) - (b.size ?? 0);
 						break;
-					case "type":
+					case "type": {
 						const extA = getName(a).split(".").pop() ?? "";
 						const extB = getName(b).split(".").pop() ?? "";
 						comparison = extA.localeCompare(extB);
 						break;
+					}
 				}
 
 				return sortOrder === "asc" ? comparison : -comparison;

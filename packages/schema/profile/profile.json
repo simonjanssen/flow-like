@@ -5,7 +5,7 @@
 	"required": ["bits", "created", "name", "updated"],
 	"properties": {
 		"id": {
-			"default": "wg6k0xtzrrjhfyv219mzr3mr",
+			"default": "uuaguukojjjnes8fvemg0sqz",
 			"type": "string"
 		},
 		"name": {

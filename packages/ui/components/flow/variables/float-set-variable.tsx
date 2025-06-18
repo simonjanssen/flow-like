@@ -25,7 +25,7 @@ export function FloatSetVariable({
 		if (!Array.isArray(parsed)) return [];
 		return parsed.map((v) => {
 			const n = Number(v);
-			return isNaN(n) ? 0 : n;
+			return Number.isNaN(n) ? 0 : n;
 		});
 	}, [variable.default_value]);
 
@@ -34,7 +34,7 @@ export function FloatSetVariable({
 		const trimmed = newValue.trim();
 		if (!trimmed) return;
 		const num = Number.parseFloat(trimmed);
-		if (isNaN(num)) return;
+		if (Number.isNaN(num)) return;
 		const updated = [...values, num];
 		onChange({
 			...variable,
@@ -76,7 +76,7 @@ export function FloatSetVariable({
 					variant="default"
 					onClick={handleAdd}
 					disabled={
-						newValue.trim() === "" || disabled || isNaN(Number(newValue))
+						newValue.trim() === "" || disabled || Number.isNaN(Number(newValue))
 					}
 				>
 					<PlusCircleIcon className="w-4 h-4" />

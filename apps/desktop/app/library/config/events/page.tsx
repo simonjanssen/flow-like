@@ -24,6 +24,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 	Textarea,
+	VariableConfigCard,
+	VariableTypeIndicator,
 	useBackend,
 	useInvoke,
 } from "@tm9657/flow-like-ui";
@@ -50,11 +52,7 @@ import {
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import {
-	VariableConfigCard,
-	VariableTypeIndicator,
-} from "../configuration/page";
-import { EventTranslation } from "./event-translation";
+import { EventTranslation, EventTypeConfiguration } from "./event-translation";
 
 export default function Page() {
 	const searchParams = useSearchParams();
@@ -97,6 +95,8 @@ export default function Page() {
 			event_version: [0, 0, 0],
 			node_id: newEvent.node_id ?? "",
 			variables: newEvent.variables ?? {},
+			event_type: newEvent.event_type ?? "default",
+			priority: events.data?.length ?? 0,
 			canary: null,
 			notes: null,
 		};
@@ -133,15 +133,15 @@ export default function Page() {
 				appId={id}
 				event={editingEvent}
 				onDone={() => handleEditingEvent()}
-				onReload={() => {
-					events.refetch();
+				onReload={async () => {
+					await events.refetch();
 				}}
 			/>
 		);
 	}
 
 	return (
-		<div className="container mx-auto py-8 space-y-8">
+		<div className="container mx-auto py-8 space-y-8 max-h-full flex flex-col flex-grow max-h-full">
 			{/* Header */}
 			<div className="flex items-center justify-between">
 				<div>
@@ -215,44 +215,46 @@ export default function Page() {
 			</div>
 
 			{/* Events List */}
-			<div className="space-y-4">
+			<div className="space-y-4 flex flex-col flex-grow overflow-hidden max-h-full">
 				<h2 className="text-2xl font-semibold">Events</h2>
-				{events.data?.length === 0 ? (
-					<Card>
-						<CardContent className="py-12 text-center">
-							<Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-							<h3 className="text-lg font-semibold mb-2">
-								No events configured
-							</h3>
-							<p className="text-muted-foreground mb-4">
-								Get started by creating your first event
-							</p>
-							<Button
-								onClick={() => setIsCreateDialogOpen(true)}
-								className="gap-2"
-							>
-								<Plus className="h-4 w-4" />
-								Create Event
-							</Button>
-						</CardContent>
-					</Card>
-				) : (
-					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-						{events.data?.map((event) => (
-							<EventCard
-								key={event.id}
-								event={event}
-								onEdit={() => handleEditingEvent(event)}
-								onDelete={() => handleDeleteEvent(event.id)}
-								navigateToNode={(nodeId) => {
-									router.push(
-										`/flow?id=${event.board_id}&app=${id}&node=${nodeId}${event.board_version ? `&version=${event.board_version.join("_")}` : ""}`,
-									);
-								}}
-							/>
-						))}
-					</div>
-				)}
+				<div className="flex flex-col overflow-auto overflow-x-visible flex-grow h-full max-h-full p-1">
+					{events.data?.length === 0 ? (
+						<Card>
+							<CardContent className="py-12 text-center">
+								<Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+								<h3 className="text-lg font-semibold mb-2">
+									No events configured
+								</h3>
+								<p className="text-muted-foreground mb-4">
+									Get started by creating your first event
+								</p>
+								<Button
+									onClick={() => setIsCreateDialogOpen(true)}
+									className="gap-2"
+								>
+									<Plus className="h-4 w-4" />
+									Create Event
+								</Button>
+							</CardContent>
+						</Card>
+					) : (
+						<div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-6 p-2">
+							{events.data?.map((event) => (
+								<EventCard
+									key={event.id}
+									event={event}
+									onEdit={() => handleEditingEvent(event)}
+									onDelete={() => handleDeleteEvent(event.id)}
+									navigateToNode={(nodeId) => {
+										router.push(
+											`/flow?id=${event.board_id}&app=${id}&node=${nodeId}${event.board_version ? `&version=${event.board_version.join("_")}` : ""}`,
+										);
+									}}
+								/>
+							))}
+						</div>
+					)}
+				</div>
 			</div>
 		</div>
 	);
@@ -290,6 +292,10 @@ function EventConfiguration({
 	);
 
 	const handleInputChange = (field: keyof IEvent, value: any) => {
+		console.dir({
+			field,
+			value,
+		});
 		setFormData((prev) => ({ ...prev, [field]: value }));
 	};
 
@@ -321,11 +327,18 @@ function EventConfiguration({
 			</div>
 
 			{/* Header */}
-			<div className="flex items-center justify-between">
+			<div
+				className={`flex items-center justify-between ${isEditing ? "sticky top-0 bg-background z-10 py-4 border-b shadow-sm" : ""}`}
+			>
 				<div className="space-y-1">
 					<h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
 						<Settings className="h-8 w-8" />
 						{event.name}
+						{isEditing && (
+							<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+								Editing
+							</span>
+						)}
 					</h1>
 					<p className="text-muted-foreground">
 						Configure event properties and settings
@@ -337,7 +350,10 @@ function EventConfiguration({
 							<Button variant="outline" onClick={handleCancel}>
 								Cancel
 							</Button>
-							<Button onClick={handleSave} className="gap-2">
+							<Button
+								onClick={handleSave}
+								className="gap-2 bg-orange-600 hover:bg-orange-700"
+							>
 								<SaveIcon className="h-4 w-4" />
 								Save Changes
 							</Button>
@@ -350,6 +366,25 @@ function EventConfiguration({
 					)}
 				</div>
 			</div>
+			{/* Floating Save Button for mobile/small screens */}
+			{isEditing && (
+				<div className="fixed bottom-6 right-6 flex items-center gap-2 z-50 md:hidden">
+					<Button
+						variant="outline"
+						onClick={handleCancel}
+						className="shadow-lg"
+					>
+						Cancel
+					</Button>
+					<Button
+						onClick={handleSave}
+						className="gap-2 shadow-lg bg-orange-600 hover:bg-orange-700"
+					>
+						<SaveIcon className="h-4 w-4" />
+						Save Changes
+					</Button>
+				</div>
+			)}
 
 			{/* Status Card */}
 			<Card>
@@ -359,7 +394,17 @@ function EventConfiguration({
 						Event Status
 					</CardTitle>
 				</CardHeader>
-				<CardContent>
+				<CardContent className="flex flex-col space-y-4">
+					<div>
+						{board.data?.nodes?.[formData.node_id] && formData.node_id && (
+							<EventTypeConfiguration
+								disabled={!isEditing}
+								node={board.data?.nodes?.[formData.node_id]}
+								event={formData}
+								onUpdate={(type) => handleInputChange("event_type", type)}
+							/>
+						)}
+					</div>
 					<div className="flex items-center justify-between">
 						<div className="flex items-center gap-3">
 							<div
@@ -487,7 +532,7 @@ function EventConfiguration({
 										</Link>
 									</Label>
 									<p className="mt-1 text-sm text-muted-foreground font-mono">
-										{board.data?.nodes?.[event.node_id].friendly_name ??
+										{board.data?.nodes?.[event.node_id]?.friendly_name ??
 											"Node not found"}{" "}
 										({event.node_id})
 									</p>
