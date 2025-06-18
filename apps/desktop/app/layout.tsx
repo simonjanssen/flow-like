@@ -1,7 +1,6 @@
 "use client";
 import "@tm9657/flow-like-ui/globals.css";
 import {
-	LoadingScreen,
 	PersistQueryClientProvider,
 	QueryClient,
 	ReactFlowProvider,
@@ -11,7 +10,6 @@ import { Toaster } from "@tm9657/flow-like-ui/components/ui/sonner";
 import { TooltipProvider } from "@tm9657/flow-like-ui/components/ui/tooltip";
 import { createIDBPersister } from "@tm9657/flow-like-ui/lib/persister";
 import { Inter } from "next/font/google";
-import { Suspense } from "react";
 import { AppSidebar } from "../components/app-sidebar";
 import { DesktopAuthProvider } from "../components/auth-provider";
 import { TauriProvider } from "../components/tauri-provider";
@@ -44,13 +42,6 @@ export default function RootLayout({
 					<TooltipProvider>
 						<Toaster />
 						<body className={inter.className}>
-							{/* <Suspense
-								fallback={
-									<div className="min-w-screen min-h-screen h-full w-full flex flex-col">
-										<LoadingScreen/>
-									</div>
-								}
-							> */}
 							<ToastProvider />
 							<TauriProvider>
 								<DesktopAuthProvider>
@@ -66,7 +57,6 @@ export default function RootLayout({
 									</ThemeProvider>
 								</DesktopAuthProvider>
 							</TauriProvider>
-							{/* </Suspense> */}
 						</body>
 					</TooltipProvider>
 				</PersistQueryClientProvider>

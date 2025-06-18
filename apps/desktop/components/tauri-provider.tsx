@@ -23,6 +23,7 @@ import {
 	type IRunPayload,
 	type ISettingsProfile,
 	type IVersionType,
+	LoadingScreen,
 	useBackendStore,
 	useDownloadManager,
 } from "@tm9657/flow-like-ui";
@@ -678,7 +679,7 @@ export function TauriProvider({
 	}, []);
 
 	if (!loaded) {
-		return <p>Loading...</p>;
+		return <LoadingScreen />;
 	}
 
 	return children;
