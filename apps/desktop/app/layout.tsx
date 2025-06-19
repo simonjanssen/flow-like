@@ -12,6 +12,7 @@ import { createIDBPersister } from "@tm9657/flow-like-ui/lib/persister";
 import { Inter } from "next/font/google";
 import { AppSidebar } from "../components/app-sidebar";
 import { DesktopAuthProvider } from "../components/auth-provider";
+import GlobalAnchorHandler from "../components/global-anchor-component";
 import { TauriProvider } from "../components/tauri-provider";
 import ToastProvider from "../components/toast-provider";
 import PostHogPageView from "./PostHogPageView";
@@ -39,16 +40,17 @@ export default function RootLayout({
 						persister,
 					}}
 				>
-					<ThemeProvider
-						attribute="class"
-						defaultTheme="system"
-						enableSystem
-						storageKey="theme"
-						disableTransitionOnChange
-					>
-						<TooltipProvider>
-							<Toaster />
-							<body className={inter.className}>
+					<body className={inter.className}>
+						<GlobalAnchorHandler />
+						<ThemeProvider
+							attribute="class"
+							defaultTheme="system"
+							enableSystem
+							storageKey="theme"
+							disableTransitionOnChange
+						>
+							<TooltipProvider>
+								<Toaster />
 								<ToastProvider />
 								<TauriProvider>
 									<DesktopAuthProvider>
@@ -56,9 +58,9 @@ export default function RootLayout({
 										<AppSidebar>{children}</AppSidebar>
 									</DesktopAuthProvider>
 								</TauriProvider>
-							</body>
-						</TooltipProvider>
-					</ThemeProvider>
+							</TooltipProvider>
+						</ThemeProvider>
+					</body>
 				</PersistQueryClientProvider>
 			</ReactFlowProvider>
 			{/* </PHProvider> */}
