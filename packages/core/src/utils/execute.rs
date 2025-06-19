@@ -37,18 +37,21 @@ pub async fn sidecar(command: &PathBuf) -> flow_like_types::Result<StdCommand> {
         ));
     }
 
-    #[cfg(not(target_os = "linux"))]
-    {
-        let sidecar = StdCommand::new(path);
-        Ok(sidecar)
-    }
+    let sidecar = StdCommand::new(path);
+    Ok(sidecar)
 
-    #[cfg(target_os = "linux")]
-    {
-        let mut sidecar = StdCommand::new("bash");
-        sidecar.arg(path);
-        Ok(sidecar)
-    }
+    // #[cfg(not(target_os = "linux"))]
+    // {
+    //     let sidecar = StdCommand::new(path);
+    //     Ok(sidecar)
+    // }
+
+    // #[cfg(target_os = "linux")]
+    // {
+    //     let mut sidecar = StdCommand::new("bash");
+    //     sidecar.arg(path);
+    //     Ok(sidecar)
+    // }
 }
 
 //
