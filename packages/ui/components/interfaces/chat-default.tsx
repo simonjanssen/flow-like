@@ -4,20 +4,11 @@ import { createId } from "@paralleldrive/cuid2";
 import { useLiveQuery } from "dexie-react-hooks";
 import { SidebarIcon, SidebarOpenIcon, SquarePenIcon } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import {
-	type RefObject,
-	memo,
-	useCallback,
-	useEffect,
-	useMemo,
-	useRef,
-} from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import {
 	type IContent,
 	IContentType,
-	type IEvent,
-	type IEventPayloadChat,
 	type IHistoryMessage,
 	IRole,
 	Response,
@@ -32,21 +23,15 @@ import { type IMessage, chatDb } from "./chat-default/chat-db";
 import type { ISendMessageFunction } from "./chat-default/chatbox";
 import { ChatHistory } from "./chat-default/history";
 import { ChatWelcome } from "./chat-default/welcome";
-import type { ISidebarActions, IToolBarActions } from "./interfaces";
+import type { IUseInterfaceProps } from "./interfaces";
 
-export const ChatInterface = memo(function ChatInterface({
+export const ChatInterfaceMemoized = memo(function ChatInterface({
 	appId,
 	event,
 	config = {},
 	toolbarRef,
 	sidebarRef,
-}: Readonly<{
-	appId: string;
-	event: IEvent;
-	config?: Partial<IEventPayloadChat>;
-	toolbarRef?: RefObject<IToolBarActions | null>;
-	sidebarRef?: RefObject<ISidebarActions | null>;
-}>) {
+}: Readonly<IUseInterfaceProps>) {
 	const backend = useBackend();
 	const searchParams = useSearchParams();
 	const sessionIdParameter = searchParams.get("sessionId") ?? "";
@@ -475,3 +460,21 @@ export const ChatInterface = memo(function ChatInterface({
 		</>
 	);
 });
+
+export function ChatInterface({
+	appId,
+	event,
+	config = {},
+	toolbarRef,
+	sidebarRef,
+}: Readonly<IUseInterfaceProps>) {
+	return (
+		<ChatInterfaceMemoized
+			appId={appId}
+			event={event}
+			config={config}
+			toolbarRef={toolbarRef}
+			sidebarRef={sidebarRef}
+		/>
+	);
+}

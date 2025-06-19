@@ -1,6 +1,5 @@
 "use client";
 
-import { invoke } from "@tauri-apps/api/core";
 import {
 	Avatar,
 	AvatarFallback,
@@ -21,7 +20,7 @@ import {
 	HoverCardContent,
 	HoverCardTrigger,
 	IAppVisibility,
-	type INode,
+	type IEvent,
 	ScrollArea,
 	Separator,
 	Skeleton,
@@ -32,7 +31,6 @@ import {
 	toastError,
 	useBackend,
 	useInvoke,
-	useRunExecutionStore,
 } from "@tm9657/flow-like-ui";
 import {
 	CableIcon,
@@ -51,7 +49,6 @@ import {
 	Minimize2Icon,
 	PlayCircleIcon,
 	Share2Icon,
-	SparkleIcon,
 	SparklesIcon,
 	SquarePenIcon,
 	WorkflowIcon,
@@ -60,8 +57,7 @@ import {
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
-import { useTauriInvoke } from "../../../components/useInvoke";
-import { USABLE_EVENTS } from "../../events";
+import { EVENT_CONFIG } from "../../../lib/event-config";
 
 const navigationItems = [
 	{
@@ -144,27 +140,29 @@ export default function Id({
 	const [isMaximized, setIsMaximized] = useState(false);
 	const events = useInvoke(backend.getEvents, [id ?? ""], (id ?? "") !== "");
 
-	const boards = useInvoke(
-		backend.getBoards,
-		[id ?? ""],
-		typeof id === "string",
-	);
-
-	async function executeBoard(boardId: string, node: INode) {
-		if (!id) return;
-		await invoke("get_app_board", {
-			appId: id,
-			boardId: boardId,
-			pushToRegistry: true,
+	const usableEvents = useMemo(() => {
+		const events = new Set<string>();
+		Object.values(EVENT_CONFIG).forEach((config) => {
+			const usable = Object.keys(config.useInterfaces);
+			for (const eventType of usable) {
+				if (config.eventTypes.includes(eventType)) {
+					events.add(eventType);
+				}
+			}
 		});
-		const runMeta = await backend.executeBoard(
+		return events;
+	}, [EVENT_CONFIG]);
+
+	async function executeEvent(event: IEvent) {
+		if (!id) return;
+		const runMeta = await backend.executeEvent(
 			id,
-			boardId,
+			event.id,
 			{
-				id: node.id,
+				id: event.node_id,
 			},
 			false,
-			undefined,
+			(eventId) => {},
 			(events) => {},
 		);
 
@@ -175,18 +173,6 @@ export default function Id({
 			);
 		}
 	}
-
-	const quickActions = useMemo(
-		() =>
-			boards.data
-				?.flatMap((board) =>
-					Object.values(board.nodes)
-						.filter((node) => node.start)
-						.map((node) => [board, node]),
-				)
-				.sort((a, b) => a[1].friendly_name.localeCompare(b[1].friendly_name)),
-		[boards.data],
-	);
 
 	return (
 		<TooltipProvider>
@@ -226,13 +212,13 @@ export default function Id({
 							</Breadcrumb>
 							{/* Use App */}
 							{events.data?.find((event) =>
-								USABLE_EVENTS.has(event.event_type),
+								usableEvents.has(event.event_type),
 							) && (
 								<div>
 									<Link
 										href={`/use?id=${id}&eventId=${
 											events.data?.find((event) =>
-												USABLE_EVENTS.has(event.event_type),
+												usableEvents.has(event.event_type),
 											)?.id
 										}`}
 										className="w-full"
@@ -418,51 +404,52 @@ export default function Id({
 											<h4 className="text-sm font-medium">Quick Actions</h4>
 										</div>
 										<div className="flex flex-col gap-2 pb-4">
-											{boards.isFetching ? (
-												Array.from({ length: 3 }).map((_, i) => (
-													<Skeleton key={i} className="h-9 w-full" />
-												))
-											) : quickActions && quickActions.length > 0 ? (
-												quickActions.map(([board, node]) => (
-													<HoverCard
-														key={node.id}
-														openDelay={100}
-														closeDelay={100}
-													>
-														<HoverCardTrigger asChild>
-															<Button
-																variant="outline"
-																size="sm"
-																className="justify-start gap-2 h-auto py-2 px-3"
-																onClick={async () => {
-																	await executeBoard(board.id, node as INode);
-																}}
-															>
-																<PlayCircleIcon className="w-3 h-3 text-green-600" />
-																<span className="truncate text-xs">
-																	{node.friendly_name}
-																</span>
-															</Button>
-														</HoverCardTrigger>
-														<HoverCardContent side="right" className="w-80">
-															<div className="space-y-2">
-																<div>
-																	<h4 className="font-medium">{board.name}</h4>
-																	<p className="text-sm text-muted-foreground">
-																		{board.description}
-																	</p>
-																</div>
-																{node.comment && (
+											{events.data &&
+											events.data.filter(
+												(event) =>
+													event.event_type === "quick_action" && event.active,
+											).length > 0 ? (
+												events.data
+													.filter(
+														(event) =>
+															event.event_type === "quick_action" &&
+															event.active,
+													)
+													.map((event) => (
+														<HoverCard
+															key={event.id}
+															openDelay={100}
+															closeDelay={100}
+														>
+															<HoverCardTrigger asChild>
+																<Button
+																	variant="outline"
+																	size="sm"
+																	className="justify-start gap-2 h-auto py-2 px-3"
+																	onClick={async () => {
+																		await executeEvent(event);
+																	}}
+																>
+																	<PlayCircleIcon className="w-3 h-3 text-green-600" />
+																	<span className="truncate text-xs">
+																		{event.name}
+																	</span>
+																</Button>
+															</HoverCardTrigger>
+															<HoverCardContent side="right" className="w-80">
+																<div className="space-y-2">
 																	<div>
-																		<p className="text-xs text-muted-foreground">
-																			<strong>Node:</strong> {node.comment}
+																		<h4 className="text-base font-medium">
+																			{event.name}
+																		</h4>
+																		<p className="text-sm text-muted-foreground">
+																			{event.description}
 																		</p>
 																	</div>
-																)}
-															</div>
-														</HoverCardContent>
-													</HoverCard>
-												))
+																</div>
+															</HoverCardContent>
+														</HoverCard>
+													))
 											) : (
 												<p className="text-xs text-muted-foreground py-2">
 													No quick actions available
