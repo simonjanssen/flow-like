@@ -123,6 +123,21 @@ pub fn run() {
             let refetch_handle = relay_handle.clone();
             let deep_link_handle = relay_handle.clone();
 
+            #[cfg(desktop)]
+            {
+                use tauri_plugin_window_state::StateFlags;
+
+                if let Err(e) = app.handle().plugin(
+                    tauri_plugin_window_state::Builder::default()
+                        .with_state_flags(StateFlags::all())
+                        .build(),
+                ) {
+                    eprintln!("Failed to register window state plugin: {}", e);
+                } else {
+                    println!("Window state plugin registered successfully");
+                }
+            }
+
             #[cfg(any(target_os = "linux", all(debug_assertions, windows)))]
             {
                 use tauri_plugin_deep_link::DeepLinkExt;

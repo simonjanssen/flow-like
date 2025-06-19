@@ -53,3 +53,4 @@ incremental = false
 
 [target."cfg(any(target_os = \"macos\", windows, target_os = \"linux\"))".dependencies]
 tauri-plugin-single-instance = { version = "2.2.4", features = ["deep-link"] }
+tauri-plugin-window-state = "2.2.3"

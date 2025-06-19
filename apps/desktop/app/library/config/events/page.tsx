@@ -687,14 +687,14 @@ function EventConfiguration({
 									<DialogTrigger asChild>
 										<Button variant="outline" className="gap-2 ml-2">
 											<Plus className="h-4 w-4" />
-											Add Board Variables
+											Add Flow Variables
 										</Button>
 									</DialogTrigger>
 									<DialogContent className="max-w-lg">
 										<DialogHeader>
-											<DialogTitle>Add Board Variables</DialogTitle>
+											<DialogTitle>Add Flow Variables</DialogTitle>
 											<DialogDescription>
-												Select board variables to override in this event
+												Select flow variables to override in this event
 												configuration
 											</DialogDescription>
 										</DialogHeader>
