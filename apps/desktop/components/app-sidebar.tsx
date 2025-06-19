@@ -1,3 +1,5 @@
+"use client";
+import { createId } from "@paralleldrive/cuid2";
 import * as Sentry from "@sentry/nextjs";
 import { invoke } from "@tauri-apps/api/core";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
@@ -256,7 +258,7 @@ export function AppSidebar({
 	children,
 }: Readonly<{ children: React.ReactNode }>) {
 	return (
-		<SidebarProvider>
+		<SidebarProvider defaultOpen={false}>
 			<InnerSidebar />
 			<main className="w-full h-full">
 				<SidebarInset className="bg-gradient-to-br from-background via-background to-muted/20">
@@ -645,6 +647,31 @@ function NavMain({
 												tooltip={item.title}
 												onClick={() => {
 													if (!open) router.push(item.url);
+												}}
+												onMouseDown={async (e) => {
+													// Middle mouse button (button 1)
+													if (e.button === 1) {
+														e.preventDefault();
+														try {
+															const _view = new WebviewWindow(
+																`sidebar-${createId()}`,
+																{
+																	url: item.url,
+																	title: item.title,
+																	focus: true,
+																	resizable: true,
+																	maximized: false,
+																	width: 1200,
+																	height: 800,
+																},
+															);
+														} catch (error) {
+															console.error(
+																"Failed to open new window:",
+																error,
+															);
+														}
+													}
 												}}
 											>
 												{item.icon && <item.icon />}

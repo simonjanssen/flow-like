@@ -191,6 +191,13 @@ const Sidebar = React.forwardRef<
 		ref,
 	) => {
 		const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+		const [enableTransitions, setEnableTransitions] = React.useState(false);
+
+		useEffect(() => {
+			// Enable transitions after a brief delay
+			const timer = setTimeout(() => setEnableTransitions(true), 1000);
+			return () => clearTimeout(timer);
+		}, []);
 
 		if (collapsible === "none") {
 			return (
@@ -239,9 +246,10 @@ const Sidebar = React.forwardRef<
 				{/* This is what handles the sidebar gap on desktop */}
 				<div
 					className={cn(
-						"relative h-svh w-[--sidebar-width] bg-transparent transition-[width] duration-200 ease-linear",
+						"relative h-svh w-[--sidebar-width] bg-transparent duration-200 ease-linear",
 						"group-data-[collapsible=offcanvas]:w-0",
 						"group-data-[side=right]:rotate-180",
+						enableTransitions ? "transition-[width]" : "transition-none",
 						variant === "floating" || variant === "inset"
 							? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
 							: "group-data-[collapsible=icon]:w-[--sidebar-width-icon]",
@@ -249,7 +257,10 @@ const Sidebar = React.forwardRef<
 				/>
 				<div
 					className={cn(
-						"fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width] duration-200 ease-linear md:flex",
+						"fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] duration-200 ease-linear md:flex",
+						enableTransitions
+							? "transition-[left,right,width]"
+							: "transition-none",
 						side === "left"
 							? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
 							: "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
