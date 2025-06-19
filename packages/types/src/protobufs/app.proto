@@ -6,13 +6,67 @@ import "google/protobuf/timestamp.proto";
 import "bit.proto";
 import "variable.proto";
 
+enum AppCategory {
+  OTHER = 0;
+  PRODUCTIVITY = 1;
+  SOCIAL = 2;
+  ENTERTAINMENT = 3;
+  EDUCATION = 4;
+  HEALTH = 5;
+  FINANCE = 6;
+  LIFESTYLE = 7;
+  TRAVEL = 8;
+  NEWS = 9;
+  SPORTS = 10;
+  SHOPPING = 11;
+  FOOD_AND_DRINK = 12;
+  MUSIC = 13;
+  PHOTOGRAPHY = 14;
+  UTILITIES = 15;
+  WEATHER = 16;
+  GAMES = 17;
+  BUSINESS = 18;
+  COMMUNICATION = 19;
+  ANIME = 20;
+}
+
+enum AppStatus {
+  ACTIVE = 0;
+  INACTIVE = 1;
+  ARCHIVED = 2;
+}
+
+enum AppVisibility {
+  PUBLIC = 0;
+  PUBLIC_REQUEST_ACCESS = 1;
+  PRIVATE = 2;
+  PROTOTYPE = 3;
+  OFFLINE = 4;
+}
+
 message App {
   string id = 1;
-  map<string, Meta> meta = 2;
-  repeated string authors = 3;
-  repeated string bits = 4;
-  repeated string boards = 5;
-  repeated string releases = 6;
-  google.protobuf.Timestamp created_at = 16;
-  google.protobuf.Timestamp updated_at = 17;
+  AppStatus status = 2;
+  AppVisibility visibility = 3;
+  repeated string authors = 4;
+  repeated string bits = 5;
+  repeated string boards = 6;
+  repeated string events = 7;
+  repeated string templates = 8;
+  optional string changelog = 9;
+  optional AppCategory primary_category = 10;
+  optional AppCategory secondary_category = 11;
+  optional string version = 12;
+  google.protobuf.Timestamp created_at = 13;
+  google.protobuf.Timestamp updated_at = 14;
+
+  int64 rating_sum = 15;
+  int64 rating_count = 16;
+  int64 download_count = 17;
+  int64 interaction_count = 18;
+
+  optional float avg_rating = 19;
+  optional float relevance_score = 20;
+
+  optional int32 price = 21;
 }

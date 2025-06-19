@@ -5,7 +5,7 @@ use flow_like_model_provider::ml::ort::session::Session;
 use flow_like_types::{Cacheable, Result, create_id, sync::Mutex};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 /// ONNX Image Classification Nodes
 pub mod classify;
@@ -16,6 +16,12 @@ pub mod feature;
 /// ONNX Model Loader Nodes
 pub mod load;
 
+pub enum Provider {
+    DfineLike(detect::DfineLike),
+    YoloLike(detect::YoloLike),
+    TimmLike(classify::TimmLike),
+}
+
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 /// ONNX Runtime Session Reference
 pub struct NodeOnnxSession {
@@ -23,13 +29,10 @@ pub struct NodeOnnxSession {
     pub session_ref: String,
 }
 
+/// ONNX Runtime Session Bundled with Provider Metadata
 pub struct SessionWithMeta {
     pub session: Session,
-    pub input_name: String,
-    pub input_width: u32,
-    pub input_height: u32,
-    pub output_name: String,
-    pub classes: Option<HashMap<i32, String>>,
+    pub provider: Provider,
 }
 
 /// ONNX Runtime Session Wrapper

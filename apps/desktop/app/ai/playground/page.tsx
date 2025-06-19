@@ -67,16 +67,6 @@ export default function Home() {
 		});
 	}
 
-	function base64FilesToString(files: string[]) {
-		if (files.length === 0) return "";
-
-		const images = files.map((img, index) => {
-			return `![img${index + 1}](${img})`;
-		});
-
-		return `images: ${images.join(", ")}`;
-	}
-
 	async function send() {
 		setLoading(true);
 		const id = createId();
@@ -146,7 +136,8 @@ export default function Home() {
 				systemPrompt:
 					"You are Flowy, a next gen AI assistant, always return your answers parsed in markdown. Be friendly and sprinkle some Smileys in your answers. Generally you are super open minded and talk about any topic the user likes to talk about.",
 				bit,
-				prompt: `${prompt}${base64FilesToString(base64Files)}`,
+				prompt: `${prompt}`,
+				images: base64Files,
 			}),
 		);
 

@@ -1,55 +1,30 @@
-import { createId } from "@paralleldrive/cuid2";
+import { useDebounce } from "@uidotdev/usehooks";
+import { useReactFlow } from "@xyflow/react";
 import {
 	BombIcon,
 	CheckCircle2Icon,
 	CircleXIcon,
 	CopyIcon,
 	CornerRightUpIcon,
-	FilterIcon,
-	FilterXIcon,
 	InfoIcon,
 	LogsIcon,
 	ScrollIcon,
-	SearchIcon,
 	TriangleAlertIcon,
 } from "lucide-react";
-import MiniSearch from "minisearch";
-import {
-	type RefObject,
-	memo,
-	useEffect,
-	useMemo,
-	useRef,
-	useState,
-} from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { AutoSizer } from "react-virtualized";
-import { parseTimespan } from "../../lib/date";
-import type { INode } from "../../lib/schema/flow/node";
-import {
-	ILogLevel,
-	type ILogMessage,
-	type IRun,
-	type ITrace,
-} from "../../lib/schema/flow/run";
 import "react-virtualized/styles.css";
-import { useDebounce } from "@uidotdev/usehooks";
-import { useReactFlow } from "@xyflow/react";
 import { VariableSizeList as List, type VariableSizeList } from "react-window";
 import { toast } from "sonner";
 import { type ILog, useBackend, useInvoke } from "../..";
+import { parseTimespan } from "../../lib/date";
 import { logLevelToNumber } from "../../lib/log-level";
+import { ILogLevel, type ILogMessage } from "../../lib/schema/flow/run";
 import { useLogAggregation } from "../../state/log-aggregation-state";
-import {
-	ContextMenu,
-	ContextMenuContent,
-	ContextMenuItem,
-	ContextMenuTrigger,
-	EmptyState,
-} from "../ui";
+import { EmptyState } from "../ui";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { Separator } from "../ui/separator";
 
 interface IEnrichedLogMessage extends ILogMessage {
 	node_id: string;

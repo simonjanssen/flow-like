@@ -42,7 +42,10 @@ const SCALE_FONT: f32 = 100. / 3726.;
 /// # Draw Rectangles
 /// Draws hollow rectangles onto input image using BoundingBox coordinates
 /// Applies box thickness that is dynamically scaled by input image resolution
-fn draw_bboxes(mut img: DynamicImage, bboxes: &Vec<BoundingBox>) -> Result<DynamicImage, Error> {
+pub fn draw_bboxes(
+    mut img: DynamicImage,
+    bboxes: &Vec<BoundingBox>,
+) -> Result<DynamicImage, Error> {
     let img_d = img.width().min(img.height()) as f32;
     let thickness = SCALE_THICKNESS * img_d; // scale thickness by smaller image edge
     let thickness = (thickness as u32).max(1);
@@ -55,27 +58,24 @@ fn draw_bboxes(mut img: DynamicImage, bboxes: &Vec<BoundingBox>) -> Result<Dynam
     for bbox in bboxes.iter() {
         let box_color = COLORS[(bbox.class_idx as usize) % COLORS.len()];
         let (x1, y1, w, h) = bbox.x1y1wh();
+        let label = format!("class {} ({:.2})", bbox.class_idx, bbox.score);
+        println!("{}", &label);
+        draw_text_mut(
+            &mut img,
+            box_color,
+            x1 as i32,
+            (y1 - font_offset) as i32,
+            font_scale,
+            &font,
+            &label,
+        );
         for t in 0..thickness {
-            let x = x1 - t;
-            let y = y1 - t;
+            let x = if x1 > t { x1 - t } else { x1 };
+            let y = if y1 > t { y1 - t } else { y1 };
             let w = w + 2 * t;
             let h = h + 2 * t;
             let rect = Rect::at(x as i32, y as i32).of_size(w, h);
             draw_hollow_rect_mut(&mut img, rect, box_color);
-
-            let label = match &bbox.class_name {
-                Some(_) => format!("{:?} ({:.2})", bbox.class_name, bbox.score),
-                None => format!("class {} ({:.2})", bbox.class_idx, bbox.score),
-            };
-            draw_text_mut(
-                &mut img,
-                box_color,
-                x1 as i32,
-                (y1 - font_offset) as i32,
-                font_scale,
-                &font,
-                &label,
-            );
         }
     }
     Ok(img)

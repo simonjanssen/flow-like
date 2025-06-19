@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package flow_like_types;
+
+import "google/protobuf/timestamp.proto";
+import "variable.proto";
+
+message Canary {
+  float weight = 1;
+  map<string, Variable> variables = 2;
+  string board_id = 3;
+  string node_id = 4;
+  optional Version board_version = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+message Version {
+  uint32 major = 1;
+  uint32 minor = 2;
+  uint32 patch = 3;
+}
+
+message Event {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string board_id = 4;
+  string node_id = 5;
+  map<string, Variable> variables = 6;
+  bytes config = 7;
+  oneof notes {
+    string release_notes     = 8;
+    string release_notes_url = 9;
+  }
+  optional Version board_version = 10;
+  optional Canary canary = 11;
+  Version event_version = 12;
+  google.protobuf.Timestamp created_at = 13;
+  google.protobuf.Timestamp updated_at = 14;
+  bool active = 15;
+  string event_type = 16;
+  uint32 priority = 17;
+}

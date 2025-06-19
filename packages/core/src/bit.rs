@@ -9,21 +9,32 @@ use flow_like_storage::files::store::local_store::LocalObjectStore;
 use flow_like_types::Value;
 use flow_like_types::intercom::InterComCallback;
 use flow_like_types::sync::Mutex;
-use futures::FutureExt;
-use futures::future::BoxFuture;
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::SystemTime;
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
-pub struct BitMeta {
+pub struct Metadata {
     pub name: String,
     pub description: String,
-    pub long_description: String,
+    pub long_description: Option<String>,
+    pub release_notes: Option<String>,
     pub tags: Vec<String>,
-    pub use_case: String,
+    pub use_case: Option<String>,
+    pub icon: Option<String>,
+    pub thumbnail: Option<String>,
+    pub preview_media: Vec<String>,
+    pub age_rating: Option<i32>,
+    pub website: Option<String>,
+    pub support_url: Option<String>,
+    pub docs_url: Option<String>,
+    pub organization_specific_values: Option<Vec<u8>>,
+    pub created_at: SystemTime,
+    pub updated_at: SystemTime,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
@@ -45,9 +56,11 @@ pub enum BitTypes {
     Project,
     Board,
     Other,
+    ObjectDetection,
 }
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, Default)]
 pub struct BitModelPreference {
+    pub multimodal: Option<bool>,
     pub cost_weight: Option<f32>,
     pub speed_weight: Option<f32>,
     pub reasoning_weight: Option<f32>,
@@ -167,6 +180,12 @@ impl BitModelClassification {
         let mut total_score = 0.0;
         let name_similarity_weight = 0.2;
 
+        if let Some(multimodal) = preference.multimodal {
+            if multimodal && !bit.is_multimodal() {
+                return 0.0;
+            }
+        }
+
         // Map weights to model fields dynamically
         let field_weight_pairs = vec![
             (preference.cost_weight, self.cost),
@@ -205,13 +224,12 @@ impl BitModelClassification {
         total_score / total_weight
     }
 }
-
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 pub struct Bit {
     pub id: String,
     #[serde(rename = "type")]
     pub bit_type: BitTypes,
-    pub meta: std::collections::HashMap<String, BitMeta>,
+    pub meta: std::collections::HashMap<String, Metadata>,
     pub authors: Vec<String>,
     pub repository: Option<String>,
     pub download_link: Option<String>,
@@ -220,10 +238,9 @@ pub struct Bit {
     pub size: Option<u64>,
     pub hub: String,
     pub parameters: Value,
-    pub icon: String,
-    pub version: String,
-    pub license: String,
-    pub dependencies: Vec<(String, String)>,
+    pub version: Option<String>,
+    pub license: Option<String>,
+    pub dependencies: Vec<String>,
     pub dependency_tree_hash: String,
     pub created: String,
     pub updated: String,
@@ -248,38 +265,15 @@ pub struct BitPack {
     pub bits: Vec<Bit>,
 }
 
-fn collect_dependencies<'a>(
-    bit: &'a Bit,
+async fn collect_dependencies(
+    bit: &Bit,
     state: Arc<Mutex<FlowLikeState>>,
-    visited: &'a mut HashSet<String>,
-    hubs: &'a mut HashMap<String, crate::hub::Hub>,
-    dependencies: &'a mut Vec<Bit>,
-) -> BoxFuture<'a, ()> {
-    async move {
-        let http_client = state.lock().await.http_client.clone();
-        let bit_id = bit.id.clone();
-        if visited.contains(&bit_id) {
-            return;
-        }
-        visited.insert(bit_id.clone());
-
-        dependencies.push(bit.clone());
-
-        for (hub_domain, dependency_id) in bit.dependencies.iter() {
-            if !hubs.contains_key(hub_domain) {
-                let hub =
-                    crate::hub::Hub::new(&format!("https://{hub_domain}"), http_client.clone())
-                        .await
-                        .unwrap();
-                hubs.insert(hub_domain.to_string(), hub);
-            }
-            let hub = hubs.get(hub_domain).unwrap();
-            if let Ok(dependency) = hub.get_bit_by_id(dependency_id).await {
-                collect_dependencies(&dependency, state.clone(), visited, hubs, dependencies).await;
-            }
-        }
-    }
-    .boxed()
+) -> flow_like_types::Result<Vec<Bit>> {
+    let http_client = state.lock().await.http_client.clone();
+    let hub = crate::hub::Hub::new(&bit.hub, http_client.clone()).await?;
+    let bit_id = bit.id.clone();
+    let bits = hub.get_bit_dependencies(&bit_id).await?;
+    Ok(bits)
 }
 
 impl BitPack {
@@ -324,16 +318,36 @@ impl BitPack {
                 || bit.size.is_none()
                 || bit.file_name.is_none()
             {
+                println!(
+                    "Skipping bit {}: already downloaded or missing required fields",
+                    bit.id
+                );
                 return;
             }
 
-            if bit.size.unwrap() == 0 {
+            if bit.size.unwrap_or(0) == 0 {
+                println!("Skipping bit {}: size is zero, cannot download", bit.id);
                 return;
             }
 
             deduplicated_bits.push(bit.clone());
             deduplication_helper.insert(bit.hash.clone());
         });
+
+        if deduplicated_bits.is_empty() {
+            println!("No bits to download");
+            return Ok(vec![]);
+        }
+
+        println!(
+            "Downloading {} bits: {}",
+            deduplicated_bits.len(),
+            deduplicated_bits
+                .iter()
+                .map(|bit| bit.id.clone())
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
 
         let download_futures: Vec<_> = deduplicated_bits
             .iter()
@@ -498,7 +512,6 @@ impl Bit {
     ) -> flow_like_types::Result<BitPack> {
         let bits_store = FlowLikeState::bit_store(&state).await?.as_generic();
 
-        let mut dependencies = vec![];
         let cache_dir =
             Path::from("deps-cache").child(format!("bit-deps-{}.bin", self.dependency_tree_hash));
 
@@ -511,31 +524,10 @@ impl Bit {
             }
         }
 
-        let mut visited = HashSet::new();
-        let mut hubs = HashMap::new();
-        let http_client = state.lock().await.http_client.clone();
-        for (hub_domain, dependency_id) in self.dependencies.iter() {
-            if !hubs.contains_key(hub_domain) {
-                let hub =
-                    crate::hub::Hub::new(&format!("https://{hub_domain}"), http_client.clone())
-                        .await
-                        .unwrap();
-                hubs.insert(hub_domain.to_string(), hub);
-            }
-            let hub = hubs.get(hub_domain).unwrap();
-            if let Ok(dependency) = hub.get_bit_by_id(dependency_id).await {
-                collect_dependencies(
-                    &dependency,
-                    state.clone(),
-                    &mut visited,
-                    &mut hubs,
-                    &mut dependencies,
-                )
-                .await;
-            }
-        }
+        let dependencies = collect_dependencies(self, state.clone()).await?;
 
         println!("Dependencies for {} found", self.id);
+
         let bit_pack = BitPack { bits: dependencies };
         let res = compress_to_file_json(bits_store, cache_dir, &bit_pack).await;
         if res.is_err() {

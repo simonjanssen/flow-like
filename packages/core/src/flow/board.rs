@@ -516,31 +516,6 @@ impl Board {
         Ok(new_version)
     }
 
-    pub async fn save(&self, store: Option<Arc<dyn ObjectStore>>) -> flow_like_types::Result<()> {
-        let to = self.board_dir.child(format!("{}.board", self.id));
-        let store = match store {
-            Some(store) => store,
-            None => self
-                .app_state
-                .as_ref()
-                .expect("app_state should always be set")
-                .lock()
-                .await
-                .config
-                .read()
-                .await
-                .stores
-                .app_meta_store
-                .clone()
-                .ok_or(flow_like_types::anyhow!("Project store not found"))?
-                .as_generic(),
-        };
-
-        let board = self.to_proto();
-        compress_to_file(store, to, &board).await?;
-        Ok(())
-    }
-
     pub async fn get_versions(
         &self,
         store: Option<Arc<dyn ObjectStore>>,
@@ -636,6 +611,234 @@ impl Board {
         board.logic_nodes = HashMap::new();
         board.fix_pins_set_layer();
         Ok(board)
+    }
+
+    pub async fn save(&self, store: Option<Arc<dyn ObjectStore>>) -> flow_like_types::Result<()> {
+        let to = self.board_dir.child(format!("{}.board", self.id));
+        let store = match store {
+            Some(store) => store,
+            None => self
+                .app_state
+                .as_ref()
+                .expect("app_state should always be set")
+                .lock()
+                .await
+                .config
+                .read()
+                .await
+                .stores
+                .app_meta_store
+                .clone()
+                .ok_or(flow_like_types::anyhow!("Project store not found"))?
+                .as_generic(),
+        };
+
+        let board = self.to_proto();
+        compress_to_file(store, to, &board).await?;
+        Ok(())
+    }
+
+    /// TEMPLATE FUNCTIONS
+
+    pub async fn save_as_template(
+        &self,
+        store: Option<Arc<dyn ObjectStore>>,
+    ) -> flow_like_types::Result<()> {
+        let to = self.board_dir.child(format!("{}.template", self.id));
+        let store = match store {
+            Some(store) => store,
+            None => self
+                .app_state
+                .as_ref()
+                .expect("app_state should always be set")
+                .lock()
+                .await
+                .config
+                .read()
+                .await
+                .stores
+                .app_meta_store
+                .clone()
+                .ok_or(flow_like_types::anyhow!("Project store not found"))?
+                .as_generic(),
+        };
+
+        let board = self.to_proto();
+        compress_to_file(store, to, &board).await?;
+        Ok(())
+    }
+
+    pub async fn create_template(
+        &mut self,
+        template_id: String,
+        version_type: VersionType,
+        old_template: Option<Board>,
+        store: Option<Arc<dyn ObjectStore>>,
+    ) -> flow_like_types::Result<(u32, u32, u32)> {
+        // Either the old_template version or (0,0,0)
+        let version = {
+            if let Some(old_template) = &old_template {
+                old_template.version
+            } else {
+                (0, 0, 0)
+            }
+        };
+
+        let to = self
+            .board_dir
+            .child("templates")
+            .child("versions")
+            .child(self.id.clone())
+            .child(format!(
+                "{}_{}_{}.template",
+                version.0, version.1, version.2
+            ));
+
+        let store = match store {
+            Some(store) => store,
+            None => self
+                .app_state
+                .as_ref()
+                .expect("app_state should always be set")
+                .lock()
+                .await
+                .config
+                .read()
+                .await
+                .stores
+                .app_meta_store
+                .clone()
+                .ok_or(flow_like_types::anyhow!("Project store not found"))?
+                .as_generic(),
+        };
+
+        let mut new_version = (0, 0, 0);
+
+        if let Some(old_template) = &old_template {
+            // If an old template is provided, we move it to the versions directory
+            compress_to_file(store.clone(), to, &old_template.to_proto()).await?;
+            new_version = match version_type {
+                VersionType::Major => (version.0 + 1, 0, 0),
+                VersionType::Minor => (version.0, version.1 + 1, 0),
+                VersionType::Patch => (version.0, version.1, version.2 + 1),
+            }
+        }
+
+        let mut template = self.clone();
+        template.id = template_id;
+        template.version = new_version;
+        template.updated_at = SystemTime::now();
+
+        for variable in template.variables.values_mut() {
+            if variable.secret {
+                variable.default_value = None;
+            }
+        }
+
+        template.save_as_template(Some(store)).await?;
+        Ok(new_version)
+    }
+
+    pub async fn load_template(
+        path: Path,
+        template_id: &str,
+        app_state: Arc<Mutex<FlowLikeState>>,
+        version: Option<(u32, u32, u32)>,
+    ) -> flow_like_types::Result<Self> {
+        let store = app_state
+            .lock()
+            .await
+            .config
+            .read()
+            .await
+            .stores
+            .app_meta_store
+            .clone()
+            .ok_or(flow_like_types::anyhow!("Project store not found"))?
+            .as_generic();
+
+        let board_dir = path.clone();
+        let path = if let Some(version) = version {
+            path.child("templates")
+                .child("versions")
+                .child(template_id)
+                .child(format!(
+                    "{}_{}_{}.template",
+                    version.0, version.1, version.2
+                ))
+        } else {
+            path.child(format!("{}.template", template_id))
+        };
+
+        let board: flow_like_types::proto::Board = from_compressed(store, path).await?;
+        let mut board = Board::from_proto(board);
+        board.board_dir = board_dir;
+        board.app_state = Some(app_state.clone());
+        board.logic_nodes = HashMap::new();
+        board.fix_pins_set_layer();
+        Ok(board)
+    }
+
+    pub async fn get_template_versions(
+        &self,
+        store: Option<Arc<dyn ObjectStore>>,
+    ) -> flow_like_types::Result<Vec<(u32, u32, u32)>> {
+        let versions_dir = self
+            .board_dir
+            .clone()
+            .child("templates")
+            .child("versions")
+            .child(self.id.clone());
+
+        let store = match store {
+            Some(store) => store,
+            None => self
+                .app_state
+                .as_ref()
+                .expect("app_state should always be set")
+                .lock()
+                .await
+                .config
+                .read()
+                .await
+                .stores
+                .app_meta_store
+                .clone()
+                .ok_or(flow_like_types::anyhow!("Project store not found"))?
+                .as_generic(),
+        };
+
+        let mut versions = store.list(Some(&versions_dir));
+        let mut version_list = Vec::new();
+
+        while let Some(Ok(meta)) = versions.next().await {
+            let file_name = match meta.location.filename() {
+                Some(name) => name,
+                None => continue,
+            };
+            if !file_name.ends_with(".template") {
+                continue;
+            }
+            let version = file_name.strip_suffix(".template").unwrap_or(file_name);
+            if version == "latest" {
+                continue;
+            }
+            let version = version.strip_prefix("v").unwrap_or(version);
+            let version = version.split("_").collect::<Vec<&str>>();
+
+            if version.len() < 3 {
+                continue;
+            }
+
+            let version = (
+                version[0].parse::<u32>().unwrap_or(0),
+                version[1].parse::<u32>().unwrap_or(0),
+                version[2].parse::<u32>().unwrap_or(0),
+            );
+
+            version_list.push(version);
+        }
+        Ok(version_list)
     }
 }
 

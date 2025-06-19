@@ -38,16 +38,6 @@ impl TauriFlowLikeState {
     }
 
     #[inline]
-    pub async fn get_run_and_state(
-        app_handle: &AppHandle,
-        run_id: &str,
-    ) -> anyhow::Result<(Arc<Mutex<InternalRun>>, Arc<Mutex<FlowLikeState>>)> {
-        let flow_like_state = TauriFlowLikeState::construct(app_handle).await?;
-        let run = flow_like_state.lock().await.get_run(run_id)?;
-        Ok((run, flow_like_state))
-    }
-
-    #[inline]
     pub async fn get_project_storage_store(
         app_handle: &AppHandle,
     ) -> anyhow::Result<Arc<dyn ObjectStore>> {

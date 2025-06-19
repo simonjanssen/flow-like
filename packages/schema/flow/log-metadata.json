@@ -6,6 +6,7 @@
 		"app_id",
 		"board_id",
 		"end",
+		"event_id",
 		"log_level",
 		"node_id",
 		"payload",
@@ -65,6 +66,12 @@
 			"minimum": 0.0
 		},
 		"node_id": {
+			"type": "string"
+		},
+		"event_version": {
+			"type": ["string", "null"]
+		},
+		"event_id": {
 			"type": "string"
 		},
 		"payload": {

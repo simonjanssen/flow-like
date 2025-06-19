@@ -77,11 +77,3 @@ runs:
       shell: bash
       env:
         GITHUB_TOKEN: ${{ inputs.repo-token }}
-
-    - name: Check llamafile
-      run: |
-        if [ ! -f "./apps/desktop/src-tauri/bin/llamafiler" ]; then
-          echo "::error::Llamafile not found! Ensure it is downloaded correctly."
-          exit 1
-        fi
-      shell: bash

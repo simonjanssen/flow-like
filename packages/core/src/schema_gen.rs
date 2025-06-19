@@ -1,5 +1,5 @@
 use crate::{
-    app::App,
+    app::{App, AppSearchQuery},
     bit::{Bit, BitModelPreference, BitPack, LLMParameters, VLMParameters},
     flow::{
         board::{
@@ -24,13 +24,16 @@ use crate::{
                 },
             },
         },
+        event::{
+            ApiEventParameters, CanaryEvent, ChatEventParameters, EmailEventParameters, Event,
+            EventPayload,
+        },
         execution::{LogMeta, RunPayload, log::LogMessage},
         node::Node,
         pin::Pin,
-        release::{CanaryRelease, Release},
         variable::Variable,
     },
-    hub::Hub,
+    hub::{BitSearchQuery, Hub},
     profile::Profile,
     utils::file::FileMetadata,
 };
@@ -88,9 +91,13 @@ pub fn generate_schema(base_path: PathBuf) -> flow_like_types::Result<()> {
 
     generate_and_save_schema::<RunPayload>(&base_path, "flow/run-payload.json")?;
     generate_and_save_schema::<Board>(&base_path, "flow/board.json")?;
-    generate_and_save_schema::<Release>(&base_path, "flow/release.json")?;
+    generate_and_save_schema::<Event>(&base_path, "flow/event.json")?;
+    generate_and_save_schema::<EventPayload>(&base_path, "flow/event-payload.json")?;
+    generate_and_save_schema::<EmailEventParameters>(&base_path, "flow/event-payload-mail.json")?;
+    generate_and_save_schema::<ChatEventParameters>(&base_path, "flow/event-payload-chat.json")?;
+    generate_and_save_schema::<ApiEventParameters>(&base_path, "flow/event-payload-api.json")?;
     generate_and_save_schema::<VersionType>(&base_path, "flow/version-type.json")?;
-    generate_and_save_schema::<CanaryRelease>(&base_path, "flow/canary.json")?;
+    generate_and_save_schema::<CanaryEvent>(&base_path, "flow/canary.json")?;
     generate_and_save_schema::<GenericCommand>(
         &base_path,
         "flow/board/commands/generic-command.json",
@@ -154,8 +161,10 @@ pub fn generate_schema(base_path: PathBuf) -> flow_like_types::Result<()> {
     generate_and_save_schema::<Profile>(&base_path, "profile/profile.json")?;
 
     generate_and_save_schema::<Hub>(&base_path, "hub/hub.json")?;
+    generate_and_save_schema::<BitSearchQuery>(&base_path, "hub/bit-search-query.json")?;
 
     generate_and_save_schema::<App>(&base_path, "app/app.json")?;
+    generate_and_save_schema::<AppSearchQuery>(&base_path, "app/app-search-query.json")?;
 
     generate_and_save_schema::<FileMetadata>(&base_path, "files/file-metadata.json")?;
 

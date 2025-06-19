@@ -3,12 +3,16 @@
 	"title": "Hub",
 	"type": "object",
 	"required": [
-		"dependencies",
+		"contact",
 		"description",
 		"domain",
-		"icon",
+		"environment",
+		"features",
+		"hubs",
+		"legal_notice",
 		"name",
-		"thumbnail"
+		"privacy_policy",
+		"terms_of_service"
 	],
 	"properties": {
 		"name": {
@@ -18,19 +22,243 @@
 			"type": "string"
 		},
 		"thumbnail": {
-			"type": "string"
+			"type": ["string", "null"]
 		},
 		"icon": {
-			"type": "string"
+			"type": ["string", "null"]
 		},
-		"domain": {
-			"type": "string"
+		"authentication": {
+			"anyOf": [
+				{
+					"$ref": "#/definitions/Authentication"
+				},
+				{
+					"type": "null"
+				}
+			]
 		},
-		"dependencies": {
+		"features": {
+			"$ref": "#/definitions/Features"
+		},
+		"hubs": {
 			"type": "array",
 			"items": {
 				"type": "string"
 			}
+		},
+		"provider": {
+			"type": ["string", "null"]
+		},
+		"domain": {
+			"type": "string"
+		},
+		"region": {
+			"type": ["string", "null"]
+		},
+		"terms_of_service": {
+			"type": "string"
+		},
+		"cdn": {
+			"type": ["string", "null"]
+		},
+		"legal_notice": {
+			"type": "string"
+		},
+		"privacy_policy": {
+			"type": "string"
+		},
+		"contact": {
+			"$ref": "#/definitions/Contact"
+		},
+		"max_users_prototype": {
+			"type": ["integer", "null"],
+			"format": "int32"
+		},
+		"default_user_plan": {
+			"type": ["string", "null"]
+		},
+		"environment": {
+			"$ref": "#/definitions/Environment"
+		}
+	},
+	"definitions": {
+		"Authentication": {
+			"type": "object",
+			"required": ["variant"],
+			"properties": {
+				"variant": {
+					"type": "string"
+				},
+				"openid": {
+					"anyOf": [
+						{
+							"$ref": "#/definitions/OpenIdConfig"
+						},
+						{
+							"type": "null"
+						}
+					]
+				},
+				"oauth2": {
+					"anyOf": [
+						{
+							"$ref": "#/definitions/OAuth2Config"
+						},
+						{
+							"type": "null"
+						}
+					]
+				}
+			}
+		},
+		"OpenIdConfig": {
+			"type": "object",
+			"required": ["jwks_url"],
+			"properties": {
+				"authority": {
+					"type": ["string", "null"]
+				},
+				"client_id": {
+					"type": ["string", "null"]
+				},
+				"redirect_uri": {
+					"type": ["string", "null"]
+				},
+				"post_logout_redirect_uri": {
+					"type": ["string", "null"]
+				},
+				"response_type": {
+					"type": ["string", "null"]
+				},
+				"scope": {
+					"type": ["string", "null"]
+				},
+				"discovery_url": {
+					"type": ["string", "null"]
+				},
+				"jwks_url": {
+					"type": "string"
+				},
+				"proxy": {
+					"anyOf": [
+						{
+							"$ref": "#/definitions/OpenIdProxy"
+						},
+						{
+							"type": "null"
+						}
+					]
+				},
+				"cognito": {
+					"anyOf": [
+						{
+							"$ref": "#/definitions/CognitoConfig"
+						},
+						{
+							"type": "null"
+						}
+					]
+				}
+			}
+		},
+		"OpenIdProxy": {
+			"type": "object",
+			"required": ["enabled"],
+			"properties": {
+				"enabled": {
+					"type": "boolean"
+				},
+				"authorize": {
+					"type": ["string", "null"]
+				},
+				"token": {
+					"type": ["string", "null"]
+				},
+				"userinfo": {
+					"type": ["string", "null"]
+				},
+				"revoke": {
+					"type": ["string", "null"]
+				}
+			}
+		},
+		"CognitoConfig": {
+			"type": "object",
+			"required": ["user_pool_id"],
+			"properties": {
+				"user_pool_id": {
+					"type": "string"
+				}
+			}
+		},
+		"OAuth2Config": {
+			"type": "object",
+			"required": ["authorization_endpoint", "client_id", "token_endpoint"],
+			"properties": {
+				"authorization_endpoint": {
+					"type": "string"
+				},
+				"token_endpoint": {
+					"type": "string"
+				},
+				"client_id": {
+					"type": "string"
+				}
+			}
+		},
+		"Features": {
+			"type": "object",
+			"required": [
+				"admin_interface",
+				"ai_act",
+				"flow_hosting",
+				"governance",
+				"model_hosting",
+				"premium",
+				"unauthorized_read"
+			],
+			"properties": {
+				"model_hosting": {
+					"type": "boolean"
+				},
+				"flow_hosting": {
+					"type": "boolean"
+				},
+				"governance": {
+					"type": "boolean"
+				},
+				"ai_act": {
+					"type": "boolean"
+				},
+				"unauthorized_read": {
+					"type": "boolean"
+				},
+				"admin_interface": {
+					"type": "boolean"
+				},
+				"premium": {
+					"type": "boolean"
+				}
+			}
+		},
+		"Contact": {
+			"type": "object",
+			"required": ["email", "name", "url"],
+			"properties": {
+				"name": {
+					"type": "string"
+				},
+				"email": {
+					"type": "string"
+				},
+				"url": {
+					"type": "string"
+				}
+			}
+		},
+		"Environment": {
+			"type": "string",
+			"enum": ["Development", "Production", "Staging"]
 		}
 	}
 }

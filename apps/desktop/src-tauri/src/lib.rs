@@ -13,10 +13,11 @@ use flow_like::{
     utils::http::HTTPClient,
 };
 use flow_like_types::{sync::Mutex, tokio::time::interval};
+use serde_json::json;
 use settings::Settings;
 use state::TauriFlowLikeState;
 use std::{sync::Arc, time::Duration};
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_deep_link::{DeepLinkExt, OpenUrlEvent};
 use tracing_subscriber::prelude::*;
 
@@ -113,6 +114,7 @@ pub fn run() {
     };
 
     let mut builder = tauri::Builder::default()
+        .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .setup(|app| {
@@ -120,6 +122,21 @@ pub fn run() {
             let gc_handle = relay_handle.clone();
             let refetch_handle = relay_handle.clone();
             let deep_link_handle = relay_handle.clone();
+
+            #[cfg(desktop)]
+            {
+                use tauri_plugin_window_state::StateFlags;
+
+                if let Err(e) = app.handle().plugin(
+                    tauri_plugin_window_state::Builder::default()
+                        .with_state_flags(StateFlags::all())
+                        .build(),
+                ) {
+                    eprintln!("Failed to register window state plugin: {}", e);
+                } else {
+                    println!("Window state plugin registered successfully");
+                }
+            }
 
             #[cfg(any(target_os = "linux", all(debug_assertions, windows)))]
             {
@@ -207,6 +224,28 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .manage(state::TauriSettingsState(settings_state))
         .manage(state::TauriFlowLikeState(state_ref))
+        .on_page_load(|view, payload| {
+            let label = view.label();
+            let app_handle = view.app_handle();
+            let main_window = app_handle.get_webview_window("main");
+
+            if let Some(main_window) = main_window {
+                if label == "oidcFlow" {
+                    let res = main_window.emit(
+                        "oidc/url",
+                        json!({
+                            "url": payload.url(),
+                        }),
+                    );
+
+                    if let Err(e) = res {
+                        eprintln!("Error emitting oidcUrlChange: {}", e);
+                    }
+                }
+            }
+
+            println!("{} loaded: {}", label, payload.url());
+        })
         .invoke_handler(tauri::generate_handler![
             functions::file::get_path_meta,
             functions::ai::invoke::predict,
@@ -227,21 +266,21 @@ pub fn run() {
             functions::app::create_app_board,
             functions::app::delete_app_board,
             functions::app::get_app,
+            functions::app::push_app_meta,
+            functions::app::get_app_meta,
             functions::app::get_app_board,
             functions::app::get_app_boards,
             functions::app::set_app_config,
             functions::app::get_apps,
             functions::app::get_app_size,
-            functions::app::get_remote_apps,
             functions::app::create_app,
             functions::app::update_app,
             functions::app::delete_app,
-            functions::bit::get_bit_by_id,
+            functions::bit::get_bit,
             functions::bit::is_bit_installed,
             functions::bit::get_bit_size,
             functions::bit::get_pack_from_bit,
-            functions::bit::get_bits_by_category,
-            functions::bit::get_bits,
+            functions::bit::search_bits,
             functions::bit::download_bit,
             functions::bit::delete_bit,
             functions::bit::get_installed_bit,
@@ -265,11 +304,23 @@ pub fn run() {
             functions::flow::board::execute_commands,
             functions::flow::board::save_board,
             functions::flow::run::execute_board,
-            functions::flow::run::debug_step_run,
-            functions::flow::run::get_run_status,
+            functions::flow::run::execute_event,
             functions::flow::run::list_runs,
             functions::flow::run::query_run,
-            functions::flow::run::finalize_run,
+            functions::flow::run::cancel_execution,
+            functions::flow::event::validate_event,
+            functions::flow::event::get_event,
+            functions::flow::event::get_events,
+            functions::flow::event::get_event_versions,
+            functions::flow::event::upsert_event,
+            functions::flow::event::delete_event,
+            functions::flow::template::get_template,
+            functions::flow::template::get_templates,
+            functions::flow::template::get_template_versions,
+            functions::flow::template::upsert_template,
+            functions::flow::template::delete_template,
+            functions::flow::template::get_template_meta,
+            functions::flow::template::push_template_meta,
         ]);
 
     #[cfg(desktop)]

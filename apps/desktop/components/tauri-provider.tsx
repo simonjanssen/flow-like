@@ -1,5 +1,5 @@
 "use client";
-import { Channel, invoke } from "@tauri-apps/api/core";
+import { Channel, convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { type Event, type UnlistenFn, listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
 import {
@@ -7,9 +7,9 @@ import {
 	type IBackendState,
 	type IBit,
 	type IBitPack,
-	type IBitTypes,
 	type IBoard,
 	type IDownloadProgress,
+	type IEvent,
 	type IExecutionStage,
 	type IFileMetadata,
 	type IGenericCommand,
@@ -17,17 +17,65 @@ import {
 	type ILog,
 	type ILogLevel,
 	type ILogMetadata,
+	type IMetadata,
 	type INode,
 	type IProfile,
 	type IRunPayload,
 	type ISettingsProfile,
 	type IVersionType,
+	LoadingScreen,
 	useBackendStore,
 	useDownloadManager,
 } from "@tm9657/flow-like-ui";
+import type { IBitSearchQuery } from "@tm9657/flow-like-ui/lib/schema/hub/bit-search-query";
 import { useEffect, useState } from "react";
-
+import type { AuthContextProps } from "react-oidc-context";
 export class TauriBackend implements IBackendState {
+	constructor(private auth?: AuthContextProps) {}
+
+	pushAuthContext(auth: AuthContextProps) {
+		this.auth = auth;
+	}
+
+	async createApp(
+		metadata: IMetadata,
+		bits: string[],
+		template: string,
+	): Promise<IApp> {
+		const app: IApp = await invoke("create_app", {
+			metadata: metadata,
+			bits: bits,
+			template: template,
+		});
+		return app;
+	}
+
+	async updateApp(app: IApp): Promise<void> {
+		await invoke("update_app", {
+			app: app,
+		});
+	}
+
+	async getAppMeta(appId: string, language?: string): Promise<IMetadata> {
+		const meta: IMetadata = await invoke("get_app_meta", {
+			appId: appId,
+			language,
+		});
+		return meta;
+	}
+
+	async pushAppMeta(
+		appId: string,
+		metadata: IMetadata,
+		language?: string,
+	): Promise<void> {
+		await invoke("push_app_meta", {
+			appId: appId,
+			metadata: metadata,
+			language,
+		});
+	}
+
 	async getCatalog(): Promise<INode[]> {
 		const nodes: INode[] = await invoke("get_catalog");
 		return nodes;
@@ -84,36 +132,105 @@ export class TauriBackend implements IBackendState {
 
 	async getBoardSettings(): Promise<"straight" | "step" | "simpleBezier"> {
 		const profile: ISettingsProfile = await invoke("get_current_profile");
-		return profile.flow_settings.connection_mode;
+		return profile?.flow_settings?.connection_mode ?? "simpleBezier";
 	}
 
 	async executeBoard(
 		appId: string,
 		boardId: string,
 		payload: IRunPayload,
+		streamState?: boolean,
+		eventId?: (id: string) => void,
 		cb?: (event: IIntercomEvent[]) => void,
 	): Promise<ILogMetadata | undefined> {
 		const channel = new Channel<IIntercomEvent[]>();
 		let closed = false;
+		let foundRunId = false;
 
 		channel.onmessage = (events: IIntercomEvent[]) => {
 			if (closed) {
 				console.warn("Channel closed, ignoring events");
 				return;
 			}
+
+			if (!foundRunId && events.length > 0 && eventId) {
+				const runId_event = events.find(
+					(event) => event.event_type === "run_initiated",
+				);
+
+				if (runId_event) {
+					const runId = runId_event.payload.run_id;
+					eventId(runId);
+					foundRunId = true;
+				}
+			}
+
 			if (cb) cb(events);
 		};
 
-		const runId: ILogMetadata | undefined = await invoke("execute_board", {
+		const metadata: ILogMetadata | undefined = await invoke("execute_board", {
 			appId: appId,
 			boardId: boardId,
 			payload: payload,
 			events: channel,
+			streamState: streamState,
 		});
 
 		closed = true;
 
-		return runId;
+		return metadata;
+	}
+
+	async executeEvent(
+		appId: string,
+		eventId: string,
+		payload: IRunPayload,
+		streamState?: boolean,
+		onEventId?: (id: string) => void,
+		cb?: (event: IIntercomEvent[]) => void,
+	): Promise<ILogMetadata | undefined> {
+		const channel = new Channel<IIntercomEvent[]>();
+		let closed = false;
+		let foundRunId = false;
+
+		channel.onmessage = (events: IIntercomEvent[]) => {
+			if (closed) {
+				console.warn("Channel closed, ignoring events");
+				return;
+			}
+
+			if (!foundRunId && events.length > 0 && eventId) {
+				const runId_event = events.find(
+					(event) => event.event_type === "run_initiated",
+				);
+
+				if (runId_event) {
+					const runId = runId_event.payload.run_id;
+					onEventId?.(runId);
+					foundRunId = true;
+				}
+			}
+
+			if (cb) cb(events);
+		};
+
+		const metadata: ILogMetadata | undefined = await invoke("execute_event", {
+			appId: appId,
+			eventId: eventId,
+			payload: payload,
+			events: channel,
+			streamState: streamState,
+		});
+
+		closed = true;
+
+		return metadata;
+	}
+
+	async cancelExecution(runId: string): Promise<void> {
+		await invoke("cancel_execution", {
+			runId: runId,
+		});
 	}
 
 	async listRuns(
@@ -154,13 +271,6 @@ export class TauriBackend implements IBackendState {
 			offset: offset,
 		});
 		return runs;
-	}
-
-	async finalizeRun(appId: string, runId: string) {
-		await invoke("finalize_run", {
-			appId: appId,
-			runId: runId,
-		});
 	}
 
 	async undoBoard(appId: string, boardId: string, commands: IGenericCommand[]) {
@@ -240,19 +350,153 @@ export class TauriBackend implements IBackendState {
 		});
 	}
 
-	registerEvent(
+	// Event Operations
+	async getEvent(
 		appId: string,
-		boardId: string,
-		nodeId: string,
-		eventType: string,
 		eventId: string,
-		ttl?: number,
-	): Promise<void> {
-		throw new Error("Method not implemented.");
+		version?: [number, number, number],
+	): Promise<IEvent> {
+		return await invoke("get_event", {
+			appId: appId,
+			eventId: eventId,
+			version: version,
+		});
 	}
 
-	removeEvent(eventId: string, eventType: string): Promise<void> {
-		throw new Error("Method not implemented.");
+	async getEvents(appId: string): Promise<IEvent[]> {
+		return await invoke("get_events", {
+			appId: appId,
+		});
+	}
+
+	async getEventVersions(
+		appId: string,
+		eventId: string,
+	): Promise<[number, number, number][]> {
+		return await invoke("get_event_versions", {
+			appId: appId,
+			eventId: eventId,
+		});
+	}
+
+	async upsertEvent(
+		appId: string,
+		event: IEvent,
+		versionType?: IVersionType,
+	): Promise<IEvent> {
+		return await invoke("upsert_event", {
+			appId: appId,
+			event: event,
+			versionType: versionType,
+		});
+	}
+
+	async deleteEvent(appId: string, eventId: string): Promise<void> {
+		await invoke("delete_event", {
+			appId: appId,
+			eventId: eventId,
+		});
+	}
+
+	async validateEvent(
+		appId: string,
+		eventId: string,
+		version?: [number, number, number],
+	): Promise<void> {
+		return await invoke("validate_event", {
+			appId: appId,
+			eventId: eventId,
+			version: version,
+		});
+	}
+
+	async upsertEventFeedback(
+		appId: string,
+		eventId: string,
+		messageId: string,
+		feedback: {
+			rating: number;
+			history?: any[];
+			globalState?: Record<string, any>;
+			localState?: Record<string, any>;
+			comment?: string;
+			sub?: boolean;
+		},
+	): Promise<void> {
+		// TODO: Only relevant for online events
+	}
+
+	// Template Operations
+
+	async getTemplates(
+		appId?: string,
+		language?: string,
+	): Promise<[string, string, IMetadata | undefined][]> {
+		return await invoke("get_templates", {
+			appId: appId,
+			language: language,
+		});
+	}
+
+	async getTemplate(
+		appId: string,
+		templateId: string,
+		version?: [number, number, number],
+	): Promise<IBoard> {
+		return await invoke("get_template", {
+			appId: appId,
+			templateId: templateId,
+			version: version,
+		});
+	}
+
+	async upsertTemplate(
+		appId: string,
+		boardId: string,
+		templateId?: string,
+		boardVersion?: [number, number, number],
+		versionType?: IVersionType,
+	): Promise<[string, [number, number, number]]> {
+		return await invoke("upsert_template", {
+			appId: appId,
+			boardId: boardId,
+			templateId: templateId,
+			boardVersion: boardVersion,
+			versionType: versionType,
+		});
+	}
+
+	async deleteTemplate(appId: string, templateId: string): Promise<void> {
+		await invoke("delete_template", {
+			appId: appId,
+			templateId: templateId,
+		});
+	}
+
+	async getTemplateMeta(
+		appId: string,
+		templateId: string,
+		language?: string,
+	): Promise<IMetadata> {
+		return await invoke("get_template_meta", {
+			appId: appId,
+			templateId: templateId,
+			language: language,
+		});
+	}
+
+	async pushTemplateMeta(
+		appId: string,
+		templateId: string,
+		metadata: IMetadata,
+		language?: string,
+	): Promise<void> {
+		await invoke("push_template_meta", {
+			appId: appId,
+			templateId: templateId,
+			metadata: metadata,
+			language: language,
+		});
 	}
 
 	async getPathMeta(path: string): Promise<IFileMetadata[]> {
@@ -325,9 +569,9 @@ export class TauriBackend implements IBackendState {
 		});
 	}
 
-	async getBitsByCategory(type: IBitTypes): Promise<IBit[]> {
-		return await invoke("get_bits_by_category", {
-			bitType: type,
+	async searchBits(query: IBitSearchQuery): Promise<IBit[]> {
+		return await invoke("search_bits", {
+			query,
 		});
 	}
 
@@ -344,13 +588,16 @@ export class TauriBackend implements IBackendState {
 	}
 
 	async getPackFromBit(bit: IBit): Promise<{ bits: IBit[] }> {
-		return await invoke("get_pack_from_bit", {
+		console.log("Getting pack from bit:", bit);
+		const pack = await invoke<{ bits: IBit[] }>("get_pack_from_bit", {
 			bit: bit,
 		});
+		console.log("Pack retrieved:", pack);
+		return pack;
 	}
 
 	async getPackSize(bits: IBit[]): Promise<number> {
-		const size: number = await invoke("get_pack_size", {
+		const size: number = await invoke("get_bit_size", {
 			bits: bits,
 		});
 		return size;
@@ -368,12 +615,12 @@ export class TauriBackend implements IBackendState {
 		});
 	}
 
-	async getApps(): Promise<IApp[]> {
+	async getApps(): Promise<[IApp, IMetadata | undefined][]> {
 		return await invoke("get_apps");
 	}
 
 	async getBit(id: string, hub?: string): Promise<IBit> {
-		return await invoke("get_bit_by_id", {
+		return await invoke("get_bit", {
 			bit: id,
 			hub: hub,
 		});
@@ -384,6 +631,19 @@ export class TauriBackend implements IBackendState {
 			appId: appId,
 		});
 		return boards;
+	}
+
+	async fileToUrl(file: File): Promise<string> {
+		// TODO: Determine where the execution will happen. If on server, just use signed urls
+		// Copy it into the tauri app's storage and return the file path as signed url
+
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.readAsDataURL(file);
+			reader.onload = () => resolve(reader.result as string);
+			reader.onerror = (error) =>
+				reject(new Error("Error converting file to base64"));
+		});
 	}
 }
 
@@ -419,7 +679,7 @@ export function TauriProvider({
 	}, []);
 
 	if (!loaded) {
-		return <p>Loading...</p>;
+		return <LoadingScreen />;
 	}
 
 	return children;

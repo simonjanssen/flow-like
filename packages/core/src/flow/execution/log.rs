@@ -1,6 +1,6 @@
 use flow_like_storage::{
     arrow_array::RecordBatch,
-    lancedb::arrow::{IntoArrow, arrow_schema::FieldRef},
+    lancedb::arrow::arrow_schema::FieldRef,
     serde_arrow::{
         self,
         schema::{SchemaLike, TracingOptions},

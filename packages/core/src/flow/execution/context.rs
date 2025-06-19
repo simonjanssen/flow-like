@@ -135,6 +135,7 @@ pub struct ExecutionContext {
     pub trace: Trace,
     pub execution_cache: Option<ExecutionContextCache>,
     pub completion_callbacks: Arc<RwLock<Vec<EventTrigger>>>,
+    pub stream_state: bool,
     run_id: String,
     state: NodeState,
     callback: InterComCallback,
@@ -164,12 +165,12 @@ impl ExecutionContext {
             trace.snapshot_variables(variables).await;
         }
 
-        let run_id = match run.upgrade() {
+        let (run_id, stream_state) = match run.upgrade() {
             Some(run) => {
                 let run = run.lock().await;
-                run.id.clone()
+                (run.id.clone(), run.stream_state)
             }
-            None => "".to_string(),
+            None => ("".to_string(), false),
         };
 
         ExecutionContext {
@@ -187,6 +188,7 @@ impl ExecutionContext {
             profile,
             callback,
             execution_cache,
+            stream_state,
             state: NodeState::Idle,
             completion_callbacks,
         }
@@ -301,6 +303,10 @@ impl ExecutionContext {
             NodeState::Running => RunUpdateEventMethod::Add,
             _ => RunUpdateEventMethod::Remove,
         };
+
+        if !self.stream_state {
+            return;
+        }
 
         let update_event = RunUpdateEvent {
             run_id: self.run_id.clone(),

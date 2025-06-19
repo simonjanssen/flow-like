@@ -13,9 +13,14 @@ import { useBackend } from "../../../state/backend-state";
 import { Separator } from "../../ui";
 
 export function PathbufSetVariable({
+	disabled,
 	variable,
 	onChange,
-}: Readonly<{ variable: IVariable; onChange: (variable: IVariable) => void }>) {
+}: Readonly<{
+	disabled?: boolean;
+	variable: IVariable;
+	onChange: (variable: IVariable) => void;
+}>) {
 	const backend = useBackend();
 
 	// parse once from default_value
@@ -28,6 +33,7 @@ export function PathbufSetVariable({
 
 	// add a new path
 	const handleAdd = useCallback(async () => {
+		if (disabled) return;
 		const pathBuf: any = await backend.openFileOrFolderMenu(
 			false,
 			isFolder,
@@ -48,23 +54,25 @@ export function PathbufSetVariable({
 			...variable,
 			default_value: convertJsonToUint8Array(Array.from(new Set(updated))),
 		});
-	}, [backend, isFolder, items, onChange, variable]);
+	}, [disabled, backend, isFolder, items, onChange, variable]);
 
 	const handleRemove = useCallback(
 		(idx: number) => {
+			if (disabled) return;
 			const updated = items.filter((_, i) => i !== idx);
 			onChange({
 				...variable,
 				default_value: convertJsonToUint8Array(Array.from(new Set(updated))),
 			});
 		},
-		[items, onChange, variable],
+		[disabled, items, onChange, variable],
 	);
 
 	return (
 		<div className="grid w-full max-w-full grid-cols-6 gap-2">
 			<div className="flex items-center space-x-2 col-span-2  sticky top-0 bg-background">
 				<Switch
+					disabled={disabled}
 					checked={isFolder}
 					onCheckedChange={setIsFolder}
 					id="is_folder"
@@ -79,6 +87,7 @@ export function PathbufSetVariable({
 					items.length === 0 && "text-muted-foreground",
 				)}
 				onClick={handleAdd}
+				disabled={disabled}
 			>
 				{isFolder ? (
 					<FolderIcon className="mr-2 h-4 w-4" />
@@ -102,6 +111,7 @@ export function PathbufSetVariable({
 						)}
 						<span className="flex-1 truncate">{path.split("/").pop()}</span>
 						<Button
+							disabled={disabled}
 							size="icon"
 							variant="destructive"
 							onClick={() => handleRemove(idx)}

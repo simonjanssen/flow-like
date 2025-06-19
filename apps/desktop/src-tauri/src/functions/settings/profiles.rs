@@ -23,42 +23,45 @@ pub async fn get_profiles(app_handle: AppHandle) -> HashMap<String, UserProfile>
 #[tauri::command(async)]
 pub async fn get_default_profiles(
     app_handle: AppHandle,
-) -> Result<Vec<(UserProfile, Vec<Bit>)>, TauriFunctionError> {
+) -> Result<(Vec<(UserProfile, Vec<Bit>)>, Hub), TauriFunctionError> {
     let settings = TauriSettingsState::construct(&app_handle).await?;
     let default_hub = settings.lock().await.default_hub.clone();
     let http_client = TauriFlowLikeState::http_client(&app_handle).await?;
     let default_hub = Hub::new(&default_hub, http_client.clone()).await?;
 
     let profiles = default_hub.get_profiles().await?;
-    let profiles = get_bits(profiles.clone(), http_client).await;
+    println!("Profiles: {:?}", profiles);
+    let profiles = get_bits(profiles.clone(), http_client).await?;
 
-    Ok(profiles)
+    println!("Default hub: {}", default_hub.domain);
+    println!("Profiles count: {}", profiles.len());
+    println!("Profiles: {:?}", profiles);
+
+    Ok((profiles, default_hub))
 }
 
 #[instrument(skip_all)]
 async fn get_bits(
     profiles: Vec<Profile>,
     http_client: Arc<HTTPClient>,
-) -> Vec<(UserProfile, Vec<Bit>)> {
+) -> flow_like_types::Result<Vec<(UserProfile, Vec<Bit>)>> {
     // Collect all futures for models and embedding models
-    let mut bits: HashMap<String, String> = HashMap::new();
-    let mut hubs: HashMap<String, Hub> = HashMap::new();
+    let mut bits: HashMap<&str, &str> = HashMap::new();
+    let mut hubs: HashMap<&str, Hub> = HashMap::new();
 
     for profile in profiles.iter() {
-        for (hub, bit) in profile.bits.iter() {
-            bits.insert(bit.clone(), hub.clone());
+        for bit_id in profile.bits.iter() {
+            let (hub, bit) = bit_id.split_once(':').unwrap_or(("", bit_id));
+            bits.insert(bit, hub);
             if !hubs.contains_key(hub) {
-                hubs.insert(
-                    hub.clone(),
-                    Hub::new(hub, http_client.clone()).await.unwrap(),
-                );
+                hubs.insert(hub, Hub::new(hub, http_client.clone()).await?);
             }
         }
     }
 
     let bit_features = bits.iter().map(|(bit_id, hub_id)| {
         let hub = hubs.get(hub_id).unwrap();
-        hub.get_bit_by_id(bit_id)
+        hub.get_bit(bit_id)
     });
 
     let bits_results = join_all(bit_features).await;
@@ -79,7 +82,8 @@ async fn get_bits(
             let bits = profile
                 .bits
                 .iter()
-                .map(|(_, bit)| {
+                .map(|bit_url| {
+                    let (_hub, bit) = bit_url.split_once(':').unwrap_or(("", bit_url));
                     let bit = bits_map.get(bit).unwrap();
                     bit.clone()
                 })
@@ -89,7 +93,7 @@ async fn get_bits(
         })
         .collect();
 
-    output
+    Ok(output)
 }
 
 #[instrument(skip_all)]
@@ -109,13 +113,17 @@ pub async fn get_bits_in_current_profile(
 
     let mut tasks: Vec<JoinHandle<Option<Bit>>> = vec![];
 
-    for (hub, bit) in profile.hub_profile.bits.iter() {
-        let hub = hub.clone();
-        let bit = bit.clone();
+    for bit_id in profile.hub_profile.bits.iter() {
+        let (hub, bit) = bit_id.split_once(':').unwrap_or(("", bit_id));
+        if hub.is_empty() {
+            continue; // Skip bits without a hub
+        }
+        let hub = hub.to_string();
+        let bit = bit.to_string();
         let http_client = http_client.clone();
         let task = flow_like_types::tokio::spawn(async move {
             let hub = Hub::new(&hub, http_client).await.ok()?;
-            let bit = hub.get_bit_by_id(&bit).await.ok()?;
+            let bit = hub.get_bit(&bit).await.ok()?;
             Some(bit)
         });
         tasks.push(task);

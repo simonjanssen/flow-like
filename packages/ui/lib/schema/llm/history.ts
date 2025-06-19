@@ -30,13 +30,18 @@ export interface IHistoryMessage {
 export interface IContent {
 	text?: string;
 	type: IContentType;
-	data?: string;
-	mime_type?: string;
+	image_url?: IImageURL;
+	[property: string]: any;
+}
+
+export interface IImageURL {
+	detail?: null | string;
+	url: string;
 	[property: string]: any;
 }
 
 export enum IContentType {
-	ImageURL = "image_url",
+	IImageURL = "image_url",
 	Text = "text",
 }
 

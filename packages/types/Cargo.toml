@@ -26,6 +26,7 @@ minijinja = "2.9.0"
 imageproc = "0.25.0"
 rxing = { version = "0.7.1", features = ["serde", "image"] }
 ab_glyph = "0.2.29"
+tokio-util = "0.7.15"
 
 [build-dependencies]
 prost-build = "0.13.5"

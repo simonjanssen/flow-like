@@ -48,7 +48,10 @@ export default function SettingsPage() {
 								className="rounded-md"
 								width={256}
 								height={256}
-								src={currentProfile.data.hub_profile.thumbnail}
+								src={
+									currentProfile.data.hub_profile.thumbnail ??
+									"/placeholder-thumbnail.webp"
+								}
 								alt="thumbnail"
 							/>
 							<div className="w-full px-4 gap-4 flex flex-col">
@@ -75,7 +78,7 @@ export default function SettingsPage() {
 									<Input
 										id="description"
 										placeholder="Description"
-										value={currentProfile.data.hub_profile.description}
+										value={currentProfile.data.hub_profile.description ?? ""}
 										onChange={async (e) => {
 											if (currentProfile.data)
 												await upsertProfile({

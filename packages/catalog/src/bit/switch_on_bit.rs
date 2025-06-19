@@ -139,6 +139,12 @@ impl NodeLogic for SwitchOnBitNode {
             VariableType::Execution,
         );
         node.add_output_pin(
+            "object_detection",
+            "Object Detection",
+            "Execution if Bit is Object Detection Model",
+            VariableType::Execution,
+        );
+        node.add_output_pin(
             "other",
             "Other",
             "Execution if Bit is Other",
@@ -171,6 +177,7 @@ impl NodeLogic for SwitchOnBitNode {
         context.deactivate_exec_pin("project").await?;
         context.deactivate_exec_pin("board").await?;
         context.deactivate_exec_pin("other").await?;
+        context.deactivate_exec_pin("object_detection").await?;
 
         context.set_pin_value("bit_out", json!(bit)).await?;
 
@@ -192,6 +199,7 @@ impl NodeLogic for SwitchOnBitNode {
             BitTypes::Project => "project",
             BitTypes::Board => "board",
             BitTypes::Other => "other",
+            BitTypes::ObjectDetection => "object_detection",
         };
 
         context.activate_exec_pin(output_pin).await?;

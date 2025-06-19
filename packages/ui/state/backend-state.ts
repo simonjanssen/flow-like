@@ -3,9 +3,9 @@ import type {
 	IApp,
 	IBit,
 	IBitPack,
-	IBitTypes,
 	IBoard,
 	IDownloadProgress,
+	IEvent,
 	IExecutionStage,
 	IFileMetadata,
 	IGenericCommand,
@@ -13,16 +13,30 @@ import type {
 	ILog,
 	ILogLevel,
 	ILogMetadata,
+	IMetadata,
 	INode,
 	IProfile,
 	IRunPayload,
 	IVersionType,
 } from "../lib";
+import type { IBitSearchQuery } from "../lib/schema/hub/bit-search-query";
 import type { ISettingsProfile } from "../types";
 
 export interface IBackendState {
-	getApps(): Promise<IApp[]>;
+	createApp(
+		metadata: IMetadata,
+		bits: string[],
+		template: string,
+	): Promise<IApp>;
+	getApps(): Promise<[IApp, IMetadata | undefined][]>;
 	getApp(appId: string): Promise<IApp>;
+	updateApp(app: IApp): Promise<void>;
+	getAppMeta(appId: string, language?: string): Promise<IMetadata>;
+	pushAppMeta(
+		appId: string,
+		metadata: IMetadata,
+		language?: string,
+	): Promise<void>;
 	getBoards(appId: string): Promise<IBoard[]>;
 	getCatalog(): Promise<INode[]>;
 	getBoard(
@@ -47,8 +61,21 @@ export interface IBackendState {
 		appId: string,
 		boardId: string,
 		payload: IRunPayload,
+		streamState?: boolean,
+		eventId?: (id: string) => void,
 		cb?: (event: IIntercomEvent[]) => void,
 	): Promise<ILogMetadata | undefined>;
+
+	executeEvent(
+		appId: string,
+		eventId: string,
+		payload: IRunPayload,
+		streamState?: boolean,
+		onEventId?: (id: string) => void,
+		cb?: (event: IIntercomEvent[]) => void,
+	): Promise<ILogMetadata | undefined>;
+
+	cancelExecution(runId: string): Promise<void>;
 
 	listRuns(
 		appId: string,
@@ -68,7 +95,6 @@ export interface IBackendState {
 		offset?: number,
 	): Promise<ILog[]>;
 
-	finalizeRun(appId: string, runId: string): Promise<void>;
 	undoBoard(
 		appId: string,
 		boardId: string,
@@ -108,16 +134,75 @@ export interface IBackendState {
 		commands: IGenericCommand[],
 	): Promise<IGenericCommand[]>;
 
-	registerEvent(
+	// Event Operations
+	getEvent(
 		appId: string,
-		boardId: string,
-		nodeId: string,
-		eventType: string,
 		eventId: string,
-		ttl?: number,
+		version?: [number, number, number],
+	): Promise<IEvent>;
+	getEvents(appId: string): Promise<IEvent[]>;
+	getEventVersions(
+		appId: string,
+		eventId: string,
+	): Promise<[number, number, number][]>;
+	upsertEvent(
+		appId: string,
+		event: IEvent,
+		versionType?: IVersionType,
+	): Promise<IEvent>;
+	deleteEvent(appId: string, eventId: string): Promise<void>;
+	validateEvent(
+		appId: string,
+		eventId: string,
+		version?: [number, number, number],
+	): Promise<void>;
+	upsertEventFeedback(
+		appId: string,
+		eventId: string,
+		messageId: string,
+		feedback: {
+			// 0: remove, 1: positive, -1: negative
+			rating: number;
+			history?: any[];
+			globalState?: Record<string, any>;
+			localState?: Record<string, any>;
+			comment?: string;
+			sub?: boolean;
+		},
 	): Promise<void>;
 
-	removeEvent(eventId: string, eventType: string): Promise<void>;
+	// Template Operations
+
+	// Returns a list of templates for the given appId and language, if the appId is not given, returns all templates the user has access to.
+	getTemplates(
+		appId?: string,
+		language?: string,
+		// [appId, templateId, metadata]
+	): Promise<[string, string, IMetadata | undefined][]>;
+	getTemplate(
+		appId: string,
+		templateId: string,
+		version?: [number, number, number],
+	): Promise<IBoard>;
+	upsertTemplate(
+		appId: string,
+		boardId: string,
+		templateId?: string,
+		boardVersion?: [number, number, number],
+		versionType?: IVersionType,
+	): Promise<[string, [number, number, number]]>;
+	deleteTemplate(appId: string, templateId: string): Promise<void>;
+	getTemplateMeta(
+		appId: string,
+		templateId: string,
+		language?: string,
+	): Promise<IMetadata>;
+	pushTemplateMeta(
+		appId: string,
+		templateId: string,
+		metadata: IMetadata,
+		language?: string,
+	): Promise<void>;
 
 	// Additional Functionality
 	getPathMeta(folderPath: string): Promise<IFileMetadata[]>;
@@ -142,8 +227,10 @@ export interface IBackendState {
 	removeBit(bit: IBit, profile: ISettingsProfile): Promise<void>;
 	getPackSize(bits: IBit[]): Promise<number>;
 	getBitSize(bit: IBit): Promise<number>;
-	getBitsByCategory(type: IBitTypes): Promise<IBit[]>;
+	searchBits(type: IBitSearchQuery): Promise<IBit[]>;
 	isBitInstalled(bit: IBit): Promise<boolean>;
+
+	fileToUrl(file: File): Promise<string>;
 }
 
 interface BackendStoreState {

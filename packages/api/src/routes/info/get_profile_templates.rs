@@ -1,0 +1,82 @@
+use crate::{
+    entity::{profile, template_profile},
+    error::ApiError,
+    middleware::jwt::AppUser,
+    state::AppState,
+};
+use axum::{Extension, Json, extract::State};
+use flow_like::profile::{Profile, Settings};
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+use serde_json::from_value;
+
+#[tracing::instrument(name = "GET /info/profiles", skip(state, user))]
+pub async fn get_profile_templates(
+    State(state): State<AppState>,
+    Extension(user): Extension<AppUser>,
+) -> Result<Json<Vec<Profile>>, ApiError> {
+    if !state.platform_config.features.unauthorized_read {
+        user.sub()?;
+    }
+
+    let cache_key = "get_profile_templates".to_string();
+    if let Some(cached) = state.get_cache(&cache_key) {
+        return Ok(Json(cached));
+    }
+
+    let profiles = template_profile::Entity::find().all(&state.db).await?;
+    let profiles: Vec<Profile> = profiles.into_iter().map(Profile::from).collect();
+
+    state.set_cache(cache_key, &profiles);
+
+    Ok(Json(profiles))
+}
+
+impl From<template_profile::Model> for Profile {
+    fn from(model: template_profile::Model) -> Self {
+        let created_string = model.created_at.and_utc().to_rfc3339();
+        let updated_string = model.updated_at.and_utc().to_rfc3339();
+        Profile {
+            id: model.id,
+            name: model.name,
+            description: model.description,
+            icon: model.icon,
+            apps: Some(vec![]),
+            bits: model.bit_ids.unwrap_or_default(),
+            hub: model.hub,
+            hubs: model.hubs.unwrap_or_default(),
+            interests: model.interests.unwrap_or_default(),
+            settings: Settings::default(),
+            tags: model.tags.unwrap_or_default(),
+            theme: model.theme,
+            thumbnail: model.thumbnail,
+            created: created_string,
+            updated: updated_string,
+        }
+    }
+}
+
+impl From<Profile> for template_profile::Model {
+    fn from(profile: Profile) -> Self {
+        template_profile::Model {
+            id: profile.id,
+            name: profile.name,
+            description: profile.description,
+            icon: profile.icon,
+            apps: Some(vec![]),
+            bit_ids: Some(profile.bits),
+            hub: profile.hub,
+            hubs: Some(profile.hubs),
+            interests: Some(profile.interests),
+            settings: None,
+            tags: Some(profile.tags),
+            thumbnail: profile.thumbnail,
+            theme: None,
+            created_at: chrono::DateTime::parse_from_rfc3339(&profile.created)
+                .unwrap_or_default()
+                .naive_utc(),
+            updated_at: chrono::DateTime::parse_from_rfc3339(&profile.updated)
+                .unwrap_or_default()
+                .naive_utc(),
+        }
+    }
+}

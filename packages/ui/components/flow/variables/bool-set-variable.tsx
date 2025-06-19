@@ -10,9 +10,14 @@ import {
 import { Button, Separator } from "../../ui";
 
 export function BoolSetVariable({
+	disabled,
 	variable,
 	onChange,
-}: Readonly<{ variable: IVariable; onChange: (variable: IVariable) => void }>) {
+}: Readonly<{
+	disabled?: boolean;
+	variable: IVariable;
+	onChange: (variable: IVariable) => void;
+}>) {
 	const [newValue, setNewValue] = useState(false);
 
 	const currentArray = Array.isArray(
@@ -22,6 +27,7 @@ export function BoolSetVariable({
 		: [];
 
 	const addValue = () => {
+		if (disabled || newValue === undefined) return;
 		const updated = [...currentArray, newValue];
 		onChange({
 			...variable,
@@ -31,6 +37,7 @@ export function BoolSetVariable({
 	};
 
 	const removeAt = (idx: number) => {
+		if (disabled || idx < 0 || idx >= currentArray.length) return;
 		const updated = currentArray.slice();
 		updated.splice(idx, 1);
 		onChange({
@@ -41,16 +48,22 @@ export function BoolSetVariable({
 
 	return (
 		<div className="grid w-full max-w-sm items-center gap-1.5">
-			<div className="flex flex-row gap-2 items-center w-full sticky top-0 bg-background justify-between">
+			<div className="flex flex-row gap-2 items-center w-full sticky top-0 justify-between">
 				<div className="flex flex-row gap-2 items-center">
 					<Switch
+						disabled={disabled}
 						checked={newValue}
 						onCheckedChange={setNewValue}
 						id="new_value"
 					/>
 					<Label htmlFor="new_value">New Value</Label>
 				</div>
-				<Button size="icon" variant="default" onClick={addValue}>
+				<Button
+					disabled={disabled}
+					size="icon"
+					variant="default"
+					onClick={addValue}
+				>
 					<PlusCircleIcon className="w-4 h-4" />
 				</Button>
 			</div>
@@ -62,6 +75,7 @@ export function BoolSetVariable({
 				>
 					<div className="flex items-center gap-1">
 						<Switch
+							disabled={disabled}
 							checked={val}
 							onCheckedChange={(v) => {
 								const updated = currentArray.slice();
@@ -78,6 +92,7 @@ export function BoolSetVariable({
 						<Label htmlFor={`item-${idx}`}>Index {idx}</Label>
 					</div>
 					<Button
+						disabled={disabled}
 						size="icon"
 						variant="destructive"
 						onClick={() => removeAt(idx)}

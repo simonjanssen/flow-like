@@ -16,6 +16,7 @@ import {
 	type OnEdgesChange,
 	type OnNodesChange,
 	ReactFlow,
+	type ReactFlowInstance,
 	addEdge,
 	applyEdgeChanges,
 	applyNodeChanges,
@@ -108,7 +109,14 @@ function hexToRgba(hex: string, alpha = 0.3): string {
 export function FlowBoard({
 	appId,
 	boardId,
-}: Readonly<{ appId: string; boardId: string }>) {
+	nodeId,
+	initialVersion,
+}: Readonly<{
+	appId: string;
+	boardId: string;
+	nodeId?: string;
+	initialVersion?: [number, number, number];
+}>) {
 	const { pushCommand, pushCommands, redo, undo } = useUndoRedo(appId, boardId);
 	const router = useRouter();
 	const backend = useBackend();
@@ -119,7 +127,10 @@ export function FlowBoard({
 	const { refetchLogs, setCurrentMetadata, currentMetadata } =
 		useLogAggregation();
 	const flowRef = useRef<any>(null);
-	const [version, setVersion] = useState<[number, number, number]>();
+	const [version, setVersion] = useState<[number, number, number] | undefined>(
+		initialVersion,
+	);
+	const [initialized, setInitialized] = useState(false);
 	const flowPanelRef = useRef<ImperativePanelHandle>(null);
 	const logPanelRef = useRef<ImperativePanelHandle>(null);
 	const varPanelRef = useRef<ImperativePanelHandle>(null);
@@ -201,6 +212,24 @@ export function FlowBoard({
 		if (size < 10) logPanelRef.current.resize(45);
 	}, [logPanelRef.current]);
 
+	const initializeFlow = useCallback(
+		async (instance: ReactFlowInstance) => {
+			if (initialized) return;
+			if (!nodeId || nodeId === "") return;
+
+			instance.fitView({
+				nodes: [
+					{
+						id: nodeId ?? "",
+					},
+				],
+				duration: 500,
+			});
+			setInitialized(true);
+		},
+		[nodeId, initialized],
+	);
+
 	function toggleVars() {
 		if (!varPanelRef.current) return;
 		const isCollapsed = varPanelRef.current.isCollapsed();
@@ -270,39 +299,52 @@ export function FlowBoard({
 	const executeBoard = useCallback(
 		async (node: INode, payload?: object) => {
 			let added = false;
-			console.log(appId);
-			const runMeta: ILogMetadata | undefined = await backend.executeBoard(
-				appId,
-				boardId,
-				{
-					id: node.id,
-					payload: payload,
-				},
-				(update) => {
-					const runUpdates = update
-						.filter((item) => item.event_type.startsWith("run:"))
-						.map((item) => item.payload);
-					if (runUpdates.length === 0) return;
-					const firstItem = runUpdates[0];
-					if (!added) {
-						addRun(firstItem.run_id, boardId, [node.id]);
+			let runId = "";
+			let meta: ILogMetadata | undefined = undefined;
+			try {
+				meta = await backend.executeBoard(
+					appId,
+					boardId,
+					{
+						id: node.id,
+						payload: payload,
+					},
+					true,
+					async (id: string) => {
+						if (added) return;
+						console.log("Run started", id);
+						runId = id;
 						added = true;
-					}
+						addRun(id, boardId, [node.id]);
+					},
+					(update) => {
+						const runUpdates = update
+							.filter((item) => item.event_type.startsWith("run:"))
+							.map((item) => item.payload);
+						if (runUpdates.length === 0) return;
+						const firstItem = runUpdates[0];
+						if (!added) {
+							runId = firstItem.run_id;
+							addRun(firstItem.run_id, boardId, [node.id]);
+							added = true;
+						}
 
-					pushUpdate(firstItem.run_id, runUpdates);
-				},
-			);
-			if (!runMeta) {
+						pushUpdate(firstItem.run_id, runUpdates);
+					},
+				);
+			} catch (error) {
+				console.warn("Failed to execute board", error);
+			}
+			removeRun(runId);
+			if (!meta) {
 				toastError(
 					"Failed to execute board",
 					<PlayCircleIcon className="w-4 h-4" />,
 				);
 				return;
 			}
-			removeRun(runMeta.run_id);
-			await backend.finalizeRun(appId, runMeta.run_id);
 			await refetchLogs(backend);
-			setCurrentMetadata(runMeta);
+			if (meta) setCurrentMetadata(meta);
 		},
 		[
 			appId,
@@ -630,7 +672,7 @@ export function FlowBoard({
 			executeBoard,
 			executeCommand,
 			selected.current,
-			currentProfile.data?.flow_settings.connection_mode,
+			currentProfile.data?.flow_settings?.connection_mode ?? "simpleBezier",
 			nodes,
 			edges,
 			currentLayer,
@@ -1141,6 +1183,7 @@ export function FlowBoard({
 										onContextMenu={onContextMenuCB}
 										nodesDraggable={typeof version === "undefined"}
 										nodesConnectable={typeof version === "undefined"}
+										onInit={initializeFlow}
 										ref={flowRef}
 										colorMode={colorMode}
 										nodes={nodes}

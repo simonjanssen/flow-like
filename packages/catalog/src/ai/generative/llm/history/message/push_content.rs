@@ -8,7 +8,9 @@ use flow_like::{
     },
     state::FlowLikeState,
 };
-use flow_like_model_provider::history::{Content, ContentType, HistoryMessage, MessageContent};
+use flow_like_model_provider::history::{
+    Content, ContentType, HistoryMessage, ImageUrl, MessageContent,
+};
 use flow_like_types::{Value, async_trait, json::json};
 use std::sync::Arc;
 
@@ -102,8 +104,10 @@ impl NodeLogic for PushContentNode {
                 };
                 content.push(Content::Image {
                     content_type: ContentType::ImageUrl,
-                    data: image,
-                    mime_type: mime,
+                    image_url: ImageUrl {
+                        url: image,
+                        detail: None,
+                    },
                 });
                 message.content = MessageContent::Contents(content);
             }

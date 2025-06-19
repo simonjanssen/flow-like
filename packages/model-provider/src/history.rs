@@ -99,6 +99,13 @@ pub enum Role {
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
+pub struct ImageUrl {
+    pub url: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub detail: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
 #[serde(rename_all = "lowercase")]
 #[serde(untagged)]
 pub enum Content {
@@ -110,8 +117,7 @@ pub enum Content {
     Image {
         #[serde(rename = "type")]
         content_type: ContentType,
-        data: String,
-        mime_type: String,
+        image_url: ImageUrl,
     },
 }
 

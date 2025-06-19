@@ -44,6 +44,9 @@
 			],
 			"maxItems": 3,
 			"minItems": 3
+		},
+		"current_layer": {
+			"type": ["string", "null"]
 		}
 	}
 }

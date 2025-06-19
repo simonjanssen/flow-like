@@ -1,9 +1,87 @@
 export interface IHub {
-	dependencies: string[];
+	authentication?: null | IAuthentication;
+	cdn?: null | string;
+	contact: IContact;
+	default_user_plan?: null | string;
 	description: string;
 	domain: string;
-	icon: string;
+	environment: IEnvironment;
+	features: IFeatures;
+	hubs: string[];
+	icon?: null | string;
+	legal_notice: string;
+	max_users_prototype?: number | null;
 	name: string;
-	thumbnail: string;
+	privacy_policy: string;
+	provider?: null | string;
+	region?: null | string;
+	terms_of_service: string;
+	thumbnail?: null | string;
+	[property: string]: any;
+}
+
+export interface IAuthentication {
+	oauth2?: null | IOAuth2Config;
+	openid?: null | IOpenIDConfig;
+	variant: string;
+	[property: string]: any;
+}
+
+export interface IOAuth2Config {
+	authorization_endpoint: string;
+	client_id: string;
+	token_endpoint: string;
+	[property: string]: any;
+}
+
+export interface IOpenIDConfig {
+	authority?: null | string;
+	client_id?: null | string;
+	cognito?: null | ICognitoConfig;
+	discovery_url?: null | string;
+	jwks_url: string;
+	post_logout_redirect_uri?: null | string;
+	proxy?: null | IOpenIDProxy;
+	redirect_uri?: null | string;
+	response_type?: null | string;
+	scope?: null | string;
+	[property: string]: any;
+}
+
+export interface ICognitoConfig {
+	user_pool_id: string;
+	[property: string]: any;
+}
+
+export interface IOpenIDProxy {
+	authorize?: null | string;
+	enabled: boolean;
+	revoke?: null | string;
+	token?: null | string;
+	userinfo?: null | string;
+	[property: string]: any;
+}
+
+export interface IContact {
+	email: string;
+	name: string;
+	url: string;
+	[property: string]: any;
+}
+
+export enum IEnvironment {
+	Development = "Development",
+	Production = "Production",
+	Staging = "Staging",
+}
+
+export interface IFeatures {
+	admin_interface: boolean;
+	ai_act: boolean;
+	flow_hosting: boolean;
+	governance: boolean;
+	model_hosting: boolean;
+	premium: boolean;
+	unauthorized_read: boolean;
 	[property: string]: any;
 }

@@ -18,6 +18,7 @@ import {
 	type IRunPayload,
 	type ISettingsProfile,
 	type IVersionType,
+	LoadingScreen,
 	PersistQueryClientProvider,
 	QueryClient,
 	ThemeProvider,
@@ -224,7 +225,7 @@ export function EmptyBackendProvider({
 	}, []);
 
 	if (!loaded) {
-		return <p>Loading...</p>;
+		return <LoadingScreen />;
 	}
 
 	return (
