@@ -57,6 +57,7 @@ name = "flow_bench"
 harness = false
 
 [features]
+tauri = ["flow-like-storage/tauri"]
 schema-gen = []
 flow-runtime = []
 flow = ["flow-runtime"]

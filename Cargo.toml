@@ -41,8 +41,8 @@ jsonwebtoken = "9.3.0"
 hyper = {version = "1.5.2", features = ["full", "client"]}
 hyper-util = {version = "0.1.10", features = ["full"]}
 tracing = "0.1.41"
-sentry-tracing = "0.38.1"
-sentry = "0.38.1"
+sentry-tracing = "0.40.0"
+sentry = "0.40.0"
 sentry-tower = { version = "0.38.1", features = ["axum", "axum-matched-path"] }
 bytemuck = "1.23.0"
 tower-http = {version="0.6.4", features = ["full"]}

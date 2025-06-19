@@ -7,6 +7,7 @@ use futures::StreamExt;
 use local_store::LocalObjectStore;
 use object_store::{ObjectStore, path::Path, signer::Signer};
 use std::{sync::Arc, time::Duration};
+use urlencoding::encode;
 pub mod local_store;
 
 #[derive(Clone)]
@@ -54,7 +55,21 @@ impl FlowLikeStore {
             FlowLikeStore::Azure(store) => store.signed_url(method, path, expires_after).await?,
             FlowLikeStore::Local(store) => {
                 let local_path = store.path_to_filesystem(path)?;
-                println!("Local path: {:?}", local_path);
+
+                // Auto-detect Tauri environment
+                let is_tauri = cfg!(feature = "tauri") || std::env::var("TAURI_ENV").is_ok();
+
+                if is_tauri {
+                    let urlencoded_path = encode(local_path.to_str().unwrap_or(""));
+                    let url = if cfg!(windows) {
+                        format!("http://{}.localhost/{}", "asset", urlencoded_path)
+                    } else {
+                        format!("{}://{}", "asset", urlencoded_path)
+                    };
+                    let url = Url::parse(&url)?;
+                    return Ok(url);
+                }
+
                 let data_url = pathbuf_to_data_url(&local_path).await?;
                 return Ok(Url::parse(&data_url)?);
             }

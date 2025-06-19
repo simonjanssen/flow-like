@@ -19,8 +19,12 @@ fn side_car_path(command: &PathBuf) -> flow_like_types::Result<PathBuf> {
     return Ok(executable.join(command));
 }
 
-// TODO: replace the input with a Bit
-pub async fn sidecar(command: &PathBuf) -> flow_like_types::Result<StdCommand> {
+/// Creates a sidecar command to run a script or executable.
+/// If `with_bash` is true, it will run the command using `bash`. Important for some Systems and binaries
+/// Otherwise, it will run the command directly.
+/// Returns a `flow_like_types::Result<StdCommand>`
+/// which can be used to execute the command asynchronously.
+pub async fn sidecar(command: &PathBuf, with_bash: Option<bool>) -> flow_like_types::Result<StdCommand> {
     let path = side_car_path(command)?;
 
     if !path.exists() {
@@ -37,21 +41,19 @@ pub async fn sidecar(command: &PathBuf) -> flow_like_types::Result<StdCommand> {
         ));
     }
 
+    let with_bash = with_bash.unwrap_or(false);
+
+    if with_bash {
+        #[cfg(target_os = "linux")]
+        {
+            let mut sidecar = StdCommand::new("bash");
+            sidecar.arg(path);
+            return Ok(sidecar);
+        }
+    }
+
     let sidecar = StdCommand::new(path);
     Ok(sidecar)
-
-    // #[cfg(not(target_os = "linux"))]
-    // {
-    //     let sidecar = StdCommand::new(path);
-    //     Ok(sidecar)
-    // }
-
-    // #[cfg(target_os = "linux")]
-    // {
-    //     let mut sidecar = StdCommand::new("bash");
-    //     sidecar.arg(path);
-    //     Ok(sidecar)
-    // }
 }
 
 //

@@ -143,7 +143,7 @@ impl LocalModel {
         let execution_settings = execution_settings.clone();
         let thread_handle = tokio::task::spawn(async move {
             let program = PathBuf::from("llama-server");
-            let mut sidecar = match crate::utils::execute::sidecar(&program).await {
+            let mut sidecar = match crate::utils::execute::sidecar(&program, None).await {
                 Ok(sidecar) => sidecar,
                 Err(e) => {
                     println!("Error: {}", e);
