@@ -32,7 +32,7 @@ import type { IAttachment, IMessage } from "./chat-db";
 
 interface MessageProps {
 	message: IMessage;
-	noToolbar?: boolean;
+	loading?: boolean;
 	onMessageUpdate?: (
 		messageId: string,
 		updates: Partial<IMessage>,
@@ -41,7 +41,7 @@ interface MessageProps {
 
 export function MessageComponent({
 	message,
-	noToolbar,
+	loading,
 	onMessageUpdate,
 }: Readonly<MessageProps>) {
 	const isUser = message.inner.role === IRole.User;
@@ -51,13 +51,13 @@ export function MessageComponent({
 		useState<ProcessedAttachment | null>(null);
 	const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
 	const [feedbackComment, setFeedbackComment] = useState(
-		message.ratingSettings?.comment || "",
+		message.ratingSettings?.comment ?? "",
 	);
 	const [includeChatHistory, setIncludeChatHistory] = useState(
-		message.ratingSettings?.includeChatHistory || false,
+		message.ratingSettings?.includeChatHistory ?? false,
 	);
 	const [canContact, setCanContact] = useState(
-		message.ratingSettings?.canContact || false,
+		message.ratingSettings?.canContact ?? false,
 	);
 	const contentRef = useRef<HTMLDivElement>(null);
 
@@ -94,7 +94,7 @@ export function MessageComponent({
 				typeof attachment === "object" ? attachment : {};
 
 			let type: ProcessedAttachment["type"] = "other";
-			let name = attachmentData.name || "";
+			let name = attachmentData.name ?? "";
 			let isDataUrl = false;
 
 			// Handle different URL types
@@ -391,7 +391,13 @@ export function MessageComponent({
 							: undefined
 					}
 				>
-					<MarkdownComponent content={messageContent.text} />
+					<MarkdownComponent
+						content={
+							messageContent.text === "" && loading
+								? "🚀 Sending Message..."
+								: messageContent.text
+						}
+					/>
 				</div>
 
 				{isUser && showToggle && (
@@ -460,7 +466,7 @@ export function MessageComponent({
 					</div>
 				)}
 
-				{!(noToolbar ?? false) && (
+				{!(loading ?? false) && (
 					<div
 						className={cn(
 							"flex flex-row items-center gap-3 h-6 w-full mt-2",

@@ -15,6 +15,8 @@ import {
 	DialogTrigger,
 	EventCard,
 	EventForm,
+	EventTranslation,
+	EventTypeConfiguration,
 	type IEvent,
 	Input,
 	Label,
@@ -52,7 +54,7 @@ import {
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { EventTranslation, EventTypeConfiguration } from "./event-translation";
+import { EVENT_CONFIG } from "../../../../lib/event-config";
 
 export default function Page() {
 	const searchParams = useSearchParams();
@@ -83,7 +85,7 @@ export default function Page() {
 			active: true,
 			board_id: newEvent.board_id ?? "",
 			board_version: newEvent.board_version ?? undefined,
-			config: [],
+			config: newEvent.config ?? [],
 			created_at: {
 				secs_since_epoch: Math.floor(Date.now() / 1000),
 				nanos_since_epoch: 0,
@@ -141,7 +143,7 @@ export default function Page() {
 	}
 
 	return (
-		<div className="container mx-auto py-8 space-y-8 max-h-full flex flex-col flex-grow max-h-full">
+		<div className="container mx-auto py-8 space-y-8 flex flex-col flex-grow max-h-full">
 			{/* Header */}
 			<div className="flex items-center justify-between">
 				<div>
@@ -168,6 +170,7 @@ export default function Page() {
 						</DialogHeader>
 						{id && (
 							<EventForm
+								eventConfig={EVENT_CONFIG}
 								appId={id}
 								onSubmit={handleCreateEvent}
 								onCancel={() => setIsCreateDialogOpen(false)}
@@ -398,10 +401,13 @@ function EventConfiguration({
 					<div>
 						{board.data?.nodes?.[formData.node_id] && formData.node_id && (
 							<EventTypeConfiguration
+								eventConfig={EVENT_CONFIG}
 								disabled={!isEditing}
 								node={board.data?.nodes?.[formData.node_id]}
 								event={formData}
-								onUpdate={(type) => handleInputChange("event_type", type)}
+								onUpdate={(type) => {
+									handleInputChange("event_type", type);
+								}}
 							/>
 						)}
 					</div>
@@ -805,11 +811,14 @@ function EventConfiguration({
 						</CardHeader>
 						<CardContent className="space-y-4 flex flex-col items-start">
 							<EventTranslation
+								eventType={formData.event_type}
+								eventConfig={EVENT_CONFIG}
 								editing={isEditing}
-								payload={parseUint8ArrayToJson(event.config ?? []) ?? {}}
+								config={parseUint8ArrayToJson(event.config ?? []) ?? {}}
 								board={board.data}
 								nodeId={formData.node_id}
 								onUpdate={(config) => {
+									console.dir(config);
 									if (!isEditing) setIsEditing(true);
 									handleInputChange("config", convertJsonToUint8Array(config));
 								}}

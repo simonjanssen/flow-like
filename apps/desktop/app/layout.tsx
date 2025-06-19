@@ -39,26 +39,26 @@ export default function RootLayout({
 						persister,
 					}}
 				>
-					<TooltipProvider>
-						<Toaster />
-						<body className={inter.className}>
-							<ToastProvider />
-							<TauriProvider>
-								<DesktopAuthProvider>
-									<PostHogPageView />
-									<ThemeProvider
-										attribute="class"
-										defaultTheme="system"
-										enableSystem
-										storageKey="theme"
-										disableTransitionOnChange
-									>
+					<ThemeProvider
+						attribute="class"
+						defaultTheme="system"
+						enableSystem
+						storageKey="theme"
+						disableTransitionOnChange
+					>
+						<TooltipProvider>
+							<Toaster />
+							<body className={inter.className}>
+								<ToastProvider />
+								<TauriProvider>
+									<DesktopAuthProvider>
+										<PostHogPageView />
 										<AppSidebar>{children}</AppSidebar>
-									</ThemeProvider>
-								</DesktopAuthProvider>
-							</TauriProvider>
-						</body>
-					</TooltipProvider>
+									</DesktopAuthProvider>
+								</TauriProvider>
+							</body>
+						</TooltipProvider>
+					</ThemeProvider>
 				</PersistQueryClientProvider>
 			</ReactFlowProvider>
 			{/* </PHProvider> */}

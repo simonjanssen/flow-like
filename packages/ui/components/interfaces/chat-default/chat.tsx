@@ -187,7 +187,7 @@ const ChatInner = forwardRef<IChatRef, IChatProps>(
 									className="mt-2 absolute left-0 top-0 translate-y-[2.5rem] translate-x-[-100%]"
 									size={30}
 								/>
-								<MessageComponent noToolbar message={currentMessage} />
+								<MessageComponent loading message={currentMessage} />
 							</div>
 						)}
 						<div ref={messagesEndRef} />

@@ -1,7 +1,6 @@
 "use client";
 
 import {
-	ChatInterface,
 	Container,
 	Header,
 	type IToolBarActions,
@@ -11,11 +10,21 @@ import {
 	useInvoke,
 	useSetQueryParams,
 } from "@tm9657/flow-like-ui";
-import type { ISidebarActions } from "@tm9657/flow-like-ui/components/interfaces/interfaces";
+import type {
+	ISidebarActions,
+	IUseInterfaceProps,
+} from "@tm9657/flow-like-ui/components/interfaces/interfaces";
 import { parseUint8ArrayToJson } from "@tm9657/flow-like-ui/lib/uint8";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import { USABLE_EVENTS } from "../events";
+import {
+	type JSX,
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+} from "react";
+import { EVENT_CONFIG } from "../../lib/event-config";
 import NotFound from "../library/config/not-found";
 
 export default function Page() {
@@ -26,6 +35,22 @@ export default function Page() {
 	const sidebarRef = useRef<ISidebarActions>(null);
 	const setQueryParams = useSetQueryParams();
 	const router = useRouter();
+
+	const usableEvents = useMemo(() => {
+		const events = new Map<
+			string,
+			(props: IUseInterfaceProps) => JSX.Element | ReactNode | null
+		>();
+		Object.values(EVENT_CONFIG).forEach((config) => {
+			const usable = Object.entries(config.useInterfaces);
+			for (const [eventType, useInterface] of usable) {
+				if (config.eventTypes.includes(eventType)) {
+					events.set(eventType, useInterface);
+				}
+			}
+		});
+		return events;
+	}, [EVENT_CONFIG]);
 
 	const metadata = useInvoke(
 		backend.getAppMeta,
@@ -45,6 +70,7 @@ export default function Page() {
 			.filter((a) => a.active)
 			.toSorted((a, b) => a.priority - b.priority);
 	}, [events.data]);
+
 	const currentEvent = useMemo(() => {
 		if (!eventId) return undefined;
 		return sortedEvents.find((e) => e.id === eventId);
@@ -75,16 +101,27 @@ export default function Page() {
 	}, [currentEvent]);
 
 	useEffect(() => {
-		if (sortedEvents.length === 0) return;
 		if (!appId) return;
+		if (sortedEvents.length === 0 && events.data) {
+			console.log("No events found, redirecting to event config");
+			router.push(`/library/config/events?id=${appId}`);
+			return;
+		}
 
-		let rerouteEvent = sortedEvents.find((e) =>
-			USABLE_EVENTS.has(e.event_type),
-		);
+		if (sortedEvents.length === 0) return;
+
+		let rerouteEvent = sortedEvents.find((e) => usableEvents.has(e.event_type));
+
+		if (!rerouteEvent && usableEvents.size > 0 && events.data) {
+			console.log("No usable events found, redirecting to event config");
+			router.push(`/library/config/events?id=${appId}`);
+			return;
+		}
+
 		const lastEventId = localStorage.getItem(`lastUsedEvent-${appId}`);
 		const lastEvent = sortedEvents.find((e) => e.id === lastEventId);
 
-		if (lastEvent && USABLE_EVENTS.has(lastEvent.event_type)) {
+		if (lastEvent && usableEvents.has(lastEvent.event_type)) {
 			rerouteEvent = lastEvent;
 		}
 
@@ -96,33 +133,56 @@ export default function Page() {
 			return;
 		}
 
-		if (eventId && !USABLE_EVENTS.has(currentEvent.event_type)) {
+		if (eventId && !usableEvents.has(currentEvent.event_type)) {
 			switchEvent(rerouteEvent?.id ?? "");
 			return;
 		}
 
 		localStorage.setItem(`lastUsedEvent-${appId}`, eventId ?? "");
-	}, [appId, eventId, sortedEvents, currentEvent, switchEvent]);
+	}, [
+		appId,
+		eventId,
+		sortedEvents,
+		currentEvent,
+		switchEvent,
+		usableEvents,
+		events.data,
+	]);
 
 	const inner = useMemo(() => {
 		if (!appId) return <NotFound />;
 		if (!currentEvent) return <LoadingScreen />;
+		if (!usableEvents) return <LoadingScreen />;
 
-		if (currentEvent.event_type === "simple_chat") {
-			return (
-				<ChatInterface
-					key={currentEvent.id}
-					appId={appId}
-					event={currentEvent}
-					config={config}
-					toolbarRef={headerRef}
-					sidebarRef={sidebarRef}
-				/>
-			);
+		if (usableEvents.has(currentEvent.event_type)) {
+			const innerItem = usableEvents.get(currentEvent.event_type);
+			if (innerItem)
+				return (
+					<div
+						key={currentEvent.id}
+						className="flex flex-col flex-grow h-full w-full max-h-full overflow-hidden"
+					>
+						{innerItem({
+							appId,
+							event: currentEvent,
+							config,
+							toolbarRef: headerRef,
+							sidebarRef: sidebarRef,
+						})}
+					</div>
+				);
 		}
 
 		return <NoDefaultInterface appId={appId} eventId={eventId ?? undefined} />;
-	}, [appId, currentEvent, config, eventId, headerRef, sidebarRef]);
+	}, [
+		appId,
+		currentEvent,
+		config,
+		eventId,
+		headerRef,
+		sidebarRef,
+		usableEvents,
+	]);
 
 	if (!appId) {
 		return <NotFound />;
@@ -134,7 +194,7 @@ export default function Page() {
 				<div className="flex flex-col flex-grow h-full w-full max-h-full overflow-hidden">
 					<Header
 						ref={headerRef}
-						usableEvents={USABLE_EVENTS}
+						usableEvents={new Set(usableEvents.keys())}
 						currentEvent={currentEvent}
 						sortedEvents={sortedEvents}
 						metadata={metadata.data}

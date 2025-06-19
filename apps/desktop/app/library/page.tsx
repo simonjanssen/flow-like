@@ -86,7 +86,7 @@ export default function YoursPage() {
 								app={meta.app}
 								metadata={meta as IMetadata}
 								variant="extended"
-								onClick={() => router.push(`/library/config?id=${meta.id}`)}
+								onClick={() => router.push(`/use?id=${meta.id}`)}
 							/>
 						</div>
 					))}
@@ -103,7 +103,7 @@ export default function YoursPage() {
 								app={meta.app}
 								metadata={meta as IMetadata}
 								variant="small"
-								onClick={() => router.push(`/library/config?id=${meta.id}`)}
+								onClick={() => router.push(`/use?id=${meta.id}`)}
 								className="w-full"
 							/>
 						</div>
@@ -116,7 +116,7 @@ export default function YoursPage() {
 								app={meta.app}
 								metadata={meta as IMetadata}
 								variant="small"
-								onClick={() => router.push(`/library/config?id=${meta.id}`)}
+								onClick={() => router.push(`/use?id=${meta.id}`)}
 								className="w-full"
 							/>
 						</div>

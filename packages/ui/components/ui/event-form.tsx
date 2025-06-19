@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useInvoke } from "../../hooks";
 import type { IEvent } from "../../lib";
+import { convertJsonToUint8Array } from "../../lib/uint8";
 import { useBackend } from "../../state/backend-state";
+import type { IEventMapping } from "../interfaces";
 import { Button } from "./button";
 import { EventTypeConfig } from "./event-type-config";
 import { Input } from "./input";
@@ -16,29 +18,32 @@ import {
 	SelectValue,
 } from "./select";
 import { Separator } from "./separator";
-import { Switch } from "./switch";
 import { Textarea } from "./textarea";
 
 interface EventFormProps {
 	event?: IEvent;
+	eventConfig: IEventMapping;
 	appId: string;
 	onSubmit: (event: Partial<IEvent>) => void;
 	onCancel: () => void;
 }
 
 export function EventForm({
+	eventConfig,
 	appId,
 	event,
 	onSubmit,
 	onCancel,
-}: EventFormProps) {
+}: Readonly<EventFormProps>) {
 	const backend = useBackend();
 	const [formData, setFormData] = useState({
-		name: event?.name || "",
-		description: event?.description || "",
+		name: event?.name ?? "",
+		description: event?.description ?? "",
 		board_version: undefined,
-		node_id: event?.node_id || "",
-		board_id: event?.board_id || "",
+		node_id: event?.node_id ?? "",
+		board_id: event?.board_id ?? "",
+		event_type: undefined,
+		config: [],
 	});
 
 	const boards = useInvoke(backend.getBoards, [appId]);
@@ -167,7 +172,22 @@ export function EventForm({
 						<Label htmlFor="node">Node</Label>
 						<Select
 							value={formData.node_id}
-							onValueChange={(value) => handleInputChange("node_id", value)}
+							onValueChange={(value) => {
+								handleInputChange("node_id", value);
+								const node = board.data.nodes[value];
+								if (node) {
+									const eventType = eventConfig[node.name];
+									if (eventType) {
+										handleInputChange("event_type", eventType.defaultEventType);
+										handleInputChange(
+											"config",
+											convertJsonToUint8Array(
+												eventType.configs[eventType.defaultEventType] ?? {},
+											) ?? [],
+										);
+									}
+								}
+							}}
 						>
 							<SelectTrigger>
 								<SelectValue placeholder="Select a node" />
