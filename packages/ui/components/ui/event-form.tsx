@@ -1,12 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useInvoke } from "../../hooks";
 import type { IEvent } from "../../lib";
-import {
-	convertJsonToUint8Array,
-	parseUint8ArrayToJson,
-} from "../../lib/uint8";
+import { convertJsonToUint8Array } from "../../lib/uint8";
 import { useBackend } from "../../state/backend-state";
 import type { IEventMapping } from "../interfaces";
 import { Button } from "./button";
@@ -21,7 +18,6 @@ import {
 	SelectValue,
 } from "./select";
 import { Separator } from "./separator";
-import { Switch } from "./switch";
 import { Textarea } from "./textarea";
 
 interface EventFormProps {
@@ -41,11 +37,11 @@ export function EventForm({
 }: Readonly<EventFormProps>) {
 	const backend = useBackend();
 	const [formData, setFormData] = useState({
-		name: event?.name || "",
-		description: event?.description || "",
+		name: event?.name ?? "",
+		description: event?.description ?? "",
 		board_version: undefined,
-		node_id: event?.node_id || "",
-		board_id: event?.board_id || "",
+		node_id: event?.node_id ?? "",
+		board_id: event?.board_id ?? "",
 		event_type: undefined,
 		config: [],
 	});
@@ -186,7 +182,7 @@ export function EventForm({
 										handleInputChange(
 											"config",
 											convertJsonToUint8Array(
-												eventType.configs[eventType.defaultEventType] || {},
+												eventType.configs[eventType.defaultEventType] ?? {},
 											) ?? [],
 										);
 									}

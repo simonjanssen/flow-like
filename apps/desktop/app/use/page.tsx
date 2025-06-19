@@ -70,6 +70,7 @@ export default function Page() {
 			.filter((a) => a.active)
 			.toSorted((a, b) => a.priority - b.priority);
 	}, [events.data]);
+
 	const currentEvent = useMemo(() => {
 		if (!eventId) return undefined;
 		return sortedEvents.find((e) => e.id === eventId);
@@ -100,10 +101,23 @@ export default function Page() {
 	}, [currentEvent]);
 
 	useEffect(() => {
-		if (sortedEvents.length === 0) return;
 		if (!appId) return;
+		if (sortedEvents.length === 0 && events.data) {
+			console.log("No events found, redirecting to event config");
+			router.push(`/library/config/events?id=${appId}`);
+			return;
+		}
+
+		if (sortedEvents.length === 0) return;
 
 		let rerouteEvent = sortedEvents.find((e) => usableEvents.has(e.event_type));
+
+		if (!rerouteEvent && usableEvents.size > 0 && events.data) {
+			console.log("No usable events found, redirecting to event config");
+			router.push(`/library/config/events?id=${appId}`);
+			return;
+		}
+
 		const lastEventId = localStorage.getItem(`lastUsedEvent-${appId}`);
 		const lastEvent = sortedEvents.find((e) => e.id === lastEventId);
 
@@ -125,7 +139,15 @@ export default function Page() {
 		}
 
 		localStorage.setItem(`lastUsedEvent-${appId}`, eventId ?? "");
-	}, [appId, eventId, sortedEvents, currentEvent, switchEvent, usableEvents]);
+	}, [
+		appId,
+		eventId,
+		sortedEvents,
+		currentEvent,
+		switchEvent,
+		usableEvents,
+		events.data,
+	]);
 
 	const inner = useMemo(() => {
 		if (!appId) return <NotFound />;
