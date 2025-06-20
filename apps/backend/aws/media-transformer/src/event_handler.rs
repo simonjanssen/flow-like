@@ -37,11 +37,8 @@ pub(crate) async fn function_handler(
 
 async fn process_s3_events(records: &Vec<S3EventRecord>) -> Result<(), Error> {
     // Initialize object store and bucket name
-    let bucket_name = records
-        .first()
-        .and_then(|r| r.s3.bucket.name.as_ref())
-        .ok_or_else(|| Error::from("No bucket name found in S3 event records"))?
-        .to_string();
+    let bucket_name = std::env::var("BUCKET_NAME")
+        .map_err(|e| Error::from(format!("Failed to get BUCKET_NAME environment variable: {}", e)))?;
 
     let object_store = Arc::new(
         flow_like_storage::object_store::aws::AmazonS3Builder::new()
