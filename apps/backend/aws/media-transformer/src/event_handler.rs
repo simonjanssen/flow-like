@@ -294,17 +294,16 @@ fn resize_image(img: image::DynamicImage) -> image::DynamicImage {
     if width == height {
         // Square image - resize to 1024x1024
         img.resize(1024, 1024, image::imageops::FilterType::Lanczos3)
+    } else if width > height {
+        img.resize_to_fill(
+            1280,
+            720,
+            image::imageops::FilterType::Lanczos3,
+        )
     } else {
-        // Non-square image - maintain aspect ratio with max dimension of 1280
-        let (new_width, new_height) = if width > height {
-            (1280, (1280 * height / width) as u32)
-        } else {
-            ((1280 * width / height) as u32, 1280)
-        };
-
         img.resize(
-            new_width,
-            new_height,
+            1280,
+            1280,
             image::imageops::FilterType::Lanczos3,
         )
     }
@@ -315,7 +314,7 @@ fn encode_as_webp(img: image::DynamicImage) -> Result<Vec<u8>, Error> {
     let mut buffer = Vec::new();
 
     let encoder = webp::Encoder::from_image(&img)?;
-    let encoded = encoder.encode(0.92);
+    let encoded = encoder.encode(0.98);
 
     buffer.extend_from_slice(&encoded);
     Ok(buffer)
