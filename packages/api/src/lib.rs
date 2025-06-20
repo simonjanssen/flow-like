@@ -13,7 +13,7 @@ use tower_http::{
     timeout::TimeoutLayer,
 };
 
-mod entity;
+pub mod entity;
 mod middleware;
 mod routes;
 
@@ -27,6 +27,8 @@ pub mod auth {
     use crate::middleware;
     pub use middleware::jwt::AppUser;
 }
+
+pub use sea_orm;
 
 pub fn construct_router(state: Arc<State>) -> Router {
     let router = Router::new()

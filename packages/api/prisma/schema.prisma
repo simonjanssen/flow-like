@@ -152,6 +152,8 @@ model User {
   status UserStatus @default(ACTIVE)
   tier UserTier @default(FREE)
 
+  totalSize BigInt @default(0)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

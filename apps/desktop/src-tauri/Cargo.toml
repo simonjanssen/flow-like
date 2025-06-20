@@ -20,7 +20,7 @@ crate-type = ["lib", "cdylib"]
 tauri-build = { version = "2.2.0", features = [] }
 
 [dependencies]
-flow-like = {workspace = true, features = ["tauri"]}
+flow-like = {workspace = true, features = ["tauri"] }
 flow-like-catalog.workspace = true
 flow-like-types.workspace = true
 tauri = { version = "2.5.1", features = [ "protocol-asset", "macos-private-api"] }

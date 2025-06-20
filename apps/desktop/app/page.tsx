@@ -31,7 +31,6 @@ export default function Home() {
 	return (
 		<main className="min-h-screen items-center w-full max-h-dvh overflow-auto p-4 grid grid-cols-6 justify-start gap-2">
 			<TutorialDialog />
-			<a href="/ai/playground">Playground</a>
 			<Skeleton className="col-span-6 h-full min-h-[30dvh]" />
 			<Skeleton className="col-span-3 h-full min-h-[20dvh]" />
 			<Skeleton className="col-span-3 h-full" />

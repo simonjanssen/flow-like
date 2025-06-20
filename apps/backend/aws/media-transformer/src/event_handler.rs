@@ -30,18 +30,32 @@ pub(crate) async fn function_handler(event: LambdaEvent<S3Event>) -> Result<(), 
                 continue;
             }
 
-            // Replace current extension with .webp
-            let to_key = key
-                .split('.')
-                .next()
-                .map(|name| format!("{}.webp", name))
-                .ok_or(Error::from("Failed to construct new key for the object"))?;
-
-            let to_key = Path::from(to_key);
             let key_path = Path::from(key.clone());
-            if key_path.extension() != Some("webp") {
+
+            if key_path.extension() == Some("webp") {
+                tracing::info!("Skipping already converted webp file: {}", key);
                 continue;
             }
+
+            let extension = key_path.extension().unwrap_or("");
+            if !matches!(extension, "jpg" | "jpeg" | "png" | "gif" | "bmp" | "tiff" | "avif" | "heic") {
+                if matches!(extension, "mp4" | "mov" | "avi" | "mkv" | "flv" | "wmv") {
+                    tracing::info!("Skipping video file: {}", key);
+                    continue;
+                }
+                tracing::info!("Deleting unsupported file type: {}", key);
+                object_store.delete(&key_path).await.map_err(|e| {
+                    Error::from(format!("Failed to delete original object {}: {}", key, e))
+                })?;
+                continue;
+            }
+
+            let to_key = if let Some(stem) = key_path.filename() {
+                let stem_without_ext = stem.split('.').next().unwrap_or(stem);
+                Path::from("media").child(format!("{}.webp", stem_without_ext))
+            } else {
+                return Err(Error::from("Failed to construct new key for the object"));
+            };
 
             let reader = object_store
                 .get(&key_path)

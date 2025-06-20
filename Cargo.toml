@@ -9,6 +9,7 @@ members = [
     "apps/backend/aws/runtime-async",
     "apps/backend/aws/api",
     "apps/backend/aws/media-transformer",
+    "apps/backend/aws/file-tracker",
     "packages/core",
     "packages/model-provider",
     "packages/bits",

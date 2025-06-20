@@ -6,8 +6,16 @@ edition = "2021"
 [dependencies]
 flow-like-types.workspace = true
 flow-like-storage.workspace = true
-aws_lambda_events = { version = "0.16.0", default-features = false, features = ["s3"] }
+aws_lambda_events = { version = "0.16.1", default-features = false, features = ["s3"] }
 image = "0.25.6"
 
-lambda_runtime = "0.14.1"
+lambda_runtime = "0.14.2"
 tokio = { version = "1", features = ["macros"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+debug = false

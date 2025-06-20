@@ -67,7 +67,7 @@ impl ExecutionContextCache {
         })
     }
 
-    pub fn get_user_cache(&self, node: bool) -> flow_like_types::Result<Path> {
+    pub fn get_user_dir(&self, node: bool) -> flow_like_types::Result<Path> {
         let base = Path::from("users")
             .child(self.sub.clone())
             .child("apps")
@@ -79,8 +79,16 @@ impl ExecutionContextCache {
         Ok(base.child(self.node_id.clone()))
     }
 
-    pub fn get_cache(&self, node: bool) -> flow_like_types::Result<Path> {
-        let base = Path::from("tmp").child("apps").child(self.app_id.clone());
+    pub fn get_cache(&self, node: bool, user: bool) -> flow_like_types::Result<Path> {
+        let mut base = Path::from("tmp");
+
+        if user {
+            base = base.child("user").child(self.sub.clone());
+        } else {
+            base = base.child("global").child(self.board_id.clone());
+        }
+
+        base = base.child("apps").child(self.app_id.clone());
 
         if !node {
             return Ok(base);

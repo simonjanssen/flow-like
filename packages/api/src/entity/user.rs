@@ -39,6 +39,8 @@ pub struct Model {
     pub stripe_id: Option<String>,
     pub status: UserStatus,
     pub tier: UserTier,
+    #[sea_orm(column_name = "totalSize")]
+    pub total_size: i64,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

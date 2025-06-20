@@ -18,12 +18,12 @@ import {
 	WebStorageStateStore,
 } from "oidc-client-ts";
 import { useEffect, useState } from "react";
-import { AuthProvider, hasAuthParams, useAuth } from "react-oidc-context";
+import { AuthProvider, useAuth } from "react-oidc-context";
 import { get } from "../lib/api";
 import { TauriBackend } from "./tauri-provider";
 
 class OIDCTokenProvider implements TokenProvider {
-	constructor(private readonly userManager: UserManager) {}
+	constructor(private readonly userManager: UserManager) { }
 	async getTokens(options?: {
 		forceRefresh?: boolean;
 	}): Promise<AuthTokens | null> {
@@ -194,7 +194,7 @@ export function DesktopAuthProvider({
 	);
 }
 
-function AuthInner({ children }: { children: React.ReactNode }) {
+function AuthInner({ children }: Readonly<{ children: React.ReactNode }>) {
 	const auth = useAuth();
 	const backend = useBackend();
 
@@ -217,27 +217,29 @@ function AuthInner({ children }: { children: React.ReactNode }) {
 					return;
 				}
 
-				try {
-					const user = await auth?.signinSilent();
-					if (!user) {
-						console.warn(
-							"Silent login returned no user, attempting redirect login.",
-						);
-						await auth?.signinRedirect();
-					}
-				} catch (silentError) {
-					console.warn(
-						"Silent login failed, attempting normal login:",
-						silentError,
-					);
-
+				if (existingUser?.expired) {
 					try {
-						await auth?.signinRedirect();
-					} catch (redirectError) {
-						console.error(
-							"Both silent and redirect login failed:",
-							redirectError,
+						const user = await auth?.signinSilent();
+						if (!user) {
+							console.warn(
+								"Silent login returned no user, attempting redirect login.",
+							);
+							await auth?.signinRedirect();
+						}
+					} catch (silentError) {
+						console.warn(
+							"Silent login failed, attempting normal login:",
+							silentError,
 						);
+
+						try {
+							await auth?.signinRedirect();
+						} catch (redirectError) {
+							console.error(
+								"Both silent and redirect login failed:",
+								redirectError,
+							);
+						}
 					}
 				}
 			} catch (error) {
