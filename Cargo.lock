@@ -7576,7 +7576,11 @@ dependencies = [
  "flow-like-types",
  "image",
  "lambda_runtime 0.14.2",
+ "serde",
+ "serde_json",
  "tokio",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

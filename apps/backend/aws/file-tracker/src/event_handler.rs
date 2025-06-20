@@ -17,16 +17,12 @@ pub(crate) async fn function_handler(
     db: DatabaseConnection,
 ) -> Result<SqsBatchResponse, Error> {
     let mut batch_item_failures = Vec::new();
-    let payload = event.payload;
 
-    let records = payload.records;
-
-    for record in records {
-        let body = record.body;
+    for record in event.payload.records.iter() {
+        let body = &record.body;
         let s3_event = body
             .as_ref()
             .ok_or_else(|| Error::from("Record body is missing"))?;
-        tracing::info!("SQS Message Body: {}", s3_event);
 
         let s3_event: S3Event = serde_json::from_str(s3_event)
             .map_err(|e| Error::from(format!("Failed to parse SQS message: {}", e)))?;
@@ -35,26 +31,6 @@ pub(crate) async fn function_handler(
 
         // Process each S3 record in the event
         for s3_record in s3_event.records {
-            tracing::info!(
-                "Processing S3 event: {} for bucket: {}, key: {}",
-                s3_record
-                    .event_name
-                    .as_ref()
-                    .unwrap_or(&"unknown".to_string()),
-                s3_record
-                    .s3
-                    .bucket
-                    .name
-                    .as_ref()
-                    .unwrap_or(&"unknown".to_string()),
-                s3_record
-                    .s3
-                    .object
-                    .key
-                    .as_ref()
-                    .unwrap_or(&"unknown".to_string())
-            );
-
             if let Err(err) = process_s3_event(&s3_record, &dynamo, &s3, &db).await {
                 tracing::error!("Error processing S3 event: {}", err);
                 successful = false;
@@ -63,7 +39,7 @@ pub(crate) async fn function_handler(
 
         if !successful {
             // If processing failed, add to batch item failures
-            let message_id = record.message_id.unwrap_or_default();
+            let message_id = record.message_id.clone().unwrap_or_default();
             tracing::error!("Failed to process S3 event for message ID: {}", &message_id);
             batch_item_failures.push(aws_lambda_events::sqs::BatchItemFailure {
                 item_identifier: message_id,
