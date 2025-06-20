@@ -9,7 +9,13 @@ use flow_like_api::sea_orm::prelude::*;
 use flow_like_api::sea_orm::sea_query::Expr;
 use flow_like_api::sea_orm::{DatabaseConnection, EntityTrait, QueryFilter, TransactionTrait};
 use lambda_runtime::{tracing, Error, LambdaEvent};
-use urlencoding::decode;
+
+fn decode(key: &str) -> Result<String, Error> {
+    let key = key.replace("+", " ");
+    urlencoding::decode(&key)
+        .map_err(|e| Error::from(format!("Failed to decode key: {}", e)))
+        .map(|decoded| decoded.into_owned())
+}
 
 pub(crate) async fn function_handler(
     event: LambdaEvent<SqsEvent>,
@@ -82,8 +88,7 @@ async fn process_s3_event(
                 "Failed to decode URL-encoded key {}: {}",
                 key, e
             ))
-        })?
-        .into_owned();
+        })?;
 
     let size = s3_record
         .s3
@@ -288,5 +293,37 @@ fn parse_key_identity(key: &str) -> Result<(Option<String>, String), Error> {
         Ok((Some(parts[1].to_string()), parts[3].to_string()))
     } else {
         Err("Invalid key format".into())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_key_decoding_1() {
+        let key = "media/image+%281%29.jpg";
+
+        let decoded_key = decode(key).unwrap();
+
+        assert_eq!(decoded_key, "media/image (1).jpg");
+    }
+
+    #[tokio::test]
+    async fn test_key_decoding_2() {
+        let key = "media/image%2B1.jpg";
+
+        let decoded_key = decode(key).unwrap();
+
+        assert_eq!(decoded_key, "media/image+1.jpg");
+    }
+
+    #[tokio::test]
+    async fn test_key_decoding_3() {
+        let key = "media/image+%281%29+copy%2B1.jpg";
+
+        let decoded_key = decode(key).unwrap();
+
+        assert_eq!(decoded_key, "media/image (1) copy+1.jpg");
     }
 }

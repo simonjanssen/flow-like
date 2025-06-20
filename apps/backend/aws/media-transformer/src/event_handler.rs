@@ -10,6 +10,13 @@ use imageproc::drawing::Canvas;
 use lambda_runtime::{tracing, Error, LambdaEvent};
 use std::{io::Cursor, time::Duration};
 
+fn decode(key: &str) -> Result<String, Error> {
+    let key = key.replace("+", " ");
+    urlencoding::decode(&key)
+        .map_err(|e| Error::from(format!("Failed to decode key: {}", e)))
+        .map(|decoded| decoded.into_owned())
+}
+
 #[tracing::instrument(name = "SQS Function Handler", skip(event))]
 pub(crate) async fn function_handler(
     event: LambdaEvent<SqsEvent>,
@@ -96,21 +103,12 @@ async fn process_single_record(
         .as_ref()
         .ok_or_else(|| Error::from("Missing object key in S3 event"))?;
 
-    let key = if raw_key.contains("%") || raw_key.contains("+") {
-        // Decode percent-encoded characters and convert + to spaces
-         let decoded_key = urlencoding::decode(raw_key)
-            .map_err(|e| Error::from(format!("Failed to decode key: {}", e)))
-            .unwrap()
-            .into_owned();
-
-        let decoded_key = decoded_key.replace('+', " ");
-        decoded_key
-    } else {
-        // Use the key as-is if it doesn't appear to be percent-encoded
-        raw_key.clone()
-    };
-
-    tracing::info!("Processing object with raw key: '{}', decoded key: '{}'", raw_key, key);
+    let key = decode(raw_key).map_err(|e| {
+        Error::from(format!(
+            "Failed to decode S3 object key '{}': {}",
+            raw_key, e
+        ))
+    })?;
 
     if bucket != bucket_name {
         tracing::warn!("Skipping object from different bucket: {}", bucket);
@@ -118,7 +116,6 @@ async fn process_single_record(
     }
 
     if key.ends_with(".webp") {
-        tracing::info!("Skipping already converted webp file: {}", key);
         return Ok(());
     }
 
@@ -129,11 +126,13 @@ async fn process_single_record(
         .send()
         .await
     {
-        Ok(_) => {
-            tracing::info!("Confirmed object exists: {}", key);
-        }
+        Ok(_) => {}
         Err(e) => {
-            tracing::error!("Object does not exist or cannot be accessed: {} - Error: {}", key, e);
+            tracing::error!(
+                "Object does not exist or cannot be accessed: {} - Error: {}",
+                key,
+                e
+            );
             return Err(Error::from(format!("Object not accessible: {}", key)));
         }
     }
@@ -170,7 +169,6 @@ async fn process_single_record(
         .await
         .map_err(|e| Error::from(format!("Failed to delete original file {}: {}", key, e)))?;
 
-    tracing::info!("Successfully converted {} to {}", key, converted_key);
     Ok(())
 }
 
@@ -237,7 +235,12 @@ async fn convert_and_store_image(
         .send()
         .await
         .map_err(|e| {
-            tracing::error!("S3 GetObject failed for bucket='{}', key='{}': {:?}", bucket_name, source_key, e);
+            tracing::error!(
+                "S3 GetObject failed for bucket='{}', key='{}': {:?}",
+                bucket_name,
+                source_key,
+                e
+            );
             Error::from(format!("Failed to download image {}: {}", source_key, e))
         })?;
 
@@ -323,16 +326,29 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn test_key_decoding() {
+    async fn test_key_decoding_1() {
         let key = "media/image+%281%29.jpg";
 
-        let decoded_key = urlencoding::decode(key)
-            .map_err(|e| Error::from(format!("Failed to decode key: {}", e)))
-            .unwrap()
-            .into_owned();
-
-        let decoded_key = decoded_key.replace('+', " ");
+        let decoded_key = decode(key).unwrap();
 
         assert_eq!(decoded_key, "media/image (1).jpg");
+    }
+
+    #[tokio::test]
+    async fn test_key_decoding_2() {
+        let key = "media/image%2B1.jpg";
+
+        let decoded_key = decode(key).unwrap();
+
+        assert_eq!(decoded_key, "media/image+1.jpg");
+    }
+
+    #[tokio::test]
+    async fn test_key_decoding_3() {
+        let key = "media/image+%281%29+copy%2B1.jpg";
+
+        let decoded_key = decode(key).unwrap();
+
+        assert_eq!(decoded_key, "media/image (1) copy+1.jpg");
     }
 }
