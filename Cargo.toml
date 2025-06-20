@@ -27,7 +27,7 @@ flow-like-model-provider = { path = "packages/model-provider" }
 flow-like-bits = { path = "packages/bits" }
 flow-like-catalog = { path = "packages/catalog" }
 flow-like-storage = { path = "packages/storage" }
-lambda_http = "0.14.0"
+lambda_http = "0.15.1"
 futures = "0.3.31"
 serde = { version = "1.0.219", features = ["derive", "rc"] }
 serde_json = "1.0.134"
@@ -52,3 +52,8 @@ futures-util = "0.3.31"
 moka = { version = "0.12.10", features = ["sync"] }
 bitflags = "2.9.1"
 blake3 = "1.8.2"
+lambda_runtime = "0.14.2"
+aws-config = "1.8.0"
+aws-sdk-dynamodb = "1.80.0"
+aws-sdk-s3 = "1.93.0"
+tokio = "1.45.1"

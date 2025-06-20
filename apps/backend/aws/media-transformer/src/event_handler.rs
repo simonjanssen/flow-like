@@ -1,10 +1,10 @@
-use std::{io::Cursor, sync::Arc};
-
+use std::io::Cursor;
+use aws_config::BehaviorVersion;
 use aws_lambda_events::{event::s3::S3Event, s3::S3EventRecord, sqs::{SqsBatchResponse, SqsEvent}};
-use flow_like_storage::{object_store::{aws::AmazonS3, ObjectStore}, Path};
-use flow_like_types::imageproc::drawing::Canvas;
 use image::ImageReader;
 use lambda_runtime::{tracing, Error, LambdaEvent};
+use imageproc::drawing::Canvas;
+use aws_sdk_s3::{Client as S3Client, primitives::ByteStream};
 
 pub(crate) async fn function_handler(
     event: LambdaEvent<SqsEvent>,
@@ -40,15 +40,11 @@ async fn process_s3_events(records: &Vec<S3EventRecord>) -> Result<(), Error> {
     let bucket_name = std::env::var("BUCKET_NAME")
         .map_err(|e| Error::from(format!("Failed to get BUCKET_NAME environment variable: {}", e)))?;
 
-    let object_store = Arc::new(
-        flow_like_storage::object_store::aws::AmazonS3Builder::new()
-            .with_bucket_name(&bucket_name)
-            .build()
-            .map_err(|e| Error::from(format!("Failed to create S3 object store: {}", e)))?,
-    );
+    let config = aws_config::load_defaults(BehaviorVersion::latest()).await;
+    let s3_client = S3Client::new(&config);
 
     for record in records {
-        if let Err(err) = process_single_record(record, object_store.clone(), &bucket_name).await {
+        if let Err(err) = process_single_record(record, &s3_client, &bucket_name).await {
             tracing::error!("Failed to process record: {}", err);
             // Continue processing other records instead of failing the entire batch
             continue;
@@ -60,7 +56,7 @@ async fn process_s3_events(records: &Vec<S3EventRecord>) -> Result<(), Error> {
 
 async fn process_single_record(
     record: &S3EventRecord,
-    object_store: Arc<AmazonS3>,
+    s3_client: &S3Client,
     bucket_name: &str,
 ) -> Result<(), Error> {
     let object = &record.s3.object;
@@ -75,15 +71,13 @@ async fn process_single_record(
         return Ok(());
     }
 
-    let key_path = Path::from(key.clone());
-
     // Skip already converted WebP files
-    if key_path.extension() == Some("webp") {
+    if key.ends_with(".webp") {
         tracing::info!("Skipping already converted webp file: {}", key);
         return Ok(());
     }
 
-    let extension = key_path.extension().unwrap_or("");
+    let extension = key.split('.').last().unwrap_or("");
 
     // Handle unsupported file types
     if !is_supported_image_format(extension) {
@@ -93,17 +87,27 @@ async fn process_single_record(
         }
 
         tracing::info!("Deleting unsupported file type: {}", key);
-        object_store.delete(&key_path).await
+        s3_client
+            .delete_object()
+            .bucket(bucket_name)
+            .key(key)
+            .send()
+            .await
             .map_err(|e| Error::from(format!("Failed to delete unsupported file {}: {}", key, e)))?;
         return Ok(());
     }
 
     // Process the image
-    let converted_key = generate_webp_key(&key_path)?;
-    convert_and_store_image(object_store.clone(), &key_path, &converted_key).await?;
+    let converted_key = generate_webp_key(key)?;
+    convert_and_store_image(s3_client, bucket_name, key, &converted_key).await?;
 
     // Delete original file after successful conversion
-    object_store.delete(&key_path).await
+    s3_client
+        .delete_object()
+        .bucket(bucket_name)
+        .key(key)
+        .send()
+        .await
         .map_err(|e| Error::from(format!("Failed to delete original file {}: {}", key, e)))?;
 
     tracing::info!("Successfully converted {} to {}", key, converted_key);
@@ -124,56 +128,48 @@ fn is_video_format(extension: &str) -> bool {
     )
 }
 
-fn generate_webp_key(key_path: &Path) -> Result<Path, Error> {
-    let filename = key_path.filename()
-        .ok_or_else(|| Error::from("Failed to extract filename from path"))?;
-
-    let stem_without_ext = filename.split('.').next().unwrap_or(filename);
-    let string_path = key_path.to_string();
-
+fn generate_webp_key(key: &str) -> Result<String, Error> {
     // Ensure the path starts with "media/"
-    if !string_path.starts_with("media/") {
-        return Err(Error::from(format!("Path must start with 'media/': {}", string_path)));
+    if !key.starts_with("media/") {
+        return Err(Error::from(format!("Path must start with 'media/': {}", key)));
     }
 
-    let mut result_path = Path::from("media");
-
-    for part in string_path.split('/').skip(1) { // Skip the "media" prefix
-        if part.is_empty() {
-            continue;
-        }
-
-        if part == filename {
-            // Replace the filename with the webp version
-            result_path = result_path.child(format!("{}.webp", stem_without_ext));
-        } else {
-            result_path = result_path.child(part);
-        }
+    // Find the last dot to replace the extension
+    if let Some(last_dot) = key.rfind('.') {
+        Ok(format!("{}.webp", &key[..last_dot]))
+    } else {
+        // No extension found, just append .webp
+        Ok(format!("{}.webp", key))
     }
-
-    Ok(result_path)
 }
 
 async fn convert_and_store_image(
-    object_store: Arc<AmazonS3>,
-    source_key: &Path,
-    target_key: &Path,
+    s3_client: &S3Client,
+    bucket_name: &str,
+    source_key: &str,
+    target_key: &str,
 ) -> Result<(), Error> {
     // Download the image
-    let reader = object_store.get(source_key).await
+    let response = s3_client
+        .get_object()
+        .bucket(bucket_name)
+        .key(source_key)
+        .send()
+        .await
         .map_err(|e| Error::from(format!("Failed to download image {}: {}", source_key, e)))?;
 
-    let image_data = reader.bytes().await
-        .map_err(|e| Error::from(format!("Failed to read image data: {}", e)))?;
+    let image_data = response.body.collect().await
+        .map_err(|e| Error::from(format!("Failed to read image data: {}", e)))?
+        .into_bytes();
 
     // Decode and process the image
     let cursor = Cursor::new(image_data);
     let img = ImageReader::new(cursor)
         .with_guessed_format()
-        .map_err(|e| Error::from(format!("Failed to guess image format: {}", e)))?;
+        .map_err(|e| Error::from(format!("Image format detection failed for {}: {}", source_key, e)))?;
 
     let mut decoded_img = img.decode()
-        .map_err(|e| Error::from(format!("Failed to decode image: {}", e)))?;
+        .map_err(|e| Error::from(format!("Image decoding failed for {}: {}", source_key, e)))?;
 
     // Resize the image
     decoded_img = resize_image(decoded_img);
@@ -182,7 +178,14 @@ async fn convert_and_store_image(
     let webp_data = encode_as_webp(decoded_img)?;
 
     // Upload the converted image
-    object_store.put(target_key, webp_data.into()).await
+    s3_client
+        .put_object()
+        .bucket(bucket_name)
+        .key(target_key)
+        .body(ByteStream::from(webp_data))
+        .content_type("image/webp")
+        .send()
+        .await
         .map_err(|e| Error::from(format!("Failed to upload converted image {}: {}", target_key, e)))?;
 
     Ok(())
