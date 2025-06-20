@@ -19,8 +19,7 @@ aws-sdk-s3.workspace = true
 lambda_runtime.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 urlencoding.workspace = true
-percent-encoding = "2.3.1"
-url = "2.5.4"
+webp = "0.3.0"
 
 [profile.release]
 opt-level = "z"

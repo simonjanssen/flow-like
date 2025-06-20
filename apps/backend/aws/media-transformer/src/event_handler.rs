@@ -313,11 +313,11 @@ fn resize_image(img: image::DynamicImage) -> image::DynamicImage {
 #[tracing::instrument(name = "Encode Image as WebP", skip(img))]
 fn encode_as_webp(img: image::DynamicImage) -> Result<Vec<u8>, Error> {
     let mut buffer = Vec::new();
-    let mut cursor = Cursor::new(&mut buffer);
 
-    img.write_to(&mut cursor, image::ImageFormat::WebP)
-        .map_err(|e| Error::from(format!("Failed to encode image as WebP: {}", e)))?;
+    let encoder = webp::Encoder::from_image(&img)?;
+    let encoded = encoder.encode(0.85);
 
+    buffer.extend_from_slice(&encoded);
     Ok(buffer)
 }
 
