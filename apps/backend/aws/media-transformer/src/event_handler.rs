@@ -1,4 +1,4 @@
-use aws_config::BehaviorVersion;
+use aws_config::{retry::RetryConfig, timeout::TimeoutConfig, BehaviorVersion};
 use aws_lambda_events::{
     event::s3::S3Event,
     s3::S3EventRecord,
@@ -8,7 +8,7 @@ use aws_sdk_s3::{primitives::ByteStream, Client as S3Client};
 use image::ImageReader;
 use imageproc::drawing::Canvas;
 use lambda_runtime::{tracing, Error, LambdaEvent};
-use std::io::Cursor;
+use std::{io::Cursor, time::Duration};
 use urlencoding::decode;
 
 #[tracing::instrument(name = "SQS Function Handler", skip(event))]
@@ -50,7 +50,21 @@ async fn process_s3_events(records: &Vec<S3EventRecord>) -> Result<(), Error> {
         ))
     })?;
 
-    let config = aws_config::load_defaults(BehaviorVersion::latest()).await;
+    let retry_config = RetryConfig::adaptive()
+        .with_max_attempts(5)
+        .with_initial_backoff(Duration::from_millis(100));
+
+    let timeout_config = TimeoutConfig::builder()
+        .operation_timeout(Duration::from_secs(300))
+        .operation_attempt_timeout(Duration::from_secs(60))
+        .build();
+
+    let config = aws_config::defaults(BehaviorVersion::latest())
+        .retry_config(retry_config)
+        .timeout_config(timeout_config)
+        .load()
+        .await;
+
     let s3_client = S3Client::new(&config);
 
     for record in records {
@@ -218,7 +232,10 @@ async fn convert_and_store_image(
         .key(source_key)
         .send()
         .await
-        .map_err(|e| Error::from(format!("Failed to download image {}: {}", source_key, e)))?;
+        .map_err(|e| {
+            tracing::error!("S3 GetObject failed for bucket='{}', key='{}': {:?}", bucket_name, source_key, e);
+            Error::from(format!("Failed to download image {}: {}", source_key, e))
+        })?;
 
     let image_data = response
         .body
