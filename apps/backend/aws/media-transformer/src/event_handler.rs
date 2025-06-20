@@ -9,7 +9,6 @@ use image::ImageReader;
 use imageproc::drawing::Canvas;
 use lambda_runtime::{tracing, Error, LambdaEvent};
 use std::{io::Cursor, time::Duration};
-use percent_encoding::percent_decode_str;
 
 #[tracing::instrument(name = "SQS Function Handler", skip(event))]
 pub(crate) async fn function_handler(
@@ -99,12 +98,13 @@ async fn process_single_record(
 
     let key = if raw_key.contains("%") || raw_key.contains("+") {
         // Decode percent-encoded characters and convert + to spaces
-        let decoded = percent_decode_str(raw_key)
-            .decode_utf8()
-            .map_err(|e| Error::from(format!("Failed to decode percent-encoded key {}: {}", raw_key, e)))?;
+         let decoded_key = urlencoding::decode(raw_key)
+            .map_err(|e| Error::from(format!("Failed to decode key: {}", e)))
+            .unwrap()
+            .into_owned();
 
-        // Replace + with spaces (URL encoding standard)
-        decoded.replace("+", " ")
+        let decoded_key = decoded_key.replace('+', " ");
+        decoded_key
     } else {
         // Use the key as-is if it doesn't appear to be percent-encoded
         raw_key.clone()
@@ -316,4 +316,23 @@ fn encode_as_webp(img: image::DynamicImage) -> Result<Vec<u8>, Error> {
         .map_err(|e| Error::from(format!("Failed to encode image as WebP: {}", e)))?;
 
     Ok(buffer)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_key_decoding() {
+        let key = "media/image+%281%29.jpg";
+
+        let decoded_key = urlencoding::decode(key)
+            .map_err(|e| Error::from(format!("Failed to decode key: {}", e)))
+            .unwrap()
+            .into_owned();
+
+        let decoded_key = decoded_key.replace('+', " ");
+
+        assert_eq!(decoded_key, "media/image (1).jpg");
+    }
 }

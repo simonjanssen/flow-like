@@ -20,6 +20,7 @@ lambda_runtime.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 urlencoding.workspace = true
 percent-encoding = "2.3.1"
+url = "2.5.4"
 
 [profile.release]
 opt-level = "z"
