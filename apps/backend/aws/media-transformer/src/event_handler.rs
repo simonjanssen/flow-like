@@ -97,12 +97,14 @@ async fn process_single_record(
         .as_ref()
         .ok_or_else(|| Error::from("Missing object key in S3 event"))?;
 
-    let key = if raw_key.contains("%") {
-        // Only decode if it contains percent-encoded characters
-        percent_decode_str(raw_key)
+    let key = if raw_key.contains("%") || raw_key.contains("+") {
+        // Decode percent-encoded characters and convert + to spaces
+        let decoded = percent_decode_str(raw_key)
             .decode_utf8()
-            .map_err(|e| Error::from(format!("Failed to decode percent-encoded key {}: {}", raw_key, e)))?
-            .into_owned()
+            .map_err(|e| Error::from(format!("Failed to decode percent-encoded key {}: {}", raw_key, e)))?;
+
+        // Replace + with spaces (URL encoding standard)
+        decoded.replace("+", " ")
     } else {
         // Use the key as-is if it doesn't appear to be percent-encoded
         raw_key.clone()
