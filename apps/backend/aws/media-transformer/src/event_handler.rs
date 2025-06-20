@@ -9,6 +9,7 @@ use image::ImageReader;
 use imageproc::drawing::Canvas;
 use lambda_runtime::{tracing, Error, LambdaEvent};
 use std::io::Cursor;
+use urlencoding::decode;
 
 #[tracing::instrument(name = "SQS Function Handler", skip(event))]
 pub(crate) async fn function_handler(
@@ -76,10 +77,19 @@ async fn process_single_record(
         .name
         .as_ref()
         .ok_or_else(|| Error::from("Missing bucket name in S3 event"))?;
-    let key = object
+    let raw_key = object
         .key
         .as_ref()
         .ok_or_else(|| Error::from("Missing object key in S3 event"))?;
+
+    let key = decode(raw_key)
+        .map_err(|e| {
+            Error::from(format!(
+                "Failed to decode URL-encoded key {}: {}",
+                raw_key, e
+            ))
+        })?
+        .into_owned();
 
     if bucket != bucket_name {
         tracing::warn!("Skipping object from different bucket: {}", bucket);
@@ -93,7 +103,6 @@ async fn process_single_record(
 
     let extension = key.split('.').last().unwrap_or("");
 
-    // Handle unsupported file types
     if !is_supported_image_format(extension) {
         if is_video_format(extension) {
             tracing::info!("Skipping video file: {}", key);
@@ -104,7 +113,7 @@ async fn process_single_record(
         s3_client
             .delete_object()
             .bucket(bucket_name)
-            .key(key)
+            .key(&key)
             .send()
             .await
             .map_err(|e| {
@@ -113,15 +122,13 @@ async fn process_single_record(
         return Ok(());
     }
 
-    // Process the image
-    let converted_key = generate_webp_key(key)?;
-    convert_and_store_image(s3_client, bucket_name, key, &converted_key).await?;
+    let converted_key = generate_webp_key(&key)?;
+    convert_and_store_image(s3_client, bucket_name, &key, &converted_key).await?;
 
-    // Delete original file after successful conversion
     s3_client
         .delete_object()
         .bucket(bucket_name)
-        .key(key)
+        .key(&key)
         .send()
         .await
         .map_err(|e| Error::from(format!("Failed to delete original file {}: {}", key, e)))?;
@@ -133,7 +140,7 @@ async fn process_single_record(
 fn is_supported_image_format(extension: &str) -> bool {
     matches!(
         extension.to_lowercase().as_str(),
-        "jpg" | "jpeg" | "png" | "gif" | "bmp" | "tiff" | "avif" | "heic"
+        "jpg" | "jpeg" | "png" | "gif" | "bmp" | "tiff" | "avif" | "heic" | "ico"
     )
 }
 
@@ -145,7 +152,6 @@ fn is_video_format(extension: &str) -> bool {
 }
 
 fn generate_webp_key(key: &str) -> Result<String, Error> {
-    // Ensure the path starts with "media/"
     if !key.starts_with("media/") {
         return Err(Error::from(format!(
             "Path must start with 'media/': {}",
@@ -153,11 +159,9 @@ fn generate_webp_key(key: &str) -> Result<String, Error> {
         )));
     }
 
-    // Find the last dot to replace the extension
     if let Some(last_dot) = key.rfind('.') {
         Ok(format!("{}.webp", &key[..last_dot]))
     } else {
-        // No extension found, just append .webp
         Ok(format!("{}.webp", key))
     }
 }

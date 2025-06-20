@@ -18,6 +18,7 @@ aws-sdk-s3.workspace = true
 
 lambda_runtime.workspace = true
 tokio = { workspace = true, features = ["macros"] }
+urlencoding.workspace = true
 
 [profile.release]
 opt-level = "z"
