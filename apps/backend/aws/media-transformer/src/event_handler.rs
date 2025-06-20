@@ -293,7 +293,7 @@ fn resize_image(img: image::DynamicImage) -> image::DynamicImage {
 
     if width == height {
         // Square image - resize to 1024x1024
-        img.resize(1024, 1024, image::imageops::FilterType::CatmullRom)
+        img.resize(1024, 1024, image::imageops::FilterType::Lanczos3)
     } else {
         // Non-square image - maintain aspect ratio with max dimension of 1280
         let (new_width, new_height) = if width > height {
@@ -305,7 +305,7 @@ fn resize_image(img: image::DynamicImage) -> image::DynamicImage {
         img.resize(
             new_width,
             new_height,
-            image::imageops::FilterType::CatmullRom,
+            image::imageops::FilterType::Lanczos3,
         )
     }
 }
@@ -315,7 +315,7 @@ fn encode_as_webp(img: image::DynamicImage) -> Result<Vec<u8>, Error> {
     let mut buffer = Vec::new();
 
     let encoder = webp::Encoder::from_image(&img)?;
-    let encoded = encoder.encode(0.85);
+    let encoded = encoder.encode(0.92);
 
     buffer.extend_from_slice(&encoded);
     Ok(buffer)
