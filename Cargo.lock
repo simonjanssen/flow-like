@@ -7529,6 +7529,7 @@ dependencies = [
  "image",
  "imageproc",
  "lambda_runtime",
+ "percent-encoding",
  "serde",
  "serde_json",
  "tokio",

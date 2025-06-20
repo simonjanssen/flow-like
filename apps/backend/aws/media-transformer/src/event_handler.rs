@@ -9,7 +9,7 @@ use image::ImageReader;
 use imageproc::drawing::Canvas;
 use lambda_runtime::{tracing, Error, LambdaEvent};
 use std::{io::Cursor, time::Duration};
-use urlencoding::decode;
+use percent_encoding::percent_decode_str;
 
 #[tracing::instrument(name = "SQS Function Handler", skip(event))]
 pub(crate) async fn function_handler(
@@ -97,14 +97,16 @@ async fn process_single_record(
         .as_ref()
         .ok_or_else(|| Error::from("Missing object key in S3 event"))?;
 
-    let key = decode(raw_key)
-        .map_err(|e| {
-            Error::from(format!(
-                "Failed to decode URL-encoded key {}: {}",
-                raw_key, e
-            ))
-        })?
-        .into_owned();
+    let key = if raw_key.contains("%") {
+        // Only decode if it contains percent-encoded characters
+        percent_decode_str(raw_key)
+            .decode_utf8()
+            .map_err(|e| Error::from(format!("Failed to decode percent-encoded key {}: {}", raw_key, e)))?
+            .into_owned()
+    } else {
+        // Use the key as-is if it doesn't appear to be percent-encoded
+        raw_key.clone()
+    };
 
     tracing::info!("Processing object with raw key: '{}', decoded key: '{}'", raw_key, key);
 
