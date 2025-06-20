@@ -134,7 +134,7 @@ export function AppCard({
 					src={metadata?.thumbnail ?? "/placeholder-thumbnail.webp"}
 					alt={metadata?.name ?? app.id}
 					width={1280}
-					height={640}
+					height={720}
 					loading="lazy"
 					decoding="async"
 					fetchPriority="low"
