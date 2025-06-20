@@ -9,6 +9,7 @@ use flow_like_api::sea_orm::prelude::*;
 use flow_like_api::sea_orm::sea_query::Expr;
 use flow_like_api::sea_orm::{DatabaseConnection, EntityTrait, QueryFilter, TransactionTrait};
 use lambda_runtime::{tracing, Error, LambdaEvent};
+use urlencoding::decode;
 
 pub(crate) async fn function_handler(
     event: LambdaEvent<SqsEvent>,
@@ -74,6 +75,16 @@ async fn process_s3_event(
         .key
         .as_ref()
         .ok_or_else(|| Error::from("Object key is missing"))?;
+
+    let key = decode(key)
+        .map_err(|e| {
+            Error::from(format!(
+                "Failed to decode URL-encoded key {}: {}",
+                key, e
+            ))
+        })?
+        .into_owned();
+
     let size = s3_record
         .s3
         .object
@@ -87,14 +98,14 @@ async fn process_s3_event(
         .as_ref()
         .ok_or_else(|| Error::from("ETag is missing"))?;
 
-    let (user_id, app_id) = parse_key_identity(key)
+    let (user_id, app_id) = parse_key_identity(&key)
         .map_err(|e| Error::from(format!("Failed to parse key identity: {}", e)))?;
 
     let is_deletion = event_name.starts_with("ObjectRemoved");
 
     let delta = match is_deletion {
         true => {
-            let old_value = delete_dynamo(dynamo, &app_id, key).await?;
+            let old_value = delete_dynamo(dynamo, &app_id, &key).await?;
             if old_value == 0 {
                 tracing::warn!("No previous size found for key: {}", key);
             }
@@ -102,7 +113,7 @@ async fn process_s3_event(
         }
         false => {
             let old_value =
-                upsert_dynamo(dynamo, &app_id, key, user_id.as_deref(), size, etag).await?;
+                upsert_dynamo(dynamo, &app_id, &key, user_id.as_deref(), size, etag).await?;
             if old_value == 0 {
                 tracing::warn!("No previous size found for key: {}", key);
             }
@@ -113,8 +124,8 @@ async fn process_s3_event(
     // Update Postgres totals
     if let Err(err) = update_postgres_usage(&db, user_id.as_deref(), &app_id, delta).await {
         tracing::error!("Failed to update Postgres usage for key {}: {}", key, err);
-        delete_object(s3, bucket, key).await?;
-        delete_dynamo(dynamo, &app_id, key).await?;
+        delete_object(s3, bucket, &key).await?;
+        delete_dynamo(dynamo, &app_id, &key).await?;
         return Err(err);
     }
     Ok(())

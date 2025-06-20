@@ -77,6 +77,7 @@ async fn process_single_record(
         .name
         .as_ref()
         .ok_or_else(|| Error::from("Missing bucket name in S3 event"))?;
+
     let raw_key = object
         .key
         .as_ref()
@@ -91,6 +92,8 @@ async fn process_single_record(
         })?
         .into_owned();
 
+    tracing::info!("Processing object with raw key: '{}', decoded key: '{}'", raw_key, key);
+
     if bucket != bucket_name {
         tracing::warn!("Skipping object from different bucket: {}", bucket);
         return Ok(());
@@ -99,6 +102,22 @@ async fn process_single_record(
     if key.ends_with(".webp") {
         tracing::info!("Skipping already converted webp file: {}", key);
         return Ok(());
+    }
+
+    match s3_client
+        .head_object()
+        .bucket(bucket_name)
+        .key(&key)
+        .send()
+        .await
+    {
+        Ok(_) => {
+            tracing::info!("Confirmed object exists: {}", key);
+        }
+        Err(e) => {
+            tracing::error!("Object does not exist or cannot be accessed: {} - Error: {}", key, e);
+            return Err(Error::from(format!("Object not accessible: {}", key)));
+        }
     }
 
     let extension = key.split('.').last().unwrap_or("");
