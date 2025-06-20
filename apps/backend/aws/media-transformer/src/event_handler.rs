@@ -1,11 +1,16 @@
-use std::io::Cursor;
 use aws_config::BehaviorVersion;
-use aws_lambda_events::{event::s3::S3Event, s3::S3EventRecord, sqs::{SqsBatchResponse, SqsEvent}};
+use aws_lambda_events::{
+    event::s3::S3Event,
+    s3::S3EventRecord,
+    sqs::{SqsBatchResponse, SqsEvent},
+};
+use aws_sdk_s3::{primitives::ByteStream, Client as S3Client};
 use image::ImageReader;
-use lambda_runtime::{tracing, Error, LambdaEvent};
 use imageproc::drawing::Canvas;
-use aws_sdk_s3::{Client as S3Client, primitives::ByteStream};
+use lambda_runtime::{tracing, Error, LambdaEvent};
+use std::io::Cursor;
 
+#[tracing::instrument(name = "SQS Function Handler", skip(event))]
 pub(crate) async fn function_handler(
     event: LambdaEvent<SqsEvent>,
 ) -> Result<SqsBatchResponse, Error> {
@@ -35,10 +40,14 @@ pub(crate) async fn function_handler(
     })
 }
 
+#[tracing::instrument(name = "Process S3 Events", skip(records))]
 async fn process_s3_events(records: &Vec<S3EventRecord>) -> Result<(), Error> {
-    // Initialize object store and bucket name
-    let bucket_name = std::env::var("BUCKET_NAME")
-        .map_err(|e| Error::from(format!("Failed to get BUCKET_NAME environment variable: {}", e)))?;
+    let bucket_name = std::env::var("BUCKET_NAME").map_err(|e| {
+        Error::from(format!(
+            "Failed to get BUCKET_NAME environment variable: {}",
+            e
+        ))
+    })?;
 
     let config = aws_config::load_defaults(BehaviorVersion::latest()).await;
     let s3_client = S3Client::new(&config);
@@ -54,24 +63,29 @@ async fn process_s3_events(records: &Vec<S3EventRecord>) -> Result<(), Error> {
     Ok(())
 }
 
+#[tracing::instrument(name = "Process Single Event", skip(record, s3_client, bucket_name))]
 async fn process_single_record(
     record: &S3EventRecord,
     s3_client: &S3Client,
     bucket_name: &str,
 ) -> Result<(), Error> {
     let object = &record.s3.object;
-    let bucket = record.s3.bucket.name.as_ref()
+    let bucket = record
+        .s3
+        .bucket
+        .name
+        .as_ref()
         .ok_or_else(|| Error::from("Missing bucket name in S3 event"))?;
-    let key = object.key.as_ref()
+    let key = object
+        .key
+        .as_ref()
         .ok_or_else(|| Error::from("Missing object key in S3 event"))?;
 
-    // Skip objects from different buckets
     if bucket != bucket_name {
         tracing::warn!("Skipping object from different bucket: {}", bucket);
         return Ok(());
     }
 
-    // Skip already converted WebP files
     if key.ends_with(".webp") {
         tracing::info!("Skipping already converted webp file: {}", key);
         return Ok(());
@@ -93,7 +107,9 @@ async fn process_single_record(
             .key(key)
             .send()
             .await
-            .map_err(|e| Error::from(format!("Failed to delete unsupported file {}: {}", key, e)))?;
+            .map_err(|e| {
+                Error::from(format!("Failed to delete unsupported file {}: {}", key, e))
+            })?;
         return Ok(());
     }
 
@@ -131,7 +147,10 @@ fn is_video_format(extension: &str) -> bool {
 fn generate_webp_key(key: &str) -> Result<String, Error> {
     // Ensure the path starts with "media/"
     if !key.starts_with("media/") {
-        return Err(Error::from(format!("Path must start with 'media/': {}", key)));
+        return Err(Error::from(format!(
+            "Path must start with 'media/': {}",
+            key
+        )));
     }
 
     // Find the last dot to replace the extension
@@ -143,13 +162,33 @@ fn generate_webp_key(key: &str) -> Result<String, Error> {
     }
 }
 
+#[tracing::instrument(name = "Convert and Store Image", skip(s3_client, bucket_name))]
 async fn convert_and_store_image(
     s3_client: &S3Client,
     bucket_name: &str,
     source_key: &str,
     target_key: &str,
 ) -> Result<(), Error> {
-    // Download the image
+    // Check if target already exists to avoid unnecessary work
+    match s3_client
+        .head_object()
+        .bucket(bucket_name)
+        .key(target_key)
+        .send()
+        .await
+    {
+        Ok(_) => {
+            tracing::info!(
+                "Target WebP already exists, skipping conversion: {}",
+                target_key
+            );
+            return Ok(());
+        }
+        Err(_) => {
+            // Target doesn't exist, proceed with conversion
+        }
+    }
+
     let response = s3_client
         .get_object()
         .bucket(bucket_name)
@@ -158,26 +197,31 @@ async fn convert_and_store_image(
         .await
         .map_err(|e| Error::from(format!("Failed to download image {}: {}", source_key, e)))?;
 
-    let image_data = response.body.collect().await
+    let image_data = response
+        .body
+        .collect()
+        .await
         .map_err(|e| Error::from(format!("Failed to read image data: {}", e)))?
         .into_bytes();
 
-    // Decode and process the image
     let cursor = Cursor::new(image_data);
     let img = ImageReader::new(cursor)
         .with_guessed_format()
-        .map_err(|e| Error::from(format!("Image format detection failed for {}: {}", source_key, e)))?;
+        .map_err(|e| {
+            Error::from(format!(
+                "Image format detection failed for {}: {}",
+                source_key, e
+            ))
+        })?;
 
-    let mut decoded_img = img.decode()
+    let mut decoded_img = img
+        .decode()
         .map_err(|e| Error::from(format!("Image decoding failed for {}: {}", source_key, e)))?;
 
-    // Resize the image
     decoded_img = resize_image(decoded_img);
 
-    // Convert to WebP
     let webp_data = encode_as_webp(decoded_img)?;
 
-    // Upload the converted image
     s3_client
         .put_object()
         .bucket(bucket_name)
@@ -186,11 +230,17 @@ async fn convert_and_store_image(
         .content_type("image/webp")
         .send()
         .await
-        .map_err(|e| Error::from(format!("Failed to upload converted image {}: {}", target_key, e)))?;
+        .map_err(|e| {
+            Error::from(format!(
+                "Failed to upload converted image {}: {}",
+                target_key, e
+            ))
+        })?;
 
     Ok(())
 }
 
+#[tracing::instrument(name = "Resize Image", skip(img))]
 fn resize_image(img: image::DynamicImage) -> image::DynamicImage {
     let (width, height) = img.dimensions();
 
@@ -205,10 +255,15 @@ fn resize_image(img: image::DynamicImage) -> image::DynamicImage {
             ((1280 * width / height) as u32, 1280)
         };
 
-        img.resize(new_width, new_height, image::imageops::FilterType::CatmullRom)
+        img.resize(
+            new_width,
+            new_height,
+            image::imageops::FilterType::CatmullRom,
+        )
     }
 }
 
+#[tracing::instrument(name = "Encode Image as WebP", skip(img))]
 fn encode_as_webp(img: image::DynamicImage) -> Result<Vec<u8>, Error> {
     let mut buffer = Vec::new();
     let mut cursor = Cursor::new(&mut buffer);

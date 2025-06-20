@@ -176,7 +176,7 @@ impl FlowPath {
     pub async fn from_cache_dir(
         context: &mut ExecutionContext,
         node: bool,
-        user: bool
+        user: bool,
     ) -> flow_like_types::Result<Self> {
         let exec_context = context
             .execution_cache
