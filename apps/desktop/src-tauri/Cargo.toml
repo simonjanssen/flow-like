@@ -44,6 +44,13 @@ tauri-plugin-clipboard-manager = "2.2.2"
 tauri-plugin-http = "2"
 tauri-plugin-devtools = "2.0.0"
 
+
+
+[target."cfg(any(target_os = \"macos\", windows, target_os = \"linux\"))".dependencies]
+tauri-plugin-single-instance = { version = "2.2.4", features = ["deep-link"] }
+tauri-plugin-window-state = "2.2.3"
+
+
 [profile.release]
 panic = "abort"
 codegen-units = 1
@@ -52,6 +59,11 @@ opt-level = "z"
 strip = true
 incremental = false
 
-[target."cfg(any(target_os = \"macos\", windows, target_os = \"linux\"))".dependencies]
-tauri-plugin-single-instance = { version = "2.2.4", features = ["deep-link"] }
-tauri-plugin-window-state = "2.2.3"
+[profile.dev]
+opt-level = 1
+debug = 1
+split-debuginfo = "unpacked"  # macOS
+incremental = true
+
+[profile.dev.package."*"]
+opt-level = 0
