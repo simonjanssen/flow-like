@@ -5,6 +5,7 @@ import {
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
+import { useBackend, type IBackendState } from "../state/backend-state";
 
 type BackendFunction<T, Args extends any[]> = (...args: Args) => Promise<T>;
 
@@ -29,11 +30,13 @@ export function useInvoke<T, Args extends any[]>(
 	enabled = true,
 	additionalDeps: any[] = [],
 ): UseQueryResult<T, Error> {
+	const backend = useBackend()
 	const query = useQuery<T, Error>({
 		queryKey: [backendFn.name || "backendFn", ...args, ...additionalDeps],
 		queryFn: async () => {
 			try {
-				const response = await backendFn(...args);
+				const boundFn = backendFn.bind(backend);
+				const response = await boundFn(...args);
 				return response; // No need to cast if types are correctly inferred/set
 			} catch (error) {
 				console.error("Error invoking backend function:", error);
@@ -110,6 +113,40 @@ export function injectData<T, Args extends any[]>(
 		status: "success",
 		refetch: () => Promise.resolve({ data, error: null }),
 	} as UseQueryResult<T, Error>;
+}
+
+export async function injectDataFunction<T, Args extends any[]>(
+	lambda: () => Promise<T>,
+	backend: IBackendState,
+	queryClient: QueryClient,
+	backendFn: BackendFunction<T, Args>,
+	args: Args,
+	additionalDeps: any[] = [],
+): Promise<UseQueryResult<T, Error>> {
+	try {
+		const boundFn = backendFn.bind(backend);
+		const boundLambda = lambda.bind(backend);
+		const result = await boundLambda();
+		const queryKey = [boundFn.name || "backendFn", ...args, ...additionalDeps];
+
+		queryClient?.setQueryData(queryKey, result);
+
+		return {
+			data: result,
+			error: null,
+			isLoading: false,
+			isError: false,
+			isSuccess: true,
+			status: "success",
+			refetch: () => Promise.resolve({ data: result, error: null }),
+		} as UseQueryResult<T, Error>;
+	} catch (error) {
+		console.error("Error invoking lambda function:", error);
+		if (error instanceof Error) {
+			throw error;
+		}
+		throw new Error(String(error));
+	}
 }
 
 export function invalidateData<T, Args extends any[]>(

@@ -25,7 +25,7 @@ flow-like-catalog.workspace = true
 flow-like-types.workspace = true
 tauri = { version = "2.5.1", features = [ "protocol-asset", "macos-private-api"] }
 tauri-plugin-shell = "2.2.1"
-tauri-plugin-log = "2.4.0"
+tauri-plugin-log = "2"
 tauri-plugin-notification = "2.2.2"
 window-vibrancy = "0.6.0"
 anyhow = "1.0.95"

@@ -15,7 +15,7 @@ pub struct CreateVersionQuery {
 }
 
 #[tracing::instrument(
-    name = "PATCH /app/{app_id}/board/{board_id}",
+    name = "PATCH /apps/{app_id}/board/{board_id}",
     skip(state, user, params)
 )]
 pub async fn version_board(

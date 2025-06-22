@@ -1,6 +1,7 @@
 use crate::{
     entity::{
-        app, membership, meta, role, sea_orm_active_enums::{Status, Visibility}
+        app, membership, meta, role,
+        sea_orm_active_enums::{Status, Visibility},
     },
     error::ApiError,
     middleware::jwt::AppUser,
@@ -27,7 +28,7 @@ pub struct AppUpsertBody {
     pub meta: Option<Metadata>,
 }
 
-#[tracing::instrument(name = "PUT /app/{app_id}", skip(state, user, app_body, query))]
+#[tracing::instrument(name = "PUT /apps/{app_id}", skip(state, user, app_body, query))]
 pub async fn upsert_app(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,
@@ -76,7 +77,6 @@ pub async fn upsert_app(
     if app.is_some() {
         return Err(ApiError::Forbidden);
     }
-
 
     let app = state
         .db

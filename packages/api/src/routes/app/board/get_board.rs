@@ -10,7 +10,7 @@ use axum::{
 use flow_like::flow::board::Board;
 use flow_like_types::anyhow;
 
-#[tracing::instrument(name = "GET /app/{app_id}/board/{board_id}", skip(state, user))]
+#[tracing::instrument(name = "GET /apps/{app_id}/board/{board_id}", skip(state, user))]
 pub async fn get_board(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,

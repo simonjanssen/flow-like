@@ -19,6 +19,8 @@ import {
 	type ILogLevel,
 	type ILogMetadata,
 	type IMetadata,
+	injectData,
+	injectDataFunction,
 	type INode,
 	type IProfile,
 	type IRunPayload,
@@ -36,7 +38,7 @@ import type { IBitSearchQuery } from "@tm9657/flow-like-ui/lib/schema/hub/bit-se
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useAuth, type AuthContextProps } from "react-oidc-context";
 import { appsDB } from "../lib/apps-db";
-import { put } from "../lib/api";
+import { fetcher, put } from "../lib/api";
 
 export class TauriBackend implements IBackendState {
 	constructor(private readonly backgroundTaskHandler: (task: Promise<any>) => void, private queryClient?: QueryClient, private auth?: AuthContextProps, private profile?: IProfile) { }
@@ -94,7 +96,9 @@ export class TauriBackend implements IBackendState {
 		});
 
 		if (appId) {
-			await this.updateApp({ ...app, visibility: IAppVisibility.Private });
+			await invoke("update_app", {
+				app: { ...app, visibility: IAppVisibility.Private },
+			});
 		}
 
 		return app;
@@ -663,10 +667,72 @@ export class TauriBackend implements IBackendState {
 		return await invoke("get_app", {
 			appId: appId,
 		});
+
 	}
 
 	async getApps(): Promise<[IApp, IMetadata | undefined][]> {
-		return await invoke("get_apps");
+		const localApps =  await invoke<[IApp, IMetadata | undefined][]>("get_apps");
+
+		if (!this?.queryClient || !this.profile || !this.auth?.isAuthenticated) {
+			console.warn("Query client, profile or auth context not available, returning local apps only.");
+			console.warn({
+				queryClient: this?.queryClient,
+				profile: this?.profile,
+				auth: this?.auth,
+			})
+			return localApps;
+		}
+
+
+		const promise = injectDataFunction(
+			(async () => {
+				const remoteData = await fetcher<[IApp, IMetadata | undefined][]>(this.profile!, "apps", undefined, this.auth);
+
+				const mergedData = new Map<string, [IApp, IMetadata | undefined]>();
+
+				for (const [app, meta] of remoteData) {
+						await appsDB.visibility.put({
+							visibility: app.visibility ?? IAppVisibility.Private,
+							appId: app.id,
+						});
+
+						let exists = localApps.find(([localApp]) => localApp.id === app.id);
+						if (exists) {
+							await invoke("update_app", {
+								app: app,
+							});
+							if(meta) await invoke("push_app_meta", {
+								appId: app.id,
+								metadata: meta,
+							});
+							continue;
+						}
+
+						if(meta) await invoke("create_app", {
+							metadata: meta,
+							bits: app.bits,
+							template: "",
+							id: app.id,
+						});
+				}
+
+				localApps.forEach(([app, meta]) => {
+					if (!mergedData.has(app.id)) {
+						mergedData.set(app.id, [app, meta]);
+					}
+				});
+
+				return Array.from(mergedData.values());
+			}),
+			this,
+			this.queryClient,
+			this.getApps,
+			[],
+			[]
+		);
+		this.backgroundTaskHandler(promise);
+
+		return localApps;
 	}
 
 	async getBit(id: string, hub?: string): Promise<IBit> {

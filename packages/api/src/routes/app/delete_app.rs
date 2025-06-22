@@ -8,7 +8,7 @@ use axum::{
 };
 use sea_orm::ModelTrait;
 
-#[tracing::instrument(name = "DELETE /app/{app_id}", skip(state, user))]
+#[tracing::instrument(name = "DELETE /apps/{app_id}", skip(state, user))]
 pub async fn delete_app(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,

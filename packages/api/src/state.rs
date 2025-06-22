@@ -237,6 +237,10 @@ impl State {
             self.response_cache.insert(key, json_value);
         }
     }
+
+    pub fn invalidate_cache(&self, key: &str) {
+        self.response_cache.invalidate(key);
+    }
 }
 
 fn decoding_key_for_algorithm(alg: &AlgorithmParameters) -> flow_like_types::Result<DecodingKey> {

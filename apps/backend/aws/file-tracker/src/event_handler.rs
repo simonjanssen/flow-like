@@ -83,12 +83,7 @@ async fn process_s3_event(
         .ok_or_else(|| Error::from("Object key is missing"))?;
 
     let key = decode(key)
-        .map_err(|e| {
-            Error::from(format!(
-                "Failed to decode URL-encoded key {}: {}",
-                key, e
-            ))
-        })?;
+        .map_err(|e| Error::from(format!("Failed to decode URL-encoded key {}: {}", key, e)))?;
 
     let size = s3_record
         .s3

@@ -1,6 +1,6 @@
 use crate::{
     ensure_in_project, ensure_permission,
-    entity::{app, membership, meta, role},
+    entity::{app, membership, meta},
     error::ApiError,
     middleware::jwt::AppUser,
     permission::role_permission::RolePermissions,
@@ -12,30 +12,29 @@ use axum::{
     extract::{Path, Query, State},
 };
 use flow_like::{app::App, bit::Metadata};
-use flow_like_types::{anyhow, bail};
 use sea_orm::{
     ColumnTrait, EntityTrait, JoinType, QueryFilter, QueryOrder, QuerySelect, RelationTrait,
 };
-
-#[tracing::instrument(name = "GET /apps/{app_id}/roles", skip(state, user))]
-pub async fn get_roles(
+#[tracing::instrument(name = "GET /apps/{app_id}", skip(state, user))]
+pub async fn get_app(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,
     Path(app_id): Path<String>,
-) -> Result<Json<Vec<role::Model>>, ApiError> {
-    ensure_permission!(user, &app_id, &state, RolePermissions::ReadRoles);
+) -> Result<Json<App>, ApiError> {
+    ensure_in_project!(user, &app_id, &state);
 
-    let cache_key = format!("get_roles:{}", app_id);
+    let cache_key = format!("get_app:{}", app_id);
     if let Some(cached) = state.get_cache(&cache_key) {
         return Ok(Json(cached));
     }
 
-    let roles = role::Entity::find()
-        .filter(role::Column::AppId.eq(app_id.clone()))
-        .all(&state.db)
-        .await?;
+    let app = app::Entity::find_by_id(&app_id)
+        .one(&state.db)
+        .await?
+        .ok_or(ApiError::NotFound)?;
 
-    state.set_cache(cache_key, &roles);
+    let app: App = app.into();
+    state.set_cache(cache_key, &app);
 
-    Ok(Json(roles))
+    Ok(Json(app))
 }

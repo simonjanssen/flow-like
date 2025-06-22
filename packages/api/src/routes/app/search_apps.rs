@@ -19,7 +19,7 @@ use flow_like::{
 use sea_orm::{
     ColumnTrait, EntityTrait, JoinType, QueryFilter, QueryOrder, QuerySelect, RelationTrait,
 };
-#[tracing::instrument(name = "GET /app/search", skip(state, user, search_query, query))]
+#[tracing::instrument(name = "GET /apps/search", skip(state, user, search_query, query))]
 
 pub async fn search_apps(
     State(state): State<AppState>,

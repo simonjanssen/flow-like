@@ -67,37 +67,28 @@ export default function YoursPage() {
 		};
 	}, [apps.data]);
 
-	function splitIntoColumns<T>(items: T[]): [T[], T[]] {
-		const left: T[] = [];
-		const right: T[] = [];
-		items.forEach((item, i) =>
-			i % 2 === 0 ? left.push(item) : right.push(item),
-		);
-		return [left, right];
-	}
-
 	const renderAppCards = (items: any[]) => {
 		if (viewMode === "grid") {
 			return (
-				<div className="flex flex-row flex-wrap gap-2">
+				<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 px-2">
 					{items.map((meta) => (
-						<div key={viewMode + meta.id} className="group">
+						<div key={viewMode + meta.id} className="group w-full">
 							<AppCard
 								app={meta.app}
 								metadata={meta as IMetadata}
 								variant="extended"
 								onClick={() => router.push(`/use?id=${meta.id}`)}
+								className="w-full"
 							/>
 						</div>
 					))}
 				</div>
 			);
 		}
-		const [left, right] = splitIntoColumns(items);
+
 		return (
-			<div className="flex flex-row gap-6">
-				<div className="flex flex-col gap-2 flex-1">
-					{left.map((meta) => (
+				<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 px-2">
+					{items.map((meta) => (
 						<div key={`left${meta.id}`} className="group">
 							<AppCard
 								app={meta.app}
@@ -109,20 +100,7 @@ export default function YoursPage() {
 						</div>
 					))}
 				</div>
-				<div className="flex flex-col gap-2 flex-1">
-					{right.map((meta) => (
-						<div key={`right${meta.id}`} className="group">
-							<AppCard
-								app={meta.app}
-								metadata={meta as IMetadata}
-								variant="small"
-								onClick={() => router.push(`/use?id=${meta.id}`)}
-								className="w-full"
-							/>
-						</div>
-					))}
-				</div>
-			</div>
+
 		);
 	};
 

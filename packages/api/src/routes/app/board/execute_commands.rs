@@ -18,7 +18,7 @@ pub struct ExecuteCommandsBody {
 }
 
 #[tracing::instrument(
-    name = "POST /app/{app_id}/board/{board_id}",
+    name = "POST /apps/{app_id}/board/{board_id}",
     skip(state, user, params)
 )]
 pub async fn execute_commands(

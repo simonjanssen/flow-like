@@ -7,7 +7,7 @@ use axum::{
     extract::{Path, State},
 };
 
-#[tracing::instrument(name = "GET /app/{app_id}/board", skip(state, user))]
+#[tracing::instrument(name = "GET /apps/{app_id}/board", skip(state, user))]
 pub async fn get_boards(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,

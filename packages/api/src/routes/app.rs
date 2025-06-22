@@ -6,14 +6,18 @@ use axum::{
     routing::{get, put},
 };
 
-pub mod board;
 pub mod delete_app;
+pub mod get_app;
 pub mod get_apps;
 pub mod get_nodes;
-pub mod meta;
 pub mod search_apps;
-pub mod template;
 pub mod upsert_app;
+
+pub mod board;
+pub mod meta;
+pub mod roles;
+pub mod team;
+pub mod template;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -21,10 +25,14 @@ pub fn routes() -> Router<AppState> {
         .route("/nodes", get(get_nodes::get_nodes))
         .route(
             "/{app_id}",
-            put(upsert_app::upsert_app).delete(delete_app::delete_app),
+            get(get_app::get_app)
+                .put(upsert_app::upsert_app)
+                .delete(delete_app::delete_app),
         )
         .nest("/{app_id}/template", template::routes())
         .nest("/{app_id}/board", board::routes())
+        .nest("/{app_id}/meta", meta::routes())
+        .nest("/{app_id}/roles", roles::routes())
 }
 
 #[macro_export]
@@ -34,6 +42,14 @@ macro_rules! ensure_permission {
         if !sub.has_permission($perm) {
             return Err(crate::error::ApiError::Forbidden);
         }
+        sub
+    }};
+}
+
+#[macro_export]
+macro_rules! ensure_in_project {
+    ($user:expr, $app_id:expr, $state:expr) => {{
+        let sub = $user.app_permission($app_id, $state).await?;
         sub
     }};
 }

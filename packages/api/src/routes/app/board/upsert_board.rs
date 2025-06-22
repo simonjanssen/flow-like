@@ -17,7 +17,10 @@ pub struct UpsertBoard {
     pub log_level: Option<LogLevel>,
 }
 
-#[tracing::instrument(name = "PUT /app/{app_id}/board/{board_id}", skip(state, user, params))]
+#[tracing::instrument(
+    name = "PUT /apps/{app_id}/board/{board_id}",
+    skip(state, user, params)
+)]
 pub async fn upsert_board(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,

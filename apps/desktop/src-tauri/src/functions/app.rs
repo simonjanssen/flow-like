@@ -75,7 +75,7 @@ pub async fn create_app(
     metadata: Metadata,
     bits: Vec<String>,
     template: String,
-) -> Result<String, TauriFunctionError> {
+) -> Result<App, TauriFunctionError> {
     let flow_like_state = TauriFlowLikeState::construct(&app_handle).await?;
 
     let bits_map: HashSet<String> = bits.clone().into_iter().collect();
@@ -118,7 +118,7 @@ pub async fn create_app(
         .insert(profile.hub_profile.id.clone(), profile.clone());
     settings.serialize();
 
-    Ok(new_app.id.clone())
+    Ok(new_app.clone())
 }
 
 #[tauri::command(async)]

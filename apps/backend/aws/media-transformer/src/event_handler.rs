@@ -295,17 +295,9 @@ fn resize_image(img: image::DynamicImage) -> image::DynamicImage {
         // Square image - resize to 1024x1024
         img.resize(1024, 1024, image::imageops::FilterType::Lanczos3)
     } else if width > height {
-        img.resize_to_fill(
-            1280,
-            720,
-            image::imageops::FilterType::Lanczos3,
-        )
+        img.resize_to_fill(1280, 720, image::imageops::FilterType::Lanczos3)
     } else {
-        img.resize(
-            1280,
-            1280,
-            image::imageops::FilterType::Lanczos3,
-        )
+        img.resize(1280, 1280, image::imageops::FilterType::Lanczos3)
     }
 }
 

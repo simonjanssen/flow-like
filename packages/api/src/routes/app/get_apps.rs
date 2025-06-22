@@ -13,7 +13,7 @@ use flow_like::{app::App, bit::Metadata};
 use sea_orm::{
     ColumnTrait, EntityTrait, JoinType, QueryFilter, QueryOrder, QuerySelect, RelationTrait,
 };
-#[tracing::instrument(name = "GET /app", skip(state, user))]
+#[tracing::instrument(name = "GET /apps", skip(state, user))]
 pub async fn get_apps(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,

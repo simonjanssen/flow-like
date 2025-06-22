@@ -16,7 +16,7 @@ pub struct VersionQuery {
     pub version: Option<String>,
 }
 
-#[tracing::instrument(name = "GET /app/{app_id}/template/{template_id}", skip(state, user))]
+#[tracing::instrument(name = "GET /apps/{app_id}/template/{template_id}", skip(state, user))]
 pub async fn get_template(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,

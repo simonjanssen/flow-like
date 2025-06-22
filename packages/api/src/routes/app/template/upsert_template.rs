@@ -79,7 +79,7 @@ async fn create_template(
 }
 
 #[tracing::instrument(
-    name = "PUT /app/{app_id}/template/{template_id}",
+    name = "PUT /apps/{app_id}/template/{template_id}",
     skip(state, user, template_data)
 )]
 pub async fn upsert_template(
