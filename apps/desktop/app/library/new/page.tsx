@@ -46,6 +46,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Crossfire from "react-canvas-confetti/dist/presets/crossfire";
+import { useAuth } from "react-oidc-context";
 import { toast } from "sonner";
 
 const BLANK_BIT: IBit = {
@@ -79,6 +80,7 @@ const BLANK_BIT: IBit = {
 
 export default function CreateAppPage() {
 	const backend = useBackend();
+	const auth = useAuth();
 	const router = useRouter();
 	const templates = useInvoke(backend.searchBits, [
 		{ bit_types: [IBitTypes.Template] },
@@ -115,8 +117,7 @@ export default function CreateAppPage() {
 
 		setIsCreating(true);
 		try {
-			// await backend.createApp(meta, selectedModels, selectedTemplate, isOffline);
-			await backend.createApp(meta, selectedModels, selectedTemplate);
+			await backend.createApp(meta, selectedModels, selectedTemplate, !isOffline);
 			setShowConfetti(true);
 			toast(`${isOffline ? "Offline" : "Online"} app created successfully! 🎉`);
 			await apps.refetch();
@@ -238,7 +239,13 @@ export default function CreateAppPage() {
 													? "ring-2 ring-primary bg-gradient-to-br from-primary/5 to-transparent"
 													: "hover:border-primary/30"
 											}`}
-											onClick={() => setIsOffline(false)}
+											onClick={() => {
+												if(!auth?.isAuthenticated) {
+													toast.error("You must be logged in to create an online project.");
+													return;
+												}
+												setIsOffline(false)
+											}}
 										>
 											<CardContent className="p-4 text-center">
 												<div className="flex flex-col items-center gap-2">

@@ -57,7 +57,7 @@ async function main() {
 			// Start tauri dev
 			const tauriDev = spawn(
 				"bun",
-				["run", "tauri", "dev", "--config", configPath],
+				["run", "tauri", "dev", "+nightly", "--config", configPath],
 				{
 					stdio: "inherit",
 				},
@@ -76,7 +76,7 @@ async function main() {
 			// Run only tauri dev
 			const tauriDev = spawn(
 				"bun",
-				["run", "tauri", "dev", "--config", configPath],
+				["run", "tauri", "dev", "+nightly", "--config", configPath],
 				{
 					stdio: "inherit",
 				},

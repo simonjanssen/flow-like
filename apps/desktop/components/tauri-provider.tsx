@@ -1,9 +1,10 @@
 "use client";
-import { Channel, convertFileSrc, invoke } from "@tauri-apps/api/core";
+import { Channel, invoke } from "@tauri-apps/api/core";
 import { type Event, type UnlistenFn, listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
 import {
 	type IApp,
+	IAppVisibility,
 	type IBackendState,
 	type IBit,
 	type IBitPack,
@@ -24,29 +25,78 @@ import {
 	type ISettingsProfile,
 	type IVersionType,
 	LoadingScreen,
+	QueryClient,
+	useBackend,
 	useBackendStore,
 	useDownloadManager,
+	useInvoke,
+	useQueryClient,
 } from "@tm9657/flow-like-ui";
 import type { IBitSearchQuery } from "@tm9657/flow-like-ui/lib/schema/hub/bit-search-query";
-import { useEffect, useState } from "react";
-import type { AuthContextProps } from "react-oidc-context";
+import { useCallback, useEffect, useState, useTransition } from "react";
+import { useAuth, type AuthContextProps } from "react-oidc-context";
+import { appsDB } from "../lib/apps-db";
+import { put } from "../lib/api";
+
 export class TauriBackend implements IBackendState {
-	constructor(private auth?: AuthContextProps) {}
+	constructor(private readonly backgroundTaskHandler: (task: Promise<any>) => void, private queryClient?: QueryClient, private auth?: AuthContextProps, private profile?: IProfile) { }
+
+	pushProfile(profile: IProfile) {
+		this.profile = profile;
+	}
 
 	pushAuthContext(auth: AuthContextProps) {
 		this.auth = auth;
+	}
+
+	pushQueryClient(queryClient: QueryClient) {
+		this.queryClient = queryClient;
+	}
+
+	async isOffline(appId: string): Promise<boolean> {
+		const status = await appsDB.visibility.get(appId);
+		if (status) {
+			return status.visibility === IAppVisibility.Offline
+		}
+		return false;
 	}
 
 	async createApp(
 		metadata: IMetadata,
 		bits: string[],
 		template: string,
+		online: boolean,
 	): Promise<IApp> {
+		let appId: string | undefined
+		if (online && this.profile) {
+			let app: IApp = await put(
+				this.profile,
+				`app/new`,
+				{
+					meta: metadata,
+				},
+				this.auth
+			)
+
+			await appsDB.visibility.put({
+				visibility: IAppVisibility.Private,
+				appId: app.id,
+			})
+
+			appId = app.id;
+		}
+
 		const app: IApp = await invoke("create_app", {
 			metadata: metadata,
 			bits: bits,
 			template: template,
+			id: appId
 		});
+
+		if (appId) {
+			await this.updateApp({ ...app, visibility: IAppVisibility.Private });
+		}
+
 		return app;
 	}
 
@@ -650,37 +700,97 @@ export class TauriBackend implements IBackendState {
 export function TauriProvider({
 	children,
 }: Readonly<{ children: React.ReactNode }>) {
-	const [loaded, setLoaded] = useState(false);
-	const { setBackend } = useBackendStore();
+	const queryClient = useQueryClient();
+	const { backend, setBackend } = useBackendStore();
 	const { setDownloadBackend, download } = useDownloadManager();
+	const [isPending, startTransition] = useTransition();
 
-	async function resumeDownloads() {
+	const [resumedDownloads, setResumedDownloads] = useState(false);
+
+	const resumeDownloads = useCallback(async () => {
+		if (resumedDownloads) {
+			console.log("Downloads already resumed, skipping...");
+			return;
+		}
+
+		await new Promise(resolve => setTimeout(resolve, 1000));
+		console.time("Resuming Downloads");
 		const downloads = await invoke<{ [key: string]: IBit }>("init_downloads");
+		console.timeEnd("Resuming Downloads");
 		const items = Object.keys(downloads).map((bitId) => {
 			const bit: IBit = downloads[bitId];
 			return bit;
 		});
 
+		console.time("Resuming download requests");
 		const download_requests = items.map((item) => {
+			console.log("Resuming download for item:", item);
 			return download(item);
 		});
 
 		await Promise.allSettled([...download_requests]);
-	}
+		console.timeEnd("Resuming download requests");
+		setResumedDownloads(true);
+	}, [download, setResumedDownloads, resumedDownloads]);
 
 	useEffect(() => {
-		(async () => {
-			const backend = new TauriBackend();
-			setBackend(backend);
-			setDownloadBackend(backend);
-			await resumeDownloads();
-			setLoaded(true);
-		})();
+		if (!backend) return;
+		setTimeout(() => {
+			startTransition(() => {
+				resumeDownloads();
+			});
+		}, 10000);
+	}, [backend, resumeDownloads]);
+
+	useEffect(() => {
+		if (backend && backend instanceof TauriBackend && queryClient) {
+			backend.pushQueryClient(queryClient);
+		}
+	}, [backend, queryClient]);
+
+	useEffect(() => {
+		console.time("TauriProvider Initialization");
+		const backend = new TauriBackend((promise) => {
+			promise
+				.then((result) => {
+					// Handle successful completion
+					console.log('Background task completed:', result);
+					// Maybe update some global state, cache, or UI
+				})
+				.catch((error) => {
+					// Handle errors
+					console.error('Background task failed:', error);
+					// Maybe show a notification or log the error
+				});
+		}, queryClient);
+		console.timeEnd("TauriProvider Initialization");
+		console.time("Setting Backend");
+		setBackend(backend);
+		console.timeEnd("Setting Backend");
+		console.time("Setting Download Backend");
+		setDownloadBackend(backend);
+		console.timeEnd("Setting Download Backend");
 	}, []);
 
-	if (!loaded) {
-		return <LoadingScreen />;
+	if (!backend) {
+		return <LoadingScreen progress={50} />;
 	}
 
-	return children;
+	return <>
+		{backend && <ProfileSyncer />}
+		{children}
+	</>;
+}
+
+function ProfileSyncer() {
+	const backend = useBackend();
+	const profile = useInvoke(backend.getProfile, [], true);
+
+	useEffect(() => {
+		if (profile.data && backend instanceof TauriBackend) {
+			backend.pushProfile(profile.data);
+		}
+	}, [profile.data, backend]);
+
+	return null
 }

@@ -1,5 +1,6 @@
 "use client";
 import {
+	QueryClient,
 	type UseQueryResult,
 	useQuery,
 	useQueryClient,
@@ -85,4 +86,38 @@ export function useInvalidateInvoke() {
 	};
 
 	return invalidate;
+}
+
+export function injectData<T, Args extends any[]>(
+	queryClient: QueryClient,
+	backendFn: BackendFunction<T, Args>,
+	args: Args,
+	data: T,
+	additionalDeps: any[] = [],
+): UseQueryResult<T, Error> {
+	const queryKey = [backendFn.name || "backendFn", ...args, ...additionalDeps];
+
+	// Immediately set the data in the cache
+	queryClient.setQueryData(queryKey, data);
+
+	// Return a query object that reflects the injected data
+	return {
+		data,
+		error: null,
+		isLoading: false,
+		isError: false,
+		isSuccess: true,
+		status: "success",
+		refetch: () => Promise.resolve({ data, error: null }),
+	} as UseQueryResult<T, Error>;
+}
+
+export function invalidateData<T, Args extends any[]>(
+	queryClient: QueryClient,
+	backendFn: BackendFunction<T, Args>,
+	args: Args,
+	additionalDeps: any[] = [],
+): void {
+	const queryKey = [backendFn.name || "backendFn", ...args, ...additionalDeps];
+	queryClient.invalidateQueries({ queryKey });
 }

@@ -27,6 +27,9 @@ export async function fetcher<T>(
 	const headers: HeadersInit = {};
 	if (auth?.user?.id_token) {
 		headers["Authorization"] = `Bearer ${auth?.user?.id_token}`;
+		if (auth?.user?.expired) {
+			auth?.startSilentRenew();
+		}
 	}
 
 	const url = constructUrl(profile, path);
@@ -43,7 +46,6 @@ export async function fetcher<T>(
 
 	if (!response.ok) {
 		if (response.status === 401 && auth) {
-			await auth?.revokeTokens();
 			auth?.startSilentRenew();
 		}
 		throw new Error(`Error fetching data: ${response.statusText}`);

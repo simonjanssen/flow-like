@@ -1,7 +1,6 @@
 use crate::{
     entity::{
-        app, meta, role,
-        sea_orm_active_enums::{Status, Visibility},
+        app, membership, meta, role, sea_orm_active_enums::{Status, Visibility}
     },
     error::ApiError,
     middleware::jwt::AppUser,
@@ -36,6 +35,8 @@ pub async fn upsert_app(
     Query(query): Query<LanguageParams>,
     Json(app_body): Json<AppUpsertBody>,
 ) -> Result<Json<App>, ApiError> {
+    let sub = user.sub()?;
+
     let app = app::Entity::find()
         .filter(app::Column::Id.eq(&app_id))
         .one(&state.db)
@@ -46,11 +47,11 @@ pub async fn upsert_app(
     let now = chrono::Utc::now().naive_utc();
 
     if let (Some(app), Some(app_updates)) = (&app, &app_body.app) {
-        let app_updates = app::Model::from(app_updates.clone());
         let sub = user.app_permission(&app_id, &state).await?;
         if !sub.has_permission(RolePermissions::Owner) {
             return Err(ApiError::Forbidden);
         }
+        let app_updates = app::Model::from(app_updates.clone());
         let mut app: app::ActiveModel = app.clone().into();
         app.status = sea_orm::ActiveValue::Set(app_updates.status);
         app.changelog = sea_orm::ActiveValue::Set(app_updates.changelog);
@@ -75,6 +76,7 @@ pub async fn upsert_app(
     if app.is_some() {
         return Err(ApiError::Forbidden);
     }
+
 
     let app = state
         .db
@@ -155,6 +157,17 @@ pub async fn upsert_app(
                 app.default_role_id = Set(Some(user_role.id.clone()));
 
                 let app = app.update(txn).await?;
+
+                let membership = membership::ActiveModel {
+                    id: Set(create_id()),
+                    user_id: Set(sub),
+                    app_id: Set(app.id.clone()),
+                    role_id: Set(owner_role.id.clone()),
+                    joined_via: NotSet,
+                    created_at: Set(now.clone()),
+                    updated_at: Set(now.clone()),
+                };
+                membership.insert(txn).await?;
 
                 Ok(app)
             })

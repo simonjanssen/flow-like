@@ -71,6 +71,7 @@ pub async fn app_configured(
 #[tauri::command(async)]
 pub async fn create_app(
     app_handle: AppHandle,
+    id: Option<String>,
     metadata: Metadata,
     bits: Vec<String>,
     template: String,
@@ -78,7 +79,7 @@ pub async fn create_app(
     let flow_like_state = TauriFlowLikeState::construct(&app_handle).await?;
 
     let bits_map: HashSet<String> = bits.clone().into_iter().collect();
-    let mut new_app = App::new(None, metadata, bits, flow_like_state).await?;
+    let mut new_app = App::new(id, metadata, bits, flow_like_state).await?;
 
     if template == "blank" {
         let board = new_app.create_board(None).await?;

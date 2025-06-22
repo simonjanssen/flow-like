@@ -58,3 +58,6 @@ aws-sdk-dynamodb = "1.80.0"
 aws-sdk-s3 = "1.93.0"
 tokio = "1.45.1"
 urlencoding = "2.1.3"
+
+[profile.dev]
+split-debuginfo = "unpacked"

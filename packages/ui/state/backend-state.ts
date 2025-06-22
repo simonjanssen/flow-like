@@ -27,6 +27,7 @@ export interface IBackendState {
 		metadata: IMetadata,
 		bits: string[],
 		template: string,
+		online: boolean,
 	): Promise<IApp>;
 	getApps(): Promise<[IApp, IMetadata | undefined][]>;
 	getApp(appId: string): Promise<IApp>;

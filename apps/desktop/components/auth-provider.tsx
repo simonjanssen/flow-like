@@ -177,10 +177,13 @@ export function DesktopAuthProvider({
 		};
 	}, [userManager, openIdAuthConfig]);
 
-	if (!openIdAuthConfig) return children;
+	if (!openIdAuthConfig) return <AuthProvider key="loading-auth-config">
+		{children}
+	</AuthProvider>;
 
 	return (
 		<AuthProvider
+			key={openIdAuthConfig.client_id}
 			{...openIdAuthConfig}
 			automaticSilentRenew={true}
 			userStore={
@@ -200,11 +203,20 @@ function AuthInner({ children }: Readonly<{ children: React.ReactNode }>) {
 
 	useEffect(() => {
 		if (!auth) return;
+		if (!auth.isAuthenticated) {
+			return;
+		}
+
+		if (!auth.user?.id_token) {
+			console.warn("User is authenticated but no ID token found.");
+			return;
+		}
 
 		if (backend instanceof TauriBackend) {
+			console.log("Pushing auth context to backend:", auth);
 			backend.pushAuthContext(auth);
 		}
-	}, [auth, backend]);
+	}, [auth?.isAuthenticated, auth?.user?.id_token, backend]);
 
 	useEffect(() => {
 		if (!auth) return;

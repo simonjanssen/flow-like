@@ -95,23 +95,26 @@ pub fn run() {
         ))
     });
 
-    match guard {
-        Some(_) => {
-            tracing_subscriber::registry()
-                .with(tracing_subscriber::fmt::layer())
-                .with(sentry_tracing::layer())
-                .init();
+    #[cfg(not(debug_assertions))]
+    {
+        match guard {
+            Some(_) => {
+                tracing_subscriber::registry()
+                    .with(tracing_subscriber::fmt::layer())
+                    .with(sentry_tracing::layer())
+                    .init();
 
-            println!("Sentry Tracing Layer Initialized");
-        }
-        None => {
-            tracing_subscriber::registry()
-                .with(tracing_subscriber::fmt::layer())
-                .init();
+                println!("Sentry Tracing Layer Initialized");
+            }
+            None => {
+                tracing_subscriber::registry()
+                    .with(tracing_subscriber::fmt::layer())
+                    .init();
 
-            println!("Sentry Tracing Layer Not Initialized");
-        }
-    };
+                println!("Sentry Tracing Layer Not Initialized");
+            }
+        };
+    }
 
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_http::init())
@@ -326,6 +329,11 @@ pub fn run() {
     #[cfg(desktop)]
     {
         builder = builder.plugin(tauri_plugin_single_instance::init(handle_instance));
+    }
+
+    #[cfg(debug_assertions)]
+    {
+        builder = builder.plugin(tauri_plugin_devtools::init());
     }
 
     builder

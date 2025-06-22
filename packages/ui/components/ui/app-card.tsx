@@ -26,212 +26,175 @@ export function AppCard({
 	onClick,
 	className = "",
 }: Readonly<AppCardProps>) {
-	// Helper function to render star rating
-	const renderStarRating = (rating: number, count: number) => {
-		const stars = [];
-		const fullStars = Math.floor(rating);
-		const hasHalfStar = rating % 1 >= 0.5;
-
-		for (let i = 0; i < 5; i++) {
-			if (i < fullStars) {
-				stars.push(
-					<Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />,
-				);
-			} else if (i === fullStars && hasHalfStar) {
-				stars.push(
-					<div key={i} className="relative w-3 h-3">
-						<Star className="w-3 h-3 text-gray-300 absolute" />
-						<div className="overflow-hidden w-1/2">
-							<Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-						</div>
-					</div>,
-				);
-			} else {
-				stars.push(<Star key={i} className="w-3 h-3 text-gray-300" />);
-			}
-		}
-
-		return (
-			<div className="flex items-center gap-1">
-				<div className="flex gap-0.5">{stars}</div>
-				<span className="text-xs text-muted-foreground">({count})</span>
-			</div>
-		);
-	};
-
 	if (variant === "small") {
-		return (
-			<button
-				type="button"
-				onClick={onClick}
-				className={`group flex items-center gap-3 p-2 rounded-lg border border-border bg-card/60 backdrop-blur-sm hover:bg-card/90 hover:border-primary hover:shadow-lg transition-all duration-300 w-56 min-h-[64px] ${className}`}
-			>
-				{/* App Icon */}
-				<div className="relative shrink-0">
-					<Avatar className="w-9 h-9 border border-border/50 shadow-sm transition-all duration-300 group-hover:scale-105">
-						<AvatarImage
-							className="scale-105 transition-transform duration-300 group-hover:scale-110"
-							src={metadata?.icon ?? "/app-logo.webp"}
-							alt={`${metadata?.name ?? app.id} icon`}
-						/>
-						<AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-primary/20 to-primary/10">
-							{(metadata?.name ?? app.id).substring(0, 2).toUpperCase()}
-						</AvatarFallback>
-					</Avatar>
-					{/* Visibility indicator on avatar */}
-					<div className="absolute -top-1 -right-1 bg-background border border-border rounded-full p-0.5 shadow-sm">
-						<VisibilityIcon visibility={app.visibility} />
-					</div>
-				</div>
+        return (
+            <button
+                type="button"
+                onClick={onClick}
+                className={`group flex items-center gap-3 p-2.5 flex-grow rounded-lg border border-border/40 bg-card hover:bg-accent/50 transition-all duration-200 w-full min-h-[60px] max-w-full overflow-hidden ${className}`}
+            >
+                {/* App Icon */}
+                <div className="relative shrink-0">
+                    <Avatar className="w-10 h-10 shadow-sm">
+                        <AvatarImage
+                            className="scale-100 group-hover:scale-95 transition-transform duration-200"
+                            src={metadata?.icon ?? "/app-logo.webp"}
+                            alt={`${metadata?.name ?? app.id} icon`}
+                        />
+                        <AvatarFallback className="text-xs font-medium bg-gradient-to-br from-primary/20 to-primary/10">
+                            {(metadata?.name ?? app.id).substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                    </Avatar>
+                    {/* Visibility indicator - only show if not public */}
+                    {app.visibility !== IAppVisibility.Public && (
+                        <div className="absolute -top-0.5 -right-0.5 bg-background border border-border rounded-full p-0.5 shadow-sm">
+                            <div className="w-2 h-2">
+                                <VisibilityIcon visibility={app.visibility} />
+                            </div>
+                        </div>
+                    )}
+                </div>
 
-				{/* App Info */}
-				<div className="flex flex-col items-start text-left min-w-0 flex-1 gap-0.5">
-					{/* Title and Price Row */}
-					<div className="flex items-center justify-between w-full">
-						<h4 className="font-semibold text-foreground text-sm truncate flex-1 leading-tight h-4">
-							{metadata?.name ?? app.id}
-						</h4>
-						{app.visibility === IAppVisibility.Public && (
-							<div className="flex items-center gap-0 ml-2 shrink-0 h-4">
-								{app.price && app.price > 0 ? (
-									<Badge
-										variant="outline"
-										className="text-[10px] font-medium px-1.5 py-0.5 bg-primary/5"
-									>
-										€{(app.price / 100).toFixed(2)}
-									</Badge>
-								) : (
-									<Badge
-										variant="outline"
-										className="text-[10px] font-medium px-1.5 py-0.5 bg-green-200/40 text-green-500 border-green-500 dark:bg-green-500/40 dark:text-green-200 dark:border-green-200"
-									>
-										Free
-									</Badge>
-								)}
-							</div>
-						)}
-					</div>
+                {/* App Info */}
+                <div className="flex flex-col items-start text-left min-w-0 flex-1 gap-0.5 max-w-full">
+                    {/* Title and Price Row */}
+                    <div className="flex items-center justify-between w-full">
+                        <h4 className="font-semibold text-sm text-foreground truncate leading-tight">
+                            {metadata?.name ?? app.id}
+                        </h4>
+                        {app.visibility === IAppVisibility.Public && (
+                            <div className="shrink-0 ml-2">
+                                {app.price && app.price > 0 ? (
+                                    <span className="text-xs font-medium text-primary">
+                                        €{(app.price / 100).toFixed(2)}
+                                    </span>
+                                ) : (
+                                    <span className="text-xs font-medium text-green-600 dark:text-green-400">
+                                        FREE
+                                    </span>
+                                )}
+                            </div>
+                        )}
+                    </div>
 
-					{/* Description */}
-					<p className="text-xs text-muted-foreground line-clamp-1 leading-relaxed w-full">
-						{metadata?.description ?? "No description available"}
-					</p>
-				</div>
-			</button>
-		);
-	}
+                    {/* Description and Rating Row */}
+                    <div className="flex items-center justify-between w-full max-w-full">
+                        <p className="text-xs text-muted-foreground truncate flex-1 mr-2 max-w-64">
+                            {metadata?.description ?? "No description available"}
+                        </p>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                            {app.rating_count > 0 ? (
+                                <>
+                                    <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                                    <span className="text-xs font-medium">
+                                        {(app.avg_rating ?? 0).toFixed(1)}
+                                    </span>
+                                </>
+                            ) : (
+                                <span className="text-xs text-muted-foreground">New</span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </button>
+        );
+    }
 
 	return (
 		<button
 			type="button"
 			onClick={onClick}
-			className={`group relative flex flex-col transition-all duration-500 rounded-lg border-2 border-border bg-card/50 backdrop-blur-sm hover:border-primary/50 hover:bg-card/80 transform hover:-translate-y-1 w-64 ${className}`}
+			className={`group relative flex flex-col transition-all duration-300 rounded-xl border border-border/40 bg-card shadow-sm hover:shadow-xl hover:border-primary/30 hover:bg-card/95 w-72 h-[375px] overflow-hidden ${className}`}
 		>
-			{/* Thumbnail Section - 16:9 aspect ratio */}
-			<div className="relative w-full aspect-video overflow-hidden rounded-t-lg">
+			{/* Thumbnail Section - Fixed aspect ratio */}
+			<div className="relative w-full h-40 overflow-hidden">
 				<img
-					className="absolute rounded-t-lg inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+					className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
 					src={metadata?.thumbnail ?? "/placeholder-thumbnail.webp"}
 					alt={metadata?.name ?? app.id}
 					width={1280}
-					height={720}
+					height={640}
 					loading="lazy"
 					decoding="async"
 					fetchPriority="low"
 				/>
-				<div className="absolute inset-0 bg-black/20 group-hover:bg-primary/10 transition-all duration-300" />
-				<div className="absolute top-3 right-3 z-10 bg-background text-foreground rounded-full p-1 shadow-lg">
-					<VisibilityIcon visibility={app.visibility} />
-				</div>
-				{/* Gradient Overlay */}
-				<div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+				<div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
 
-				{/* App Icon Overlay */}
-				<div className="absolute bottom-3 left-3">
-					<Avatar className="w-12 h-12 border bg-background transition-transform duration-200 z-50">
+				{/* Visibility Badge */}
+				<div className="absolute top-3 right-3 z-10">
+					<div className="bg-black/40 backdrop-blur-sm text-white rounded-lg px-2 py-1 text-xs font-medium">
+						<VisibilityIcon visibility={app.visibility} />
+					</div>
+				</div>
+
+				{/* App Icon and Price/Free Badge */}
+				<div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
+					<Avatar className="w-16 h-16 shadow-lg bg-white/10 backdrop-blur-md">
 						<AvatarImage
-							className="scale-110 duration-500 transition-transform group-hover:scale-125"
+							className="scale-100 group-hover:scale-90 transition-transform duration-300"
 							src={metadata?.icon ?? "/app-logo.webp"}
 							alt={`${metadata?.name ?? app.id} icon`}
 						/>
-						<AvatarFallback className="text-sm font-medium">
+						<AvatarFallback className="text-lg font-bold bg-white/20 backdrop-blur-md text-white border border-white/30">
 							{(metadata?.name ?? app.id).substring(0, 2).toUpperCase()}
 						</AvatarFallback>
 					</Avatar>
+					{app.visibility === IAppVisibility.Public && (
+						<div className="mb-2">
+							{app.price && app.price > 0 ? (
+								<div className="bg-white/90 backdrop-blur-sm text-gray-900 rounded-full px-3 py-1 text-sm font-bold shadow-lg">
+									€{(app.price / 100).toFixed(2)}
+								</div>
+							) : (
+								<div className="bg-green-500 text-white rounded-full px-3 py-1 text-sm font-bold shadow-lg">
+									FREE
+								</div>
+							)}
+						</div>
+					)}
 				</div>
 			</div>
 
 			{/* Content Section */}
-			<div className="flex flex-col p-4 space-y-2 flex-1 max-w-full overflow-hidden w-full">
-				{/* Category and Age Rating at top */}
-				<div className="flex flex-row items-center justify-between w-full">
-					<div className="flex items-center gap-2">
-						<Badge variant="default" className="text-xs">
-							{app.primary_category ?? "Other"}
-						</Badge>
-						{app.visibility === IAppVisibility.Public &&
-							app.price &&
-							app.price > 0 && (
-								<Badge variant="outline" className="text-xs font-medium">
-									€{(app.price / 100).toFixed(2)}
-								</Badge>
-							)}
-					</div>
-					<Badge variant="secondary" className="text-xs">
+			<div className="flex flex-col p-5 flex-1">
+				{/* App Name */}
+				<h3 className="font-bold text-lg text-foreground text-left leading-tight line-clamp-1 min-h-[1.5rem] mb-2">
+					{metadata?.name ?? app.id}
+				</h3>
+
+				{/* Category */}
+				<div className="flex items-center gap-2 mb-3">
+					<Badge variant="default" className="text-xs px-2 py-1">
+						{app.primary_category ?? "Other"}
+					</Badge>
+					<Badge variant="outline" className="text-xs px-2 py-1">
 						{metadata?.age_rating ?? 0}+
 					</Badge>
 				</div>
 
-				<h3 className="font-semibold text-foreground text-left leading-tight truncate max-w-full overflow-hidden">
-					{metadata?.name ?? app.id}
-				</h3>
-
-				<p className="text-sm text-muted-foreground text-left line-clamp-2 leading-relaxed max-w-full overflow-hidden h-11">
+				{/* Description */}
+				<p className="text-sm text-muted-foreground text-left line-clamp-3 leading-relaxed min-h-[4.4rem] mb-3 overflow-hidden">
 					{metadata?.description ?? "No description available"}
 				</p>
 
-				{/* Star Rating */}
-				<div className="flex justify-start py-1">
-					{app.rating_count > 0 ? (
-						renderStarRating(app.avg_rating || 0, app.rating_count)
-					) : (
-						<div className="flex items-center gap-1 h-5">
-							<div className="flex gap-0.5">
-								{[...Array(5)].map((_, i) => (
-									<Star key={i} className="w-3 h-3 text-gray-300" />
-								))}
-							</div>
-							<span className="text-xs text-muted-foreground">(0)</span>
-						</div>
-					)}
-				</div>
-
-				{/* Tags Carousel */}
-				<div className="relative overflow-hidden h-8 pt-2">
-					<div className="flex gap-1 transition-transform duration-500 ease-in-out group-hover:animate-pulse">
-						{metadata?.tags &&
-						metadata.tags.filter((tag) => tag.trim()).length > 0 ? (
-							<div className="flex gap-1 animate-[scroll_8s_linear_infinite] group-hover:animate-[scroll_8s_linear_infinite]">
-								{metadata.tags
-									.filter((tag) => tag.trim())
-									.concat(metadata.tags.filter((tag) => tag.trim())) // Duplicate for seamless loop
-									.map((tag, index) => (
-										<Badge
-											key={tag + index}
-											variant="secondary"
-											className="text-xs whitespace-nowrap shrink-0"
-										>
-											{tag}
-										</Badge>
-									))}
-							</div>
+				{/* Rating and Reviews */}
+				<div className="flex items-center justify-between mb-1">
+					<div className="flex items-center gap-2">
+						{app.rating_count > 0 ? (
+							<>
+								<div className="flex items-center gap-1">
+									<Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+									<span className="font-semibold text-sm">
+										{(app.avg_rating ?? 0).toFixed(1)}
+									</span>
+								</div>
+								<span className="text-xs text-muted-foreground">
+									({app.rating_count.toLocaleString()})
+								</span>
+							</>
 						) : (
-							<Badge
-								variant="secondary"
-								className="text-xs whitespace-nowrap shrink-0"
-							>
-								New
-							</Badge>
+							<span className="text-xs text-muted-foreground">No ratings yet</span>
 						)}
 					</div>
 				</div>
