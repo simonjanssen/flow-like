@@ -1,0 +1,85 @@
+model InviteLink {
+    id String @id
+
+    token String @unique
+    app   App    @relation(fields: [appId], references: [id], onDelete: Cascade)
+    appId String
+
+    countJoined Int @default(0)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model JoinQueue {
+    id String @id
+
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+    userId String
+
+    app   App    @relation(fields: [appId], references: [id], onDelete: Cascade)
+    appId String
+
+    comment String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([userId, appId])
+}
+
+model Invitations {
+    id String @id
+
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+    userId String
+
+    app   App    @relation(fields: [appId], references: [id], onDelete: Cascade)
+    appId String
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model Membership {
+    id String @id
+
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+    userId String
+
+    app   App    @relation(fields: [appId], references: [id], onDelete: Cascade)
+    appId String
+
+    role   Role   @relation(fields: [roleId], references: [id])
+    roleId String
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    joinedVia String?
+
+    @@unique([userId, appId])
+    @@index([appId, roleId])
+}
+
+model Role {
+    id String @id
+
+    name        String
+    description String?
+
+    attributes  String[]
+    permissions BigInt
+
+    memberships    Membership[]
+    technicalUsers TechnicalUser[]
+
+    app   App?    @relation(fields: [appId], references: [id], onDelete: Cascade)
+    appId String?
+
+    defaultForApp App? @relation("defaultForApp")
+    ownerForApp   App? @relation("ownerForApp")
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}

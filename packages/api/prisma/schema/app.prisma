@@ -1,0 +1,188 @@
+enum CATEGORY {
+  OTHER
+  PRODUCTIVITY
+  SOCIAL
+  ENTERTAINMENT
+  EDUCATION
+  HEALTH
+  FINANCE
+  LIFESTYLE
+  TRAVEL
+  NEWS
+  SPORTS
+  SHOPPING
+  FOOD_AND_DRINK
+  MUSIC
+  PHOTOGRAPHY
+  UTILITIES
+  WEATHER
+  GAMES
+  BUSINESS
+  COMMUNICATION
+  ANIME
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum Visibility {
+  PUBLIC
+  PUBLIC_REQUEST_ACCESS
+  PRIVATE
+  PROTOTYPE
+  OFFLINE
+}
+
+
+model App {
+  id String @id
+
+  status     Status @default(ACTIVE)
+  visibility Visibility @default(PRIVATE)
+
+  meta Meta[]
+
+  templates Template[]
+  queue JoinQueue[]
+  members Membership[]
+  comments Comment[]
+  changelog String?
+
+  courses CourseConnection[]
+  inviteLinks InviteLink[]
+  invitations Invitations[]
+
+  feedback Feedback[]
+  publicationRequests PublicationRequest[]
+
+  defaultRole Role? @relation("defaultForApp", fields: [defaultRoleId], references: [id])
+  defaultRoleId String? @unique
+  ownerRole Role? @relation("ownerForApp", fields: [ownerRoleId], references: [id])
+  ownerRoleId String? @unique
+  roles Role[]
+
+  primaryCategory CATEGORY?
+  secondaryCategory CATEGORY?
+
+  ratingSum   BigInt   @default(0)
+  ratingCount BigInt   @default(0)
+  downloadCount BigInt @default(0)
+  interactionsCount BigInt @default(0)
+
+  avgRating Float? @default(0)
+  // Relevance formula: (downloads * 2 + interactions) * (1 + avgRating/5) * log(ratingCount + 1)
+  relevanceScore Float? @default(0)
+
+  totalSize BigInt @default(0)
+
+  price Int @default(0)
+  version String?
+
+  technicalUsers TechnicalUser[]
+  llmUsage LLMUsageTracking[]
+  executionUsage ExecutionUsageTracking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
+  @@index([updatedAt])
+  @@index([avgRating])
+  @@index([relevanceScore])
+  @@index([ratingSum])
+  @@index([status])
+}
+
+model TechnicalUser {
+  id String @id
+
+  name String
+  description String?
+  key String @unique
+
+  role Role? @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  roleId String?
+
+  app   App @relation(fields: [appId], references: [id], onDelete: Cascade)
+  appId String
+
+  validUntil DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([appId])
+}
+
+
+model Feedback {
+  id String @id
+
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId String?
+
+  app   App? @relation(fields: [appId], references: [id], onDelete: Cascade)
+  appId String?
+
+  template Template? @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  templateId String?
+
+  context Json?
+  text String
+  rating Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([appId])
+  @@index([createdAt])
+  @@index([userId])
+}
+
+
+model Comment {
+  id String @id
+
+  text String
+  rating Int
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  app   App? @relation(fields: [appId], references: [id], onDelete: Cascade)
+  appId String?
+
+  template Template? @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  templateId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, appId])
+  @@index([appId])
+  @@index([userId])
+}
+
+model Template {
+  id String @id
+
+  meta Meta[]
+
+  comments Comment[]
+  changelog String?
+
+  feedback Feedback[]
+
+  ratingSum   Int   @default(0)
+  ratingCount Int   @default(0)
+
+  app App @relation(fields: [appId], references: [id], onDelete: Cascade)
+  appId String
+
+  version String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

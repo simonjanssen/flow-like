@@ -1,0 +1,157 @@
+enum UserStatus {
+    ACTIVE
+    INACTIVE
+    BANNED
+}
+
+enum UserTier {
+    FREE
+    PREMIUM
+    PRO
+    ENTERPRISE
+}
+
+model User {
+    id String @id
+
+    stripeId String?
+
+    email       String?
+    username    String?
+    name        String?
+    description String?
+    avatarUrl   String?
+
+    additionalInformation Json?
+
+    permission           BigInt  @default(0)
+    acceptedTermsVersion String?
+    tutorialCompleted    Boolean @default(false)
+
+    memberships                 Membership[]
+    profiles                    Profile[]
+    personalAccessToken         PAT[]
+    queue                       JoinQueue[]
+    comments                    Comment[]
+    llmUsage                    LLMUsageTracking[]
+    executionUsage              ExecutionUsageTracking[]
+    feedback                    Feedback[]
+    assignedPublicationRequests PublicationRequest[]
+    publicationLogs             PublicationLog[]
+    invitations                 Invitations[]
+    transactions                Transaction[]
+
+    status UserStatus @default(ACTIVE)
+    tier   UserTier   @default(FREE)
+
+    totalSize BigInt @default(0)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model Profile {
+    id String @id
+
+    name        String
+    thumbnail   String?
+    icon        String?
+    description String?
+    interests   String[]
+    tags        String[]
+
+    theme    Json?
+    settings Json?
+
+    // JSON with the apps that are part of the profile. Contains the app ID, if it is favorite, pinned and position of the two
+    apps   Json[]
+    bitIds String[]
+    hub    String
+    hubs   String[]
+
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model PAT {
+    id String @id
+
+    name        String
+    key         String @unique
+    permissions BigInt @default(0)
+
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+    userId String
+
+    validUntil DateTime?
+    createdAt  DateTime  @default(now())
+    updatedAt  DateTime  @updatedAt
+
+    @@index([userId])
+}
+
+model Transaction {
+    id String @id
+
+    user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+    userId String?
+
+    stripeId String @unique
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([userId])
+}
+
+model LLMUsageTracking {
+    id String @id
+
+    modelId  String
+    tokenIn  Int
+    tokenOut Int
+
+    latency Float?
+
+    user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+    userId String?
+
+    app   App?    @relation(fields: [appId], references: [id], onDelete: Cascade)
+    appId String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+enum ExecutionStatus {
+    DEBUG
+    INFO
+    WARN
+    ERROR
+    FATAL
+}
+
+model ExecutionUsageTracking {
+    id String @id
+
+    instance String?
+
+    boardId String
+    nodeId  String
+    version String
+
+    microseconds BigInt
+    status       ExecutionStatus
+
+    user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+    userId String?
+
+    app   App?    @relation(fields: [appId], references: [id], onDelete: Cascade)
+    appId String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
