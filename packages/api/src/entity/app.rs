@@ -52,16 +52,18 @@ pub enum Relation {
     Comment,
     #[sea_orm(has_many = "super::course_connection::Entity")]
     CourseConnection,
+    #[sea_orm(has_many = "super::execution_usage_tracking::Entity")]
+    ExecutionUsageTracking,
     #[sea_orm(has_many = "super::feedback::Entity")]
     Feedback,
-    #[sea_orm(has_many = "super::file::Entity")]
-    File,
     #[sea_orm(has_many = "super::invitations::Entity")]
     Invitations,
     #[sea_orm(has_many = "super::invite_link::Entity")]
     InviteLink,
     #[sea_orm(has_many = "super::join_queue::Entity")]
     JoinQueue,
+    #[sea_orm(has_many = "super::llm_usage_tracking::Entity")]
+    LlmUsageTracking,
     #[sea_orm(has_many = "super::membership::Entity")]
     Membership,
     #[sea_orm(has_many = "super::meta::Entity")]
@@ -102,15 +104,15 @@ impl Related<super::course_connection::Entity> for Entity {
     }
 }
 
-impl Related<super::feedback::Entity> for Entity {
+impl Related<super::execution_usage_tracking::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::Feedback.def()
+        Relation::ExecutionUsageTracking.def()
     }
 }
 
-impl Related<super::file::Entity> for Entity {
+impl Related<super::feedback::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::File.def()
+        Relation::Feedback.def()
     }
 }
 
@@ -129,6 +131,12 @@ impl Related<super::invite_link::Entity> for Entity {
 impl Related<super::join_queue::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::JoinQueue.def()
+    }
+}
+
+impl Related<super::llm_usage_tracking::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::LlmUsageTracking.def()
     }
 }
 

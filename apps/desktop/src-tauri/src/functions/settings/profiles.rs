@@ -102,9 +102,13 @@ pub async fn get_current_profile(app_handle: AppHandle) -> Result<UserProfile, T
     let state = TauriFlowLikeState::construct(&app_handle).await?;
     let profile = TauriSettingsState::current_profile(&app_handle).await?;
 
-    state.lock().await.model_factory.lock().await.set_execution_settings(
-        profile.execution_settings.clone(),
-    );
+    state
+        .lock()
+        .await
+        .model_factory
+        .lock()
+        .await
+        .set_execution_settings(profile.execution_settings.clone());
 
     Ok(profile)
 }

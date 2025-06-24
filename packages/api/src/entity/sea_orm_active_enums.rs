@@ -90,26 +90,18 @@ pub enum Category {
     Anime,
 }
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
-#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "LLMProvider")]
-pub enum LlmProvider {
-    #[sea_orm(string_value = "HuggingFace")]
-    HuggingFace,
-    #[sea_orm(string_value = "OpenAI")]
-    OpenAi,
-    #[sea_orm(string_value = "Anthropic")]
-    Anthropic,
-    #[sea_orm(string_value = "AzureOpenAI")]
-    AzureOpenAi,
-    #[sea_orm(string_value = "Google")]
-    Google,
-    #[sea_orm(string_value = "IBM")]
-    Ibm,
-    #[sea_orm(string_value = "X")]
-    X,
-    #[sea_orm(string_value = "Bedrock")]
-    Bedrock,
-    #[sea_orm(string_value = "Deepseek")]
-    Deepseek,
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "ExecutionStatus")]
+pub enum ExecutionStatus {
+    #[sea_orm(string_value = "DEBUG")]
+    Debug,
+    #[sea_orm(string_value = "INFO")]
+    Info,
+    #[sea_orm(string_value = "WARN")]
+    Warn,
+    #[sea_orm(string_value = "ERROR")]
+    Error,
+    #[sea_orm(string_value = "FATAL")]
+    Fatal,
 }
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
 #[sea_orm(

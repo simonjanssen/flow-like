@@ -47,20 +47,22 @@ pub struct Model {
 pub enum Relation {
     #[sea_orm(has_many = "super::comment::Entity")]
     Comment,
+    #[sea_orm(has_many = "super::execution_usage_tracking::Entity")]
+    ExecutionUsageTracking,
     #[sea_orm(has_many = "super::feedback::Entity")]
     Feedback,
     #[sea_orm(has_many = "super::invitations::Entity")]
     Invitations,
     #[sea_orm(has_many = "super::join_queue::Entity")]
     JoinQueue,
+    #[sea_orm(has_many = "super::llm_usage_tracking::Entity")]
+    LlmUsageTracking,
     #[sea_orm(has_many = "super::membership::Entity")]
     Membership,
     #[sea_orm(has_many = "super::pat::Entity")]
     Pat,
     #[sea_orm(has_many = "super::profile::Entity")]
     Profile,
-    #[sea_orm(has_many = "super::provider_invocation::Entity")]
-    ProviderInvocation,
     #[sea_orm(has_many = "super::publication_log::Entity")]
     PublicationLog,
     #[sea_orm(has_many = "super::publication_request::Entity")]
@@ -72,6 +74,12 @@ pub enum Relation {
 impl Related<super::comment::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Comment.def()
+    }
+}
+
+impl Related<super::execution_usage_tracking::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::ExecutionUsageTracking.def()
     }
 }
 
@@ -93,6 +101,12 @@ impl Related<super::join_queue::Entity> for Entity {
     }
 }
 
+impl Related<super::llm_usage_tracking::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::LlmUsageTracking.def()
+    }
+}
+
 impl Related<super::membership::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Membership.def()
@@ -108,12 +122,6 @@ impl Related<super::pat::Entity> for Entity {
 impl Related<super::profile::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Profile.def()
-    }
-}
-
-impl Related<super::provider_invocation::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::ProviderInvocation.def()
     }
 }
 
