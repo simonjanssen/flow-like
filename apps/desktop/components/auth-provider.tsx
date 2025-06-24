@@ -23,7 +23,7 @@ import { get } from "../lib/api";
 import { TauriBackend } from "./tauri-provider";
 
 class OIDCTokenProvider implements TokenProvider {
-	constructor(private readonly userManager: UserManager) { }
+	constructor(private readonly userManager: UserManager) {}
 	async getTokens(options?: {
 		forceRefresh?: boolean;
 	}): Promise<AuthTokens | null> {
@@ -177,9 +177,8 @@ export function DesktopAuthProvider({
 		};
 	}, [userManager, openIdAuthConfig]);
 
-	if (!openIdAuthConfig) return <AuthProvider key="loading-auth-config">
-		{children}
-	</AuthProvider>;
+	if (!openIdAuthConfig)
+		return <AuthProvider key="loading-auth-config">{children}</AuthProvider>;
 
 	return (
 		<AuthProvider

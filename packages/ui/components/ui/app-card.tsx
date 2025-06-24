@@ -27,79 +27,79 @@ export function AppCard({
 	className = "",
 }: Readonly<AppCardProps>) {
 	if (variant === "small") {
-        return (
-            <button
-                type="button"
-                onClick={onClick}
-                className={`group flex items-center gap-3 p-2.5 flex-grow rounded-lg border border-border/40 bg-card hover:bg-accent/50 transition-all duration-200 w-full min-h-[60px] max-w-full overflow-hidden ${className}`}
-            >
-                {/* App Icon */}
-                <div className="relative shrink-0">
-                    <Avatar className="w-10 h-10 shadow-sm">
-                        <AvatarImage
-                            className="scale-100 group-hover:scale-95 transition-transform duration-200"
-                            src={metadata?.icon ?? "/app-logo.webp"}
-                            alt={`${metadata?.name ?? app.id} icon`}
-                        />
-                        <AvatarFallback className="text-xs font-medium bg-gradient-to-br from-primary/20 to-primary/10">
-                            {(metadata?.name ?? app.id).substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                    </Avatar>
-                    {/* Visibility indicator - only show if not public */}
-                    {app.visibility !== IAppVisibility.Public && (
-                        <div className="absolute -top-0.5 -right-0.5 bg-background border border-border rounded-full p-0.5 shadow-sm">
-                            <div className="w-2 h-2">
-                                <VisibilityIcon visibility={app.visibility} />
-                            </div>
-                        </div>
-                    )}
-                </div>
+		return (
+			<button
+				type="button"
+				onClick={onClick}
+				className={`group flex items-center gap-3 p-2.5 flex-grow rounded-lg border border-border/40 bg-card hover:bg-accent/50 transition-all duration-200 w-full min-h-[60px] max-w-full overflow-hidden ${className}`}
+			>
+				{/* App Icon */}
+				<div className="relative shrink-0">
+					<Avatar className="w-10 h-10 shadow-sm">
+						<AvatarImage
+							className="scale-100 group-hover:scale-95 transition-transform duration-200"
+							src={metadata?.icon ?? "/app-logo.webp"}
+							alt={`${metadata?.name ?? app.id} icon`}
+						/>
+						<AvatarFallback className="text-xs font-medium bg-gradient-to-br from-primary/20 to-primary/10">
+							{(metadata?.name ?? app.id).substring(0, 2).toUpperCase()}
+						</AvatarFallback>
+					</Avatar>
+					{/* Visibility indicator - only show if not public */}
+					{app.visibility !== IAppVisibility.Public && (
+						<div className="absolute -top-0.5 -right-0.5 bg-background border border-border rounded-full p-0.5 shadow-sm">
+							<div className="w-2 h-2">
+								<VisibilityIcon visibility={app.visibility} />
+							</div>
+						</div>
+					)}
+				</div>
 
-                {/* App Info */}
-                <div className="flex flex-col items-start text-left min-w-0 flex-1 gap-0.5 max-w-full">
-                    {/* Title and Price Row */}
-                    <div className="flex items-center justify-between w-full">
-                        <h4 className="font-semibold text-sm text-foreground truncate leading-tight">
-                            {metadata?.name ?? app.id}
-                        </h4>
-                        {app.visibility === IAppVisibility.Public && (
-                            <div className="shrink-0 ml-2">
-                                {app.price && app.price > 0 ? (
-                                    <span className="text-xs font-medium text-primary">
-                                        €{(app.price / 100).toFixed(2)}
-                                    </span>
-                                ) : (
-                                    <span className="text-xs font-medium text-green-600 dark:text-green-400">
-                                        FREE
-                                    </span>
-                                )}
-                            </div>
-                        )}
-                    </div>
+				{/* App Info */}
+				<div className="flex flex-col items-start text-left min-w-0 flex-1 gap-0.5 max-w-full">
+					{/* Title and Price Row */}
+					<div className="flex items-center justify-between w-full">
+						<h4 className="font-semibold text-sm text-foreground truncate leading-tight">
+							{metadata?.name ?? app.id}
+						</h4>
+						{app.visibility === IAppVisibility.Public && (
+							<div className="shrink-0 ml-2">
+								{app.price && app.price > 0 ? (
+									<span className="text-xs font-medium text-primary">
+										€{(app.price / 100).toFixed(2)}
+									</span>
+								) : (
+									<span className="text-xs font-medium text-green-600 dark:text-green-400">
+										FREE
+									</span>
+								)}
+							</div>
+						)}
+					</div>
 
-                    {/* Description and Rating Row */}
-                    <div className="flex items-center justify-between w-full max-w-full">
-                        <p className="text-xs text-muted-foreground truncate flex-1 mr-2 max-w-64">
-                            {metadata?.description ?? "No description available"}
-                        </p>
+					{/* Description and Rating Row */}
+					<div className="flex items-center justify-between w-full max-w-full">
+						<p className="text-xs text-muted-foreground truncate flex-1 mr-2 max-w-64">
+							{metadata?.description ?? "No description available"}
+						</p>
 
-                        <div className="flex items-center gap-1 shrink-0">
-                            {app.rating_count > 0 ? (
-                                <>
-                                    <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                                    <span className="text-xs font-medium">
-                                        {(app.avg_rating ?? 0).toFixed(1)}
-                                    </span>
-                                </>
-                            ) : (
-                                <span className="text-xs text-muted-foreground">New</span>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </button>
-        );
-    }
+						<div className="flex items-center gap-1 shrink-0">
+							{app.rating_count > 0 ? (
+								<>
+									<Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+									<span className="text-xs font-medium">
+										{(app.avg_rating ?? 0).toFixed(1)}
+									</span>
+								</>
+							) : (
+								<span className="text-xs text-muted-foreground">New</span>
+							)}
+						</div>
+					</div>
+				</div>
+			</button>
+		);
+	}
 
 	return (
 		<button
@@ -194,7 +194,9 @@ export function AppCard({
 								</span>
 							</>
 						) : (
-							<span className="text-xs text-muted-foreground">No ratings yet</span>
+							<span className="text-xs text-muted-foreground">
+								No ratings yet
+							</span>
 						)}
 					</div>
 				</div>

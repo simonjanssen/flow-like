@@ -1,17 +1,17 @@
-import { IAppVisibility } from "@tm9657/flow-like-ui";
+import type { IAppVisibility } from "@tm9657/flow-like-ui";
 import Dexie, { type EntityTable } from "dexie";
 
 export interface IVisibilityStatus {
-    appId: string;
-    visibility: IAppVisibility
+	appId: string;
+	visibility: IAppVisibility;
 }
 
 const appsDB = new Dexie("Apps") as Dexie & {
-    visibility: EntityTable<IVisibilityStatus, "appId">;
+	visibility: EntityTable<IVisibilityStatus, "appId">;
 };
 
 appsDB.version(1).stores({
-    visibility: "appId",
+	visibility: "appId",
 });
 
 export { appsDB };

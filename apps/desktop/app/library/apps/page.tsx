@@ -78,7 +78,7 @@ export default function YoursPage() {
 	const renderAppCards = (items: any[]) => {
 		if (viewMode === "grid") {
 			return (
-				<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 px-2">
+				<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 px-2">
 					{items.map((meta) => (
 						<div key={viewMode + meta.id} className="group w-full">
 							<AppCard
@@ -95,20 +95,19 @@ export default function YoursPage() {
 		}
 
 		return (
-				<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 px-2">
-					{items.map((meta) => (
-						<div key={`left${meta.id}`} className="group">
-							<AppCard
-								app={meta.app}
-								metadata={meta as IMetadata}
-								variant="small"
-								onClick={() => router.push(`/use?id=${meta.id}`)}
-								className="w-full"
-							/>
-						</div>
-					))}
-				</div>
-
+			<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 px-2">
+				{items.map((meta) => (
+					<div key={`left${meta.id}`} className="group">
+						<AppCard
+							app={meta.app}
+							metadata={meta as IMetadata}
+							variant="small"
+							onClick={() => router.push(`/use?id=${meta.id}`)}
+							className="w-full"
+						/>
+					</div>
+				))}
+			</div>
 		);
 	};
 
@@ -159,7 +158,9 @@ export default function YoursPage() {
 						<Button
 							variant={"outline"}
 							size="sm"
-							onClick={() => setViewMode(old => (old === "grid" ? "list" : "grid"))}
+							onClick={() =>
+								setViewMode((old) => (old === "grid" ? "list" : "grid"))
+							}
 						>
 							{viewMode === "grid" ? (
 								<List className="h-4 w-4" />

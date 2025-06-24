@@ -51,11 +51,32 @@ const ChatInner = forwardRef<IChatRef, IChatProps>(
 		const [hasInitiallyScrolled, setHasInitiallyScrolled] = useState(false);
 		const chatBox = useRef<ChatBoxRef>(null);
 		const isScrollingProgrammatically = useRef(false);
+		const [defaultActiveTools, setDefaultActiveTools] = useState<string[]>();
 
 		// Sync external messages with local state
 		useEffect(() => {
 			setLocalMessages(messages);
-		}, [messages]);
+
+			const lastUserMessage = messages
+				.slice()
+				.reverse()
+				.find((msg) => msg.inner.role === "user");
+
+			if (lastUserMessage) {
+				const availableTools = config?.tools ?? [];
+				const lastActiveTools = lastUserMessage.tools ?? [];
+				const newActiveTools = lastActiveTools.filter((tool) =>
+					availableTools.includes(tool),
+				);
+
+				setDefaultActiveTools(newActiveTools);
+				return;
+			}
+
+			setDefaultActiveTools(
+				config?.default_tools ?? []
+			);
+		}, [messages, config?.tools]);
 
 		// Initial scroll to bottom when messages first load
 		useEffect(() => {
@@ -195,14 +216,14 @@ const ChatInner = forwardRef<IChatRef, IChatProps>(
 
 					{/* ChatBox */}
 					<div className="bg-transparent pb-4 max-w-screen-lg w-full mx-auto">
-						<ChatBox
+						{defaultActiveTools && <ChatBox
 							ref={chatBox}
 							availableTools={config?.tools ?? []}
-							defaultActiveTools={config?.default_tools ?? []}
+							defaultActiveTools={defaultActiveTools}
 							onSendMessage={handleSendMessage}
 							fileUpload={config?.allow_file_upload ?? false}
 							audioInput={config?.allow_voice_input ?? true}
-						/>
+						/>}
 					</div>
 				</div>
 			</main>

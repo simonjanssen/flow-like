@@ -42,16 +42,11 @@
 		--radius: 0.3rem;
 		--shadow-2xs: 0px 4px 8px -1px hsl(0 0% 0% / 0.05);
 		--shadow-xs: 0px 4px 8px -1px hsl(0 0% 0% / 0.05);
-		--shadow-sm: 0px 4px 8px -1px hsl(0 0% 0% / 0.1), 0px 1px 2px -2px
-			hsl(0 0% 0% / 0.1);
-		--shadow: 0px 4px 8px -1px hsl(0 0% 0% / 0.1), 0px 1px 2px -2px
-			hsl(0 0% 0% / 0.1);
-		--shadow-md: 0px 4px 8px -1px hsl(0 0% 0% / 0.1), 0px 2px 4px -2px
-			hsl(0 0% 0% / 0.1);
-		--shadow-lg: 0px 4px 8px -1px hsl(0 0% 0% / 0.1), 0px 4px 6px -2px
-			hsl(0 0% 0% / 0.1);
-		--shadow-xl: 0px 4px 8px -1px hsl(0 0% 0% / 0.1), 0px 8px 10px -2px
-			hsl(0 0% 0% / 0.1);
+		--shadow-sm: 0px 4px 8px -1px hsl(0 0% 0% / 0.1), 0px 1px 2px -2px hsl(0 0% 0% / 0.1);
+		--shadow: 0px 4px 8px -1px hsl(0 0% 0% / 0.1), 0px 1px 2px -2px hsl(0 0% 0% / 0.1);
+		--shadow-md: 0px 4px 8px -1px hsl(0 0% 0% / 0.1), 0px 2px 4px -2px hsl(0 0% 0% / 0.1);
+		--shadow-lg: 0px 4px 8px -1px hsl(0 0% 0% / 0.1), 0px 4px 6px -2px hsl(0 0% 0% / 0.1);
+		--shadow-xl: 0px 4px 8px -1px hsl(0 0% 0% / 0.1), 0px 8px 10px -2px hsl(0 0% 0% / 0.1);
 		--shadow-2xl: 0px 4px 8px -1px hsl(0 0% 0% / 0.25);
 
 		--tertiary: 23 100% 63%;
@@ -96,6 +91,19 @@
 		--sidebar-accent-foreground: var(--accent-foreground);
 		--sidebar-border: var(--border);
 		--sidebar-ring: var(--ring);
+
+		--font-sans: Inter, sans-serif;
+		--font-serif: Source Serif 4, serif;
+		--font-mono: JetBrains Mono, monospace;
+		--radius: 0.3rem;
+		--shadow-2xs: 0px 4px 8px -1px hsl(0 0% 0% / 0.05);
+		--shadow-xs: 0px 4px 8px -1px hsl(0 0% 0% / 0.05);
+		--shadow-sm: 0px 4px 8px -1px hsl(0 0% 0% / 0.1), 0px 1px 2px -2px hsl(0 0% 0% / 0.1);
+		--shadow: 0px 4px 8px -1px hsl(0 0% 0% / 0.1), 0px 1px 2px -2px hsl(0 0% 0% / 0.1);
+		--shadow-md: 0px 4px 8px -1px hsl(0 0% 0% / 0.1), 0px 2px 4px -2px hsl(0 0% 0% / 0.1);
+		--shadow-lg: 0px 4px 8px -1px hsl(0 0% 0% / 0.1), 0px 4px 6px -2px hsl(0 0% 0% / 0.1);
+		--shadow-xl: 0px 4px 8px -1px hsl(0 0% 0% / 0.1), 0px 8px 10px -2px hsl(0 0% 0% / 0.1);
+		--shadow-2xl: 0px 4px 8px -1px hsl(0 0% 0% / 0.25);
 
 		.shiki,
 		.shiki span {
@@ -250,28 +258,37 @@
 			text-decoration: underline;
 		}
 
-		ol {
-			margin-top: -2.5rem;
-			padding-left: 1.5rem;
-			list-style: decimal;
-			gap: 0.5rem;
+		ol,
+		ul {
+			margin-bottom: 1.2em;
+			padding-left: 1.5em;
+			list-style-position: outside;
+		}
+
+		ol li li,
+		ul li li {
+			margin-bottom: 0.5em;
+			padding-left: 1.5em;
 		}
 
 		ul {
-			margin-top: -2.5rem;
-			list-style: disc;
+			list-style-type: disc;
+			list-style-position: outside;
+			padding-left: 1.5rem;
+			gap: 0.5rem;
+		}
+
+		ol {
+			list-style-position: outside;
 			padding-left: 1.5rem;
 			gap: 0.5rem;
 		}
 
 		li {
 			margin: 0;
-			position: relative;
 			text-align: left;
-			line-height: 1.75rem;
 			list-style-position: outside;
-			margin-top: 0.5rem;
-			margin-bottom: -1.5rem;
+			display: list-item;
 		}
 
 		li::marker {
@@ -279,25 +296,14 @@
 			font-weight: 600;
 		}
 
-		li p {
-			margin: 0;
-			margin-top: -1.75rem;
-			margin-bottom: -1.75rem;
-			padding: 0;
-			line-height: inherit;
-			display: block;
-			text-align: left;
-		}
-
-		li ol {
-			margin-top: -1.75rem;
-			margin-bottom: -1.75rem;
-		}
-
-		li ul {
-			margin-top: -1.75rem;
-			margin-bottom: -1.75rem;
-		}
+		li strong:first-child {
+            display: inline !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            vertical-align: baseline !important;
+            float: none !important;
+            position: static !important;
+        }
 	}
 
 	.invisible-scroll::-webkit-scrollbar {
@@ -306,12 +312,10 @@
 
 	.highlight {
 		animation: highlight-anim 3s linear infinite;
-		background: linear-gradient(
-			90deg,
-			hsl(var(--primary)) 50%,
-			hsl(var(--tertiary)) 75%,
-			hsl(var(--primary)) 100%
-		);
+		background: linear-gradient(90deg,
+				hsl(var(--primary)) 50%,
+				hsl(var(--tertiary)) 75%,
+				hsl(var(--primary)) 100%);
 		background-size: 200%;
 		-webkit-background-clip: text;
 		-webkit-text-fill-color: transparent;

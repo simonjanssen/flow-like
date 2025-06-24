@@ -44,7 +44,7 @@ export default function useMarkdown(
 		() =>
 			unified()
 				.use(remarkParse, remarkParseOptions)
-				.use(remarkBreaks)
+				// .use(remarkBreaks)
 				.use(remarkGfm)
 				.use(remarkMath)
 				.use(rehypeKatex)
@@ -53,6 +53,7 @@ export default function useMarkdown(
 				.use(rehypePlugins)
 				.use(rehypeReact, {
 					...rehypeReactOptions,
+					ignoreInvalidStyle: true,
 					Fragment: jsxRuntime.Fragment,
 					jsx: jsxRuntime.jsx as any,
 					jsxs: jsxRuntime.jsxs as any,

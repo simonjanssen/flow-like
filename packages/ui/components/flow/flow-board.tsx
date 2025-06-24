@@ -146,7 +146,7 @@ export function FlowBoard({
 		[appId, boardId, version],
 		boardId !== "",
 	);
-	const currentProfile = useInvoke(backend.getSettingsProfile, []);
+	const currentProfile = useInvoke(backend.getProfile, []);
 	const { addRun, removeRun, pushUpdate } = useRunExecutionStore();
 	const { screenToFlowPosition } = useReactFlow();
 
@@ -672,7 +672,7 @@ export function FlowBoard({
 			executeBoard,
 			executeCommand,
 			selected.current,
-			currentProfile.data?.flow_settings?.connection_mode ?? "simpleBezier",
+			currentProfile.data?.settings?.connection_mode ?? "simpleBezier",
 			nodes,
 			edges,
 			currentLayer,
@@ -681,7 +681,7 @@ export function FlowBoard({
 		setNodes(parsed.nodes);
 		setEdges(parsed.edges);
 		setPinCache(new Map(parsed.cache));
-	}, [board.data, currentLayer]);
+	}, [board.data, currentLayer, currentProfile.data]);
 
 	const nodeTypes = useMemo(
 		() => ({

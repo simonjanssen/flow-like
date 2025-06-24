@@ -19,15 +19,15 @@ import {
 	type ILogLevel,
 	type ILogMetadata,
 	type IMetadata,
-	injectData,
-	injectDataFunction,
 	type INode,
 	type IProfile,
 	type IRunPayload,
 	type ISettingsProfile,
 	type IVersionType,
 	LoadingScreen,
-	QueryClient,
+	type QueryClient,
+	injectData,
+	injectDataFunction,
 	useBackend,
 	useBackendStore,
 	useDownloadManager,
@@ -36,12 +36,17 @@ import {
 } from "@tm9657/flow-like-ui";
 import type { IBitSearchQuery } from "@tm9657/flow-like-ui/lib/schema/hub/bit-search-query";
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { useAuth, type AuthContextProps } from "react-oidc-context";
-import { appsDB } from "../lib/apps-db";
+import { type AuthContextProps, useAuth } from "react-oidc-context";
 import { fetcher, put } from "../lib/api";
+import { appsDB } from "../lib/apps-db";
 
 export class TauriBackend implements IBackendState {
-	constructor(private readonly backgroundTaskHandler: (task: Promise<any>) => void, private queryClient?: QueryClient, private auth?: AuthContextProps, private profile?: IProfile) { }
+	constructor(
+		private readonly backgroundTaskHandler: (task: Promise<any>) => void,
+		private queryClient?: QueryClient,
+		private auth?: AuthContextProps,
+		private profile?: IProfile,
+	) {}
 
 	pushProfile(profile: IProfile) {
 		this.profile = profile;
@@ -58,7 +63,7 @@ export class TauriBackend implements IBackendState {
 	async isOffline(appId: string): Promise<boolean> {
 		const status = await appsDB.visibility.get(appId);
 		if (status) {
-			return status.visibility === IAppVisibility.Offline
+			return status.visibility === IAppVisibility.Offline;
 		}
 		return false;
 	}
@@ -69,21 +74,21 @@ export class TauriBackend implements IBackendState {
 		template: string,
 		online: boolean,
 	): Promise<IApp> {
-		let appId: string | undefined
+		let appId: string | undefined;
 		if (online && this.profile) {
-			let app: IApp = await put(
+			const app: IApp = await put(
 				this.profile,
 				`app/new`,
 				{
 					meta: metadata,
 				},
-				this.auth
-			)
+				this.auth,
+			);
 
 			await appsDB.visibility.put({
 				visibility: IAppVisibility.Private,
 				appId: app.id,
-			})
+			});
 
 			appId = app.id;
 		}
@@ -92,7 +97,7 @@ export class TauriBackend implements IBackendState {
 			metadata: metadata,
 			bits: bits,
 			template: template,
-			id: appId
+			id: appId,
 		});
 
 		if (appId) {
@@ -186,7 +191,7 @@ export class TauriBackend implements IBackendState {
 
 	async getBoardSettings(): Promise<"straight" | "step" | "simpleBezier"> {
 		const profile: ISettingsProfile = await invoke("get_current_profile");
-		return profile?.flow_settings?.connection_mode ?? "simpleBezier";
+		return profile?.hub_profile.settings?.connection_mode as any;
 	}
 
 	async executeBoard(
@@ -667,48 +672,55 @@ export class TauriBackend implements IBackendState {
 		return await invoke("get_app", {
 			appId: appId,
 		});
-
 	}
 
 	async getApps(): Promise<[IApp, IMetadata | undefined][]> {
-		const localApps =  await invoke<[IApp, IMetadata | undefined][]>("get_apps");
+		const localApps = await invoke<[IApp, IMetadata | undefined][]>("get_apps");
 
-		if (!this?.queryClient || !this.profile || !this.auth?.isAuthenticated) {
-			console.warn("Query client, profile or auth context not available, returning local apps only.");
+		if (!this?.queryClient || !this.profile || !this.auth?.isAuthenticated) {
+			console.warn(
+				"Query client, profile or auth context not available, returning local apps only.",
+			);
 			console.warn({
 				queryClient: this?.queryClient,
 				profile: this?.profile,
 				auth: this?.auth,
-			})
+			});
 			return localApps;
 		}
 
-
 		const promise = injectDataFunction(
-			(async () => {
-				const remoteData = await fetcher<[IApp, IMetadata | undefined][]>(this.profile!, "apps", undefined, this.auth);
+			async () => {
+				const remoteData = await fetcher<[IApp, IMetadata | undefined][]>(
+					this.profile!,
+					"apps",
+					undefined,
+					this.auth,
+				);
 
 				const mergedData = new Map<string, [IApp, IMetadata | undefined]>();
 
 				for (const [app, meta] of remoteData) {
-						await appsDB.visibility.put({
-							visibility: app.visibility ?? IAppVisibility.Private,
-							appId: app.id,
-						});
+					await appsDB.visibility.put({
+						visibility: app.visibility ?? IAppVisibility.Private,
+						appId: app.id,
+					});
 
-						let exists = localApps.find(([localApp]) => localApp.id === app.id);
-						if (exists) {
-							await invoke("update_app", {
-								app: app,
-							});
-							if(meta) await invoke("push_app_meta", {
+					const exists = localApps.find(([localApp]) => localApp.id === app.id);
+					if (exists) {
+						await invoke("update_app", {
+							app: app,
+						});
+						if (meta)
+							await invoke("push_app_meta", {
 								appId: app.id,
 								metadata: meta,
 							});
-							continue;
-						}
+						continue;
+					}
 
-						if(meta) await invoke("create_app", {
+					if (meta)
+						await invoke("create_app", {
 							metadata: meta,
 							bits: app.bits,
 							template: "",
@@ -723,12 +735,12 @@ export class TauriBackend implements IBackendState {
 				});
 
 				return Array.from(mergedData.values());
-			}),
+			},
 			this,
 			this.queryClient,
 			this.getApps,
 			[],
-			[]
+			[],
 		);
 		this.backgroundTaskHandler(promise);
 
@@ -779,7 +791,7 @@ export function TauriProvider({
 			return;
 		}
 
-		await new Promise(resolve => setTimeout(resolve, 1000));
+		await new Promise((resolve) => setTimeout(resolve, 1000));
 		console.time("Resuming Downloads");
 		const downloads = await invoke<{ [key: string]: IBit }>("init_downloads");
 		console.timeEnd("Resuming Downloads");
@@ -820,12 +832,12 @@ export function TauriProvider({
 			promise
 				.then((result) => {
 					// Handle successful completion
-					console.log('Background task completed:', result);
+					console.log("Background task completed:", result);
 					// Maybe update some global state, cache, or UI
 				})
 				.catch((error) => {
 					// Handle errors
-					console.error('Background task failed:', error);
+					console.error("Background task failed:", error);
 					// Maybe show a notification or log the error
 				});
 		}, queryClient);
@@ -842,10 +854,12 @@ export function TauriProvider({
 		return <LoadingScreen progress={50} />;
 	}
 
-	return <>
-		{backend && <ProfileSyncer />}
-		{children}
-	</>;
+	return (
+		<>
+			{backend && <ProfileSyncer />}
+			{children}
+		</>
+	);
 }
 
 function ProfileSyncer() {
@@ -858,5 +872,5 @@ function ProfileSyncer() {
 		}
 	}, [profile.data, backend]);
 
-	return null
+	return null;
 }

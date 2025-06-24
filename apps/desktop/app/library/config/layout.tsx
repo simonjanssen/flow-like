@@ -32,6 +32,7 @@ import {
 	useBackend,
 	useInvoke,
 } from "@tm9657/flow-like-ui";
+import { useLiveQuery } from "dexie-react-hooks";
 import {
 	CableIcon,
 	ChartAreaIcon,
@@ -59,9 +60,8 @@ import {
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
-import { EVENT_CONFIG } from "../../../lib/event-config";
-import { useLiveQuery } from "dexie-react-hooks";
 import { appsDB } from "../../../lib/apps-db";
+import { EVENT_CONFIG } from "../../../lib/event-config";
 
 const navigationItems = [
 	{
@@ -105,14 +105,14 @@ const navigationItems = [
 		label: "Team",
 		icon: UsersRoundIcon,
 		description: "Manage team members and permissions",
-		online: true
+		online: true,
 	},
 	{
 		href: "/library/config/roles",
 		label: "Roles",
 		icon: CrownIcon,
 		description: "Define user roles and access levels",
-		online: true
+		online: true,
 	},
 	{
 		href: "/library/config/analytics",
@@ -143,7 +143,7 @@ export default function Id({
 				.equals(id ?? "")
 				.first(),
 		[id ?? ""],
-	) ?? {visibility: IAppVisibility.Offline};
+	) ?? { visibility: IAppVisibility.Offline };
 	const currentRoute = usePathname();
 	const metadata = useInvoke(
 		backend.getAppMeta,
@@ -176,8 +176,8 @@ export default function Id({
 				id: event.node_id,
 			},
 			false,
-			(eventId) => { },
-			(events) => { },
+			(eventId) => {},
+			(events) => {},
 		);
 
 		if (!runMeta) {
@@ -228,34 +228,36 @@ export default function Id({
 							{events.data?.find((event) =>
 								usableEvents.has(event.event_type),
 							) && (
-									<div>
-										<Link
-											href={`/use?id=${id}&eventId=${events.data?.find((event) =>
+								<div>
+									<Link
+										href={`/use?id=${id}&eventId=${
+											events.data?.find((event) =>
 												usableEvents.has(event.event_type),
 											)?.id
-												}`}
-											className="w-full"
+										}`}
+										className="w-full"
+									>
+										<Button
+											size={"sm"}
+											className="flex items-center gap-2 w-full rounded-full px-4"
 										>
-											<Button
-												size={"sm"}
-												className="flex items-center gap-2 w-full rounded-full px-4"
-											>
-												<SparklesIcon className="w-4 h-4" />
-												<h4 className="text-sm font-medium">Use App</h4>
-											</Button>
-										</Link>
-									</div>
-								)}
+											<SparklesIcon className="w-4 h-4" />
+											<h4 className="text-sm font-medium">Use App</h4>
+										</Button>
+									</Link>
+								</div>
+							)}
 						</CardContent>
 					</Card>
 				)}
 
 				{/* Enhanced Layout */}
 				<div
-					className={`grid w-full items-start gap-6 flex-grow overflow-hidden max-h-full transition-all duration-300 ${isMaximized
+					className={`grid w-full items-start gap-6 flex-grow overflow-hidden max-h-full transition-all duration-300 ${
+						isMaximized
 							? "grid-cols-1"
 							: "md:grid-cols-[240px_1fr] lg:grid-cols-[260px_1fr]"
-						}`}
+					}`}
 				>
 					{/* Enhanced Navigation - Hidden when maximized */}
 					{!isMaximized && (
@@ -286,16 +288,16 @@ export default function Id({
 													)}
 													{app.data?.visibility ===
 														IAppVisibility.Prototype && (
-															<div className="bg-muted border border-background rounded-full p-0.5">
-																<FlaskConicalIcon className="w-4 h-4 text-muted-foreground" />
-															</div>
-														)}
+														<div className="bg-muted border border-background rounded-full p-0.5">
+															<FlaskConicalIcon className="w-4 h-4 text-muted-foreground" />
+														</div>
+													)}
 													{app.data?.visibility ===
 														IAppVisibility.PublicRequestAccess && (
-															<div className="bg-destructive border border-background rounded-full p-0.5">
-																<GlobeLockIcon className="w-2 h-2 text-destructive-foreground" />
-															</div>
-														)}
+														<div className="bg-destructive border border-background rounded-full p-0.5">
+															<GlobeLockIcon className="w-2 h-2 text-destructive-foreground" />
+														</div>
+													)}
 													{app.data?.visibility === IAppVisibility.Offline && (
 														<div className="bg-muted-foreground/20 border border-background rounded-full p-0.5">
 															<CloudAlertIcon className="w-4 h-4 text-muted-foreground" />
@@ -373,37 +375,48 @@ export default function Id({
 											Navigation
 										</CardTitle>
 									</div>
-									<nav className="flex flex-col gap-1 pb-4" key={id + (online?.visibility ?? "")}>
-										{navigationItems.filter(item => !(item.online ?? false) || (item.online && online?.visibility !== IAppVisibility.Offline)).map((item) => {
-											const isActive = currentRoute.endsWith(
-												item.href.split("/").pop() ?? "",
-											);
-											const Icon = item.icon;
+									<nav
+										className="flex flex-col gap-1 pb-4"
+										key={id + (online?.visibility ?? "")}
+									>
+										{navigationItems
+											.filter(
+												(item) =>
+													!(item.online ?? false) ||
+													(item.online &&
+														online?.visibility !== IAppVisibility.Offline),
+											)
+											.map((item) => {
+												const isActive = currentRoute.endsWith(
+													item.href.split("/").pop() ?? "",
+												);
+												const Icon = item.icon;
 
-											return (
-												<Tooltip key={item.href} delayDuration={300}>
-													<TooltipTrigger asChild>
-														<Link
-															href={`${item.href}?id=${id}`}
-															className={`
+												return (
+													<Tooltip key={item.href} delayDuration={300}>
+														<TooltipTrigger asChild>
+															<Link
+																href={`${item.href}?id=${id}`}
+																className={`
                                                                 flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all
-                                                                ${isActive
-																	? "bg-primary text-primary-foreground shadow-sm font-medium"
-																	: "hover:bg-muted text-muted-foreground hover:text-foreground"
-																}
+                                                                ${
+																																	isActive
+																																		? "bg-primary text-primary-foreground shadow-sm font-medium"
+																																		: "hover:bg-muted text-muted-foreground hover:text-foreground"
+																																}
                                                             `}
-														>
-															<Icon className="w-4 h-4 flex-shrink-0" />
-															<span className="truncate">{item.label}</span>
-														</Link>
-													</TooltipTrigger>
-													<TooltipContent side="right" className="max-w-xs">
-														<p className="font-bold">{item.label}</p>
-														<p className="text-xs mt-1">{item.description}</p>
-													</TooltipContent>
-												</Tooltip>
-											);
-										})}
+															>
+																<Icon className="w-4 h-4 flex-shrink-0" />
+																<span className="truncate">{item.label}</span>
+															</Link>
+														</TooltipTrigger>
+														<TooltipContent side="right" className="max-w-xs">
+															<p className="font-bold">{item.label}</p>
+															<p className="text-xs mt-1">{item.description}</p>
+														</TooltipContent>
+													</Tooltip>
+												);
+											})}
 									</nav>
 
 									<Separator className="my-4 mx-3" />
@@ -416,10 +429,10 @@ export default function Id({
 										</div>
 										<div className="flex flex-col gap-2 pb-4">
 											{events.data &&
-												events.data.filter(
-													(event) =>
-														event.event_type === "quick_action" && event.active,
-												).length > 0 ? (
+											events.data.filter(
+												(event) =>
+													event.event_type === "quick_action" && event.active,
+											).length > 0 ? (
 												events.data
 													.filter(
 														(event) =>
@@ -475,8 +488,9 @@ export default function Id({
 
 					{/* Enhanced Content Area with Maximize Button */}
 					<Card
-						className={`h-full flex flex-col flex-grow overflow-hidden transition-all duration-300 bg-transparent ${isMaximized ? "shadow-2xl" : ""
-							}`}
+						className={`h-full flex flex-col flex-grow overflow-hidden transition-all duration-300 bg-transparent ${
+							isMaximized ? "shadow-2xl" : ""
+						}`}
 					>
 						<CardHeader className="pb-0 pt-4 px-4">
 							<div className="flex items-center justify-between">

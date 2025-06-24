@@ -96,6 +96,20 @@ const config = {
 			lineHeight: {
 				"extra-small": "0.55rem",
 			},
+			fontFamily: {
+				sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+				serif: ["var(--font-serif)", "Georgia", "Cambria", "serif"],
+				mono: ["var(--font-mono)", "SFMono-Regular", "Menlo", "monospace"],
+			},
+			boxShadow: {
+				"2xs": "var(--shadow-2xs)",
+				xs: "var(--shadow-xs)",
+				sm: "var(--shadow-sm)",
+				md: "var(--shadow-md)",
+				lg: "var(--shadow-lg)",
+				xl: "var(--shadow-xl)",
+				"2xl": "var(--shadow-2xl)",
+			},
 		},
 	},
 

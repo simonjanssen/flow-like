@@ -1,11 +1,11 @@
 "use client";
 import {
-	QueryClient,
+	type QueryClient,
 	type UseQueryResult,
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
-import { useBackend, type IBackendState } from "../state/backend-state";
+import { type IBackendState, useBackend } from "../state/backend-state";
 
 type BackendFunction<T, Args extends any[]> = (...args: Args) => Promise<T>;
 
@@ -30,7 +30,7 @@ export function useInvoke<T, Args extends any[]>(
 	enabled = true,
 	additionalDeps: any[] = [],
 ): UseQueryResult<T, Error> {
-	const backend = useBackend()
+	const backend = useBackend();
 	const query = useQuery<T, Error>({
 		queryKey: [backendFn.name || "backendFn", ...args, ...additionalDeps],
 		queryFn: async () => {

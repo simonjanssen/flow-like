@@ -62,7 +62,7 @@ export function MessageComponent({
 	const contentRef = useRef<HTMLDivElement>(null);
 
 	// Approximate 4 lines based on line-height (1.5 * 1rem = 1.5rem per line)
-	const maxCollapsedHeight = "6rem"; // ~4 lines
+	const maxCollapsedHeight = "4rem"; // ~4 lines
 
 	const messageContent = useMemo(() => {
 		if (typeof message.inner.content === "string") {
@@ -261,7 +261,7 @@ export function MessageComponent({
 					console.log("Actual Height:", actualHeight, "Max Height:", maxHeight);
 					setShowToggle(actualHeight > maxHeight);
 				}
-			}, 0);
+			}, 100);
 		}
 	}, [message.inner, isUser, maxCollapsedHeight]);
 

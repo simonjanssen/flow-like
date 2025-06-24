@@ -117,7 +117,12 @@ export default function CreateAppPage() {
 
 		setIsCreating(true);
 		try {
-			await backend.createApp(meta, selectedModels, selectedTemplate, !isOffline);
+			await backend.createApp(
+				meta,
+				selectedModels,
+				selectedTemplate,
+				!isOffline,
+			);
 			setShowConfetti(true);
 			toast(`${isOffline ? "Offline" : "Online"} app created successfully! 🎉`);
 			await apps.refetch();
@@ -240,11 +245,13 @@ export default function CreateAppPage() {
 													: "hover:border-primary/30"
 											}`}
 											onClick={() => {
-												if(!auth?.isAuthenticated) {
-													toast.error("You must be logged in to create an online project.");
+												if (!auth?.isAuthenticated) {
+													toast.error(
+														"You must be logged in to create an online project.",
+													);
 													return;
 												}
-												setIsOffline(false)
+												setIsOffline(false);
 											}}
 										>
 											<CardContent className="p-4 text-center">
