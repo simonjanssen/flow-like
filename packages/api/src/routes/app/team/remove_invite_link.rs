@@ -1,6 +1,6 @@
 use crate::{
     ensure_in_project, ensure_permission,
-    entity::{app, membership, meta, role},
+    entity::{app, invite_link, membership, meta, role},
     error::ApiError,
     middleware::jwt::AppUser,
     permission::role_permission::RolePermissions,
@@ -18,13 +18,22 @@ use sea_orm::{
     RelationTrait, TransactionTrait, prelude::Expr,
 };
 
-#[tracing::instrument(name = "GET /apps/{app_id}/team/link", skip(state, user))]
-pub async fn create_invite_link(
+#[tracing::instrument(name = "DELETE /apps/{app_id}/team/link/{link_id}", skip(state, user))]
+pub async fn remove_invite_link(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,
-    Path(app_id): Path<String>,
+    Path((app_id, link_id)): Path<(String, String)>,
 ) -> Result<Json<()>, ApiError> {
     ensure_permission!(user, &app_id, &state, RolePermissions::Admin);
+
+    invite_link::Entity::delete_many()
+        .filter(
+            invite_link::Column::AppId
+                .eq(app_id.clone())
+                .and(invite_link::Column::Id.eq(link_id.clone())),
+        )
+        .exec(&state.db)
+        .await?;
 
     Ok(Json(()))
 }
