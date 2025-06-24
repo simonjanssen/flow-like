@@ -9,6 +9,9 @@ model InviteLink {
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+
+    @@index([appId, createdAt])
+    @@index([appId, token])
 }
 
 model JoinQueue {
@@ -26,6 +29,8 @@ model JoinQueue {
     updatedAt DateTime @updatedAt
 
     @@index([userId, appId])
+    @@unique([userId, appId])
+    @@index([appId, createdAt])
 }
 
 model Invitations {
@@ -37,8 +42,18 @@ model Invitations {
     app   App    @relation(fields: [appId], references: [id], onDelete: Cascade)
     appId String
 
+    name String
+    description String?
+    message String?
+
+    byMember   Membership   @relation(fields: [byMemberId], references: [id], onDelete: Cascade)
+    byMemberId String
+
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+
+    @@unique([userId, appId])
+    @@index([userId, createdAt])
 }
 
 model Membership {
@@ -52,6 +67,8 @@ model Membership {
 
     role   Role   @relation(fields: [roleId], references: [id])
     roleId String
+
+    invitation Invitations[]
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt

@@ -16,6 +16,14 @@ pub struct Model {
     pub updated_at: DateTime,
     #[sea_orm(column_name = "appId", column_type = "Text")]
     pub app_id: String,
+    #[sea_orm(column_name = "byMemberId", column_type = "Text")]
+    pub by_member_id: String,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub description: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub message: Option<String>,
+    #[sea_orm(column_type = "Text")]
+    pub name: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -29,6 +37,14 @@ pub enum Relation {
     )]
     App,
     #[sea_orm(
+        belongs_to = "super::membership::Entity",
+        from = "Column::ByMemberId",
+        to = "super::membership::Column::Id",
+        on_update = "Cascade",
+        on_delete = "Cascade"
+    )]
+    Membership,
+    #[sea_orm(
         belongs_to = "super::user::Entity",
         from = "Column::UserId",
         to = "super::user::Column::Id",
@@ -41,6 +57,12 @@ pub enum Relation {
 impl Related<super::app::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::App.def()
+    }
+}
+
+impl Related<super::membership::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Membership.def()
     }
 }
 

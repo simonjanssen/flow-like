@@ -1,10 +1,11 @@
 use axum::{
     Router,
-    routing::{get, put},
+    routing::{get, post, put},
 };
 
 use crate::state::AppState;
 
+pub mod assign_role;
 pub mod delete_role;
 pub mod get_roles;
 pub mod make_role_default;
@@ -21,4 +22,5 @@ pub fn routes() -> Router<AppState> {
             "/{role_id}/default",
             put(make_role_default::make_role_default),
         )
+        .route("/{role_id}/assign/{sub}", post(assign_role::assign_role))
 }

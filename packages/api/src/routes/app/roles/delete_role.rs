@@ -15,7 +15,7 @@ use flow_like::{app::App, bit::Metadata};
 use flow_like_types::{anyhow, bail};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, EntityTrait, JoinType, QueryFilter, QueryOrder, QuerySelect,
-    RelationTrait,
+    RelationTrait, TransactionTrait, prelude::Expr,
 };
 
 #[tracing::instrument(name = "DELETE /apps/{app_id}/roles/{role_id}", skip(state, user))]
@@ -26,11 +26,27 @@ pub async fn delete_role(
 ) -> Result<Json<()>, ApiError> {
     ensure_permission!(user, &app_id, &state, RolePermissions::Admin);
 
-    let role = role::Entity::find_by_id(role_id.clone())
+    let txn = state.db.begin().await?;
+
+    let (role, app) = role::Entity::find_by_id(role_id.clone())
         .filter(role::Column::AppId.eq(app_id.clone()))
-        .one(&state.db)
+        .find_also_related(app::Entity)
+        .one(&txn)
         .await?
         .ok_or(ApiError::NotFound)?;
+
+    let app = app.ok_or(ApiError::NotFound)?;
+    let default_role_id = app.default_role_id.ok_or(ApiError::NotFound)?;
+
+    if role_id == default_role_id {
+        tracing::warn!(
+            "User {} is trying to delete the default role {} in app {}",
+            user.sub()?,
+            role_id,
+            app_id
+        );
+        return Err(ApiError::Forbidden);
+    }
 
     let Some(permission) = RolePermissions::from_bits(role.permissions) else {
         return Err(ApiError::Forbidden);
@@ -40,8 +56,17 @@ pub async fn delete_role(
         return Err(ApiError::Forbidden);
     }
 
+    membership::Entity::update_many()
+        .filter(membership::Column::AppId.eq(app_id))
+        .filter(membership::Column::RoleId.eq(role_id))
+        .col_expr(membership::Column::RoleId, Expr::value(default_role_id))
+        .exec(&txn)
+        .await?;
+
     let role: role::ActiveModel = role.into();
-    role.delete(&state.db).await?;
+    role.delete(&txn).await?;
+
+    txn.commit().await?;
 
     Ok(Json(()))
 }

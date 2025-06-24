@@ -18,27 +18,18 @@ use sea_orm::{
     QueryOrder, QuerySelect, RelationTrait, TransactionTrait, prelude::Expr,
 };
 
-#[tracing::instrument(name = "PUT /apps/{app_id}/team/link", skip(state, user))]
-pub async fn create_invite_link(
+#[tracing::instrument(name = "GET /apps/{app_id}/team/link", skip(state, user))]
+pub async fn get_invite_links(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,
     Path(app_id): Path<String>,
-) -> Result<Json<()>, ApiError> {
+) -> Result<Json<Vec<invite_link::Model>>, ApiError> {
     ensure_permission!(user, &app_id, &state, RolePermissions::Admin);
 
-    let nonce = create_id();
+    let links = invite_link::Entity::find()
+        .filter(invite_link::Column::AppId.eq(app_id.clone()))
+        .all(&state.db)
+        .await?;
 
-    let new_link = invite_link::Model {
-        id: create_id(),
-        app_id: app_id.clone(),
-        count_joined: 0,
-        created_at: chrono::Utc::now().naive_utc(),
-        updated_at: chrono::Utc::now().naive_utc(),
-        token: nonce.clone(),
-    };
-
-    let new_link: invite_link::ActiveModel = new_link.into();
-    new_link.insert(&state.db).await?;
-
-    Ok(Json(()))
+    Ok(Json(links))
 }
