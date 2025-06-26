@@ -47,7 +47,7 @@ pub async fn get_meta(
     }
 
     if apps.len() > 1 {
-        return Err(ApiError::App(
+        return Err(ApiError::Internal(
             anyhow!("Multiple apps found for ID: {}", app_id).into(),
         ));
     }

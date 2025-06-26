@@ -11,7 +11,7 @@ pub mod course;
 pub mod course_connection;
 pub mod execution_usage_tracking;
 pub mod feedback;
-pub mod invitations;
+pub mod invitation;
 pub mod invite_link;
 pub mod join_queue;
 pub mod landing_page;

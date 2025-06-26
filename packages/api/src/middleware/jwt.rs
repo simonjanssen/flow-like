@@ -1,5 +1,5 @@
 use crate::{
-    entity::{membership, pat, prelude::*, role, technical_user, user},
+    entity::{membership, pat, prelude::*, role, sea_orm_active_enums, technical_user, user},
     error::{ApiError, AuthorizationError},
     permission::{global_permission::GlobalPermission, role_permission::RolePermissions},
 };
@@ -9,6 +9,7 @@ use axum::{
     middleware::Next,
     response::Response,
 };
+use flow_like::hub::UserTier;
 use flow_like_types::Result;
 use flow_like_types::anyhow;
 use hyper::header::AUTHORIZATION;
@@ -86,6 +87,29 @@ impl AppUser {
                 "Unauthorized user does not have a sub"
             ))),
         }
+    }
+
+    pub async fn tier(&self, state: &AppState) -> Result<UserTier, AuthorizationError> {
+        let sub = self.sub()?;
+        let user = user::Entity::find_by_id(&sub)
+            .one(&state.db)
+            .await?
+            .ok_or_else(|| AuthorizationError::from(anyhow!("User not found")))?;
+
+        let db_tier = match user.tier {
+            sea_orm_active_enums::UserTier::Free => "FREE",
+            sea_orm_active_enums::UserTier::Premium => "PREMIUM",
+            sea_orm_active_enums::UserTier::Pro => "PRO",
+            sea_orm_active_enums::UserTier::Enterprise => "ENTERPRISE",
+        };
+
+        let tier = state
+            .platform_config
+            .tiers
+            .get(db_tier)
+            .cloned()
+            .ok_or_else(|| AuthorizationError::from(anyhow!("Tier not found")))?;
+        Ok(tier)
     }
 
     pub async fn get_user(&self, state: &AppState) -> Result<user::Model, AuthorizationError> {

@@ -28,7 +28,7 @@ pub async fn get_join_requests(
     ensure_permission!(user, &app_id, &state, RolePermissions::Admin);
 
     let links = join_queue::Entity::find()
-        .order_by_desc(join_queue::Column::CreatedAt)
+        .order_by_asc(join_queue::Column::CreatedAt)
         .filter(join_queue::Column::AppId.eq(app_id.clone()))
         .limit(params.limit)
         .offset(params.offset)

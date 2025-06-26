@@ -1,7 +1,7 @@
 use std::{sync::Arc, time::Duration};
 
 use axum::{Json, Router, middleware::from_fn_with_state, routing::get};
-use error::AppError;
+use error::InternalError;
 use flow_like::hub::Hub;
 use middleware::jwt::jwt_middleware;
 use state::{AppState, State};
@@ -61,6 +61,6 @@ pub fn construct_router(state: Arc<State>) -> Router {
 #[tracing::instrument(name = "GET /", skip(state))]
 async fn hub_info(
     axum::extract::State(state): axum::extract::State<AppState>,
-) -> Result<Json<Hub>, AppError> {
+) -> Result<Json<Hub>, InternalError> {
     Ok(Json(state.platform_config.clone()))
 }

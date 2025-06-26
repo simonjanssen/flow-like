@@ -50,9 +50,27 @@ pub async fn join_invite_link(
         .find_also_related(app::Entity)
         .one(&txn)
         .await?
-        .ok_or_else(|| ApiError::NotFound)?;
+        .ok_or_else(|| {
+            tracing::warn!(
+                "User {} attempted to join app {} with invalid invite token {}",
+                sub,
+                app_id,
+                token
+            );
+            ApiError::NotFound
+        })?;
 
     let app = app.ok_or_else(|| ApiError::NotFound)?;
+
+    if matches!(app.visibility, Visibility::Private | Visibility::Offline) {
+        tracing::warn!(
+            "User {} is trying to invite a user to app {} but the app is not public",
+            user.sub()?,
+            app_id
+        );
+        return Err(ApiError::Forbidden);
+    }
+
     let default_role_id = app.default_role_id.ok_or_else(|| ApiError::NotFound)?;
 
     if matches!(app.visibility, Visibility::Offline | Visibility::Private) {

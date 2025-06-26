@@ -51,8 +51,8 @@ pub enum Relation {
     ExecutionUsageTracking,
     #[sea_orm(has_many = "super::feedback::Entity")]
     Feedback,
-    #[sea_orm(has_many = "super::invitations::Entity")]
-    Invitations,
+    #[sea_orm(has_many = "super::invitation::Entity")]
+    Invitation,
     #[sea_orm(has_many = "super::join_queue::Entity")]
     JoinQueue,
     #[sea_orm(has_many = "super::llm_usage_tracking::Entity")]
@@ -89,9 +89,9 @@ impl Related<super::feedback::Entity> for Entity {
     }
 }
 
-impl Related<super::invitations::Entity> for Entity {
+impl Related<super::invitation::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::Invitations.def()
+        Relation::Invitation.def()
     }
 }
 

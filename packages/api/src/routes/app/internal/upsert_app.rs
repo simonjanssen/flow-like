@@ -16,9 +16,7 @@ use axum::{
 use flow_like::{app::App, bit::Metadata};
 use flow_like_types::create_id;
 use sea_orm::{
-    ActiveModelTrait,
-    ActiveValue::{NotSet, Set},
-    ColumnTrait, DbErr, EntityTrait, IntoActiveModel, QueryFilter, TransactionTrait,
+    ActiveModelTrait, ActiveValue::{NotSet, Set}, ColumnTrait, DbErr, EntityTrait, IntoActiveModel, JoinType, PaginatorTrait, QueryFilter, QuerySelect, RelationTrait, TransactionTrait
 };
 use serde::{Deserialize, Serialize};
 
@@ -37,6 +35,7 @@ pub async fn upsert_app(
     Json(app_body): Json<AppUpsertBody>,
 ) -> Result<Json<App>, ApiError> {
     let sub = user.sub()?;
+    let tier = user.tier(&state).await?;
 
     let app = app::Entity::find()
         .filter(app::Column::Id.eq(&app_id))
@@ -57,13 +56,6 @@ pub async fn upsert_app(
         app.status = sea_orm::ActiveValue::Set(app_updates.status);
         app.changelog = sea_orm::ActiveValue::Set(app_updates.changelog);
 
-        if matches!(
-            app_updates.visibility,
-            Visibility::Offline | Visibility::Private | Visibility::Prototype
-        ) {
-            app.visibility = sea_orm::ActiveValue::Set(app_updates.visibility);
-        }
-
         app.primary_category = sea_orm::ActiveValue::Set(app_updates.primary_category);
         app.secondary_category = sea_orm::ActiveValue::Set(app_updates.secondary_category);
         app.price = sea_orm::ActiveValue::Set(app_updates.price);
@@ -78,6 +70,25 @@ pub async fn upsert_app(
         return Err(ApiError::Forbidden);
     }
 
+    if tier.max_non_visible_projects == 0 {
+        return Err(ApiError::Forbidden);
+    }
+
+    if tier.max_non_visible_projects > 0 {
+        let count = membership::Entity::find()
+            .join(JoinType::InnerJoin, app::Relation::Membership.def())
+            .join(JoinType::InnerJoin, role::Relation::Membership.def())
+            .filter(app::Column::Visibility.eq(Visibility::Prototype).or(app::Column::Visibility.eq(Visibility::Private)))
+            // Owner Permission is 1, so we filter out roles that have Owner permission
+            .filter(role::Column::Permissions.eq(1))
+            .count(&state.db)
+            .await?;
+
+        if count >= tier.max_non_visible_projects as u64 {
+            return Err(ApiError::Forbidden);
+        }
+    }
+
     let app = state
         .db
         .transaction::<_, app::Model, DbErr>(|txn| {
@@ -87,6 +98,7 @@ pub async fn upsert_app(
                     status: Set(Status::Active),
                     created_at: Set(now.clone()),
                     updated_at: Set(now.clone()),
+                    visibility: Set(Visibility::Private),
                     ..Default::default()
                 };
 

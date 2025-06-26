@@ -38,7 +38,7 @@ model User {
     feedback                    Feedback[]
     assignedPublicationRequests PublicationRequest[]
     publicationLogs             PublicationLog[]
-    invitations                 Invitations[]
+    invitations                 Invitation[]
     transactions                Transaction[]
 
     status UserStatus @default(ACTIVE)

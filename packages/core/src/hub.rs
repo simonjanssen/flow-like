@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use crate::{
     bit::{Bit, BitTypes},
@@ -9,6 +9,18 @@ use flow_like_types::{Result, sync::Mutex};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use url::Url;
+
+#[derive(Clone, Debug, Serialize, JsonSchema, Deserialize)]
+pub struct UserTier {
+    pub max_non_visible_projects: i32,
+    pub max_remote_executions: i32,
+    pub execution_tier: String,
+    pub max_total_size: i64,
+    pub max_llm_calls: i32,
+    pub llm_tiers: Vec<String>,
+}
+
+pub type UserTiers = HashMap<String, UserTier>;
 
 #[derive(Clone, Debug, Serialize, JsonSchema, Deserialize)]
 pub struct Hub {
@@ -30,6 +42,7 @@ pub struct Hub {
     pub max_users_prototype: Option<i32>,
     pub default_user_plan: Option<String>,
     pub environment: Environment,
+    pub tiers: UserTiers,
 
     #[serde(skip)]
     recursion_guard: Option<Arc<Mutex<RecursionGuard>>>,

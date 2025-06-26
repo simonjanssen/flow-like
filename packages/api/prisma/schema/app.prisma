@@ -53,7 +53,7 @@ model App {
 
   courses CourseConnection[]
   inviteLinks InviteLink[]
-  invitations Invitations[]
+  invitations Invitation[]
 
   feedback Feedback[]
   publicationRequests PublicationRequest[]

@@ -6,12 +6,7 @@ use axum::{
     routing::{get, put},
 };
 
-pub mod delete_app;
-pub mod get_app;
-pub mod get_apps;
-pub mod get_nodes;
-pub mod search_apps;
-pub mod upsert_app;
+pub mod internal;
 
 pub mod board;
 pub mod meta;
@@ -21,18 +16,22 @@ pub mod template;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route("/", get(get_apps::get_apps).post(search_apps::search_apps))
-        .route("/nodes", get(get_nodes::get_nodes))
+        .route(
+            "/",
+            get(internal::get_apps::get_apps).post(internal::search_apps::search_apps),
+        )
+        .route("/nodes", get(internal::get_nodes::get_nodes))
         .route(
             "/{app_id}",
-            get(get_app::get_app)
-                .put(upsert_app::upsert_app)
-                .delete(delete_app::delete_app),
+            get(internal::get_app::get_app)
+                .put(internal::upsert_app::upsert_app)
+                .delete(internal::delete_app::delete_app),
         )
         .nest("/{app_id}/template", template::routes())
         .nest("/{app_id}/board", board::routes())
         .nest("/{app_id}/meta", meta::routes())
         .nest("/{app_id}/roles", roles::routes())
+        .nest("/{app_id}/team", team::routes())
 }
 
 #[macro_export]

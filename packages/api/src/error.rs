@@ -3,12 +3,12 @@ use axum::{
     response::{IntoResponse, Response},
 };
 
-pub struct AppError(flow_like_types::Error);
+pub struct InternalError(flow_like_types::Error);
 pub struct AuthorizationError(flow_like_types::Error);
 pub struct NotFoundError(flow_like_types::Error);
 
 pub enum ApiError {
-    App(AppError),
+    Internal(InternalError),
     Auth(AuthorizationError),
     NotFound,
     Forbidden,
@@ -17,7 +17,7 @@ pub enum ApiError {
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         match self {
-            ApiError::App(err) => err.into_response(),
+            ApiError::Internal(err) => err.into_response(),
             ApiError::Auth(err) => err.into_response(),
             ApiError::NotFound => (StatusCode::NOT_FOUND, "Not Found").into_response(),
             ApiError::Forbidden => (StatusCode::FORBIDDEN, "Forbidden").into_response(),
@@ -32,13 +32,13 @@ where
     fn from(err: E) -> Self {
         let err = err.into();
         tracing::error!("Internal error: {:?}", err);
-        ApiError::App(AppError(err))
+        ApiError::Internal(InternalError(err))
     }
 }
 
-impl From<AppError> for ApiError {
-    fn from(err: AppError) -> Self {
-        ApiError::App(err)
+impl From<InternalError> for ApiError {
+    fn from(err: InternalError) -> Self {
+        ApiError::Internal(err)
     }
 }
 
@@ -60,20 +60,20 @@ impl IntoResponse for NotFoundError {
     }
 }
 
-impl IntoResponse for AppError {
+impl IntoResponse for InternalError {
     fn into_response(self) -> Response {
         (StatusCode::INTERNAL_SERVER_ERROR,).into_response()
     }
 }
 
-impl<E> From<E> for AppError
+impl<E> From<E> for InternalError
 where
     E: Into<flow_like_types::Error>,
 {
     fn from(err: E) -> Self {
         let err = err.into();
         tracing::error!("Internal error: {:?}", err);
-        AppError(err)
+        InternalError(err)
     }
 }
 

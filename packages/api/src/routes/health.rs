@@ -1,4 +1,4 @@
-use crate::error::AppError;
+use crate::error::InternalError;
 use crate::state::AppState;
 use axum::Json;
 use axum::extract::State;
@@ -14,7 +14,7 @@ pub fn routes() -> Router<AppState> {
 }
 
 #[tracing::instrument(name = "GET /health")]
-async fn health() -> Result<Json<Value>, AppError> {
+async fn health() -> Result<Json<Value>, InternalError> {
     let response = Json(json!({
         "status": "ok",
     }));
@@ -22,7 +22,7 @@ async fn health() -> Result<Json<Value>, AppError> {
 }
 
 #[tracing::instrument(name = "GET /health/db", skip(state))]
-async fn db_health(State(state): State<AppState>) -> Result<Json<Value>, AppError> {
+async fn db_health(State(state): State<AppState>) -> Result<Json<Value>, InternalError> {
     let state = state.db.clone();
     let now = Instant::now();
     state.ping().await?;

@@ -1,5 +1,5 @@
 use crate::{
-    entity::app, error::ApiError, middleware::jwt::AppUser,
+    ensure_permission, entity::app, error::ApiError, middleware::jwt::AppUser,
     permission::role_permission::RolePermissions, state::AppState,
 };
 use axum::{
@@ -14,10 +14,7 @@ pub async fn delete_app(
     Extension(user): Extension<AppUser>,
     Path(app_id): Path<String>,
 ) -> Result<Json<()>, ApiError> {
-    let sub = user.app_permission(&app_id, &state).await?;
-    if !sub.has_permission(RolePermissions::Owner) {
-        return Err(ApiError::Forbidden);
-    }
+    let sub = ensure_permission!(user, &app_id, &state, RolePermissions::Owner);
 
     let app = sub
         .role

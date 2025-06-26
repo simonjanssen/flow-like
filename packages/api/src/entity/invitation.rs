@@ -4,22 +4,26 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "Membership")]
+#[sea_orm(table_name = "Invitation")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false, column_type = "Text")]
     pub id: String,
     #[sea_orm(column_name = "userId", column_type = "Text")]
     pub user_id: String,
-    #[sea_orm(column_name = "roleId", column_type = "Text")]
-    pub role_id: String,
+    #[sea_orm(column_name = "appId", column_type = "Text")]
+    pub app_id: String,
+    #[sea_orm(column_type = "Text")]
+    pub name: String,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub description: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub message: Option<String>,
+    #[sea_orm(column_name = "byMemberId", column_type = "Text")]
+    pub by_member_id: String,
     #[sea_orm(column_name = "createdAt")]
     pub created_at: DateTime,
     #[sea_orm(column_name = "updatedAt")]
     pub updated_at: DateTime,
-    #[sea_orm(column_name = "joinedVia", column_type = "Text", nullable)]
-    pub joined_via: Option<String>,
-    #[sea_orm(column_name = "appId", column_type = "Text")]
-    pub app_id: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -32,16 +36,14 @@ pub enum Relation {
         on_delete = "Cascade"
     )]
     App,
-    #[sea_orm(has_many = "super::invitation::Entity")]
-    Invitation,
     #[sea_orm(
-        belongs_to = "super::role::Entity",
-        from = "Column::RoleId",
-        to = "super::role::Column::Id",
+        belongs_to = "super::membership::Entity",
+        from = "Column::ByMemberId",
+        to = "super::membership::Column::Id",
         on_update = "Cascade",
-        on_delete = "Restrict"
+        on_delete = "Cascade"
     )]
-    Role,
+    Membership,
     #[sea_orm(
         belongs_to = "super::user::Entity",
         from = "Column::UserId",
@@ -58,15 +60,9 @@ impl Related<super::app::Entity> for Entity {
     }
 }
 
-impl Related<super::invitation::Entity> for Entity {
+impl Related<super::membership::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::Invitation.def()
-    }
-}
-
-impl Related<super::role::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Role.def()
+        Relation::Membership.def()
     }
 }
 

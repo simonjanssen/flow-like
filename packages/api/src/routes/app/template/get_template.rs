@@ -34,7 +34,7 @@ pub async fn get_template(
         match parts.as_slice() {
             [maj, min, pat] => Some((*maj, *min, *pat)),
             _ => {
-                return Err(ApiError::App(
+                return Err(ApiError::Internal(
                     anyhow!("version must be in MAJOR_MINOR_PATCH format").into(),
                 ));
             }

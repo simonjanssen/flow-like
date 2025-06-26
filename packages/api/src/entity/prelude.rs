@@ -9,7 +9,7 @@ pub use super::course::Entity as Course;
 pub use super::course_connection::Entity as CourseConnection;
 pub use super::execution_usage_tracking::Entity as ExecutionUsageTracking;
 pub use super::feedback::Entity as Feedback;
-pub use super::invitations::Entity as Invitations;
+pub use super::invitation::Entity as Invitation;
 pub use super::invite_link::Entity as InviteLink;
 pub use super::join_queue::Entity as JoinQueue;
 pub use super::landing_page::Entity as LandingPage;

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{
     entity::{
         app::{self, Entity},
-        invitations, membership, meta, user,
+        invitation, membership, meta, user,
     },
     error::ApiError,
     middleware::jwt::AppUser,
@@ -26,12 +26,12 @@ pub async fn get_invites(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,
     Query(query): Query<LanguageParams>,
-) -> Result<Json<Vec<(invitations::Model, String)>>, ApiError> {
+) -> Result<Json<Vec<(invitation::Model, String)>>, ApiError> {
     let sub = user.sub()?;
 
-    let invitations = invitations::Entity::find()
-        .order_by_desc(invitations::Column::CreatedAt)
-        .filter(invitations::Column::UserId.eq(sub))
+    let invitations = invitation::Entity::find()
+        .order_by_desc(invitation::Column::CreatedAt)
+        .filter(invitation::Column::UserId.eq(sub))
         .find_also_related(membership::Entity)
         .limit(query.limit)
         .offset(query.offset)

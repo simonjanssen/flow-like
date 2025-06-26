@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{
     entity::{
         app::{self, Entity},
-        invitations, membership, meta,
+        invitation, membership, meta,
         sea_orm_active_enums::Visibility,
         user,
     },
@@ -32,9 +32,9 @@ pub async fn decline_invite(
 ) -> Result<Json<()>, ApiError> {
     let sub = user.sub()?;
 
-    invitations::Entity::delete_many()
-        .filter(invitations::Column::Id.eq(invite_id.clone()))
-        .filter(invitations::Column::UserId.eq(sub))
+    invitation::Entity::delete_many()
+        .filter(invitation::Column::Id.eq(invite_id.clone()))
+        .filter(invitation::Column::UserId.eq(sub))
         .exec(&state.db)
         .await?;
 
@@ -53,8 +53,8 @@ pub async fn accept_invite(
 
     let txn = state.db.begin().await?;
 
-    let (invite, app) = invitations::Entity::find_by_id(invite_id.clone())
-        .filter(invitations::Column::UserId.eq(sub.clone()))
+    let (invite, app) = invitation::Entity::find_by_id(invite_id.clone())
+        .filter(invitation::Column::UserId.eq(sub.clone()))
         .find_also_related(app::Entity)
         .one(&txn)
         .await?
@@ -100,7 +100,7 @@ pub async fn accept_invite(
 
     membership.insert(&txn).await?;
 
-    let invite: invitations::ActiveModel = invite.into();
+    let invite: invitation::ActiveModel = invite.into();
     invite.delete(&txn).await?;
 
     txn.commit().await?;
