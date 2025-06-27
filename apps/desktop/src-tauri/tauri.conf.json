@@ -71,7 +71,7 @@
 		"homepage": "https://flow-like.com",
 		"publisher": "TM9657 GmbH",
 		"licenseFile": "../../../LICENSE",
-		"active": true,
+		"active": false,
 		"targets": "all",
 		"icon": [
 			"icons/32x32.png",
