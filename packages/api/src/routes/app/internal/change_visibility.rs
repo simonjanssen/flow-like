@@ -88,10 +88,7 @@ pub async fn change_visibility(
     }
 
 
-
-    if
-
-    let tier = user.tier(&state).await?;
+    //if let tier = user.tier(&state).await?;
 
     if app.visibility == body.visibility {
         tracing::warn!(

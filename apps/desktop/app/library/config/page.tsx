@@ -341,7 +341,7 @@ export default function Id() {
 						Visibility Status
 					</CardTitle>
 					<CardDescription>
-						Track your project's journey from private development to public release
+						Track your projects journey from private development to public release
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-6">
@@ -469,9 +469,9 @@ export default function Id() {
 								</div>
 								<div className="text-xs md:text-sm text-muted-foreground mt-1">
 									{localApp?.visibility === IAppVisibility.Offline &&
-										"Your app is stored locally and won't sync across devices."}
+										"Your app is stored locally and wont sync across devices."}
 									{localApp?.visibility === IAppVisibility.Private &&
-										"Your app syncs across your devices but isn't shared with others."}
+										"Your app syncs across your devices but isnt shared with others."}
 									{localApp?.visibility === IAppVisibility.Prototype &&
 										"You can invite collaborators to help develop your app."}
 									{localApp?.visibility === IAppVisibility.PublicRequestAccess &&
@@ -817,15 +817,15 @@ export default function Id() {
 						Changelog
 					</CardTitle>
 					<CardDescription>
-						Document what&apos;s new in this version
+						Document whats new in this version
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
 					<div className="space-y-2">
-						<Label htmlFor="changelog">What&apos;s New</Label>
+						<Label htmlFor="changelog">Whats New</Label>
 						<Textarea
 							id="changelog"
-							placeholder="What's new in this version..."
+							placeholder="Whats new in this version..."
 							rows={4}
 							value={localApp?.changelog ?? ""}
 							disabled={!canEdit}
@@ -927,7 +927,7 @@ export default function Id() {
 							<EyeIcon className="w-5 h-5" />
 							<span className="font-medium">Read-only mode</span>
 							<span className="text-sm">
-								You don&apos;t have edit permissions for this application
+								You dont have edit permissions for this application
 							</span>
 						</div>
 					</CardContent>
