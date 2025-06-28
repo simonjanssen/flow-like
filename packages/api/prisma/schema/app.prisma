@@ -1,4 +1,4 @@
-enum CATEGORY {
+enum Category {
   OTHER
   PRODUCTIVITY
   SOCIAL
@@ -26,6 +26,12 @@ enum Status {
   ACTIVE
   INACTIVE
   ARCHIVED
+}
+
+enum ExecutionMode {
+  ANY
+  LOCAL
+  REMOTE
 }
 
 enum Visibility {
@@ -64,8 +70,8 @@ model App {
   ownerRoleId String? @unique
   roles Role[]
 
-  primaryCategory CATEGORY?
-  secondaryCategory CATEGORY?
+  primaryCategory Category?
+  secondaryCategory Category?
 
   ratingSum   BigInt   @default(0)
   ratingCount BigInt   @default(0)
@@ -84,6 +90,7 @@ model App {
   technicalUsers TechnicalUser[]
   llmUsage LLMUsageTracking[]
   executionUsage ExecutionUsageTracking[]
+  executionMode ExecutionMode @default(ANY)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

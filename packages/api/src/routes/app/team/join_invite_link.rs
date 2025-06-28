@@ -18,7 +18,7 @@ use sea_orm::{
     QueryFilter, QueryOrder, QuerySelect, RelationTrait, TransactionTrait, prelude::Expr,
 };
 
-#[tracing::instrument(name = "POST /apps/{app_id}/team/link/{token}", skip(state, user))]
+#[tracing::instrument(name = "POST /apps/{app_id}/team/link/join/{token}", skip(state, user))]
 pub async fn join_invite_link(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,

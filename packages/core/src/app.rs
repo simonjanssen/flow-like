@@ -68,6 +68,13 @@ pub enum AppVisibility {
     Offline = 4,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub enum AppExecutionMode {
+    Any = 0,
+    Local = 1,
+    Remote = 2,
+}
+
 #[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
 pub enum AppSearchSort {
     BestRated,
@@ -118,6 +125,7 @@ pub struct App {
 
     pub avg_rating: Option<f64>,
     pub relevance_score: Option<f64>,
+    pub execution_mode: AppExecutionMode,
 
     pub updated_at: SystemTime,
     pub created_at: SystemTime,
@@ -156,6 +164,7 @@ impl Clone for App {
             created_at: self.created_at,
             version: self.version.clone(),
             price: self.price,
+            execution_mode: self.execution_mode.clone(),
             app_state: self.app_state.clone(),
             frontend: self.frontend.clone(),
         }
@@ -192,6 +201,7 @@ impl App {
             rating_count: 0,
             rating_sum: 0,
             relevance_score: None,
+            execution_mode: AppExecutionMode::Any,
 
             primary_category: None,
             secondary_category: None,
@@ -732,6 +742,7 @@ mod tests {
             app_state: Some(flow_state().await),
             version: Some("1.0.0".to_string()),
             avg_rating: Some(4.5),
+            execution_mode: crate::app::AppExecutionMode::Any,
             download_count: 1000,
             interactions_count: 500,
             price: Some(9),

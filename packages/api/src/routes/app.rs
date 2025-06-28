@@ -2,8 +2,7 @@ use std::time::SystemTime;
 
 use crate::{entity::app, state::AppState};
 use axum::{
-    Router,
-    routing::{get, put},
+    routing::{get, patch}, Router
 };
 
 pub mod internal;
@@ -27,6 +26,7 @@ pub fn routes() -> Router<AppState> {
                 .put(internal::upsert_app::upsert_app)
                 .delete(internal::delete_app::delete_app),
         )
+        .route("/{app_id}/visibility", patch(internal::change_visibility::change_visibility))
         .nest("/{app_id}/template", template::routes())
         .nest("/{app_id}/board", board::routes())
         .nest("/{app_id}/meta", meta::routes())
@@ -211,6 +211,17 @@ impl From<app::Model> for flow_like::app::App {
         Self {
             id: model.id,
             price: Some(model.price as u32),
+            execution_mode: match model.execution_mode {
+                crate::entity::sea_orm_active_enums::ExecutionMode::Any => {
+                    flow_like::app::AppExecutionMode::Any
+                }
+                crate::entity::sea_orm_active_enums::ExecutionMode::Local => {
+                    flow_like::app::AppExecutionMode::Local
+                }
+                crate::entity::sea_orm_active_enums::ExecutionMode::Remote => {
+                    flow_like::app::AppExecutionMode::Remote
+                }
+            },
             status: match model.status {
                 crate::entity::sea_orm_active_enums::Status::Active => {
                     flow_like::app::AppStatus::Active
@@ -268,6 +279,17 @@ impl From<flow_like::app::App> for app::Model {
     fn from(app: flow_like::app::App) -> Self {
         Self {
             id: app.id,
+            execution_mode: match app.execution_mode {
+                flow_like::app::AppExecutionMode::Any => {
+                    crate::entity::sea_orm_active_enums::ExecutionMode::Any
+                }
+                flow_like::app::AppExecutionMode::Local => {
+                    crate::entity::sea_orm_active_enums::ExecutionMode::Local
+                }
+                flow_like::app::AppExecutionMode::Remote => {
+                    crate::entity::sea_orm_active_enums::ExecutionMode::Remote
+                }
+            },
             status: match app.status {
                 flow_like::app::AppStatus::Active => {
                     crate::entity::sea_orm_active_enums::Status::Active

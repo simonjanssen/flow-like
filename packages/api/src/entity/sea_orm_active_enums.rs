@@ -44,7 +44,7 @@ pub enum BitType {
     Course,
 }
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
-#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "CATEGORY")]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "Category")]
 pub enum Category {
     #[sea_orm(string_value = "OTHER")]
     Other,
@@ -88,6 +88,16 @@ pub enum Category {
     Communication,
     #[sea_orm(string_value = "ANIME")]
     Anime,
+}
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "ExecutionMode")]
+pub enum ExecutionMode {
+    #[sea_orm(string_value = "ANY")]
+    Any,
+    #[sea_orm(string_value = "LOCAL")]
+    Local,
+    #[sea_orm(string_value = "REMOTE")]
+    Remote,
 }
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "ExecutionStatus")]

@@ -27,7 +27,7 @@ pub fn routes() -> Router<AppState> {
             "/link/{link_id}",
             delete(remove_invite_link::remove_invite_link),
         )
-        .route("/link/{token}", post(join_invite_link::join_invite_link))
+        .route("/link/join/{token}", post(join_invite_link::join_invite_link))
         .route(
             "/queue",
             get(get_join_requests::get_join_requests).put(request_join::request_join),

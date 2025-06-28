@@ -1,8 +1,7 @@
 use crate::{
     ensure_permission,
     entity::{
-        app, membership, meta, role,
-        sea_orm_active_enums::{Status, Visibility},
+        app, membership, meta, publication_log, publication_request, role, sea_orm_active_enums::{Status, Visibility}
     },
     error::ApiError,
     middleware::jwt::AppUser,
@@ -35,11 +34,12 @@ pub struct UpdateVisibilityBody {
 /// - From Private to Prototype (no restrictions)
 /// - From Public to Public Request Join (no restrictions)
 /// - From Public Request Join to Public (no restrictions)
+///
 /// - From Prototype to Private (all users except the owner are removed)
 /// - From Prototype to Public (goes to review)
 /// - From Prototype to Public Request Join (goes to review)
-/// - From Public to Private or Prototype (requires review -> might be a paid app for example)
-/// - From Public Request Join to Private or Prototype (requires review -> might be a paid app for example)
+/// - From Public to Prototype (requires review -> might be a paid app for example)
+/// - From Public Request Join to Prototype (requires review -> might be a paid app for example)
 #[tracing::instrument(name = "PATCH /apps/{app_id}/visibility", skip(state, user, body))]
 pub async fn change_visibility(
     State(state): State<AppState>,
@@ -47,7 +47,7 @@ pub async fn change_visibility(
     Path(app_id): Path<String>,
     Json(body): Json<UpdateVisibilityBody>,
 ) -> Result<Json<()>, ApiError> {
-    let app_permission = ensure_permission!(user, &app_id, &state, RolePermissions::Owner);
+    ensure_permission!(user, &app_id, &state, RolePermissions::Owner);
     let sub = user.sub()?;
 
     let txn = state.db.begin().await?;
@@ -70,7 +70,7 @@ pub async fn change_visibility(
     // The user should be able to switch between Prototype and Private visibility without restrictions
     if matches!(app.visibility, Visibility::Private | Visibility::Prototype) && matches!(body.visibility, Visibility::Private | Visibility::Prototype) {
         let mut app = app.into_active_model();
-        app.visibility = Set(Visibility::Prototype);
+        app.visibility = Set(body.visibility.clone());
         app.updated_at = Set(chrono::Utc::now().naive_utc());
         app.update(&txn).await?;
 
@@ -87,20 +87,52 @@ pub async fn change_visibility(
         return Ok(Json(()));
     }
 
+    if matches!(app.visibility, Visibility::Public | Visibility::PublicRequestAccess) && matches!(body.visibility, Visibility::Public | Visibility::PublicRequestAccess) {
+        let mut app = app.into_active_model();
+        app.visibility = Set(body.visibility.clone());
+        app.updated_at = Set(chrono::Utc::now().naive_utc());
 
+        app.update(&txn).await?;
+        txn.commit().await?;
 
-    if
-
-    let tier = user.tier(&state).await?;
-
-    if app.visibility == body.visibility {
-        tracing::warn!(
-            "App {} already has visibility set to {:?}",
-            app_id,
-            body.visibility
-        );
         return Ok(Json(()));
     }
 
-    Ok(Json(()))
+    if app.visibility == Visibility::Prototype && matches!(body.visibility, Visibility::Public | Visibility::PublicRequestAccess) {
+        let old_visibility = app.visibility.clone();
+        let mut updated_app = app.into_active_model();
+        updated_app.updated_at = Set(chrono::Utc::now().naive_utc());
+
+        let request = publication_request::ActiveModel {
+            id: Set(create_id()),
+            app_id: Set(app_id.clone()),
+            approver_id: NotSet,
+            target_visibility: Set(body.visibility.clone()),
+            status: Set(crate::entity::sea_orm_active_enums::PublicationRequestStatus::Pending),
+            created_at: Set(chrono::Utc::now().naive_utc()),
+            updated_at: Set(chrono::Utc::now().naive_utc()),
+        };
+
+        let request = request.insert(&txn).await?;
+
+        let log_entry = publication_log::ActiveModel {
+            id: Set(create_id()),
+            author_id: Set(Some(sub.clone())),
+            request_id: Set(request.id),
+            message: Set(Some(format!(
+                "Request initiated"
+            ))),
+            visibility: Set(Some(old_visibility)),
+            created_at: Set(chrono::Utc::now().naive_utc()),
+            updated_at: Set(chrono::Utc::now().naive_utc()),
+        };
+
+        log_entry.insert(&txn).await?;
+        updated_app.update(&txn).await?;
+        txn.commit().await?;
+
+        return Ok(Json(()));
+    }
+
+    Err(ApiError::Forbidden)
 }
