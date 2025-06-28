@@ -16,10 +16,14 @@ pub mod vector;
 use flow_like::flow::node::NodeLogic;
 use std::sync::Arc;
 
+// todo: refactor
 pub async fn register_functions() -> Vec<Arc<dyn NodeLogic>> {
     let mut registry: Vec<Arc<dyn NodeLogic>> = Vec::new();
     registry.push(Arc::new(cuid::CuidNode::default()));
     registry.push(Arc::new(json::repair_parse::RepairParseNode::default()));
+    registry.push(Arc::new(
+        json::validate_schema::ValidateSchemaNode::default(),
+    ));
     registry.append(&mut types::register_functions().await);
     registry.append(&mut bool::register_functions().await);
     registry.append(&mut env::register_functions().await);
