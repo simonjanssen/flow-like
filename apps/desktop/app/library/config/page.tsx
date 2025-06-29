@@ -341,7 +341,7 @@ export default function Id() {
 						Visibility Status
 					</CardTitle>
 					<CardDescription>
-						Track your project's journey from private development to public
+						Track your project&apos;s journey from private development to public
 						release
 					</CardDescription>
 				</CardHeader>

@@ -15,8 +15,7 @@ import {
 } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { IStorageItem } from ".";
-import { useBackend, useInvoke } from "../..";
+import { useBackend, useInvoke, type IStorageItem } from "../..";
 import {
 	Badge,
 	Button,
