@@ -81,11 +81,13 @@ impl NodeLogic for LLMWithTools {
         .set_options(PinOptions::new().set_enforce_schema(true).build());
 
         node.add_output_pin(
-            "tool_call",
+            "tool_args",
             "Tool Args",
             "Tool Call Arguments",
             VariableType::Struct,
         );
+
+        node.set_long_running(true);
 
         return node;
     }
@@ -111,13 +113,11 @@ impl NodeLogic for LLMWithTools {
         let current_tool_exec_pins: Vec<_> = node
             .pins
             .values()
-            .filter(|p| p.pin_type == PinType::Output && p.description == "Tool Exec")
+            .filter(|p| {
+                p.pin_type == PinType::Output
+                    && (p.name != "exec_done" && p.name != "response" && p.name != "tool_args") // p.description == "Tool Exec" doesn't seem to work as filter cond
+            })
             .collect();
-
-        let mut current_tool_exec_refs = current_tool_exec_pins
-            .iter()
-            .map(|p| (p.name.clone(), *p))
-            .collect::<HashMap<_, _>>();
 
         let schema_str: String = node
             .get_pin_by_name("tools")
@@ -125,6 +125,11 @@ impl NodeLogic for LLMWithTools {
             .and_then(|bytes| flow_like_types::json::from_slice::<Value>(&bytes).ok())
             .and_then(|json| json.as_str().map(ToOwned::to_owned))
             .unwrap_or_default();
+
+        let mut current_tool_exec_refs = current_tool_exec_pins
+            .iter()
+            .map(|p| (p.name.clone(), *p))
+            .collect::<HashMap<_, _>>();
 
         let update_tools: Vec<Tool> = match json::from_str(&schema_str) {
             Ok(value) => value,

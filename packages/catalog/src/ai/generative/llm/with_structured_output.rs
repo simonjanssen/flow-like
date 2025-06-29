@@ -69,6 +69,8 @@ impl NodeLogic for LLMWithStructuredOutput {
             VariableType::Struct,
         );
 
+        node.set_long_running(true);
+
         return node;
     }
 
