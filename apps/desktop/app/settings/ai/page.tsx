@@ -38,7 +38,6 @@ import {
 	Search,
 	Sparkles,
 } from "lucide-react";
-import MiniSearch from "minisearch";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTauriInvoke } from "../../../components/useInvoke";
 
@@ -83,9 +82,7 @@ export default function SettingsPage() {
 	const [searchTerm, setSearchTerm] = useState("");
 	const [blacklist, setBlacklist] = useState(new Set<string>());
 
-	const [isHeaderVisible, setIsHeaderVisible] = useState(true);
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
-	const lastScrollY = useRef(0);
 
 	const profile: UseQueryResult<ISettingsProfile> = useTauriInvoke(
 		"get_current_profile",
@@ -171,35 +168,6 @@ export default function SettingsPage() {
 			},
 		},
 	);
-
-	useEffect(() => {
-		const handleScroll = () => {
-			const scrollContainer = scrollContainerRef.current;
-			if (!scrollContainer) return;
-
-			const currentScrollY = scrollContainer.scrollTop;
-			const scrollDifference = currentScrollY - lastScrollY.current;
-
-			// Show header when scrolling up or at the top
-			if (scrollDifference < 0 || currentScrollY < 50) {
-				setIsHeaderVisible(true);
-			}
-			// Hide header when scrolling down and past threshold
-			else if (scrollDifference > 0 && currentScrollY > 100) {
-				setIsHeaderVisible(false);
-			}
-
-			lastScrollY.current = currentScrollY;
-		};
-
-		const scrollContainer = scrollContainerRef.current;
-		if (scrollContainer) {
-			scrollContainer.addEventListener("scroll", handleScroll, {
-				passive: true,
-			});
-			return () => scrollContainer.removeEventListener("scroll", handleScroll);
-		}
-	}, []);
 
 	useEffect(() => {
 		if (!foundBits.data) return;
@@ -312,11 +280,10 @@ export default function SettingsPage() {
 				className={`
                 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60
                 transition-transform duration-300 ease-in-out
-                ${isHeaderVisible ? "translate-y-0" : "-translate-y-full h-0"}
             `}
 			>
 				<div
-					className={`max-w-screen-xl mx-auto p-6 flex flex-col duration-200 transition-all ease-in-out space-y-4 ${isHeaderVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-full h-0"}`}
+					className={`max-w-screen-xl mx-auto p-6 flex flex-col duration-200 transition-all ease-in-out space-y-4`}
 				>
 					{/* Title and Description */}
 					<div className="flex flex-col space-y-2">
@@ -459,7 +426,7 @@ export default function SettingsPage() {
 								<span>
 									{searchTerm === ""
 										? `${bits.length} models available`
-										: `${searchResults?.length || 0} results for "${searchTerm}"`}
+										: `${searchResults?.length ?? 0} results for "${searchTerm}"`}
 								</span>
 								{searchFilter.appliedFilter.length > 0 &&
 									!searchFilter.appliedFilter.includes("All") && (
