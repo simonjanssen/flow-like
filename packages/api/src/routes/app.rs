@@ -2,12 +2,14 @@ use std::time::SystemTime;
 
 use crate::{entity::app, state::AppState};
 use axum::{
-    routing::{get, patch}, Router
+    Router,
+    routing::{get, patch},
 };
 
 pub mod internal;
 
 pub mod board;
+pub mod data;
 pub mod meta;
 pub mod roles;
 pub mod team;
@@ -26,12 +28,16 @@ pub fn routes() -> Router<AppState> {
                 .put(internal::upsert_app::upsert_app)
                 .delete(internal::delete_app::delete_app),
         )
-        .route("/{app_id}/visibility", patch(internal::change_visibility::change_visibility))
+        .route(
+            "/{app_id}/visibility",
+            patch(internal::change_visibility::change_visibility),
+        )
         .nest("/{app_id}/template", template::routes())
         .nest("/{app_id}/board", board::routes())
         .nest("/{app_id}/meta", meta::routes())
         .nest("/{app_id}/roles", roles::routes())
         .nest("/{app_id}/team", team::routes())
+        .nest("/{app_id}/data", data::routes())
 }
 
 #[macro_export]

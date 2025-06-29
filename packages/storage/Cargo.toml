@@ -18,6 +18,7 @@ futures-channel = "0.3.31"
 crossbeam-channel = "0.5.15"
 futures-util = "0.3.31"
 urlencoding.workspace = true
+schemars.workspace = true
 # duckdb = { version="1.2.2", features = ["bundled", "extensions-full", "modern-full", "vtab-full"]}
 
 [features]

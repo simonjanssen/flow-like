@@ -86,10 +86,11 @@ impl AwsRuntimeCredentials {
 
         let client = aws_sdk_sts::Client::new(&state.aws_client);
 
-        let apps_prefix = format!("boards/{}/{}", sub, app_id);
-        let user_prefix = format!("boards/{}/{}", sub, app_id);
-        let log_prefix = format!("logs/{}/{}", sub, app_id);
-        let temporary_prefix = format!("temporary/{}/{}", sub, app_id);
+        let apps_prefix = format!("apps/{}", app_id);
+        let user_prefix = format!("users/{}/apps/{}", sub, app_id);
+        let log_prefix = format!("logs/runs/{}", app_id);
+        let temporary_user_prefix = format!("tmp/user/{}/apps/{}", sub, app_id);
+        let temporary_global_prefix = format!("tmp/global/apps/{}", app_id);
 
         let policy = json!({
             "Version": "2012-10-17",
@@ -109,7 +110,8 @@ impl AwsRuntimeCredentials {
                             format!("{}/*", apps_prefix),
                             format!("{}/*", user_prefix),
                             format!("{}/*", log_prefix),
-                            format!("{}/*", temporary_prefix)
+                            format!("{}/*", temporary_user_prefix),
+                            format!("{}/*", temporary_global_prefix)
                         ]
                     }
                 }
@@ -125,7 +127,8 @@ impl AwsRuntimeCredentials {
                     format!("arn:aws:s3:::{}/{}/*", self.content_bucket, apps_prefix),
                     format!("arn:aws:s3:::{}/{}/*", self.content_bucket, user_prefix),
                     format!("arn:aws:s3:::{}/{}/*", self.content_bucket, log_prefix),
-                    format!("arn:aws:s3:::{}/{}/*", self.content_bucket, temporary_prefix),
+                    format!("arn:aws:s3:::{}/{}/*", self.content_bucket, temporary_user_prefix),
+                    format!("arn:aws:s3:::{}/{}/*", self.content_bucket, temporary_global_prefix),
                     format!("arn:aws:s3express:::{}/{}/*", self.meta_bucket, apps_prefix),
                 ],
               },
@@ -140,6 +143,7 @@ impl AwsRuntimeCredentials {
               }
             ],
         });
+
         let policy = to_string(&policy)
             .map_err(|e| flow_like_types::anyhow!("Failed to serialize policy: {}", e))?;
 

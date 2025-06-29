@@ -2,6 +2,8 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
 import { type Event, type UnlistenFn, listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
+import { mkdir, open as openFile } from "@tauri-apps/plugin-fs";
+
 import {
 	type IApp,
 	IAppVisibility,
@@ -23,6 +25,7 @@ import {
 	type IProfile,
 	type IRunPayload,
 	type ISettingsProfile,
+	type IStorageItemActionResult,
 	type IVersionType,
 	LoadingScreen,
 	type QueryClient,
@@ -34,6 +37,7 @@ import {
 	useInvoke,
 	useQueryClient,
 } from "@tm9657/flow-like-ui";
+import type { IStorageItem } from "@tm9657/flow-like-ui/lib";
 import type { IBitSearchQuery } from "@tm9657/flow-like-ui/lib/schema/hub/bit-search-query";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { type AuthContextProps, useAuth } from "react-oidc-context";
@@ -62,10 +66,10 @@ export class TauriBackend implements IBackendState {
 
 	async isOffline(appId: string): Promise<boolean> {
 		const status = await appsDB.visibility.get(appId);
-		if (status) {
+		if (typeof status !== "undefined") {
 			return status.visibility === IAppVisibility.Offline;
 		}
-		return false;
+		return true;
 	}
 
 	async createApp(
@@ -556,6 +560,345 @@ export class TauriBackend implements IBackendState {
 			metadata: metadata,
 			language: language,
 		});
+	}
+
+	async deleteStorageItems(appId: string, prefixes: string[]): Promise<void> {
+		const isOffline = await this.isOffline(appId);
+
+		if (!isOffline && this.profile && this.auth && this.queryClient) {
+			await fetcher<void>(
+				this.profile,
+				`apps/${appId}/data`,
+				{
+					method: "DELETE",
+					body: JSON.stringify({
+						prefixes: prefixes,
+					}),
+				},
+				this.auth,
+			);
+		}
+
+		await invoke("storage_remove", {
+			appId: appId,
+			prefixes: prefixes,
+		});
+	}
+
+	async downloadStorageItems(
+		appId: string,
+		prefixes: string[],
+	): Promise<IStorageItemActionResult[]> {
+		const isOffline = await this.isOffline(appId);
+
+		if (!isOffline && this.profile && this.auth && this.queryClient) {
+			const files = await fetcher<IStorageItemActionResult[]>(
+				this.profile,
+				`apps/${appId}/data/download`,
+				{
+					method: "POST",
+					body: JSON.stringify({
+						prefixes: prefixes,
+					}),
+				},
+				this.auth,
+			);
+
+			console.dir(files);
+
+			return files;
+		}
+
+		console.dir({
+			isOffline: isOffline,
+			profile: this.profile,
+			auth: this.auth,
+			queryClient: this.queryClient,
+			appId: appId,
+		});
+
+		const items = await invoke<IStorageItemActionResult[]>("storage_get", {
+			appId: appId,
+			prefixes: prefixes,
+		});
+		return items;
+	}
+
+	async listStorageItems(
+		appId: string,
+		prefix: string,
+	): Promise<IStorageItem[]> {
+		const isOffline = await this.isOffline(appId);
+
+		const items = await invoke<IStorageItem[]>("storage_list", {
+			appId: appId,
+			prefix: prefix,
+		});
+
+		if (isOffline || !this.profile || !this.auth || !this.queryClient) {
+			return items;
+		}
+
+		const promise = injectDataFunction(
+			async () => {
+				const remoteData = await fetcher<IStorageItem[]>(
+					this.profile!,
+					`apps/${appId}/data/list`,
+					{
+						method: "POST",
+						body: JSON.stringify({
+							prefix: prefix,
+						}),
+					},
+					this.auth,
+				);
+
+				const merged = new Map<string, IStorageItem>();
+				for (const item of items) {
+					merged.set(item.location, item);
+				}
+
+				for (const item of remoteData) {
+					merged.set(item.location, item);
+				}
+
+				return Array.from(merged.values());
+			},
+			this,
+			this.queryClient,
+			this.listStorageItems,
+			[appId, prefix],
+			[],
+		);
+
+		this.backgroundTaskHandler(promise);
+		return items;
+	}
+
+	async uploadStorageItems(
+		appId: string,
+		prefix: string,
+		files: File[],
+		onProgress?: (progress: number) => void,
+	): Promise<void> {
+		let totalFiles = files.length;
+		let completedFiles = 0;
+
+		const yieldControl = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+		const batchSize = 2;
+		const batches = [];
+		for (let i = 0; i < files.length; i += batchSize) {
+			batches.push(files.slice(i, i + batchSize));
+		}
+
+		const isOffline = await this.isOffline(appId);
+		const promises = [] as Promise<void>[];
+
+		if (!isOffline && this.profile && this.auth) {
+			totalFiles = files.length * 2;
+			const fileLookup = new Map(
+				files.map((file) => {
+					const filePath = `${prefix}/${file.webkitRelativePath ?? file.name}`;
+					return [filePath, file];
+				}),
+			);
+			const urls: IStorageItemActionResult[] = await put(
+				this.profile,
+				`apps/${appId}/data`,
+				{
+					prefixes: files.map(
+						(file) => `${prefix}/${file.webkitRelativePath ?? file.name}`,
+					),
+				},
+				this.auth,
+			);
+
+			for (const url of urls) {
+				const file = fileLookup.get(url.prefix);
+				if (!file) {
+					console.warn(`File not found for URL: ${url.prefix}`);
+					continue;
+				}
+
+				console.group("Uploading file to storage");
+				console.dir({
+					appId: appId,
+					prefix: url.prefix,
+					size: file.size,
+				});
+				console.groupEnd();
+
+				if (url.url)
+					promises.push(
+						this.uploadSignedUrl(
+							url.url,
+							file,
+							completedFiles,
+							totalFiles,
+							onProgress,
+						),
+					);
+			}
+
+			await Promise.all(promises);
+		}
+
+		for (const batch of batches) {
+			await Promise.all(
+				batch.map(async (file) => {
+					let filePath = file.name;
+
+					if (file.webkitRelativePath) {
+						filePath = file.webkitRelativePath;
+					}
+
+					filePath = `${prefix}/${filePath}`;
+
+					console.group("Uploading file to storage");
+					console.dir({
+						appId: appId,
+						prefix: filePath,
+						size: file.size,
+					});
+					console.groupEnd();
+
+					const url = await invoke<string>("storage_add", {
+						appId: appId,
+						prefix: filePath,
+					});
+
+					if (url.startsWith("asset://")) {
+						const path = decodeURIComponent(url.replace("asset://", ""));
+
+						const parentDir = path.substring(0, path.lastIndexOf("/"));
+						await mkdir(parentDir, { recursive: true });
+						const fileHandle = await openFile(path, {
+							append: false,
+							create: true,
+							write: true,
+							truncate: true,
+						});
+
+						if (!fileHandle) {
+							completedFiles++;
+							onProgress?.((completedFiles / totalFiles) * 100);
+							return;
+						}
+
+						const chunkSize = 8 * 1024 * 1024;
+						if (file.size < chunkSize) {
+							const bytes = new Uint8Array(await file.arrayBuffer());
+							await fileHandle.write(bytes);
+							await fileHandle.close();
+							completedFiles++;
+							onProgress?.((completedFiles / totalFiles) * 100);
+							return;
+						}
+
+						const stream = file.stream();
+						const reader = stream.getReader();
+						let bytesWritten = 0;
+						let chunkCount = 0;
+
+						try {
+							while (true) {
+								const { done, value } = await reader.read();
+
+								if (done) {
+									break;
+								}
+
+								await fileHandle.write(value);
+								bytesWritten += value.length;
+								chunkCount++;
+
+								// Update progress and yield control every few chunks
+								if (chunkCount % 5 === 0) {
+									const fileProgress = bytesWritten / file.size;
+									const totalProgress =
+										((completedFiles + fileProgress) / totalFiles) * 100;
+									onProgress?.(totalProgress);
+
+									await yieldControl();
+								}
+							}
+
+							// Final progress update
+							completedFiles++;
+							onProgress?.((completedFiles / totalFiles) * 100);
+						} finally {
+							reader.releaseLock();
+							await fileHandle.close();
+						}
+					} else {
+						try {
+							await this.uploadSignedUrl(
+								url,
+								file,
+								completedFiles,
+								totalFiles,
+								onProgress,
+							);
+							completedFiles++;
+							onProgress?.((completedFiles / totalFiles) * 100);
+						} catch (error) {
+							console.error(`Failed to upload file ${filePath}:`, error);
+							completedFiles++;
+							onProgress?.((completedFiles / totalFiles) * 100);
+							throw error;
+						}
+					}
+				}),
+			);
+
+			await yieldControl();
+		}
+	}
+
+	private async uploadSignedUrl(
+		signedUrl: string,
+		file: File,
+		completedFiles: number,
+		totalFiles: number,
+		onProgress?: (progress: number) => void,
+	): Promise<void> {
+		const formData = new FormData();
+		formData.append("file", file);
+
+		await new Promise<void>((resolve, reject) => {
+			const xhr = new XMLHttpRequest();
+
+			xhr.upload.addEventListener("progress", (event) => {
+				if (event.lengthComputable) {
+					const fileProgress = event.loaded / event.total;
+					const totalProgress =
+						((completedFiles + fileProgress) / totalFiles) * 100;
+					onProgress?.(totalProgress);
+				}
+			});
+
+			xhr.addEventListener("load", () => {
+				if (xhr.status >= 200 && xhr.status < 300) {
+					resolve();
+				} else {
+					reject(new Error(`Upload failed with status: ${xhr.status}`));
+				}
+			});
+
+			xhr.addEventListener("error", () => {
+				reject(new Error("Upload failed"));
+			});
+
+			xhr.open("PUT", signedUrl);
+			xhr.setRequestHeader(
+				"Content-Type",
+				file.type || "application/octet-stream",
+			);
+			xhr.send(file);
+		});
+
+		onProgress?.((completedFiles / totalFiles) * 100);
 	}
 
 	async getPathMeta(path: string): Promise<IFileMetadata[]> {

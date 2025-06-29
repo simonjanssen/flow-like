@@ -56,7 +56,6 @@
 			"max_total_size": 100000000,
 			"max_llm_calls": 0,
 			"llm_tiers": []
-
 		},
 		"PREMIUM": {
 			"max_non_visible_projects": 200,
@@ -64,9 +63,7 @@
 			"execution_tier": "small",
 			"max_total_size": 1000000000,
 			"max_llm_calls": 200,
-			"llm_tiers": [
-				"PRO"
-			]
+			"llm_tiers": ["PRO"]
 		},
 		"PRO": {
 			"max_non_visible_projects": -1,
@@ -74,10 +71,7 @@
 			"execution_tier": "medium",
 			"max_total_size": 10000000000,
 			"max_llm_calls": 1000,
-			"llm_tiers": [
-				"PRO",
-				"PREMIUM"
-			]
+			"llm_tiers": ["PRO", "PREMIUM"]
 		},
 		"ENTERPRISE": {
 			"max_non_visible_projects": -1,
@@ -85,11 +79,7 @@
 			"execution_tier": "max",
 			"max_total_size": -1,
 			"max_llm_calls": -1,
-			"llm_tiers": [
-				"PRO",
-				"PREMIUM",
-				"ENTERPRISE"
-			]
+			"llm_tiers": ["PRO", "PREMIUM", "ENTERPRISE"]
 		}
 	},
 	"environment": "Development"

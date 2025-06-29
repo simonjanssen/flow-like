@@ -22,18 +22,18 @@ use sea_orm::{
 const MAX_PREFIXES: usize = 100;
 
 #[derive(Debug, Clone, serde::Deserialize)]
-pub struct UploadFilesPayload {
+pub struct DownloadFilesPayload {
     pub prefixes: Vec<String>,
 }
 
-#[tracing::instrument(name = "PUT /apps/{app_id}/data", skip(state, user))]
-pub async fn upload_files(
+#[tracing::instrument(name = "POST /apps/{app_id}/data/download", skip(state, user))]
+pub async fn download_files(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,
     Path(app_id): Path<String>,
-    Json(payload): Json<UploadFilesPayload>,
+    Json(payload): Json<DownloadFilesPayload>,
 ) -> Result<Json<Vec<Value>>, ApiError> {
-    ensure_permission!(user, &app_id, &state, RolePermissions::WriteFiles);
+    ensure_permission!(user, &app_id, &state, RolePermissions::ReadFiles);
 
     let sub = user.sub()?;
 
@@ -43,9 +43,9 @@ pub async fn upload_files(
     let mut urls = Vec::with_capacity(payload.prefixes.len());
 
     for prefix in payload.prefixes.iter().take(MAX_PREFIXES) {
-        let upload_dir = project_dir.construct_upload(&app_id, prefix, true).await?;
+        let upload_dir = flow_like_storage::Path::from(String::from(prefix));
         let signed_url = match project_dir
-            .sign("PUT", &upload_dir, Duration::from_secs(60 * 60 * 24))
+            .sign("GET", &upload_dir, Duration::from_secs(60 * 60 * 24))
             .await
         {
             Ok(url) => url,

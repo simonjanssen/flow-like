@@ -6,6 +6,7 @@ export interface IPreferences {
 	function_calling_weight?: number | null;
 	model_hint?: null | string;
 	multilinguality_weight?: number | null;
+	multimodal?: boolean | null;
 	openness_weight?: number | null;
 	reasoning_weight?: number | null;
 	safety_weight?: number | null;

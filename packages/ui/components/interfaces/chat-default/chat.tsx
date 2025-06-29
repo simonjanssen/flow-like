@@ -73,9 +73,7 @@ const ChatInner = forwardRef<IChatRef, IChatProps>(
 				return;
 			}
 
-			setDefaultActiveTools(
-				config?.default_tools ?? []
-			);
+			setDefaultActiveTools(config?.default_tools ?? []);
 		}, [messages, config?.tools]);
 
 		// Initial scroll to bottom when messages first load
@@ -216,14 +214,16 @@ const ChatInner = forwardRef<IChatRef, IChatProps>(
 
 					{/* ChatBox */}
 					<div className="bg-transparent pb-4 max-w-screen-lg w-full mx-auto">
-						{defaultActiveTools && <ChatBox
-							ref={chatBox}
-							availableTools={config?.tools ?? []}
-							defaultActiveTools={defaultActiveTools}
-							onSendMessage={handleSendMessage}
-							fileUpload={config?.allow_file_upload ?? false}
-							audioInput={config?.allow_voice_input ?? true}
-						/>}
+						{defaultActiveTools && (
+							<ChatBox
+								ref={chatBox}
+								availableTools={config?.tools ?? []}
+								defaultActiveTools={defaultActiveTools}
+								onSendMessage={handleSendMessage}
+								fileUpload={config?.allow_file_upload ?? false}
+								audioInput={config?.allow_voice_input ?? true}
+							/>
+						)}
 					</div>
 				</div>
 			</main>

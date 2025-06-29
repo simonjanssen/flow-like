@@ -1,73 +1,24 @@
+use std::time::Duration;
+
 use anyhow::anyhow;
-use flow_like::flow_like_storage::{
-    Path,
-    files::store::FlowLikeStore,
-    object_store::{MultipartUpload, ObjectMeta, PutPayload},
+use flow_like::{
+    flow_like_storage::{
+        Path,
+        files::store::{FlowLikeStore, StorageItem},
+        object_store::{MultipartUpload, ObjectMeta, PutPayload},
+    },
+    utils::storage::construct_storage,
 };
 use flow_like_types::{
-    Bytes,
+    Bytes, Value, create_id, json,
     tokio::io::{AsyncReadExt, BufReader},
 };
 use futures::{StreamExt, TryStreamExt};
 use serde::{Deserialize, Serialize};
-use tauri::AppHandle;
+use tauri::{AppHandle, ipc::Channel};
 use tauri_plugin_dialog::DialogExt;
 
 use crate::{functions::TauriFunctionError, state::TauriFlowLikeState};
-
-async fn folder_placeholder(
-    store: &FlowLikeStore,
-    path: &Path,
-    folder_name: &str,
-) -> Result<(), TauriFunctionError> {
-    let content = b"0";
-    let dir_path = path.child(format!("_{}_._path", folder_name));
-    store
-        .as_generic()
-        .put(&dir_path, PutPayload::from_static(content))
-        .await
-        .map_err(|e| anyhow!("Failed to create directory: {}", e))?;
-    Ok(())
-}
-
-async fn construct_storage(
-    app_handle: &AppHandle,
-    app_id: &str,
-    prefix: &str,
-    construct_dirs: bool,
-) -> Result<(FlowLikeStore, Path), TauriFunctionError> {
-    let state = TauriFlowLikeState::construct(app_handle).await?;
-    let project_store = state
-        .lock()
-        .await
-        .config
-        .read()
-        .await
-        .stores
-        .app_storage_store
-        .clone()
-        .ok_or(anyhow!("Project store not found"))?;
-    let mut base_path = Path::from("apps").child(app_id).child("upload");
-
-    for prefix in prefix.split('/') {
-        if prefix.is_empty() {
-            continue;
-        }
-
-        if construct_dirs {
-            let exists = project_store
-                .as_generic()
-                .head(&base_path.child(prefix))
-                .await;
-            if exists.is_err() {
-                folder_placeholder(&project_store, &base_path, prefix).await?;
-            }
-        }
-        base_path = base_path.child(prefix);
-    }
-
-    Ok((project_store, base_path))
-}
 
 async fn copy_large_file(
     store: &FlowLikeStore,
@@ -144,7 +95,7 @@ async fn copy_directory_recursively(
             .map_err(|e| anyhow!("Failed to read metadata: {}", e))?;
 
         if metadata.is_dir() {
-            folder_placeholder(store, dest_path, &file_name).await?;
+            store.create_folder(dest_path, &file_name).await?;
             Box::pin(copy_directory_recursively(store, &entry_path, &target_path)).await?;
         } else if metadata.is_file() {
             match copy_large_file(store, &entry_path, &target_path).await {
@@ -160,96 +111,44 @@ async fn copy_directory_recursively(
     Ok(())
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct StorageItem {
-    pub location: String,
-    pub last_modified: String,
-    pub size: usize,
-    pub e_tag: Option<String>,
-    pub version: Option<String>,
-}
-
-impl From<ObjectMeta> for StorageItem {
-    fn from(meta: ObjectMeta) -> Self {
-        Self {
-            location: meta.location.to_string(),
-            last_modified: meta.last_modified.to_string(),
-            size: meta.size,
-            e_tag: meta.e_tag,
-            version: meta.version,
-        }
-    }
-}
-
 #[tauri::command(async)]
 pub async fn storage_add(
     app_handle: AppHandle,
     app_id: String,
     prefix: String,
-    folder: bool,
-) -> Result<(), TauriFunctionError> {
-    let (store, path) = construct_storage(&app_handle, &app_id, &prefix, true).await?;
+) -> Result<String, TauriFunctionError> {
+    let state = TauriFlowLikeState::construct(&app_handle).await?;
+    let (store, path) = construct_storage(&state, &app_id, &prefix, true).await?;
 
-    let files = {
-        if folder {
-            app_handle.dialog().file().blocking_pick_folders()
-        } else {
-            app_handle.dialog().file().blocking_pick_files()
-        }
-    }
-    .ok_or(anyhow!("No files selected"))?;
+    let upload_url = store
+        .sign("PUT", &path, Duration::from_secs(60 * 60 * 24))
+        .await
+        .map_err(|e| anyhow!("Failed to sign URL: {}", e))?;
 
-    for file in files {
-        let buf = file
-            .as_path()
-            .ok_or(anyhow!("Invalid file buffer"))?
-            .to_path_buf();
-        let file_path = file.as_path().ok_or(anyhow!("Invalid file path"))?;
-        let file_name = file_path.file_name().ok_or(anyhow!("Invalid file name"))?;
-
-        if !folder {
-            let file_name = file_name.to_string_lossy();
-            let file_path = path.child(file_name.as_ref());
-
-            match copy_large_file(&store, &buf, &file_path)
-                .await
-                .map_err(|e| anyhow!("Failed to copy file: {:?}", e))
-            {
-                Ok(_) => continue,
-                Err(e) => {
-                    println!("Error copying file: {:?}", e);
-                    continue;
-                }
-            }
-        }
-
-        folder_placeholder(&store, &path, file_name.to_string_lossy().as_ref()).await?;
-        let recursive_path = path.child(file_name.to_string_lossy().as_ref());
-        copy_directory_recursively(&store, &buf, &recursive_path).await?;
-    }
-
-    Ok(())
+    Ok(upload_url.to_string())
 }
 
 #[tauri::command(async)]
 pub async fn storage_remove(
     app_handle: AppHandle,
     app_id: String,
-    prefix: String,
+    prefixes: Vec<String>,
 ) -> Result<(), TauriFunctionError> {
-    let (store, path) = construct_storage(&app_handle, &app_id, &prefix, false).await?;
-    let generic = store.as_generic();
-
-    let locations = generic.list(Some(&path)).map_ok(|m| m.location).boxed();
-    generic
-        .delete_stream(locations)
-        .try_collect::<Vec<Path>>()
-        .await
-        .map_err(|e| anyhow!("Failed to delete stream: {}", e))?;
-    generic
-        .delete(&path)
-        .await
-        .map_err(|e| anyhow!("Failed to delete path: {}", e))?;
+    let state = TauriFlowLikeState::construct(&app_handle).await?;
+    for prefix in prefixes.iter() {
+        let (store, path) = construct_storage(&state, &app_id, &prefix, false).await?;
+        let generic = store.as_generic();
+        let locations = generic.list(Some(&path)).map_ok(|m| m.location).boxed();
+        generic
+            .delete_stream(locations)
+            .try_collect::<Vec<Path>>()
+            .await
+            .map_err(|e| anyhow!("Failed to delete stream: {}", e))?;
+        generic
+            .delete(&path)
+            .await
+            .map_err(|e| anyhow!("Failed to delete path: {}", e))?;
+    }
     Ok(())
 }
 
@@ -259,7 +158,8 @@ pub async fn storage_rename(
     app_id: String,
     prefix: String,
 ) -> Result<(), TauriFunctionError> {
-    let (store, path) = construct_storage(&app_handle, &app_id, &prefix, false).await?;
+    let state = TauriFlowLikeState::construct(&app_handle).await?;
+    let (store, path) = construct_storage(&state, &app_id, &prefix, true).await?;
 
     Ok(())
 }
@@ -270,13 +170,16 @@ pub async fn storage_list(
     app_id: String,
     prefix: String,
 ) -> Result<Vec<StorageItem>, TauriFunctionError> {
-    let (store, path) = construct_storage(&app_handle, &app_id, &prefix, false).await?;
+    let state = TauriFlowLikeState::construct(&app_handle).await?;
+    let (store, path) = construct_storage(&state, &app_id, &prefix, false).await?;
+    println!("Listing items in storage at path: {}, {:?}", path, store);
     let items = store
         .as_generic()
         .list_with_delimiter(Some(&path))
         .await
         .map_err(|e| anyhow!("Failed to list items: {}", e))?;
     let items: Vec<StorageItem> = items.objects.into_iter().map(StorageItem::from).collect();
+    println!("Listed {} items", items.len());
     Ok(items)
 }
 
@@ -284,15 +187,41 @@ pub async fn storage_list(
 pub async fn storage_get(
     app_handle: AppHandle,
     app_id: String,
-    prefix: String,
-) -> Result<String, TauriFunctionError> {
-    let (store, path) = construct_storage(&app_handle, &app_id, &prefix, false).await?;
-    let signed_url = store
-        .sign("GET", &path, std::time::Duration::from_secs(60 * 60))
-        .await
-        .map_err(|e| anyhow!("Failed to sign URL: {}", e))?;
-    let url = signed_url.to_string();
-    Ok(url)
+    prefixes: Vec<String>,
+) -> Result<Vec<Value>, TauriFunctionError> {
+    let state = TauriFlowLikeState::construct(&app_handle).await?;
+    let mut urls = Vec::with_capacity(prefixes.len());
+
+    for prefix in prefixes.iter() {
+        let (store, path) = construct_storage(&state, &app_id, &prefix, false).await?;
+        let signed_url = match store
+            .sign("GET", &path, Duration::from_secs(60 * 60 * 24))
+            .await
+        {
+            Ok(url) => url,
+            Err(e) => {
+                let id = create_id();
+                tracing::error!(
+                    "[{}] Failed to sign URL for prefix '{}': {:?} [for project {}]",
+                    id,
+                    prefix,
+                    e,
+                    app_id
+                );
+                urls.push(json::json!({
+                    "prefix": prefix,
+                    "error": format!("Failed to create signed URL, reference ID: {}", id),
+                }));
+                continue;
+            }
+        };
+
+        urls.push(json::json!({
+            "prefix": prefix,
+            "url": signed_url.to_string(),
+        }));
+    }
+    return Ok(urls);
 }
 
 #[tauri::command(async)]
@@ -301,7 +230,8 @@ pub async fn storage_to_fullpath(
     app_id: String,
     prefix: String,
 ) -> Result<String, TauriFunctionError> {
-    let (store, path) = construct_storage(&app_handle, &app_id, &prefix, false).await?;
+    let state = TauriFlowLikeState::construct(&app_handle).await?;
+    let (store, path) = construct_storage(&state, &app_id, &prefix, true).await?;
     let url = match store {
         FlowLikeStore::Local(store) => {
             let local_path = store

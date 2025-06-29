@@ -1,7 +1,8 @@
 use crate::{
     ensure_permission,
     entity::{
-        app, membership, meta, publication_log, publication_request, role, sea_orm_active_enums::{Status, Visibility}
+        app, membership, meta, publication_log, publication_request, role,
+        sea_orm_active_enums::{Status, Visibility},
     },
     error::ApiError,
     middleware::jwt::AppUser,
@@ -68,7 +69,9 @@ pub async fn change_visibility(
     }
 
     // The user should be able to switch between Prototype and Private visibility without restrictions
-    if matches!(app.visibility, Visibility::Private | Visibility::Prototype) && matches!(body.visibility, Visibility::Private | Visibility::Prototype) {
+    if matches!(app.visibility, Visibility::Private | Visibility::Prototype)
+        && matches!(body.visibility, Visibility::Private | Visibility::Prototype)
+    {
         let mut app = app.into_active_model();
         app.visibility = Set(body.visibility.clone());
         app.updated_at = Set(chrono::Utc::now().naive_utc());
@@ -87,7 +90,13 @@ pub async fn change_visibility(
         return Ok(Json(()));
     }
 
-    if matches!(app.visibility, Visibility::Public | Visibility::PublicRequestAccess) && matches!(body.visibility, Visibility::Public | Visibility::PublicRequestAccess) {
+    if matches!(
+        app.visibility,
+        Visibility::Public | Visibility::PublicRequestAccess
+    ) && matches!(
+        body.visibility,
+        Visibility::Public | Visibility::PublicRequestAccess
+    ) {
         let mut app = app.into_active_model();
         app.visibility = Set(body.visibility.clone());
         app.updated_at = Set(chrono::Utc::now().naive_utc());
@@ -98,7 +107,12 @@ pub async fn change_visibility(
         return Ok(Json(()));
     }
 
-    if app.visibility == Visibility::Prototype && matches!(body.visibility, Visibility::Public | Visibility::PublicRequestAccess) {
+    if app.visibility == Visibility::Prototype
+        && matches!(
+            body.visibility,
+            Visibility::Public | Visibility::PublicRequestAccess
+        )
+    {
         let old_visibility = app.visibility.clone();
         let mut updated_app = app.into_active_model();
         updated_app.updated_at = Set(chrono::Utc::now().naive_utc());
@@ -119,9 +133,7 @@ pub async fn change_visibility(
             id: Set(create_id()),
             author_id: Set(Some(sub.clone())),
             request_id: Set(request.id),
-            message: Set(Some(format!(
-                "Request initiated"
-            ))),
+            message: Set(Some(format!("Request initiated"))),
             visibility: Set(Some(old_visibility)),
             created_at: Set(chrono::Utc::now().naive_utc()),
             updated_at: Set(chrono::Utc::now().naive_utc()),

@@ -13,7 +13,10 @@ import {
 	SortAscIcon,
 	UploadIcon,
 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import type { IStorageItem } from ".";
+import { useBackend, useInvoke } from "../..";
 import {
 	Badge,
 	Button,
@@ -24,45 +27,49 @@ import {
 	EmptyState,
 	FilePreviewer,
 	Input,
+	Progress,
 	ResizableHandle,
 	ResizablePanel,
 	ResizablePanelGroup,
 	Separator,
 	Tooltip,
 	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
+	TooltipTrigger
 } from "../ui";
 import { StorageBreadcrumbs } from "./storage-breadcrumbs";
-import { FileOrFolder, type IStorageItem } from "./storage-file-or-folder";
+import { FileOrFolder } from "./storage-file-or-folder";
 
 export function StorageSystem({
 	appId,
 	prefix,
-	files,
 	updatePrefix,
 	fileToUrl,
-	uploadFile,
-	deleteFile,
-	shareFile,
-	moveFile,
-	downloadFile,
 }: Readonly<{
 	appId: string;
 	prefix: string;
-	files: IStorageItem[];
 	updatePrefix: (prefix: string) => void;
 	fileToUrl: (prefix: string) => Promise<string>;
-	uploadFile: (prefix: string, folder: boolean) => Promise<void>;
-	deleteFile: (prefix: string) => Promise<void>;
-	shareFile: (prefix: string) => Promise<void>;
-	moveFile: (prefix: string, newPrefix: string) => Promise<void>;
-	downloadFile?: (prefix: string) => Promise<void>;
 }>) {
+	const fileReference = useRef<HTMLInputElement>(null);
+	const folderReference = useRef<HTMLInputElement>(null);
+	const backend = useBackend();
 	const [preview, setPreview] = useState({
 		url: "",
 		file: "",
 	});
+	const [uploadProgress, setUploadProgress] = useState<{
+		isUploading: boolean;
+		progress: number;
+		fileCount: number;
+		currentFile: string;
+	}>({
+		isUploading: false,
+		progress: 0,
+		fileCount: 0,
+		currentFile: "",
+	});
+	const files = useInvoke(backend.listStorageItems, [appId, prefix]);
+
 	const [searchQuery, setSearchQuery] = useState("");
 	const [viewMode, setViewMode] = useState<"grid" | "list">("list");
 	const [sortBy, setSortBy] = useState<"name" | "date" | "size" | "type">(
@@ -71,6 +78,54 @@ export function StorageSystem({
 	const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 	const [isPreviewMaximized, setIsPreviewMaximized] = useState(false);
 
+	const processFiles = useCallback(
+		async (inputFiles: File[]) => {
+			if (inputFiles.length === 0) return;
+			const fileList = Array.from(inputFiles);
+
+			setUploadProgress({
+				isUploading: true,
+				progress: 0,
+				fileCount: fileList.length,
+				currentFile: fileList[0]?.name || "",
+			});
+
+			try {
+				await backend.uploadStorageItems(
+					appId,
+					prefix,
+					fileList,
+					(progress) => {
+						setUploadProgress((prev) => ({
+							...prev,
+							progress: progress,
+						}));
+					},
+				);
+
+				setUploadProgress({
+					isUploading: false,
+					progress: 100,
+					fileCount: 0,
+					currentFile: "",
+				});
+
+				toast.success("Files uploaded successfully");
+				files.refetch();
+			} catch (error) {
+				console.error(error);
+				setUploadProgress({
+					isUploading: false,
+					progress: 0,
+					fileCount: 0,
+					currentFile: "",
+				});
+				toast.error("Failed to upload files");
+			}
+		},
+		[prefix, backend, files.refetch],
+	);
+
 	const loadFile = useCallback(
 		async (file: string) => {
 			if (preview.file === file) {
@@ -78,9 +133,17 @@ export function StorageSystem({
 				return;
 			}
 
-			const url = await fileToUrl(file);
+			const url = await backend.downloadStorageItems(appId, [file]);
+
+			if (url.length === 0 || !url[0]?.url) {
+				toast.error("Failed to load file preview");
+				return;
+			}
+
+			const fileUrl = url[0].url;
+
 			setPreview({
-				url,
+				url: fileUrl,
 				file,
 			});
 		},
@@ -89,13 +152,13 @@ export function StorageSystem({
 
 	const filteredFiles = useMemo(
 		() =>
-			files.filter((file) =>
+			files.data?.filter((file) =>
 				file.location
 					.split("/")
 					.pop()
 					?.toLowerCase()
 					.includes(searchQuery.toLowerCase()),
-			),
+			) ?? [],
 		[files, searchQuery],
 	);
 
@@ -138,13 +201,68 @@ export function StorageSystem({
 		[filteredFiles, sortBy, sortOrder],
 	);
 
-	const fileCount = files.filter((f) => !f.location.endsWith("_._path")).length;
-	const folderCount = files.filter((f) =>
+	const fileCount = files.data?.filter(
+		(f) => !f.location.endsWith("_._path"),
+	).length;
+	const folderCount = files.data?.filter((f) =>
 		f.location.endsWith("_._path"),
 	).length;
 
 	return (
 		<div className="flex flex-grow flex-col gap-4 min-h-full h-full max-h-full overflow-hidden w-full">
+			<input
+				ref={fileReference}
+				type="file"
+				className="hidden"
+				id="file-upload"
+				multiple
+				onChange={(e) => {
+					if (!e.target.files) return;
+					const filesArray = Array.from(e.target.files);
+					processFiles(filesArray);
+					e.target.value = "";
+				}}
+			/>
+
+			<input
+				ref={folderReference}
+				type="file"
+				className="hidden"
+				id="folder-upload"
+				// @ts-ignore
+				webkitdirectory={"true"}
+				directory
+				multiple
+				onChange={(e) => {
+					if (!e.target.files) return;
+					const filesArray = Array.from(e.target.files);
+					processFiles(filesArray);
+					e.target.value = "";
+				}}
+			/>
+
+			{/* Upload Progress Indicator */}
+			{uploadProgress.isUploading && (
+				<div className="mx-4 mt-4 p-4 border rounded-lg bg-card">
+					<div className="flex items-center justify-between mb-2">
+						<div className="flex items-center gap-2">
+							<UploadIcon className="h-4 w-4 text-primary animate-pulse" />
+							<span className="text-sm font-medium">
+								Uploading {uploadProgress.fileCount} file
+								{uploadProgress.fileCount !== 1 ? "s" : ""}
+							</span>
+						</div>
+						<span className="text-sm text-muted-foreground">
+							{uploadProgress.progress.toFixed(2)}%
+						</span>
+					</div>
+					<Progress value={uploadProgress.progress} className="mb-2" />
+					<p className="text-xs text-muted-foreground truncate">
+						{uploadProgress.currentFile}
+					</p>
+				</div>
+			)}
+
 			{/* Header Section */}
 			<div className="flex flex-col gap-4 px-4 pt-4">
 				<div className="flex flex-row items-center justify-between">
@@ -280,7 +398,7 @@ export function StorageSystem({
 								<Button
 									variant="outline"
 									className="gap-2"
-									onClick={() => uploadFile(prefix, false)}
+									onClick={() => fileReference.current?.click()}
 								>
 									<UploadIcon className="h-4 w-4" />
 									Upload Files
@@ -294,7 +412,7 @@ export function StorageSystem({
 								<Button
 									variant="outline"
 									className="gap-2"
-									onClick={() => uploadFile(prefix, true)}
+									onClick={() => folderReference.current?.click()}
 								>
 									<FolderPlusIcon className="h-4 w-4" />
 									Upload Folder
@@ -305,7 +423,7 @@ export function StorageSystem({
 					</div>
 				</div>
 
-				{files.length > 0 && (
+				{(files.data?.length ?? 0) > 0 && (
 					<div className="flex flex-row items-end justify-between gap-4 w-full">
 						<StorageBreadcrumbs
 							appId={appId}
@@ -328,7 +446,7 @@ export function StorageSystem({
 			<Separator />
 
 			{/* Content Section */}
-			{files.length === 0 && (
+			{(files.data?.length ?? 0) === 0 && (
 				<div className="flex flex-col h-full w-full flex-grow relative px-4">
 					<EmptyState
 						className="w-full h-full max-w-full border-2 border-dashed border-muted-foreground/25 rounded-lg"
@@ -337,11 +455,11 @@ export function StorageSystem({
 						action={[
 							{
 								label: "Upload Files",
-								onClick: () => uploadFile(prefix, false),
+								onClick: () => fileReference.current?.click(),
 							},
 							{
 								label: "Upload Folder",
-								onClick: () => uploadFile(prefix, true),
+								onClick: () => folderReference.current?.click(),
 							},
 						]}
 						icons={[LayoutGridIcon, FilesIcon, LinkIcon]}
@@ -349,7 +467,7 @@ export function StorageSystem({
 				</div>
 			)}
 
-			{files.length > 0 && (
+			{(files.data?.length ?? 0) > 0 && (
 				<div className="flex flex-col gap-4 flex-grow max-h-full h-full overflow-y-hidden px-4 pb-4">
 					{preview.url !== "" && (
 						<>
@@ -399,15 +517,62 @@ export function StorageSystem({
 															updatePrefix(`${prefix}/${new_prefix}`)
 														}
 														loadFile={(file) => loadFile(file)}
-														deleteFile={(file) => {
+														deleteFile={async (file) => {
 															const filePrefix = `${prefix}/${file}`;
-															deleteFile(filePrefix);
+															await backend.deleteStorageItems(appId, [
+																filePrefix,
+															]);
+															await files.refetch();
+															toast.success("File deleted successfully");
 														}}
-														shareFile={(file) => {
-															const filePrefix = `${prefix}/${file}`;
-															shareFile(filePrefix);
+														shareFile={async (file) => {
+															const downloadLinks =
+																await backend.downloadStorageItems(appId, [
+																	file,
+																]);
+															if (downloadLinks.length === 0) {
+																return;
+															}
+
+															const firstItem = downloadLinks[0];
+															if (!firstItem?.url) {
+																return;
+															}
+
+															console.log(
+																"Copying download link to clipboard:",
+																firstItem.url,
+															);
+															try {
+																await navigator.clipboard.writeText(
+																	firstItem.url,
+																);
+																toast.success(
+																	"Copied download link to clipboard",
+																);
+															} catch (error) {
+																console.error(
+																	"Failed to copy link to clipboard:",
+																	error,
+																);
+															}
 														}}
-														downloadFile={downloadFile}
+														downloadFile={async (file) => {
+															const downloadLinks =
+																await backend.downloadStorageItems(appId, [
+																	file,
+																]);
+															if (downloadLinks.length === 0) {
+																return;
+															}
+
+															const firstItem: any = downloadLinks[0];
+															if (!firstItem?.url) {
+																return;
+															}
+
+															window.open(firstItem.url, "_blank");
+														}}
 													/>
 												))}
 											</div>
@@ -457,15 +622,48 @@ export function StorageSystem({
 											updatePrefix(`${prefix}/${new_prefix}`);
 										}}
 										loadFile={loadFile}
-										deleteFile={(file) => {
+										deleteFile={async (file) => {
 											const filePrefix = `${prefix}/${file}`;
-											deleteFile(filePrefix);
+											await backend.deleteStorageItems(appId, [filePrefix]);
+											await files.refetch();
+											toast.success("File deleted successfully");
 										}}
-										shareFile={(file) => {
-											const filePrefix = `${prefix}/${file}`;
-											shareFile(filePrefix);
+										shareFile={async (file) => {
+											const downloadLinks = await backend.downloadStorageItems(
+												appId,
+												[file],
+											);
+											if (downloadLinks.length === 0) {
+												return;
+											}
+											const firstItem = downloadLinks[0];
+											if (!firstItem?.url) {
+												return;
+											}
+											try {
+												await navigator.clipboard.writeText(firstItem.url);
+												toast.success("Copied download link to clipboard");
+											} catch (error) {
+												console.error(
+													"Failed to copy link to clipboard:",
+													error,
+												);
+											}
 										}}
-										downloadFile={downloadFile}
+										downloadFile={async (file) => {
+											const downloadLinks = await backend.downloadStorageItems(
+												appId,
+												[file],
+											);
+											if (downloadLinks.length === 0) {
+												return;
+											}
+											const firstItem: any = downloadLinks[0];
+											if (!firstItem?.url) {
+												return;
+											}
+											window.open(firstItem.url, "_blank");
+										}}
 									/>
 								))}
 							</div>

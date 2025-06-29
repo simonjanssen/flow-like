@@ -70,6 +70,21 @@
     "clipboard-manager:allow-write-text",
     "window-state:default",
     "http:default",
-    "log:default"
+    "log:default",
+    "fs:allow-create",
+    "fs:allow-exists",
+    "fs:allow-fstat",
+    "fs:allow-open",
+    "fs:allow-read",
+    "fs:allow-write",
+    "fs:allow-remove",
+    "fs:allow-write-file",
+    "fs:write-files",
+    "fs:write-all",
+    "fs:read-all",
+    {
+      "identifier": "fs:scope",
+      "allow": [{ "path": "*" }, { "path": "**/*"} ]
+    }
   ]
 }

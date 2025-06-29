@@ -20,7 +20,14 @@ import type {
 	IVersionType,
 } from "../lib";
 import type { IBitSearchQuery } from "../lib/schema/hub/bit-search-query";
+import type { IStorageItem } from "../lib/schema/storage/storage-item";
 import type { ISettingsProfile } from "../types";
+
+export interface IStorageItemActionResult {
+	prefix: string;
+	url?: string;
+	error?: string;
+}
 
 export interface IBackendState {
 	createApp(
@@ -203,6 +210,20 @@ export interface IBackendState {
 		templateId: string,
 		metadata: IMetadata,
 		language?: string,
+	): Promise<void>;
+
+	// Storage Operations
+	listStorageItems(appId: string, prefix: string): Promise<IStorageItem[]>;
+	deleteStorageItems(appId: string, prefixes: string[]): Promise<void>;
+	downloadStorageItems(
+		appId: string,
+		prefixes: string[],
+	): Promise<IStorageItemActionResult[]>;
+	uploadStorageItems(
+		appId: string,
+		prefix: string,
+		files: File[],
+		onProgress?: (progress: number) => void,
 	): Promise<void>;
 
 	// Additional Functionality

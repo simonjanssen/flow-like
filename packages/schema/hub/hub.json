@@ -12,7 +12,8 @@
 		"legal_notice",
 		"name",
 		"privacy_policy",
-		"terms_of_service"
+		"terms_of_service",
+		"tiers"
 	],
 	"properties": {
 		"name": {
@@ -79,6 +80,12 @@
 		},
 		"environment": {
 			"$ref": "#/definitions/Environment"
+		},
+		"tiers": {
+			"type": "object",
+			"additionalProperties": {
+				"$ref": "#/definitions/UserTier"
+			}
 		}
 	},
 	"definitions": {
@@ -259,6 +266,44 @@
 		"Environment": {
 			"type": "string",
 			"enum": ["Development", "Production", "Staging"]
+		},
+		"UserTier": {
+			"type": "object",
+			"required": [
+				"execution_tier",
+				"llm_tiers",
+				"max_llm_calls",
+				"max_non_visible_projects",
+				"max_remote_executions",
+				"max_total_size"
+			],
+			"properties": {
+				"max_non_visible_projects": {
+					"type": "integer",
+					"format": "int32"
+				},
+				"max_remote_executions": {
+					"type": "integer",
+					"format": "int32"
+				},
+				"execution_tier": {
+					"type": "string"
+				},
+				"max_total_size": {
+					"type": "integer",
+					"format": "int64"
+				},
+				"max_llm_calls": {
+					"type": "integer",
+					"format": "int32"
+				},
+				"llm_tiers": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				}
+			}
 		}
 	}
 }

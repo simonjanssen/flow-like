@@ -124,12 +124,16 @@ export async function injectDataFunction<T, Args extends any[]>(
 	additionalDeps: any[] = [],
 ): Promise<UseQueryResult<T, Error>> {
 	try {
-		const boundFn = backendFn.bind(backend);
 		const boundLambda = lambda.bind(backend);
 		const result = await boundLambda();
-		const queryKey = [boundFn.name || "backendFn", ...args, ...additionalDeps];
+		const queryKey = [
+			backendFn.name || "backendFn",
+			...args,
+			...additionalDeps,
+		];
 
 		queryClient?.setQueryData(queryKey, result);
+		console.log("Injected data into query cache:", queryKey, result);
 
 		return {
 			data: result,

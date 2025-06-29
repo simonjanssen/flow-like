@@ -43,6 +43,7 @@ use flow_like_model_provider::{
     response::Response,
     response_chunk::ResponseChunk,
 };
+use flow_like_storage::files::store::StorageItem;
 use flow_like_types::{Result, intercom::InterComEvent, json::to_string_pretty};
 use schemars::{JsonSchema, schema_for};
 use serde::Serialize;
@@ -69,6 +70,8 @@ fn generate_and_save_schema<T: Serialize + JsonSchema>(base_path: &Path, path: &
 }
 pub fn generate_schema(base_path: PathBuf) -> flow_like_types::Result<()> {
     generate_and_save_schema::<InterComEvent>(&base_path, "events/intercom-event.json")?;
+
+    generate_and_save_schema::<StorageItem>(&base_path, "storage/storage-item.json")?;
 
     generate_and_save_schema::<History>(&base_path, "llm/history.json")?;
     generate_and_save_schema::<Response>(&base_path, "llm/response.json")?;

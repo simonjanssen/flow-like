@@ -16,7 +16,10 @@ use axum::{
 use flow_like::{app::App, bit::Metadata};
 use flow_like_types::create_id;
 use sea_orm::{
-    ActiveModelTrait, ActiveValue::{NotSet, Set}, ColumnTrait, DbErr, EntityTrait, IntoActiveModel, JoinType, PaginatorTrait, QueryFilter, QuerySelect, RelationTrait, TransactionTrait
+    ActiveModelTrait,
+    ActiveValue::{NotSet, Set},
+    ColumnTrait, DbErr, EntityTrait, IntoActiveModel, JoinType, PaginatorTrait, QueryFilter,
+    QuerySelect, RelationTrait, TransactionTrait,
 };
 use serde::{Deserialize, Serialize};
 
@@ -78,7 +81,11 @@ pub async fn upsert_app(
         let count = membership::Entity::find()
             .join(JoinType::InnerJoin, app::Relation::Membership.def())
             .join(JoinType::InnerJoin, role::Relation::Membership.def())
-            .filter(app::Column::Visibility.eq(Visibility::Prototype).or(app::Column::Visibility.eq(Visibility::Private)))
+            .filter(
+                app::Column::Visibility
+                    .eq(Visibility::Prototype)
+                    .or(app::Column::Visibility.eq(Visibility::Private)),
+            )
             // Owner Permission is 1, so we filter out roles that have Owner permission
             .filter(role::Column::Permissions.eq(1))
             .count(&state.db)

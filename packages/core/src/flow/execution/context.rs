@@ -85,7 +85,7 @@ impl ExecutionContextCache {
         if user {
             base = base.child("user").child(self.sub.clone());
         } else {
-            base = base.child("global").child(self.board_id.clone());
+            base = base.child("global");
         }
 
         base = base.child("apps").child(self.app_id.clone());

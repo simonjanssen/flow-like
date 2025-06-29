@@ -9,7 +9,7 @@ import {
 	type UseQueryResult,
 	useBackend,
 	useInvalidateInvoke,
-	useInvoke
+	useInvoke,
 } from "@tm9657/flow-like-ui";
 import {
 	Card,
@@ -39,7 +39,7 @@ import {
 	Settings,
 	User,
 	X,
-	Zap
+	Zap,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTauriInvoke } from "../../../components/useInvoke";
