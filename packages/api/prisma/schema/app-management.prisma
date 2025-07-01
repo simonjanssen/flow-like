@@ -1,6 +1,9 @@
 model InviteLink {
     id String @id
 
+    name String?
+    maxUses Int @default(-1) // -1 means unlimited uses
+
     token String @unique
     app   App    @relation(fields: [appId], references: [id], onDelete: Cascade)
     appId String

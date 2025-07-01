@@ -60,6 +60,18 @@ pub async fn join_invite_link(
             ApiError::NotFound
         })?;
 
+    let current_count = invite_link.count_joined.clone();
+    let max_uses = invite_link.max_uses;
+
+    if max_uses > 0 && current_count >= max_uses {
+        tracing::warn!(
+            "User {} is trying to join app {} but the invite link has reached its maximum uses",
+            sub,
+            app_id
+        );
+        return Err(ApiError::Forbidden);
+    }
+
     let app = app.ok_or_else(|| ApiError::NotFound)?;
 
     if matches!(app.visibility, Visibility::Private | Visibility::Offline) {
@@ -110,8 +122,6 @@ pub async fn join_invite_link(
     };
 
     membership.insert(&txn).await?;
-
-    let current_count = invite_link.count_joined.clone();
 
     let mut invite_link: invite_link::ActiveModel = invite_link.into();
     invite_link.count_joined = Set(current_count + 1);

@@ -7,6 +7,7 @@ import { mkdir, open as openFile } from "@tauri-apps/plugin-fs";
 import {
 	type IApp,
 	IAppVisibility,
+	type IBackendRole,
 	type IBackendState,
 	type IBit,
 	type IBitPack,
@@ -1102,6 +1103,30 @@ export class TauriBackend implements IBackendState {
 			appId: appId,
 		});
 		return boards;
+	}
+
+	async getRoles(appId: string): Promise<[string | undefined, IBackendRole[]]> {
+		if (!this.profile || !this.auth) {
+			throw new Error("Profile or auth context not available");
+		}
+		const roles = await fetcher<[string | undefined, IBackendRole[]]>(
+			this.profile,
+			`apps/${appId}/roles`,
+			undefined,
+			this.auth,
+		);
+		console.dir(roles);
+		return roles;
+	}
+
+	async makeRoleDefault(roleId: string): Promise<void> {}
+
+	async assignRole(): Promise<any> {}
+
+	async deleteRole(roleId: string): Promise<void> {}
+
+	async upsertRole(): Promise<any> {
+		return null;
 	}
 
 	async fileToUrl(file: File): Promise<string> {

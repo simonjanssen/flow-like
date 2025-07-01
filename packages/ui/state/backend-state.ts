@@ -18,6 +18,7 @@ import type {
 	IProfile,
 	IRunPayload,
 	IVersionType,
+	RolePermissions,
 } from "../lib";
 import type { IBitSearchQuery } from "../lib/schema/hub/bit-search-query";
 import type { IStorageItem } from "../lib/schema/storage/storage-item";
@@ -27,6 +28,17 @@ export interface IStorageItemActionResult {
 	prefix: string;
 	url?: string;
 	error?: string;
+}
+
+export interface IBackendRole {
+	id: string;
+	app_id: string;
+	name: string;
+	description: string;
+	permissions: bigint;
+	tags?: string[];
+	updated_at: string;
+	created_at: string;
 }
 
 export interface IBackendState {
@@ -253,6 +265,12 @@ export interface IBackendState {
 	isBitInstalled(bit: IBit): Promise<boolean>;
 
 	fileToUrl(file: File): Promise<string>;
+
+	getRoles(appId: string): Promise<[string | undefined, IBackendRole[]]>;
+	deleteRole(roleId: string): Promise<void>;
+	makeRoleDefault(roleId: string): Promise<void>;
+	upsertRole(): Promise<any>;
+	assignRole(): Promise<any>;
 }
 
 interface BackendStoreState {

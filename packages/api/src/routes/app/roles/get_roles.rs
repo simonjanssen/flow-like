@@ -14,7 +14,7 @@ use axum::{
 use flow_like::{app::App, bit::Metadata};
 use flow_like_types::{anyhow, bail};
 use sea_orm::{
-    ColumnTrait, EntityTrait, JoinType, QueryFilter, QueryOrder, QuerySelect, RelationTrait,
+    ColumnTrait, EntityTrait, JoinType, QueryFilter, QueryOrder, QuerySelect, RelationTrait, TransactionTrait,
 };
 
 #[tracing::instrument(name = "GET /apps/{app_id}/roles", skip(state, user))]
@@ -22,20 +22,23 @@ pub async fn get_roles(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,
     Path(app_id): Path<String>,
-) -> Result<Json<Vec<role::Model>>, ApiError> {
+) -> Result<Json<(Option<String>, Vec<role::Model>)>, ApiError> {
     ensure_permission!(user, &app_id, &state, RolePermissions::ReadRoles);
 
-    let cache_key = format!("get_roles:{}", app_id);
-    if let Some(cached) = state.get_cache(&cache_key) {
-        return Ok(Json(cached));
-    }
+    let txn = state.db.begin().await?;
 
-    let roles = role::Entity::find()
+    let app = app::Entity::find_by_id(app_id.clone())
+        .one(&txn)
+        .await?
+        .ok_or_else(|| {
+            tracing::warn!("App {} not found", app_id);
+            ApiError::NotFound
+        })?;
+
+    let roles= role::Entity::find()
         .filter(role::Column::AppId.eq(app_id.clone()))
-        .all(&state.db)
+        .all(&txn)
         .await?;
 
-    state.set_cache(cache_key, &roles);
-
-    Ok(Json(roles))
+    Ok(Json((app.default_role_id, roles)))
 }

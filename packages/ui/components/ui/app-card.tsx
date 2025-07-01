@@ -3,6 +3,7 @@ import {
 	CloudAlertIcon,
 	FlaskConicalIcon,
 	GlobeLockIcon,
+	LockIcon,
 	Star,
 } from "lucide-react";
 import { type IApp, IAppVisibility } from "../../lib/schema/app/app";
@@ -213,7 +214,7 @@ function VisibilityIcon({
 			return (
 				<HoverCard>
 					<HoverCardTrigger>
-						<CloudAlertIcon className="w-4 h-4" />
+						<LockIcon className="w-4 h-4" />
 					</HoverCardTrigger>
 					<HoverCardContent className="bg-card text-muted-foreground z-[100]">
 						<p className="text-xs">This app is currently offline.</p>

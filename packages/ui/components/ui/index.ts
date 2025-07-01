@@ -4,6 +4,7 @@ export * from "./app-card";
 export * from "./avatar";
 export * from "./badge";
 export * from "./bento-grid";
+export * from "./alert-dialog";
 export * from "./bit-card";
 export * from "./bit-hover";
 export * from "./breadcrumb";

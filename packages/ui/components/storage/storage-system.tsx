@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useBackend, useInvoke, type IStorageItem } from "../..";
+import { type IStorageItem, useBackend, useInvoke } from "../..";
 import {
 	Badge,
 	Button,
@@ -33,7 +33,7 @@ import {
 	Separator,
 	Tooltip,
 	TooltipContent,
-	TooltipTrigger
+	TooltipTrigger,
 } from "../ui";
 import { StorageBreadcrumbs } from "./storage-breadcrumbs";
 import { FileOrFolder } from "./storage-file-or-folder";
