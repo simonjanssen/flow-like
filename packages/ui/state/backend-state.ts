@@ -36,7 +36,7 @@ export interface IBackendRole {
 	name: string;
 	description: string;
 	permissions: bigint;
-	tags?: string[];
+	attributes?: string[];
 	updated_at: string;
 	created_at: string;
 }
@@ -267,10 +267,10 @@ export interface IBackendState {
 	fileToUrl(file: File): Promise<string>;
 
 	getRoles(appId: string): Promise<[string | undefined, IBackendRole[]]>;
-	deleteRole(roleId: string): Promise<void>;
-	makeRoleDefault(roleId: string): Promise<void>;
-	upsertRole(): Promise<any>;
-	assignRole(): Promise<any>;
+	deleteRole(appId: string, roleId: string): Promise<void>;
+	makeRoleDefault(appId: string, roleId: string): Promise<void>;
+	upsertRole(appId: string, role: IBackendRole): Promise<void>;
+	assignRole(appId: string, roleId: string, sub: string): Promise<void>;
 }
 
 interface BackendStoreState {

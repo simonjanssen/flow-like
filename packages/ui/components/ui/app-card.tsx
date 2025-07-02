@@ -206,7 +206,7 @@ export function AppCard({
 	);
 }
 
-function VisibilityIcon({
+export function VisibilityIcon({
 	visibility,
 }: Readonly<{ visibility: IAppVisibility }>) {
 	switch (visibility) {

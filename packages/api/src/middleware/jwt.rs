@@ -180,7 +180,10 @@ impl AppUser {
                 )
                 .one(&state.db)
                 .await?
-                .ok_or(ApiError::from(anyhow!("Role not found for user in app")))?;
+                .ok_or_else(|| {
+                    tracing::error!("Role not found for user {} in app {}", sub, app_id);
+                    ApiError::from(anyhow!("Role not found for user {sub} in app {app_id}"))
+                })?;
 
             let permissions = RolePermissions::from_bits(role_model.permissions)
                 .ok_or_else(|| anyhow!("Invalid role permission bits"))?;

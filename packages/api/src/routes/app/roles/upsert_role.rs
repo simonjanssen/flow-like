@@ -15,7 +15,7 @@ use flow_like::{app::App, bit::Metadata};
 use flow_like_types::{anyhow, bail, create_id};
 use sea_orm::{
     ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, JoinType, QueryFilter,
-    QueryOrder, QuerySelect, RelationTrait,
+    QueryOrder, QuerySelect, RelationTrait, TransactionTrait,
 };
 
 #[tracing::instrument(name = "PUT /apps/{app_id}/roles/{role_id}", skip(state, user))]
@@ -26,17 +26,19 @@ pub async fn upsert_role(
     Json(mut payload): Json<role::Model>,
 ) -> Result<Json<()>, ApiError> {
     ensure_permission!(user, &app_id, &state, RolePermissions::Admin);
-
     let permission = RolePermissions::from_bits(payload.permissions).ok_or(ApiError::Forbidden)?;
+
+    let txn = state.db.begin().await?;
 
     let is_owner = permission.contains(RolePermissions::Owner);
 
     let role = role::Entity::find_by_id(role_id.clone())
         .filter(role::Column::AppId.eq(app_id.clone()))
-        .one(&state.db)
+        .one(&txn)
         .await?;
 
     if let Some(role) = role {
+        println!("Updating role: {:?}", role);
         let permission = RolePermissions::from_bits(role.permissions).ok_or(ApiError::Forbidden)?;
 
         payload.id = role.id;
@@ -54,7 +56,11 @@ pub async fn upsert_role(
         }
 
         let payload: role::ActiveModel = payload.into();
-        payload.update(&state.db).await?;
+        let payload = payload.reset_all();
+        payload.update(&txn).await?;
+        txn.commit().await?;
+
+
         return Ok(Json(()));
     }
 
@@ -69,7 +75,9 @@ pub async fn upsert_role(
     payload.app_id = Some(app_id.clone());
 
     let role: role::ActiveModel = payload.into();
-    role.insert(&state.db).await?;
+    let role = role.reset_all();
+    role.insert(&txn).await?;
+    txn.commit().await?;
 
     Ok(Json(()))
 }
