@@ -28,6 +28,7 @@ import {
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
+	VisibilityIcon,
 	toastError,
 	useBackend,
 	useInvoke,
@@ -280,29 +281,8 @@ export default function Id({
 											</Avatar>
 											{/* Visibility Badge Overlay */}
 											{app.data?.visibility && (
-												<div className="absolute -bottom-1 -right-1">
-													{app.data?.visibility === IAppVisibility.Private && (
-														<div className="bg-secondary border border-background rounded-full p-0.5">
-															<CircleUserIcon className="w-2 h-2 text-secondary-foreground" />
-														</div>
-													)}
-													{app.data?.visibility ===
-														IAppVisibility.Prototype && (
-														<div className="bg-muted border border-background rounded-full p-0.5">
-															<FlaskConicalIcon className="w-4 h-4 text-muted-foreground" />
-														</div>
-													)}
-													{app.data?.visibility ===
-														IAppVisibility.PublicRequestAccess && (
-														<div className="bg-destructive border border-background rounded-full p-0.5">
-															<GlobeLockIcon className="w-2 h-2 text-destructive-foreground" />
-														</div>
-													)}
-													{app.data?.visibility === IAppVisibility.Offline && (
-														<div className="bg-muted-foreground/20 border border-background rounded-full p-0.5">
-															<CloudAlertIcon className="w-4 h-4 text-muted-foreground" />
-														</div>
-													)}
+												<div className="absolute -bottom-1 -right-1 bg-background rounded-full">
+													<VisibilityIcon visibility={app.data?.visibility} />
 												</div>
 											)}
 										</div>

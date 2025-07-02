@@ -17,7 +17,7 @@ import {
 	Textarea,
 } from "@tm9657/flow-like-ui";
 import { RolePermissions } from "@tm9657/flow-like-ui";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 interface RoleDialogProps {
 	open: boolean;
@@ -28,7 +28,7 @@ interface RoleDialogProps {
 		string,
 		{ icon: React.ComponentType<any>; label: string; color: string }
 	>;
-	onSave: (roleData: Partial<IBackendRole>) => void;
+	onSave: (roleData: IBackendRole) => void;
 }
 
 export function RoleDialog({
@@ -44,7 +44,7 @@ export function RoleDialog({
 		name: "",
 		description: "",
 		permissions: new RolePermissions(),
-		tags: [] as string[],
+		attributes: [] as string[],
 		tagInput: "",
 	});
 
@@ -54,7 +54,7 @@ export function RoleDialog({
 				name: role.name,
 				description: role.description,
 				permissions: permission,
-				tags: [...(role.tags ?? [])],
+				attributes: [...(role.attributes ?? [])],
 				tagInput: "",
 			});
 		} else {
@@ -62,7 +62,7 @@ export function RoleDialog({
 				name: "",
 				description: "",
 				permissions: new RolePermissions(),
-				tags: [],
+				attributes: [],
 				tagInput: "",
 			});
 		}
@@ -88,11 +88,11 @@ export function RoleDialog({
 	const addTag = () => {
 		if (
 			formData.tagInput.trim() &&
-			!formData.tags.includes(formData.tagInput.trim())
+			!formData.attributes.includes(formData.tagInput.trim())
 		) {
 			setFormData((prev) => ({
 				...prev,
-				tags: [...prev.tags, prev.tagInput.trim()],
+				attributes: [...prev.attributes, prev.tagInput.trim()],
 				tagInput: "",
 			}));
 		}
@@ -101,27 +101,29 @@ export function RoleDialog({
 	const removeTag = (tagToRemove: string) => {
 		setFormData((prev) => ({
 			...prev,
-			tags: prev.tags.filter((tag) => tag !== tagToRemove),
+			attributes: prev.attributes.filter((tag) => tag !== tagToRemove),
 		}));
 	};
 
-	const handleSave = () => {
-		if (!formData.name.trim()) return;
+	const handleSave = useCallback(() => {
+		if(!role) return;
+        if(!formData.name.trim()) return;
 
 		onSave({
+            ...role,
 			name: formData.name,
 			description: formData.description,
 			permissions: formData.permissions.toBigInt(),
-			tags: formData.tags,
+			attributes: formData.attributes,
 		});
 
 		onOpenChange(false);
-	};
+	}, [formData, onSave, onOpenChange, role]);
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-2xl max-h-[80vh]">
-				<DialogHeader>
+				<DialogHeader className="px-2">
 					<DialogTitle>{role ? "Edit Role" : "Create New Role"}</DialogTitle>
 					<DialogDescription>
 						{role
@@ -131,7 +133,7 @@ export function RoleDialog({
 				</DialogHeader>
 
 				<ScrollArea className="max-h-[60vh] pr-4">
-					<div className="space-y-6">
+					<div className="space-y-6 px-2">
 						<div className="space-y-2">
 							<Label htmlFor="name">Role Name</Label>
 							<Input
@@ -198,10 +200,10 @@ export function RoleDialog({
 						</div>
 
 						<div className="space-y-2">
-							<Label>Tags</Label>
+							<Label>Attributes</Label>
 							<div className="flex gap-2">
 								<Input
-									placeholder="Add a tag..."
+									placeholder="Add a attribute..."
 									value={formData.tagInput}
 									onChange={(e) =>
 										setFormData((prev) => ({
@@ -215,9 +217,9 @@ export function RoleDialog({
 									Add
 								</Button>
 							</div>
-							{formData.tags.length > 0 && (
+							{formData.attributes.length > 0 && (
 								<div className="flex flex-wrap gap-2 mt-2">
-									{formData.tags.map((tag) => (
+									{formData.attributes.map((tag) => (
 										<Badge
 											key={tag}
 											variant="secondary"

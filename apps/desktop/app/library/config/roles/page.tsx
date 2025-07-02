@@ -31,10 +31,11 @@ import {
 	Wrench,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { RoleCard } from "./role-card";
 import { RoleDialog } from "./role-dialog";
 import { RoleFilters } from "./role-filters";
+import { createId } from "@paralleldrive/cuid2";
 
 const permissionIcons = {
 	[RolePermissions.Owner.toBigInt().toString()]: {
@@ -172,7 +173,7 @@ export default function RolesPage() {
 	const searchParams = useSearchParams();
 	const appId = searchParams.get("id");
 	const backend = useBackend();
-	const projectRoles = useInvoke(
+	const roles = useInvoke(
 		backend.getRoles,
 		[appId!],
 		typeof appId === "string",
@@ -187,25 +188,25 @@ export default function RolesPage() {
 	);
 
 	const { filteredAndSortedRoles, availableTags, defaultRole } = useMemo(() => {
-		if (!projectRoles.data)
+		if (!roles.data)
 			return {
 				filteredAndSortedRoles: [],
 				availableTags: [],
 				defaultRole: undefined,
 			};
 
-		const defaultRoleId = projectRoles.data[0];
-		const roles = projectRoles.data[1];
-		const defaultRole = roles.find((role) => role.id === defaultRoleId);
+		const defaultRoleId = roles.data[0];
+		const foundRoles = roles.data[1];
+		const defaultRole = foundRoles.find((role) => role.id === defaultRoleId);
 		const availableTags = Array.from(
-			new Set(roles.flatMap((role) => role.tags || [])),
+			new Set(foundRoles.flatMap((role) => role.attributes ?? [])),
 		);
-		const filtered = roles.filter((role) => {
+		const filtered = foundRoles.filter((role) => {
 			const matchesSearch =
 				role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
 				role.description.toLowerCase().includes(searchTerm.toLowerCase());
 			const matchesTag =
-				selectedTag === "all" || role.tags?.includes(selectedTag);
+				selectedTag === "all" || role.attributes?.includes(selectedTag);
 			return matchesSearch && matchesTag;
 		});
 
@@ -227,11 +228,7 @@ export default function RolesPage() {
 			availableTags: ["all", ...availableTags].sort(),
 			defaultRole: defaultRole,
 		};
-	}, [projectRoles.data, searchTerm, selectedTag, sortBy]);
-
-	const getPermissionCount = (permissions: RolePermissions) => {
-		return allPermissions.filter((perm) => permissions.contains(perm)).length;
-	};
+	}, [roles.data, searchTerm, selectedTag, sortBy]);
 
 	const getPermissionBadges = (permissions: RolePermissions) => {
 		return allPermissions
@@ -245,7 +242,7 @@ export default function RolesPage() {
 				return (
 					<Badge
 						key={key}
-						variant="secondary"
+						variant="outline"
 						className="flex items-center gap-1 text-xs"
 					>
 						<Icon className={`h-3 w-3 ${config.color}`} />
@@ -266,54 +263,29 @@ export default function RolesPage() {
 		setIsDialogOpen(true);
 	};
 
-	const handleSaveRole = (roleData: Partial<IBackendRole>) => {
-		// if (editingRole) {
-		//   // Update existing role
-		//   setRoles(prev => prev.map(role =>
-		//     role.id === editingRole.id
-		//       ? { ...role, ...roleData }
-		//       : role
-		//   ));
-		// } else {
-		//   // Create new role
-		//   const newRole: Role = {
-		//     id: Date.now().toString(),
-		//     name: roleData.name!,
-		//     description: roleData.description!,
-		//     permissions: roleData.permissions!,
-		//     tags: roleData.tags!,
-		//     isDefault: false,
-		//     createdAt: new Date(),
-		//   };
-		//   setRoles(prev => [...prev, newRole]);
-		// }
-	};
+	const handleSaveRole = useCallback(async (roleData: IBackendRole) => {
+        if(!appId) return;
+		await backend.upsertRole(appId, roleData)
+        await roles.refetch();
+	}, [appId, backend]);
 
-	const handleDuplicateRole = (role: IBackendRole) => {
-		// const newRole: Role = {
-		//   ...role,
-		//   id: Date.now().toString(),
-		//   name: `${role.name} Copy`,
-		//   isDefault: false,
-		//   createdAt: new Date(),
-		// };
-		// // Remove Owner permission from duplicated role
-		// if (newRole.permissions.contains(RolePermissions.Owner)) {
-		//   newRole.permissions = newRole.permissions.remove(RolePermissions.Owner);
-		// }
-		// setRoles(prev => [...prev, newRole]);
-	};
+	const handleDuplicateRole = useCallback(async (role: IBackendRole) => {
+		if(!appId) return;
+		await backend.upsertRole(appId, {...role, id: createId()})
+        await roles.refetch();
+	}, [appId, backend]);
 
-	const handleDeleteRole = (roleId: string) => {
-		// setRoles(prev => prev.filter(role => role.id !== roleId));
-	};
+	const handleDeleteRole = useCallback(async (roleId: string) => {
+        if (!appId) return;
+        await backend.deleteRole(appId, roleId);
+        await roles.refetch();
+	}, [appId, backend]);
 
-	const handleSetDefaultRole = (roleId: string) => {
-		// setRoles(prev => prev.map(role => ({
-		//   ...role,
-		//   isDefault: role.id === roleId
-		// })));
-	};
+	const handleSetDefaultRole = useCallback(async (roleId: string) => {
+        if(!appId) return;
+        await backend.makeRoleDefault(appId, roleId);
+        await roles.refetch();
+	}, [appId, backend])
 
 	const getGridClass = () => {
 		switch (viewMode) {
@@ -327,106 +299,102 @@ export default function RolesPage() {
 	};
 
 	return (
-		<div className="container mx-auto p-6 space-y-8 flex flex-col h-full max-h-full overflow-hidden">
-			{/* Header */}
-			<div className="flex items-center justify-between">
-				<div>
-					<h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-tertiary bg-clip-text text-transparent">
-						Role Management
-					</h1>
-					<p className="text-muted-foreground mt-2">
-						Manage project roles and permissions with granular control
-					</p>
-				</div>
-				<Button
-					onClick={handleCreateRole}
-					className="bg-gradient-to-r from-primary to-tertiary hover:from-primary/50 hover:to-tertiary/50"
-				>
-					<Plus className="h-4 w-4 mr-2" />
-					Create Role
-				</Button>
-			</div>
+        <div className="container mx-auto p-4 space-y-4 flex flex-col h-full max-h-full overflow-hidden">
+            {/* Compact Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-tertiary bg-clip-text text-transparent">
+                        Role Management
+                    </h1>
+                </div>
+                <Button
+                    onClick={handleCreateRole}
+                    size="sm"
+                    className="bg-gradient-to-r from-primary to-tertiary hover:from-primary/50 hover:to-tertiary/50"
+                >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Role
+                </Button>
+            </div>
 
-			{/* Default Role Info */}
-			{defaultRole && (
-				<Card className="border-l-4 border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20">
-					<CardHeader className="py-3 pt-4">
-						<div className="flex items-center gap-2">
-							<Star className="h-4 w-4 text-blue-500" />
-							<CardTitle className="text-base">Default Role</CardTitle>
-						</div>
-						<CardDescription className="text-sm">
-							New users are automatically assigned the{" "}
-							<strong>{defaultRole.name}</strong> role
-						</CardDescription>
-					</CardHeader>
-				</Card>
-			)}
+            {/* Default Role Info - More Compact */}
+            {defaultRole && (
+                <Card className="border-l-4 border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20 rounded-md">
+                    <CardHeader className="py-2">
+                        <div className="flex items-center gap-2">
+                            <Star className="h-4 w-4 text-blue-500" />
+                            <CardDescription className="text-sm m-0">
+                                Default role: <strong>{defaultRole.name}</strong>
+                            </CardDescription>
+                        </div>
+                    </CardHeader>
+                </Card>
+            )}
 
-			{/* Filters */}
-			<RoleFilters
-				searchTerm={searchTerm}
-				onSearchChange={setSearchTerm}
-				selectedTag={selectedTag}
-				onTagChange={setSelectedTag}
-				availableTags={availableTags}
-				viewMode={viewMode}
-				onViewModeChange={setViewMode}
-				sortBy={sortBy}
-				onSortChange={setSortBy}
-				totalRoles={projectRoles.data?.[1].length ?? 0}
-				filteredRoles={filteredAndSortedRoles.length}
-			/>
+            {/* Compact Filters */}
+            <RoleFilters
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                selectedTag={selectedTag}
+                onTagChange={setSelectedTag}
+                availableTags={availableTags}
+                viewMode={viewMode}
+                onViewModeChange={setViewMode}
+                sortBy={sortBy}
+                onSortChange={setSortBy}
+                totalRoles={roles.data?.[1].length ?? 0}
+                filteredRoles={filteredAndSortedRoles.length}
+            />
 
-			{/* Roles Grid */}
-			<div className="flex flex-col flex-grow max-h-full h-full overflow-auto overflow-x-hidden">
-				<div className={getGridClass()}>
-					{filteredAndSortedRoles.map((role) => (
-						<RoleCard
-							key={role.id}
-							defaultRole={defaultRole?.id}
-							role={role}
-							permissionIcons={permissionIcons}
-							allPermissions={allPermissions}
-							onEdit={handleEditRole}
-							onDuplicate={handleDuplicateRole}
-							onDelete={handleDeleteRole}
-							onSetDefault={handleSetDefaultRole}
-							getPermissionBadges={getPermissionBadges}
-							compact={viewMode === "compact"}
-						/>
-					))}
-				</div>
-			</div>
+            {/* Roles Grid - Maximum Space */}
+            <div className="flex-1 overflow-auto">
+                <div className={getGridClass()}>
+                    {filteredAndSortedRoles.map((role) => (
+                        <RoleCard
+                            key={role.id}
+                            defaultRole={defaultRole?.id}
+                            role={role}
+                            permissionIcons={permissionIcons}
+                            allPermissions={allPermissions}
+                            onEdit={handleEditRole}
+                            onDuplicate={handleDuplicateRole}
+                            onDelete={handleDeleteRole}
+                            onSetDefault={handleSetDefaultRole}
+                            getPermissionBadges={getPermissionBadges}
+                            compact={viewMode === "compact"}
+                        />
+                    ))}
+                </div>
 
-			{/* Empty State */}
-			{filteredAndSortedRoles.length === 0 && (
-				<div className="text-center py-12">
-					<Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-					<h3 className="text-lg font-semibold mb-2">No roles found</h3>
-					<p className="text-muted-foreground mb-4">
-						{searchTerm || selectedTag !== "all"
-							? "Try adjusting your filters to see more roles"
-							: "Create your first role to get started"}
-					</p>
-					{!searchTerm && selectedTag === "all" && (
-						<Button onClick={handleCreateRole}>
-							<Plus className="h-4 w-4 mr-2" />
-							Create First Role
-						</Button>
-					)}
-				</div>
-			)}
+                {/* Empty State */}
+                {filteredAndSortedRoles.length === 0 && (
+                    <div className="text-center py-8">
+                        <Shield className="h-8 w-8 mx-auto text-muted-foreground mb-3" />
+                        <h3 className="text-base font-semibold mb-2">No roles found</h3>
+                        <p className="text-sm text-muted-foreground mb-3">
+                            {searchTerm || selectedTag !== "all"
+                                ? "Try adjusting your filters"
+                                : "Create your first role to get started"}
+                        </p>
+                        {!searchTerm && selectedTag === "all" && (
+                            <Button onClick={handleCreateRole} size="sm">
+                                <Plus className="h-4 w-4 mr-2" />
+                                Create First Role
+                            </Button>
+                        )}
+                    </div>
+                )}
+            </div>
 
-			{/* Role Dialog */}
-			<RoleDialog
-				open={isDialogOpen}
-				onOpenChange={setIsDialogOpen}
-				role={editingRole}
-				allPermissions={allPermissions}
-				permissionIcons={permissionIcons}
-				onSave={handleSaveRole}
-			/>
-		</div>
-	);
+            {/* Role Dialog */}
+            <RoleDialog
+                open={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+                role={editingRole}
+                allPermissions={allPermissions}
+                permissionIcons={permissionIcons}
+                onSave={handleSaveRole}
+            />
+        </div>
+    );
 }

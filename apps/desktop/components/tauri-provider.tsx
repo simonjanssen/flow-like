@@ -51,7 +51,7 @@ export class TauriBackend implements IBackendState {
 		private queryClient?: QueryClient,
 		private auth?: AuthContextProps,
 		private profile?: IProfile,
-	) {}
+	) { }
 
 	pushProfile(profile: IProfile) {
 		this.profile = profile;
@@ -1119,14 +1119,67 @@ export class TauriBackend implements IBackendState {
 		return roles;
 	}
 
-	async makeRoleDefault(roleId: string): Promise<void> {}
+	async makeRoleDefault(appId: string, roleId: string): Promise<void> {
+		if (!this.profile || !this.auth) {
+			throw new Error("Profile or auth context not available");
+		}
 
-	async assignRole(): Promise<any> {}
+		await fetcher(
+			this.profile,
+			`apps/${appId}/roles/${roleId}/default`,
+			{
+				method: "PUT"
+			},
+			this.auth,
+		);
+	}
 
-	async deleteRole(roleId: string): Promise<void> {}
+	async assignRole(appId: string, roleId: string, sub: string): Promise<void> {
+		if (!this.profile || !this.auth) {
+			throw new Error("Profile or auth context not available");
+		}
 
-	async upsertRole(): Promise<any> {
-		return null;
+		await fetcher(
+			this.profile,
+			`apps/${appId}/roles/${roleId}/assign/${sub}`,
+			{
+				method: "POST"
+			},
+			this.auth,
+		);
+	}
+
+	async deleteRole(appId: string, roleId: string): Promise<void> {
+		if (!this.profile || !this.auth) {
+			throw new Error("Profile or auth context not available");
+		}
+
+		await fetcher(
+			this.profile,
+			`apps/${appId}/roles/${roleId}`,
+			{
+				method: "DELETE"
+			},
+			this.auth,
+		);
+	}
+
+	async upsertRole(appId: string, role: IBackendRole): Promise<void> {
+		if (!this.profile || !this.auth) {
+			throw new Error("Profile or auth context not available");
+		}
+
+		await fetcher(
+			this.profile,
+			`apps/${appId}/roles/${role.id}`,
+			{
+				method: "PUT",
+				body: JSON.stringify(role, (key, value) =>
+					typeof value === "bigint" ? Number(value) : value,
+				)
+			},
+			this.auth,
+		);
 	}
 
 	async fileToUrl(file: File): Promise<string> {
