@@ -18,9 +18,13 @@ import {
 	type IFileMetadata,
 	type IGenericCommand,
 	type IIntercomEvent,
+	type IInvite,
+	type IInviteLink,
+	type IJoinRequest,
 	type ILog,
 	type ILogLevel,
 	type ILogMetadata,
+	type IMember,
 	type IMetadata,
 	type INode,
 	type IProfile,
@@ -40,6 +44,7 @@ import {
 } from "@tm9657/flow-like-ui";
 import type { IStorageItem } from "@tm9657/flow-like-ui/lib";
 import type { IBitSearchQuery } from "@tm9657/flow-like-ui/lib/schema/hub/bit-search-query";
+import type { IUserLookup } from "@tm9657/flow-like-ui/state/backend-state/types";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { type AuthContextProps, useAuth } from "react-oidc-context";
 import { fetcher, put } from "../lib/api";
@@ -51,7 +56,7 @@ export class TauriBackend implements IBackendState {
 		private queryClient?: QueryClient,
 		private auth?: AuthContextProps,
 		private profile?: IProfile,
-	) { }
+	) {}
 
 	pushProfile(profile: IProfile) {
 		this.profile = profile;
@@ -118,6 +123,25 @@ export class TauriBackend implements IBackendState {
 		await invoke("update_app", {
 			app: app,
 		});
+	}
+
+	async changeAppVisibility(
+		appId: string,
+		visibility: IAppVisibility,
+	): Promise<void> {
+		if (this.profile && this.auth && this.queryClient) {
+			await fetcher<IApp>(
+				this.profile,
+				`apps/${appId}/visibility`,
+				{
+					method: "PATCH",
+					body: JSON.stringify({
+						visibility: visibility,
+					}),
+				},
+				this.auth,
+			);
+		}
 	}
 
 	async getAppMeta(appId: string, language?: string): Promise<IMetadata> {
@@ -304,9 +328,9 @@ export class TauriBackend implements IBackendState {
 		from?: number,
 		to?: number,
 		status?: ILogLevel,
-		limit?: number,
-		offset?: number,
 		lastMeta?: ILogMetadata,
+		offset?: number,
+		limit?: number,
 	): Promise<ILogMetadata[]> {
 		const runs: ILogMetadata[] = await invoke("list_runs", {
 			appId: appId,
@@ -1013,9 +1037,51 @@ export class TauriBackend implements IBackendState {
 	}
 
 	async getApp(appId: string): Promise<IApp> {
-		return await invoke("get_app", {
+		const localApp: IApp = await invoke("get_app", {
 			appId: appId,
 		});
+
+		if (!this?.queryClient || !this.profile || !this.auth?.isAuthenticated) {
+			console.warn(
+				"Query client, profile or auth context not available, returning local app only.",
+			);
+			console.warn({
+				queryClient: this?.queryClient,
+				profile: this?.profile,
+				auth: this?.auth,
+			});
+			return localApp;
+		}
+
+		const promise = injectDataFunction(
+			async () => {
+				const remoteData = await fetcher<IApp>(
+					this.profile!,
+					`apps/${appId}`,
+					undefined,
+					this.auth,
+				);
+
+				await invoke("update_app", {
+					app: remoteData,
+				});
+
+				await appsDB.visibility.put({
+					visibility: remoteData.visibility ?? IAppVisibility.Private,
+					appId: remoteData.id,
+				});
+
+				return remoteData;
+			},
+			this,
+			this.queryClient,
+			this.getApp,
+			[appId],
+			[],
+		);
+		this.backgroundTaskHandler(promise);
+
+		return localApp;
 	}
 
 	async getApps(): Promise<[IApp, IMetadata | undefined][]> {
@@ -1128,7 +1194,7 @@ export class TauriBackend implements IBackendState {
 			this.profile,
 			`apps/${appId}/roles/${roleId}/default`,
 			{
-				method: "PUT"
+				method: "PUT",
 			},
 			this.auth,
 		);
@@ -1143,7 +1209,7 @@ export class TauriBackend implements IBackendState {
 			this.profile,
 			`apps/${appId}/roles/${roleId}/assign/${sub}`,
 			{
-				method: "POST"
+				method: "POST",
 			},
 			this.auth,
 		);
@@ -1158,7 +1224,7 @@ export class TauriBackend implements IBackendState {
 			this.profile,
 			`apps/${appId}/roles/${roleId}`,
 			{
-				method: "DELETE"
+				method: "DELETE",
 			},
 			this.auth,
 		);
@@ -1176,7 +1242,7 @@ export class TauriBackend implements IBackendState {
 				method: "PUT",
 				body: JSON.stringify(role, (key, value) =>
 					typeof value === "bigint" ? Number(value) : value,
-				)
+				),
 			},
 			this.auth,
 		);
@@ -1193,6 +1259,303 @@ export class TauriBackend implements IBackendState {
 			reader.onerror = (error) =>
 				reject(new Error("Error converting file to base64"));
 		});
+	}
+
+	async createInviteLink(
+		appId: string,
+		name: string,
+		maxUses: number,
+	): Promise<void> {
+		if (!this.profile || !this.auth) {
+			throw new Error("Profile or auth context not available");
+		}
+
+		await fetcher(
+			this.profile,
+			`apps/${appId}/team/link`,
+			{
+				method: "PUT",
+				body: JSON.stringify({
+					name: name,
+					max_uses: maxUses,
+				}),
+			},
+			this.auth,
+		);
+	}
+
+	async getInviteLinks(appId: string): Promise<IInviteLink[]> {
+		if (!this.profile || !this.auth) {
+			throw new Error("Profile or auth context not available");
+		}
+
+		return await fetcher(
+			this.profile,
+			`apps/${appId}/team/link`,
+			{
+				method: "GET",
+			},
+			this.auth,
+		);
+	}
+
+	async removeInviteLink(appId: string, linkId: string): Promise<void> {
+		if (!this.profile || !this.auth) {
+			throw new Error("Profile or auth context not available");
+		}
+
+		await fetcher(
+			this.profile,
+			`apps/${appId}/team/link/${linkId}`,
+			{
+				method: "DELETE",
+			},
+			this.auth,
+		);
+	}
+
+	async joinInviteLink(appId: string, token: string): Promise<void> {
+		if (!this.profile || !this.auth) {
+			throw new Error("Profile or auth context not available");
+		}
+
+		await fetcher(
+			this.profile,
+			`apps/${appId}/team/link/join/${token}`,
+			{
+				method: "POST",
+			},
+			this.auth,
+		);
+	}
+
+	async requestJoin(appId: string, comment: string): Promise<void> {
+		if (!this.profile || !this.auth) {
+			throw new Error("Profile or auth context not available");
+		}
+
+		await fetcher(
+			this.profile,
+			`apps/${appId}/team/queue`,
+			{
+				method: "PUT",
+				body: JSON.stringify({
+					comment: comment,
+				}),
+			},
+			this.auth,
+		);
+	}
+
+	async getJoinRequests(
+		appId: string,
+		offset?: number,
+		limit?: number,
+	): Promise<IJoinRequest[]> {
+		if (!this.profile || !this.auth) {
+			throw new Error("Profile or auth context not available");
+		}
+
+		let url = `apps/${appId}/team/queue`;
+
+		offset = offset ?? 0;
+		if (limit) {
+			url += `?offset=${offset}&limit=${limit}`;
+		}
+
+		return await fetcher(
+			this.profile,
+			url,
+			{
+				method: "GET",
+			},
+			this.auth,
+		);
+	}
+
+	async acceptJoinRequest(appId: string, requestId: string): Promise<void> {
+		if (!this.profile || !this.auth) {
+			throw new Error("Profile or auth context not available");
+		}
+
+		await fetcher(
+			this.profile,
+			`apps/${appId}/team/queue/${requestId}`,
+			{
+				method: "POST",
+			},
+			this.auth,
+		);
+	}
+
+	async rejectJoinRequest(appId: string, requestId: string): Promise<void> {
+		if (!this.profile || !this.auth) {
+			throw new Error("Profile or auth context not available");
+		}
+
+		await fetcher(
+			this.profile,
+			`apps/${appId}/team/queue/${requestId}`,
+			{
+				method: "DELETE",
+			},
+			this.auth,
+		);
+	}
+
+	async getTeam(
+		appId: string,
+		offset?: number,
+		limit?: number,
+	): Promise<IMember[]> {
+		if (!this.profile || !this.auth) {
+			throw new Error("Profile or auth context not available");
+		}
+
+		let url = `apps/${appId}/team`;
+		offset = offset ?? 0;
+		limit = limit ?? 20;
+		if (limit) {
+			url += `?offset=${offset}&limit=${limit}`;
+		}
+
+		return await fetcher(
+			this.profile,
+			url,
+			{
+				method: "GET",
+			},
+			this.auth,
+		);
+	}
+
+	async getInvites(offset?: number, limit?: number): Promise<IInvite[]> {
+		if (!this.profile || !this.auth) {
+			throw new Error("Profile or auth context not available");
+		}
+
+		let url = `user/invites`;
+		offset = offset ?? 0;
+		limit = limit ?? 20;
+		if (limit) {
+			url += `?offset=${offset}&limit=${limit}`;
+		}
+
+		return await fetcher(
+			this.profile,
+			url,
+			{
+				method: "GET",
+			},
+			this.auth,
+		);
+	}
+
+	async acceptInvite(inviteId: string): Promise<void> {
+		if (!this.profile || !this.auth) {
+			throw new Error("Profile or auth context not available");
+		}
+
+		await fetcher(
+			this.profile,
+			`user/invites/${inviteId}`,
+			{
+				method: "POST",
+			},
+			this.auth,
+		);
+	}
+
+	async rejectInvite(inviteId: string): Promise<void> {
+		if (!this.profile || !this.auth) {
+			throw new Error("Profile or auth context not available");
+		}
+
+		await fetcher(
+			this.profile,
+			`user/invites/${inviteId}`,
+			{
+				method: "DELETE",
+			},
+			this.auth,
+		);
+	}
+
+	async inviteUser(
+		appId: string,
+		user_id: string,
+		message: string,
+	): Promise<void> {
+		if (!this.profile || !this.auth) {
+			throw new Error("Profile or auth context not available");
+		}
+
+		await fetcher(
+			this.profile,
+			`apps/${appId}/team/invite`,
+			{
+				method: "PUT",
+				body: JSON.stringify({
+					sub: user_id,
+					message: message,
+				}),
+			},
+			this.auth,
+		);
+	}
+
+	async removeUser(appId: string, user_id: string): Promise<void> {
+		if (!this.profile || !this.auth) {
+			throw new Error("Profile or auth context not available");
+		}
+
+		await fetcher(
+			this.profile,
+			`apps/${appId}/team/${user_id}`,
+			{
+				method: "DELETE",
+			},
+			this.auth,
+		);
+	}
+
+	async lookupUser(
+		userId?: string,
+		email?: string,
+		username?: string,
+	): Promise<IUserLookup> {
+		if (!this.profile || !this.auth) {
+			throw new Error("Profile or auth context not available");
+		}
+
+		let query: string | undefined;
+
+		if (username) {
+			query = username;
+		}
+
+		if (email) {
+			query = email;
+		}
+
+		if (userId) {
+			query = userId;
+		}
+
+		if (!query) {
+			throw new Error("No query provided for user lookup");
+		}
+
+		const result = await fetcher<IUserLookup>(
+			this.profile,
+			`user/lookup/${query}`,
+			{
+				method: "GET",
+			},
+			this.auth,
+		);
+
+		return result;
 	}
 }
 

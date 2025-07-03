@@ -31,8 +31,12 @@ import {
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
+	type IBackendRole,
+	type IMember,
+	IRole,
 	Input,
 	Label,
+	RolePermissions,
 	ScrollArea,
 	Select,
 	SelectContent,
@@ -40,6 +44,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 	Separator,
+	Skeleton,
+	useBackend,
+	useInvoke,
 } from "@tm9657/flow-like-ui";
 import {
 	Crown,
@@ -56,90 +63,18 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
-const roleIcons = {
-	owner: Crown,
-};
-
-const roleColors = {
-	owner: "bg-gradient-to-r from-yellow-500 to-orange-500",
-	admin: "bg-gradient-to-r from-purple-500 to-pink-500",
-	member: "bg-gradient-to-r from-blue-500 to-cyan-500",
-	viewer: "bg-gradient-to-r from-gray-500 to-slate-500",
-};
-
-interface TeamMember {
-	id: string;
-	name: string;
-	username: string;
-	email: string;
-	avatar?: string;
-	role: "owner" | "admin" | "member" | "viewer";
-	joinedAt: string;
-	status: "active" | "invited";
-}
-
 export function UserManagement({ appId }: { appId: string }) {
-	const [members, setMembers] = useState<TeamMember[]>([
-		{
-			id: "1",
-			name: "Felix Müller",
-			username: "felix.muller",
-			email: "felix@example.com",
-			avatar:
-				"https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face",
-			role: "owner",
-			joinedAt: "2024-01-15",
-			status: "active",
-		},
-		{
-			id: "2",
-			name: "Sarah Johnson",
-			username: "sarah.j",
-			email: "sarah@example.com",
-			avatar:
-				"https://images.unsplash.com/photo-1494790108755-2616b51829c1?w=32&h=32&fit=crop&crop=face",
-			role: "admin",
-			joinedAt: "2024-02-01",
-			status: "active",
-		},
-		{
-			id: "3",
-			name: "Alex Chen",
-			username: "alex.chen",
-			email: "alex@example.com",
-			avatar:
-				"https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=32&h=32&fit=crop&crop=face",
-			role: "member",
-			joinedAt: "2024-02-15",
-			status: "active",
-		},
-		{
-			id: "4",
-			name: "Maria Garcia",
-			username: "maria.garcia",
-			email: "maria@example.com",
-			role: "viewer",
-			joinedAt: "2024-03-01",
-			status: "invited",
-		},
-	]);
+	const backend = useBackend();
+	const team = useInvoke(backend.getTeam, [appId, 0, 100]);
+	const roles = useInvoke(backend.getRoles, [appId]);
 
 	const [searchQuery, setSearchQuery] = useState("");
 	const [roleFilter, setRoleFilter] = useState<string>("all");
 
-	const filteredMembers = useMemo(() => {
-		return members.filter((member) => {
-			// Search filter
-			const matchesSearch =
-				member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-				member.email.toLowerCase().includes(searchQuery.toLowerCase());
-
-			// Role filter
-			const matchesRole = roleFilter === "all" || member.role === roleFilter;
-
-			return matchesSearch && matchesRole;
-		});
-	}, [members, searchQuery, roleFilter]);
+	const filteredTeam = useMemo(() => {
+		if (!team.data) return [];
+		return team.data;
+	}, [team.data, searchQuery, roleFilter]);
 
 	return (
 		<Card className="h-full flex flex-col">
@@ -182,7 +117,7 @@ export function UserManagement({ appId }: { appId: string }) {
 			<CardContent className="flex-1 min-h-0 p-0">
 				<ScrollArea className="h-full px-6 pb-6">
 					<div className="space-y-2">
-						{filteredMembers.length === 0 ? (
+						{filteredTeam.length === 0 || !roles.data ? (
 							<div className="text-center py-8">
 								<UserX className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
 								<h3 className="text-lg font-semibold">No members found</h3>
@@ -193,8 +128,14 @@ export function UserManagement({ appId }: { appId: string }) {
 								</p>
 							</div>
 						) : (
-							filteredMembers.map((member) => {
-								return <Member key={member.id} sub={appId} member={member} />;
+							filteredTeam.map((member) => {
+								return (
+									<Member
+										key={member.id}
+										member={member}
+										roles={roles.data?.[1]}
+									/>
+								);
 							})
 						)}
 					</div>
@@ -204,21 +145,39 @@ export function UserManagement({ appId }: { appId: string }) {
 	);
 }
 
-function Member({ sub, member }: { sub: string; member: TeamMember }) {
-	const RoleIcon =
-		member.role === "owner" ? (
-			<CrownIcon className="w-3 h-3 text-muted-foreground" />
-		) : null;
+function Member({
+	member,
+	roles,
+}: Readonly<{ member: IMember; roles: IBackendRole[] }>) {
+	const userRole = roles.find((role) => role.id === member.role_id);
+	const permission = new RolePermissions(userRole?.permissions ?? 0);
+	const backend = useBackend();
+	const user = useInvoke(backend.lookupUser, [member.user_id]);
+	const userData = user.data;
+	const RoleIcon = permission.contains(RolePermissions.Owner) ? (
+		<CrownIcon className="w-3 h-3 text-muted-foreground" />
+	) : null;
+
+	if (!userData) {
+		return (
+			<Skeleton className="h-10 w-full flex items-center gap-3 p-2 py-1.5 border rounded-md" />
+		);
+	}
+
+	const evaluatedName =
+		userData.username ??
+		userData.name ??
+		userData.email ??
+		userData.email ??
+		"Unknown User";
 
 	return (
 		<div className="flex items-center justify-between p-2 py-1.5 border rounded-md hover:bg-muted/50 transition-colors">
 			<div className="flex items-center gap-3 min-w-0 flex-1">
 				<Avatar className="w-8 h-8 flex-shrink-0">
-					<AvatarImage src={member.avatar} />
-					<AvatarFallback
-						className={`text-white text-xs ${roleColors[member.role]}`}
-					>
-						{member.name
+					<AvatarImage src={user.data.avatar_url} />
+					<AvatarFallback className={`text-white text-xs`}>
+						{evaluatedName
 							.split(" ")
 							.map((n) => n[0])
 							.join("")}
@@ -226,27 +185,22 @@ function Member({ sub, member }: { sub: string; member: TeamMember }) {
 				</Avatar>
 				<div className="min-w-0 flex-1">
 					<div className="flex items-center gap-2">
-						<h3 className="font-medium text-sm truncate">{member.name}</h3>
+						<h3 className="font-medium text-sm truncate">{evaluatedName}</h3>
 						<span className="text-xs text-muted-foreground">
-							@{member.username}
+							@{userData.username ?? userData.email}
 						</span>
-						{member.status === "invited" && (
-							<Badge variant="outline" className="text-xs px-1 py-0 h-4">
-								Invited
-							</Badge>
-						)}
 					</div>
 					<div className="flex items-center gap-1">
 						{RoleIcon}
 						<span className="text-xs text-muted-foreground capitalize">
-							{member.role}
+							{userRole?.name ?? "No Role Assigned"}
 						</span>
 					</div>
 				</div>
 			</div>
 
 			<div className="flex items-center gap-2 flex-shrink-0">
-				{member.role !== "owner" && (
+				{!permission.contains(RolePermissions.Owner) && (
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button variant="ghost" size="sm" className="h-6 w-6 p-0">
@@ -268,35 +222,24 @@ function Member({ sub, member }: { sub: string; member: TeamMember }) {
 									<DialogHeader>
 										<DialogTitle>Change Role</DialogTitle>
 										<DialogDescription>
-											Select a new role for {member.name}
+											Select a new role for {evaluatedName}
 										</DialogDescription>
 									</DialogHeader>
 									<div className="space-y-4 py-4">
 										<div className="space-y-2">
 											<Label htmlFor="role">Role</Label>
-											<Select defaultValue={member.role}>
+											<Select defaultValue={member.role_id}>
 												<SelectTrigger>
 													<SelectValue />
 												</SelectTrigger>
 												<SelectContent>
-													<SelectItem value="admin">
-														<div className="flex items-center gap-2">
-															<Shield className="w-4 h-4" />
-															Admin
-														</div>
-													</SelectItem>
-													<SelectItem value="member">
-														<div className="flex items-center gap-2">
-															<User className="w-4 h-4" />
-															Member
-														</div>
-													</SelectItem>
-													<SelectItem value="viewer">
-														<div className="flex items-center gap-2">
-															<Settings className="w-4 h-4" />
-															Viewer
-														</div>
-													</SelectItem>
+													{roles.map((role) => (
+														<SelectItem key={role.id} value={role.id}>
+															<div className="flex items-center gap-2">
+																{role.name}
+															</div>
+														</SelectItem>
+													))}
 												</SelectContent>
 											</Select>
 										</div>
@@ -322,7 +265,7 @@ function Member({ sub, member }: { sub: string; member: TeamMember }) {
 									<AlertDialogHeader>
 										<AlertDialogTitle>Remove Team Member</AlertDialogTitle>
 										<AlertDialogDescription>
-											Are you sure you want to remove {member.name} from the
+											Are you sure you want to remove {evaluatedName} from the
 											team? This action cannot be undone.
 										</AlertDialogDescription>
 									</AlertDialogHeader>

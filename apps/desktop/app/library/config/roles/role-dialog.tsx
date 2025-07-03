@@ -1,5 +1,6 @@
 "use client";
 
+import { createId } from "@paralleldrive/cuid2";
 import {
 	Badge,
 	Button,
@@ -106,11 +107,24 @@ export function RoleDialog({
 	};
 
 	const handleSave = useCallback(() => {
-		if(!role) return;
-        if(!formData.name.trim()) return;
+		if (!formData.name.trim()) return;
+
+		if (!role) {
+			onSave({
+				id: createId(),
+				app_id: "",
+				name: formData.name,
+				description: formData.description,
+				permissions: formData.permissions.toBigInt(),
+				attributes: formData.attributes,
+				created_at: new Date().toISOString().replace("Z", ""),
+				updated_at: new Date().toISOString().replace("Z", ""),
+			});
+			return;
+		}
 
 		onSave({
-            ...role,
+			...role,
 			name: formData.name,
 			description: formData.description,
 			permissions: formData.permissions.toBigInt(),

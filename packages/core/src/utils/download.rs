@@ -79,7 +79,10 @@ pub async fn download_bit(
     let store_path =
         Path::from(bit.hash.clone()).child(bit.file_name.clone().ok_or(anyhow!("No file name"))?);
     let path_name = file_store.path_to_filesystem(&store_path)?;
-    let url = bit.download_link.clone().ok_or(anyhow!("No download link"))?;
+    let url = bit
+        .download_link
+        .clone()
+        .ok_or(anyhow!("No download link"))?;
 
     // Another download of that type already exists
     let exists = {
@@ -110,13 +113,7 @@ pub async fn download_bit(
     if remote_size.is_err() {
         if path_name.exists() {
             let _rem = remove_download(bit, &app_state).await;
-            let _ = publish_progress(
-                bit,
-                callback,
-                path_name.metadata()?.len(),
-                &store_path,
-            )
-            .await;
+            let _ = publish_progress(bit, callback, path_name.metadata()?.len(), &store_path).await;
             return Ok(store_path);
         }
 

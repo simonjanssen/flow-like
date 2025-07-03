@@ -24,13 +24,8 @@ pub async fn get_team(
     Extension(user): Extension<AppUser>,
     Path(app_id): Path<String>,
     Query(params): Query<LanguageParams>,
-) -> Result<Json<Vec<(membership::Model, role::Model)>>, ApiError> {
+) -> Result<Json<Vec<membership::Model>>, ApiError> {
     ensure_permission!(user, &app_id, &state, RolePermissions::ReadTeam);
-
-    let roles = role::Entity::find()
-        .filter(role::Column::AppId.eq(app_id.clone()))
-        .all(&state.db)
-        .await?;
 
     let members = membership::Entity::find()
         .order_by_asc(membership::Column::CreatedAt)
@@ -40,19 +35,5 @@ pub async fn get_team(
         .all(&state.db)
         .await?;
 
-    let role_map: std::collections::HashMap<_, _> = roles
-        .into_iter()
-        .map(|role| (role.id.clone(), role))
-        .collect();
-
-    let combined: Vec<_> = members
-        .into_iter()
-        .filter_map(|member| {
-            role_map
-                .get(&member.role_id)
-                .map(|role| (member, role.clone()))
-        })
-        .collect();
-
-    Ok(Json(combined))
+    Ok(Json(members))
 }

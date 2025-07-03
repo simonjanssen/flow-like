@@ -39,9 +39,9 @@ export const useLogAggregation = create<ILogAggregationState>((set, get) => ({
 			filter.from,
 			filter.to,
 			filter.status,
-			filter.limit,
-			filter.offset,
 			filter.lastMeta,
+			filter.offset,
+			filter.limit,
 		);
 
 		set({ currentLogs: runs.toSorted((a, b) => b.start - a.start) });
@@ -63,9 +63,9 @@ export const useLogAggregation = create<ILogAggregationState>((set, get) => ({
 			filter.from,
 			filter.to,
 			filter.status,
-			filter.limit,
-			filter.offset,
 			filter.lastMeta,
+			filter.offset,
+			filter.limit,
 		);
 
 		set({ currentLogs: runs.toSorted((a, b) => b.start - a.start) });

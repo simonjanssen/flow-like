@@ -1,5 +1,6 @@
 "use client";
 
+import { createId } from "@paralleldrive/cuid2";
 import {
 	Badge,
 	Button,
@@ -35,7 +36,6 @@ import { useCallback, useMemo, useState } from "react";
 import { RoleCard } from "./role-card";
 import { RoleDialog } from "./role-dialog";
 import { RoleFilters } from "./role-filters";
-import { createId } from "@paralleldrive/cuid2";
 
 const permissionIcons = {
 	[RolePermissions.Owner.toBigInt().toString()]: {
@@ -263,29 +263,42 @@ export default function RolesPage() {
 		setIsDialogOpen(true);
 	};
 
-	const handleSaveRole = useCallback(async (roleData: IBackendRole) => {
-        if(!appId) return;
-		await backend.upsertRole(appId, roleData)
-        await roles.refetch();
-	}, [appId, backend]);
+	const handleSaveRole = useCallback(
+		async (roleData: IBackendRole) => {
+			if (!appId) return;
+			roleData.app_id = appId;
+			await backend.upsertRole(appId, roleData);
+			await roles.refetch();
+		},
+		[appId, backend],
+	);
 
-	const handleDuplicateRole = useCallback(async (role: IBackendRole) => {
-		if(!appId) return;
-		await backend.upsertRole(appId, {...role, id: createId()})
-        await roles.refetch();
-	}, [appId, backend]);
+	const handleDuplicateRole = useCallback(
+		async (role: IBackendRole) => {
+			if (!appId) return;
+			await backend.upsertRole(appId, { ...role, id: createId() });
+			await roles.refetch();
+		},
+		[appId, backend],
+	);
 
-	const handleDeleteRole = useCallback(async (roleId: string) => {
-        if (!appId) return;
-        await backend.deleteRole(appId, roleId);
-        await roles.refetch();
-	}, [appId, backend]);
+	const handleDeleteRole = useCallback(
+		async (roleId: string) => {
+			if (!appId) return;
+			await backend.deleteRole(appId, roleId);
+			await roles.refetch();
+		},
+		[appId, backend],
+	);
 
-	const handleSetDefaultRole = useCallback(async (roleId: string) => {
-        if(!appId) return;
-        await backend.makeRoleDefault(appId, roleId);
-        await roles.refetch();
-	}, [appId, backend])
+	const handleSetDefaultRole = useCallback(
+		async (roleId: string) => {
+			if (!appId) return;
+			await backend.makeRoleDefault(appId, roleId);
+			await roles.refetch();
+		},
+		[appId, backend],
+	);
 
 	const getGridClass = () => {
 		switch (viewMode) {
@@ -299,102 +312,102 @@ export default function RolesPage() {
 	};
 
 	return (
-        <div className="container mx-auto p-4 space-y-4 flex flex-col h-full max-h-full overflow-hidden">
-            {/* Compact Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-tertiary bg-clip-text text-transparent">
-                        Role Management
-                    </h1>
-                </div>
-                <Button
-                    onClick={handleCreateRole}
-                    size="sm"
-                    className="bg-gradient-to-r from-primary to-tertiary hover:from-primary/50 hover:to-tertiary/50"
-                >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Role
-                </Button>
-            </div>
+		<div className="container mx-auto p-4 space-y-4 flex flex-col h-full max-h-full overflow-hidden">
+			{/* Compact Header */}
+			<div className="flex items-center justify-between">
+				<div>
+					<h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-tertiary bg-clip-text text-transparent">
+						Role Management
+					</h1>
+				</div>
+				<Button
+					onClick={handleCreateRole}
+					size="sm"
+					className="bg-gradient-to-r from-primary to-tertiary hover:from-primary/50 hover:to-tertiary/50"
+				>
+					<Plus className="h-4 w-4 mr-2" />
+					Create Role
+				</Button>
+			</div>
 
-            {/* Default Role Info - More Compact */}
-            {defaultRole && (
-                <Card className="border-l-4 border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20 rounded-md">
-                    <CardHeader className="py-2">
-                        <div className="flex items-center gap-2">
-                            <Star className="h-4 w-4 text-blue-500" />
-                            <CardDescription className="text-sm m-0">
-                                Default role: <strong>{defaultRole.name}</strong>
-                            </CardDescription>
-                        </div>
-                    </CardHeader>
-                </Card>
-            )}
+			{/* Default Role Info - More Compact */}
+			{defaultRole && (
+				<Card className="border-l-4 border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/20 rounded-md">
+					<CardHeader className="py-2">
+						<div className="flex items-center gap-2">
+							<Star className="h-4 w-4 text-blue-500" />
+							<CardDescription className="text-sm m-0">
+								Default role: <strong>{defaultRole.name}</strong>
+							</CardDescription>
+						</div>
+					</CardHeader>
+				</Card>
+			)}
 
-            {/* Compact Filters */}
-            <RoleFilters
-                searchTerm={searchTerm}
-                onSearchChange={setSearchTerm}
-                selectedTag={selectedTag}
-                onTagChange={setSelectedTag}
-                availableTags={availableTags}
-                viewMode={viewMode}
-                onViewModeChange={setViewMode}
-                sortBy={sortBy}
-                onSortChange={setSortBy}
-                totalRoles={roles.data?.[1].length ?? 0}
-                filteredRoles={filteredAndSortedRoles.length}
-            />
+			{/* Compact Filters */}
+			<RoleFilters
+				searchTerm={searchTerm}
+				onSearchChange={setSearchTerm}
+				selectedTag={selectedTag}
+				onTagChange={setSelectedTag}
+				availableTags={availableTags}
+				viewMode={viewMode}
+				onViewModeChange={setViewMode}
+				sortBy={sortBy}
+				onSortChange={setSortBy}
+				totalRoles={roles.data?.[1].length ?? 0}
+				filteredRoles={filteredAndSortedRoles.length}
+			/>
 
-            {/* Roles Grid - Maximum Space */}
-            <div className="flex-1 overflow-auto">
-                <div className={getGridClass()}>
-                    {filteredAndSortedRoles.map((role) => (
-                        <RoleCard
-                            key={role.id}
-                            defaultRole={defaultRole?.id}
-                            role={role}
-                            permissionIcons={permissionIcons}
-                            allPermissions={allPermissions}
-                            onEdit={handleEditRole}
-                            onDuplicate={handleDuplicateRole}
-                            onDelete={handleDeleteRole}
-                            onSetDefault={handleSetDefaultRole}
-                            getPermissionBadges={getPermissionBadges}
-                            compact={viewMode === "compact"}
-                        />
-                    ))}
-                </div>
+			{/* Roles Grid - Maximum Space */}
+			<div className="flex-1 overflow-auto">
+				<div className={getGridClass()}>
+					{filteredAndSortedRoles.map((role) => (
+						<RoleCard
+							key={role.id}
+							defaultRole={defaultRole?.id}
+							role={role}
+							permissionIcons={permissionIcons}
+							allPermissions={allPermissions}
+							onEdit={handleEditRole}
+							onDuplicate={handleDuplicateRole}
+							onDelete={handleDeleteRole}
+							onSetDefault={handleSetDefaultRole}
+							getPermissionBadges={getPermissionBadges}
+							compact={viewMode === "compact"}
+						/>
+					))}
+				</div>
 
-                {/* Empty State */}
-                {filteredAndSortedRoles.length === 0 && (
-                    <div className="text-center py-8">
-                        <Shield className="h-8 w-8 mx-auto text-muted-foreground mb-3" />
-                        <h3 className="text-base font-semibold mb-2">No roles found</h3>
-                        <p className="text-sm text-muted-foreground mb-3">
-                            {searchTerm || selectedTag !== "all"
-                                ? "Try adjusting your filters"
-                                : "Create your first role to get started"}
-                        </p>
-                        {!searchTerm && selectedTag === "all" && (
-                            <Button onClick={handleCreateRole} size="sm">
-                                <Plus className="h-4 w-4 mr-2" />
-                                Create First Role
-                            </Button>
-                        )}
-                    </div>
-                )}
-            </div>
+				{/* Empty State */}
+				{filteredAndSortedRoles.length === 0 && (
+					<div className="text-center py-8">
+						<Shield className="h-8 w-8 mx-auto text-muted-foreground mb-3" />
+						<h3 className="text-base font-semibold mb-2">No roles found</h3>
+						<p className="text-sm text-muted-foreground mb-3">
+							{searchTerm || selectedTag !== "all"
+								? "Try adjusting your filters"
+								: "Create your first role to get started"}
+						</p>
+						{!searchTerm && selectedTag === "all" && (
+							<Button onClick={handleCreateRole} size="sm">
+								<Plus className="h-4 w-4 mr-2" />
+								Create First Role
+							</Button>
+						)}
+					</div>
+				)}
+			</div>
 
-            {/* Role Dialog */}
-            <RoleDialog
-                open={isDialogOpen}
-                onOpenChange={setIsDialogOpen}
-                role={editingRole}
-                allPermissions={allPermissions}
-                permissionIcons={permissionIcons}
-                onSave={handleSaveRole}
-            />
-        </div>
-    );
+			{/* Role Dialog */}
+			<RoleDialog
+				open={isDialogOpen}
+				onOpenChange={setIsDialogOpen}
+				role={editingRole}
+				allPermissions={allPermissions}
+				permissionIcons={permissionIcons}
+				onSave={handleSaveRole}
+			/>
+		</div>
+	);
 }

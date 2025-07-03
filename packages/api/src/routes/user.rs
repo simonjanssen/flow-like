@@ -20,6 +20,6 @@ pub fn routes() -> Router<AppState> {
         .route("/invites", get(get_invites::get_invites))
         .route(
             "/invites/{invite_id}",
-            post(manage_invite::accept_invite).delete(manage_invite::decline_invite),
+            post(manage_invite::accept_invite).delete(manage_invite::reject_invite),
         )
 }

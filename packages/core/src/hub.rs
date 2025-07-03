@@ -36,6 +36,7 @@ pub struct Hub {
     pub region: Option<String>,
     pub terms_of_service: String,
     pub cdn: Option<String>,
+    pub app: Option<String>,
     pub legal_notice: String,
     pub privacy_policy: String,
     pub contact: Contact,
@@ -43,6 +44,8 @@ pub struct Hub {
     pub default_user_plan: Option<String>,
     pub environment: Environment,
     pub tiers: UserTiers,
+    #[serde(default)]
+    pub lookup: Lookup,
 
     #[serde(skip)]
     recursion_guard: Option<Arc<Mutex<RecursionGuard>>>,
@@ -63,6 +66,31 @@ pub struct Authentication {
     pub variant: String,
     pub openid: Option<OpenIdConfig>,
     pub oauth2: Option<OAuth2Config>,
+}
+
+#[derive(Clone, Debug, Serialize, JsonSchema, Deserialize)]
+pub struct Lookup {
+    pub email: bool,
+    pub name: bool,
+    pub username: bool,
+    pub avatar: bool,
+    pub additional_information: bool,
+    pub description: bool,
+    pub created_at: bool,
+}
+
+impl Default for Lookup {
+    fn default() -> Self {
+        Self {
+            email: false,
+            username: true,
+            name: false,
+            avatar: true,
+            additional_information: true,
+            description: true,
+            created_at: true,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize, JsonSchema, Deserialize)]

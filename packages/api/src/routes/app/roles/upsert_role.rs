@@ -60,7 +60,6 @@ pub async fn upsert_role(
         payload.update(&txn).await?;
         txn.commit().await?;
 
-
         return Ok(Json(()));
     }
 

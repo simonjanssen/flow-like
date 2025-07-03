@@ -46,6 +46,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTauriInvoke } from "../../../components/useInvoke";
+import { VisibilityStatusSwitcher } from "./visibility-status-switcher";
 
 export default function Id() {
 	const backend = useBackend();
@@ -334,165 +335,13 @@ export default function Id() {
 			</Card>
 
 			{/* Visibility Status */}
-			<Card>
-				<CardHeader>
-					<CardTitle className="flex items-center gap-2">
-						<EyeIcon className="w-5 h-5" />
-						Visibility Status
-					</CardTitle>
-					<CardDescription>
-						Track your project&apos;s journey from private development to public
-						release
-					</CardDescription>
-				</CardHeader>
-				<CardContent className="space-y-6">
-					<div className="relative">
-						{/* Progress Line - Hidden on mobile */}
-						<div className="absolute top-6 left-6 right-6 h-0.5 bg-border -z-10 hidden md:block" />
-
-						{/* Progress Steps */}
-						<div className="flex flex-col md:flex-row md:justify-between items-start gap-4 md:gap-0">
-							{[
-								{
-									status: IAppVisibility.Offline,
-									icon: <ShieldIcon className="w-4 h-4" />,
-									title: "Offline",
-									description: "Only local, no syncing across devices",
-								},
-								{
-									status: IAppVisibility.Private,
-									icon: <EyeIcon className="w-4 h-4" />,
-									title: "Private",
-									description: "Synced for your account only",
-								},
-								{
-									status: IAppVisibility.Prototype,
-									icon: <SettingsIcon className="w-4 h-4" />,
-									title: "Prototype",
-									description: `Development phase, invite collaborators`,
-								},
-								{
-									status: IAppVisibility.PublicRequestAccess,
-									icon: <InfoIcon className="w-4 h-4" />,
-									title: "Public Request",
-									description: "Visible, people can request to join",
-								},
-								{
-									status: IAppVisibility.Public,
-									icon: <ExternalLinkIcon className="w-4 h-4" />,
-									title: "Public",
-									description: "Everyone can join, visible in store",
-								},
-							].map((step, index) => {
-								const currentIndex = [
-									IAppVisibility.Offline,
-									IAppVisibility.Private,
-									IAppVisibility.Prototype,
-									IAppVisibility.PublicRequestAccess,
-									IAppVisibility.Public,
-								].indexOf(localApp?.visibility ?? IAppVisibility.Offline);
-
-								const isActive = index === currentIndex;
-								const isCompleted = index < currentIndex;
-
-								return (
-									<div
-										key={step.status}
-										className="flex md:flex-col items-center md:items-center text-left md:text-center w-full md:max-w-[140px] gap-3 md:gap-0"
-									>
-										{/* Mobile layout: Icon + Content side by side */}
-										<div className="flex md:flex-col items-center gap-3 md:gap-0 w-full">
-											{/* Status Bubble */}
-											<div
-												className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center border-2 transition-all duration-200 flex-shrink-0 ${
-													isActive
-														? "border-primary bg-primary text-primary-foreground shadow-lg"
-														: isCompleted
-															? "border-emerald-500 bg-emerald-500 text-white"
-															: "border-muted-foreground/30 bg-background text-muted-foreground"
-												}`}
-											>
-												{step.icon}
-											</div>
-
-											{/* Step Info */}
-											<div className="flex-1 md:mt-3 space-y-1">
-												<div
-													className={`font-medium text-sm md:text-base ${
-														isActive
-															? "text-primary"
-															: isCompleted
-																? "text-emerald-600 dark:text-emerald-400"
-																: "text-muted-foreground"
-													}`}
-												>
-													{step.title}
-												</div>
-												<div className="text-xs md:text-sm text-muted-foreground leading-tight">
-													{step.description}
-												</div>
-											</div>
-										</div>
-
-										{/* Mobile: Progress line between items */}
-										{index < 4 && (
-											<div className="md:hidden w-px h-8 bg-border ml-5 -mt-2 -mb-2" />
-										)}
-									</div>
-								);
-							})}
-						</div>
-					</div>
-
-					{/* Current Status Summary */}
-					<div className="bg-muted rounded-lg p-4">
-						<div className="flex items-start md:items-center gap-3">
-							<div
-								className={`w-3 h-3 rounded-full mt-0.5 md:mt-0 flex-shrink-0 ${
-									localApp?.visibility === IAppVisibility.Offline
-										? "bg-muted-foreground"
-										: localApp?.visibility === IAppVisibility.Private
-											? "bg-primary"
-											: localApp?.visibility === IAppVisibility.Prototype
-												? "bg-yellow-500"
-												: localApp?.visibility ===
-														IAppVisibility.PublicRequestAccess
-													? "bg-orange-500"
-													: "bg-emerald-500"
-								}`}
-							/>
-							<div className="flex-1">
-								<div className="font-medium text-sm md:text-base">
-									Current Status:{" "}
-									{localApp?.visibility === IAppVisibility.Offline
-										? "Offline"
-										: localApp?.visibility === IAppVisibility.Private
-											? "Private"
-											: localApp?.visibility === IAppVisibility.Prototype
-												? "Prototype"
-												: localApp?.visibility ===
-														IAppVisibility.PublicRequestAccess
-													? "Public Request Join"
-													: "Public"}
-								</div>
-								<div className="text-xs md:text-sm text-muted-foreground mt-1">
-									{localApp?.visibility === IAppVisibility.Offline &&
-										"Your app is stored locally and won't sync across devices."}
-									{localApp?.visibility === IAppVisibility.Private &&
-										"Your app syncs across your devices but isn't shared with others."}
-									{localApp?.visibility === IAppVisibility.Prototype &&
-										"You can invite collaborators to help develop your app."}
-									{localApp?.visibility ===
-										IAppVisibility.PublicRequestAccess &&
-										"Others can discover and request to join your project."}
-									{localApp?.visibility === IAppVisibility.Public &&
-										"Your app is publicly available and discoverable in the store."}
-								</div>
-							</div>
-						</div>
-					</div>
-				</CardContent>
-			</Card>
+			{app.data && (
+				<VisibilityStatusSwitcher
+					canEdit={canEdit}
+					localApp={app.data}
+					refreshApp={async () => await app.refetch()}
+				/>
+			)}
 
 			{/* Visual Assets */}
 			<Card>

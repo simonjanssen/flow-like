@@ -25,7 +25,7 @@ use sea_orm::{
 };
 
 #[tracing::instrument(name = "DELETE /user/invites/{invite_id}", skip(state, user))]
-pub async fn decline_invite(
+pub async fn reject_invite(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,
     Path(invite_id): Path<String>,

@@ -65,6 +65,7 @@ import {
 	Users,
 	X,
 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { InviteManagement } from "./invite-managment";
@@ -80,6 +81,8 @@ interface JoinRequest {
 }
 
 export default function TeamManagementPage() {
+	const searchParams = useSearchParams();
+	const appId = searchParams.get("id");
 	const [showRequestQueue] = useState(true); // This would be determined by project type
 
 	const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([
@@ -144,18 +147,22 @@ export default function TeamManagementPage() {
 				</TabsList>
 
 				{/* Team Members Tab */}
-				<TabsContent value="members" className="flex-1 min-h-0">
-					<div className="h-full overflow-y-auto">
-						<UserManagement appId="your-app-id" />
-					</div>
-				</TabsContent>
+				{appId && (
+					<TabsContent value="members" className="flex-1 min-h-0">
+						<div className="h-full overflow-y-auto">
+							<UserManagement appId={appId} />
+						</div>
+					</TabsContent>
+				)}
 
 				{/* Invite & Access Tab */}
-				<TabsContent value="invite" className="flex-1 min-h-0">
-					<div className="h-full overflow-y-auto">
-						<InviteManagement appId="your-app-id" />
-					</div>
-				</TabsContent>
+				{appId && (
+					<TabsContent value="invite" className="flex-1 min-h-0">
+						<div className="h-full overflow-y-auto">
+							<InviteManagement appId={appId} />
+						</div>
+					</TabsContent>
+				)}
 
 				{/* Join Requests Tab */}
 				{showRequestQueue && (

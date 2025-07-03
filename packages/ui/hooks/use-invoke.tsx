@@ -2,6 +2,7 @@
 import {
 	type QueryClient,
 	type UseQueryResult,
+	useInfiniteQuery,
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
@@ -50,6 +51,135 @@ export function useInvoke<T, Args extends any[]>(
 	});
 
 	return query;
+}
+
+type PaginationParams = {
+	offset: number;
+	limit: number;
+};
+
+type BackendFunctionWithPagination<T, Args extends any[]> = (
+	...args: [...Args, PaginationParams]
+) => Promise<T>;
+
+/**
+ * Custom hook to invoke an asynchronous backend function with infinite scrolling using React Query.
+ * The backend function must accept offset and limit parameters as the last argument.
+ *
+ * @template T The expected return type of the backend function.
+ * @template Args An array type representing the arguments of the backend function (excluding pagination params).
+ * @param {BackendFunctionWithPagination<T, Args>} backendFn The asynchronous function to call with pagination.
+ * @param {Args} args An array containing the arguments to pass to the backend function (excluding pagination).
+ * @param {number} [pageSize=20] The number of items to fetch per page (limit parameter).
+ * @param {boolean} [enabled=true] Whether the query should be enabled and run automatically.
+ * @param {any[]} [additionalDeps=[]] Optional additional dependencies to include in the queryKey.
+ * @returns {UseInfiniteQueryResult<T, Error>} The result object from React Query infinite query.
+ */
+export function useInfiniteInvoke<T, Args extends any[]>(
+	backendFn: BackendFunctionWithPagination<T, Args>,
+	args: Args,
+	pageSize = 50,
+	enabled = true,
+	additionalDeps: any[] = [],
+) {
+	const backend = useBackend();
+
+	const query = useInfiniteQuery<T, Error>({
+		queryKey: [
+			backendFn.name || "infiniteBackendFn",
+			...args,
+			pageSize,
+			...additionalDeps,
+		],
+		queryFn: async ({ pageParam = 0 }) => {
+			try {
+				const boundFn = backendFn.bind(backend);
+				const paginationParams: PaginationParams = {
+					offset: pageParam as number,
+					limit: pageSize,
+				};
+				const response = await boundFn(...args, paginationParams);
+				return response;
+			} catch (error) {
+				console.error("Error invoking infinite backend function:", error);
+				if (error instanceof Error) {
+					throw error;
+				}
+				throw new Error(String(error));
+			}
+		},
+		getNextPageParam: (lastPage, allPages) => {
+			// Assuming the response has a way to determine if there are more pages
+			// You might need to adjust this based on your API response structure
+			const currentOffset = (allPages.length - 1) * pageSize;
+			const nextOffset = currentOffset + pageSize;
+
+			// If lastPage is an array and has fewer items than pageSize, we've reached the end
+			if (Array.isArray(lastPage) && lastPage.length < pageSize) {
+				return undefined;
+			}
+
+			// If lastPage has a property indicating more data, use that
+			if (
+				typeof lastPage === "object" &&
+				lastPage !== null &&
+				"hasMore" in lastPage
+			) {
+				return (lastPage as any).hasMore ? nextOffset : undefined;
+			}
+
+			// Default: return next offset (you may want to customize this logic)
+			return nextOffset;
+		},
+		initialPageParam: 0,
+		enabled,
+	});
+
+	return query;
+}
+
+/**
+ * Custom hook that returns a function to invalidate React Query cache entries
+ * associated with a specific backend function used via `useInfiniteInvoke`.
+ * This typically invalidates all infinite queries starting with the function's name key prefix.
+ *
+ * @returns {function(backendFn: BackendFunctionWithPagination<any, any[]>): Promise<void>}
+ * A function that accepts the backend function whose infinite queries should be invalidated.
+ */
+export function useInvalidateInfiniteInvoke() {
+	const queryClient = useQueryClient();
+
+	/**
+	 * Invalidates infinite queries associated with the given backend function.
+	 * Uses prefix matching based on the function name.
+	 *
+	 * @template T The return type of the backend function (often not needed for invalidation).
+	 * @template Args The arguments array type of the backend function (often not needed for invalidation).
+	 * @param {BackendFunctionWithPagination<T, Args>} backendFn The backend function used in `useInfiniteInvoke` calls.
+	 * @param {Args} args An array containing the arguments to pass to the backend function (excluding pagination).
+	 * @param {number} [pageSize=50] The page size used in the original query.
+	 * @param {any[]} [additionalDeps=[]] Optional additional dependencies to include in the queryKey.
+	 * @returns {Promise<void>} A promise that resolves when the invalidation is complete.
+	 */
+	const invalidate = <T, Args extends any[]>(
+		backendFn: BackendFunctionWithPagination<T, Args>,
+		args: Args,
+		pageSize = 50,
+		additionalDeps: any[] = [],
+	): Promise<void> => {
+		const queryKeyPrefix = [
+			backendFn.name || "infiniteBackendFn",
+			...args,
+			pageSize,
+			...additionalDeps,
+		];
+		console.log("Invalidating infinite queries with prefix:", queryKeyPrefix);
+		return queryClient.invalidateQueries({
+			queryKey: queryKeyPrefix,
+		});
+	};
+
+	return invalidate;
 }
 
 /**

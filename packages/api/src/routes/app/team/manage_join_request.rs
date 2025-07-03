@@ -128,7 +128,7 @@ pub async fn accept_join_request(
     name = "DELETE /apps/{app_id}/team/queue/{request_id}",
     skip(state, user)
 )]
-pub async fn decline_join_request(
+pub async fn reject_join_request(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,
     Path((app_id, request_id)): Path<(String, String)>,

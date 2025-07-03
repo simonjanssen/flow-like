@@ -38,7 +38,7 @@ pub fn routes() -> Router<AppState> {
         .route(
             "/queue/{request_id}",
             post(manage_join_request::accept_join_request)
-                .delete(manage_join_request::decline_join_request),
+                .delete(manage_join_request::reject_join_request),
         )
         .route("/invite", put(invite_user::invite_user))
         .route("/{sub}", delete(remove_user::remove_user))

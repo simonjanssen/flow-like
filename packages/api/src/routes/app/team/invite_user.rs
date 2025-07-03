@@ -33,7 +33,17 @@ pub async fn invite_user(
     Path(app_id): Path<String>,
     Json(params): Json<InviteUserParams>,
 ) -> Result<Json<()>, ApiError> {
-    ensure_permission!(user, &app_id, &state, RolePermissions::Admin);
+    let permission = ensure_permission!(user, &app_id, &state, RolePermissions::Admin);
+
+    if params.sub == permission.sub()? {
+        tracing::warn!(
+            "User {} is trying to invite themself to app {}",
+            user.sub()?,
+            app_id
+        );
+        return Err(ApiError::Forbidden);
+    }
+
     let txn = state.db.begin().await?;
 
     let max_prototype = state.platform_config.max_users_prototype.unwrap_or(-1);

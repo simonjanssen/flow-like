@@ -35,8 +35,9 @@
 	},
 	"hubs": [],
 	"cdn": "https://cdn.flow-like.com",
-	"provider": "aws",
 	"domain": "api.alpha.flow-like.com",
+	"app": "app.flow-like.com",
+	"provider": "aws",
 	"region": "eu-west-1",
 	"terms_of_service": "https://good-co.de/eula/",
 	"legal_notice": "https://good-co.de/legal-notice/",
@@ -82,5 +83,14 @@
 			"llm_tiers": ["PRO", "PREMIUM", "ENTERPRISE"]
 		}
 	},
-	"environment": "Development"
+	"environment": "Development",
+	"lookup": {
+		"email": false,
+		"username": true,
+		"avatar": true,
+		"name": false,
+		"additional_information": true,
+		"description": true,
+		"created_at": true
+	}
 }

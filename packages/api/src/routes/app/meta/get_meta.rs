@@ -26,11 +26,6 @@ pub async fn get_meta(
     ensure_in_project!(user, &app_id, &state);
     let language = query.language.clone().unwrap_or_else(|| "en".to_string());
 
-    let cache_key = format!("get_app_meta:{}:{}:{:?}", language, app_id, query);
-    if let Some(cached) = state.get_cache(&cache_key) {
-        return Ok(Json(cached));
-    }
-
     let apps = app::Entity::find()
         .find_with_related(meta::Entity)
         .filter(
@@ -61,8 +56,6 @@ pub async fn get_meta(
     else {
         return Err(ApiError::NotFound);
     };
-
-    state.set_cache(cache_key, &metadata);
 
     Ok(Json(metadata))
 }

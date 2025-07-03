@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type {
 	IApp,
+	IAppVisibility,
 	IBit,
 	IBitPack,
 	IBoard,
@@ -24,22 +25,24 @@ import type { IBitSearchQuery } from "../lib/schema/hub/bit-search-query";
 import type { IStorageItem } from "../lib/schema/storage/storage-item";
 import type { ISettingsProfile } from "../types";
 
-export interface IStorageItemActionResult {
-	prefix: string;
-	url?: string;
-	error?: string;
-}
+import type {
+	IBackendRole,
+	IInvite,
+	IInviteLink,
+	IJoinRequest,
+	IMember,
+	IStorageItemActionResult,
+	IUserLookup,
+} from "./backend-state/types";
 
-export interface IBackendRole {
-	id: string;
-	app_id: string;
-	name: string;
-	description: string;
-	permissions: bigint;
-	attributes?: string[];
-	updated_at: string;
-	created_at: string;
-}
+export type {
+	IBackendRole,
+	IInvite,
+	IInviteLink,
+	IJoinRequest,
+	IMember,
+	IStorageItemActionResult,
+} from "./backend-state/types";
 
 export interface IBackendState {
 	createApp(
@@ -104,15 +107,15 @@ export interface IBackendState {
 		from?: number,
 		to?: number,
 		status?: ILogLevel,
-		limit?: number,
-		offset?: number,
 		lastMeta?: ILogMetadata,
+		offset?: number,
+		limit?: number,
 	): Promise<ILogMetadata[]>;
 	queryRun(
 		logMeta: ILogMetadata,
 		query: string,
-		limit?: number,
 		offset?: number,
+		limit?: number,
 	): Promise<ILog[]>;
 
 	undoBoard(
@@ -271,6 +274,32 @@ export interface IBackendState {
 	makeRoleDefault(appId: string, roleId: string): Promise<void>;
 	upsertRole(appId: string, role: IBackendRole): Promise<void>;
 	assignRole(appId: string, roleId: string, sub: string): Promise<void>;
+
+	createInviteLink(appId: string, name: string, maxUses: number): Promise<void>;
+	getInviteLinks(appId: string): Promise<IInviteLink[]>;
+	removeInviteLink(appId: string, linkId: string): Promise<void>;
+	joinInviteLink(appId: string, token: string): Promise<void>;
+	requestJoin(appId: string, comment: string): Promise<void>;
+	getJoinRequests(
+		appId: string,
+		offset?: number,
+		limit?: number,
+	): Promise<IJoinRequest[]>;
+	acceptJoinRequest(appId: string, requestId: string): Promise<void>;
+	rejectJoinRequest(appId: string, requestId: string): Promise<void>;
+	getTeam(appId: string, offset?: number, limit?: number): Promise<IMember[]>;
+	getInvites(offset?: number, limit?: number): Promise<IInvite[]>;
+	acceptInvite(inviteId: string): Promise<void>;
+	rejectInvite(inviteId: string): Promise<void>;
+	inviteUser(appId: string, user_id: string, message: string): Promise<void>;
+	removeUser(appId: string, user_id: string): Promise<void>;
+
+	lookupUser(
+		userId?: string,
+		email?: string,
+		username?: string,
+	): Promise<IUserLookup>;
+	changeAppVisibility(appId: string, visibility: IAppVisibility): Promise<void>;
 }
 
 interface BackendStoreState {

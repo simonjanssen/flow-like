@@ -263,9 +263,9 @@ export default function Id({
 					{/* Enhanced Navigation - Hidden when maximized */}
 					{!isMaximized && (
 						<Card className="h-full flex flex-col flex-grow max-h-full overflow-hidden">
-							<CardHeader className="pb-3 pt-3 border-b">
+							<CardHeader className="pb-3 pt-3 border-b relative">
 								<div className="flex flex-col gap-3">
-									<div className="flex items-center gap-2">
+									<div className="flex items-center gap-2 w-full">
 										<div className="relative">
 											<Avatar className="w-9 h-9 border border-border/50 shadow-sm transition-all duration-300 group-hover:scale-105">
 												<AvatarImage
@@ -279,12 +279,6 @@ export default function Id({
 														.toUpperCase()}
 												</AvatarFallback>
 											</Avatar>
-											{/* Visibility Badge Overlay */}
-											{app.data?.visibility && (
-												<div className="absolute -bottom-1 -right-1 bg-background rounded-full">
-													<VisibilityIcon visibility={app.data?.visibility} />
-												</div>
-											)}
 										</div>
 										<div className="flex-1 min-w-0">
 											<CardTitle className="text-sm truncate">
@@ -295,6 +289,13 @@ export default function Id({
 												)}
 											</CardTitle>
 										</div>
+
+										{/* Visibility Badge Overlay */}
+										{app.data?.visibility && (
+											<div className="absolute top-2.5 right-2.5 bg-background rounded-full">
+												<VisibilityIcon visibility={app.data?.visibility} />
+											</div>
+										)}
 									</div>
 
 									{/* Description */}

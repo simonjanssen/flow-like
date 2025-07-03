@@ -55,7 +55,7 @@ export function Traces({
 
 	const messages = useInvoke(
 		backend.queryRun,
-		[currentMetadata!, query, limit, offset],
+		[currentMetadata!, query, offset, limit],
 		typeof currentMetadata !== "undefined",
 	);
 

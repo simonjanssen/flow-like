@@ -22,7 +22,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateInviteLinkPayload {
     pub name: Option<String>,
-    pub max_uses: Option<i32>
+    pub max_uses: Option<i32>,
 }
 
 #[tracing::instrument(name = "PUT /apps/{app_id}/team/link", skip(state, user))]

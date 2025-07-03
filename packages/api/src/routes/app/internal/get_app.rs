@@ -23,18 +23,12 @@ pub async fn get_app(
 ) -> Result<Json<App>, ApiError> {
     ensure_in_project!(user, &app_id, &state);
 
-    let cache_key = format!("get_app:{}", app_id);
-    if let Some(cached) = state.get_cache(&cache_key) {
-        return Ok(Json(cached));
-    }
-
     let app = app::Entity::find_by_id(&app_id)
         .one(&state.db)
         .await?
         .ok_or(ApiError::NotFound)?;
 
     let app: App = app.into();
-    state.set_cache(cache_key, &app);
 
     Ok(Json(app))
 }

@@ -26,7 +26,7 @@ pub async fn get_invites(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,
     Query(query): Query<LanguageParams>,
-) -> Result<Json<Vec<(invitation::Model, String)>>, ApiError> {
+) -> Result<Json<Vec<invitation::Model>>, ApiError> {
     let sub = user.sub()?;
 
     let invitations = invitation::Entity::find()
@@ -40,7 +40,12 @@ pub async fn get_invites(
 
     let invitations = invitations
         .into_iter()
-        .filter_map(|(invite, membership)| membership.map(|m| (invite, m.user_id)))
+        .filter_map(|(mut invite, membership)| {
+            membership.map(|m| {
+                invite.by_member_id = m.user_id.clone();
+                invite
+            })
+        })
         .collect::<Vec<_>>();
 
     Ok(Json(invitations))

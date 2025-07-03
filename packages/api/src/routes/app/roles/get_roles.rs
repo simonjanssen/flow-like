@@ -14,7 +14,8 @@ use axum::{
 use flow_like::{app::App, bit::Metadata};
 use flow_like_types::{anyhow, bail};
 use sea_orm::{
-    ColumnTrait, EntityTrait, JoinType, QueryFilter, QueryOrder, QuerySelect, RelationTrait, TransactionTrait,
+    ColumnTrait, EntityTrait, JoinType, QueryFilter, QueryOrder, QuerySelect, RelationTrait,
+    TransactionTrait,
 };
 
 #[tracing::instrument(name = "GET /apps/{app_id}/roles", skip(state, user))]
@@ -35,7 +36,7 @@ pub async fn get_roles(
             ApiError::NotFound
         })?;
 
-    let roles= role::Entity::find()
+    let roles = role::Entity::find()
         .filter(role::Column::AppId.eq(app_id.clone()))
         .all(&txn)
         .await?;
