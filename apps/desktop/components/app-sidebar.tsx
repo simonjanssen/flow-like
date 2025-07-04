@@ -57,6 +57,7 @@ import type { ISettingsProfile } from "@tm9657/flow-like-ui/types";
 import {
 	BadgeCheck,
 	Bell,
+	BellIcon,
 	BookOpenIcon,
 	BugIcon,
 	ChevronRight,
@@ -458,6 +459,9 @@ function Profiles() {
 	const profiles = useTauriInvoke<ISettingsProfile[]>("get_profiles", {});
 	const currentProfile = useInvoke(backend.getSettingsProfile, []);
 
+	const notifications = useInvoke(backend.getNotifications, []);
+	const notificationCount = notifications.data?.invites_count ?? 0;
+
 	return (
 		<SidebarMenu>
 			<SidebarMenuItem>
@@ -465,9 +469,9 @@ function Profiles() {
 					<DropdownMenuTrigger asChild>
 						<SidebarMenuButton
 							size="lg"
-							className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+							className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground relative"
 						>
-							<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+							<div className="flex relative aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
 								<Avatar className="h-8 w-8 rounded-lg">
 									<AvatarImage
 										className="rounded-lg size-8 w-8 h-8"
@@ -482,6 +486,11 @@ function Profiles() {
 									/>
 									<AvatarFallback>NA</AvatarFallback>
 								</Avatar>
+								{notificationCount > 0 && (
+									<div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+										{notificationCount > 5 ? "5+" : notificationCount}
+									</div>
+								)}
 							</div>
 							<div className="grid flex-1 text-left text-sm leading-tight pl-1">
 								<span className="truncate font-semibold">
@@ -558,6 +567,24 @@ function Profiles() {
 									<DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>
 								</DropdownMenuItem>
 							))}
+						<DropdownMenuSeparator />
+						<a href="/notifications">
+							<DropdownMenuItem className="gap-2 p-2">
+								<div className="flex size-6 items-center justify-center rounded-md border bg-background px-1 relative">
+									<BellIcon className="size-4" />
+									{/* Add notification indicator */}
+									{notificationCount > 0 && (
+										<div className="absolute -top-2 -left-2 bg-red-500 text-white text-xs rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+											{notificationCount > 5 ? "5+" : notificationCount}
+										</div>
+									)}
+								</div>
+								<div className="font-medium text-muted-foreground flex flex-row items-center justify-between w-full">
+									Notifications
+									<DropdownMenuShortcut>⌘N</DropdownMenuShortcut>
+								</div>
+							</DropdownMenuItem>
+						</a>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem className="gap-2 p-2">
 							<div className="flex size-6 items-center justify-center rounded-md border bg-background">

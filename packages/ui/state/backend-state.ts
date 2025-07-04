@@ -31,6 +31,7 @@ import type {
 	IInviteLink,
 	IJoinRequest,
 	IMember,
+	INotificationsOverview,
 	IStorageItemActionResult,
 	IUserLookup,
 } from "./backend-state/types";
@@ -294,11 +295,12 @@ export interface IBackendState {
 	inviteUser(appId: string, user_id: string, message: string): Promise<void>;
 	removeUser(appId: string, user_id: string): Promise<void>;
 
-	lookupUser(
-		userId?: string,
-		email?: string,
-		username?: string,
-	): Promise<IUserLookup>;
+	lookupUser(userId: string): Promise<IUserLookup>;
+
+	searchUsers(query: string): Promise<IUserLookup[]>;
+
+	getNotifications(): Promise<INotificationsOverview>;
+
 	changeAppVisibility(appId: string, visibility: IAppVisibility): Promise<void>;
 }
 

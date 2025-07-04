@@ -44,7 +44,10 @@ import {
 } from "@tm9657/flow-like-ui";
 import type { IStorageItem } from "@tm9657/flow-like-ui/lib";
 import type { IBitSearchQuery } from "@tm9657/flow-like-ui/lib/schema/hub/bit-search-query";
-import type { IUserLookup } from "@tm9657/flow-like-ui/state/backend-state/types";
+import type {
+	INotificationsOverview,
+	IUserLookup,
+} from "@tm9657/flow-like-ui/state/backend-state/types";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { type AuthContextProps, useAuth } from "react-oidc-context";
 import { fetcher, put } from "../lib/api";
@@ -1519,36 +1522,48 @@ export class TauriBackend implements IBackendState {
 		);
 	}
 
-	async lookupUser(
-		userId?: string,
-		email?: string,
-		username?: string,
-	): Promise<IUserLookup> {
+	async lookupUser(userId: string): Promise<IUserLookup> {
 		if (!this.profile || !this.auth) {
 			throw new Error("Profile or auth context not available");
 		}
 
-		let query: string | undefined;
-
-		if (username) {
-			query = username;
-		}
-
-		if (email) {
-			query = email;
-		}
-
-		if (userId) {
-			query = userId;
-		}
-
-		if (!query) {
-			throw new Error("No query provided for user lookup");
-		}
-
 		const result = await fetcher<IUserLookup>(
 			this.profile,
-			`user/lookup/${query}`,
+			`user/lookup/${userId}`,
+			{
+				method: "GET",
+			},
+			this.auth,
+		);
+
+		return result;
+	}
+
+	async searchUsers(query: string): Promise<IUserLookup[]> {
+		if (!this.profile || !this.auth) {
+			throw new Error("Profile or auth context not available");
+		}
+
+		const result = await fetcher<IUserLookup[]>(
+			this.profile,
+			`user/search/${query}`,
+			{
+				method: "GET",
+			},
+			this.auth,
+		);
+
+		return result;
+	}
+
+	async getNotifications(): Promise<INotificationsOverview> {
+		if (!this.profile || !this.auth) {
+			throw new Error("Profile or auth context not available");
+		}
+
+		const result = await fetcher<INotificationsOverview>(
+			this.profile,
+			`user/notifications`,
 			{
 				method: "GET",
 			},

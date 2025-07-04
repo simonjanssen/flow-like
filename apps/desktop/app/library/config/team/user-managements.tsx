@@ -46,6 +46,7 @@ import {
 	Separator,
 	Skeleton,
 	useBackend,
+	useInfiniteInvoke,
 	useInvoke,
 } from "@tm9657/flow-like-ui";
 import {
@@ -65,16 +66,21 @@ import { useMemo, useState } from "react";
 
 export function UserManagement({ appId }: { appId: string }) {
 	const backend = useBackend();
-	const team = useInvoke(backend.getTeam, [appId, 0, 100]);
+	const {
+		data: team,
+		hasNextPage,
+		fetchNextPage,
+		isFetchingNextPage,
+	} = useInfiniteInvoke(backend.getTeam, [appId]);
 	const roles = useInvoke(backend.getRoles, [appId]);
 
 	const [searchQuery, setSearchQuery] = useState("");
 	const [roleFilter, setRoleFilter] = useState<string>("all");
 
 	const filteredTeam = useMemo(() => {
-		if (!team.data) return [];
-		return team.data;
-	}, [team.data, searchQuery, roleFilter]);
+		if (!team) return [];
+		return team.pages.flat();
+	}, [team, searchQuery, roleFilter]);
 
 	return (
 		<Card className="h-full flex flex-col">
@@ -137,6 +143,16 @@ export function UserManagement({ appId }: { appId: string }) {
 									/>
 								);
 							})
+						)}
+						{hasNextPage && (
+							<Button
+								variant="outline"
+								className="w-full mt-4"
+								onClick={() => fetchNextPage()}
+								disabled={isFetchingNextPage}
+							>
+								{isFetchingNextPage ? "Loading..." : "Load More Members"}
+							</Button>
 						)}
 					</div>
 				</ScrollArea>

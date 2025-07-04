@@ -86,29 +86,33 @@ export function useInfiniteInvoke<T, Args extends any[]>(
 
 	const query = useInfiniteQuery<T, Error>({
 		queryKey: [
-            backendFn.name || "infiniteBackendFn",
-            ...args,
-            pageSize,
-            ...additionalDeps,
-        ],
-		 queryFn: async ({ pageParam = 0 }) => {
-            try {
-                const boundFn = backendFn.bind(backend);
-                const paginationParams: PaginationParams = {
-                    offset: pageParam as number,
-                    limit: pageSize,
-                };
-                // Destructure pagination params and pass as separate arguments
-                const response = await boundFn(...args, paginationParams.offset, paginationParams.limit);
-                return response;
-            } catch (error) {
-                console.error("Error invoking infinite backend function:", error);
-                if (error instanceof Error) {
-                    throw error;
-                }
-                throw new Error(String(error));
-            }
-        },
+			backendFn.name || "infiniteBackendFn",
+			...args,
+			pageSize,
+			...additionalDeps,
+		],
+		queryFn: async ({ pageParam = 0 }) => {
+			try {
+				const boundFn = backendFn.bind(backend);
+				const paginationParams: PaginationParams = {
+					offset: pageParam as number,
+					limit: pageSize,
+				};
+				// Destructure pagination params and pass as separate arguments
+				const response = await boundFn(
+					...args,
+					paginationParams.offset,
+					paginationParams.limit,
+				);
+				return response;
+			} catch (error) {
+				console.error("Error invoking infinite backend function:", error);
+				if (error instanceof Error) {
+					throw error;
+				}
+				throw new Error(String(error));
+			}
+		},
 		getNextPageParam: (lastPage, allPages) => {
 			// Assuming the response has a way to determine if there are more pages
 			// You might need to adjust this based on your API response structure

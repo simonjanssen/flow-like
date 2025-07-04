@@ -67,3 +67,7 @@ export interface IUserLookup {
 	description?: string;
 	created_at: string;
 }
+
+export interface INotificationsOverview {
+	invites_count: number;
+}

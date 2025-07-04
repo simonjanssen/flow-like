@@ -74,6 +74,13 @@ pub async fn invite_user(
         return Err(ApiError::Forbidden);
     }
 
+    let member = membership::Entity::find()
+        .filter(membership::Column::AppId.eq(app_id.clone()))
+        .filter(membership::Column::UserId.eq(user.sub()?))
+        .one(&txn)
+        .await?
+        .ok_or(ApiError::Forbidden)?;
+
     let user_already_member = membership::Entity::find()
         .filter(membership::Column::AppId.eq(app_id.clone()))
         .filter(membership::Column::UserId.eq(params.sub.clone()))
@@ -132,7 +139,7 @@ pub async fn invite_user(
         app_id: Set(app_id.clone()),
         created_at: Set(chrono::Utc::now().naive_utc()),
         updated_at: Set(chrono::Utc::now().naive_utc()),
-        by_member_id: Set(user.sub()?),
+        by_member_id: Set(member.id.clone()),
         message: Set(params.message),
         user_id: Set(params.sub),
         name: Set(meta
