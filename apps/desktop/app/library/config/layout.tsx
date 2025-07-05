@@ -106,14 +106,14 @@ const navigationItems = [
 		label: "Team",
 		icon: UsersRoundIcon,
 		description: "Manage team members and permissions",
-		online: true,
+		visibilities: [IAppVisibility.Public, IAppVisibility.Prototype, IAppVisibility.PublicRequestAccess],
 	},
 	{
 		href: "/library/config/roles",
 		label: "Roles",
 		icon: CrownIcon,
 		description: "Define user roles and access levels",
-		online: true,
+		visibilities: [IAppVisibility.Public, IAppVisibility.Prototype, IAppVisibility.PublicRequestAccess],
 	},
 	{
 		href: "/library/config/analytics",
@@ -363,9 +363,9 @@ export default function Id({
 										{navigationItems
 											.filter(
 												(item) =>
-													!(item.online ?? false) ||
-													(item.online &&
-														online?.visibility !== IAppVisibility.Offline),
+													!item.visibilities ||
+													(item.visibilities as IAppVisibility[]).includes(
+														online?.visibility ?? IAppVisibility.Offline),
 											)
 											.map((item) => {
 												const isActive = currentRoute.endsWith(

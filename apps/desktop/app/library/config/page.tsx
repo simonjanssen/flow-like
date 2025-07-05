@@ -23,6 +23,7 @@ import {
 	SelectValue,
 	Textarea,
 	VerificationDialog,
+	nowSystemTime,
 	toastError,
 	useBackend,
 	useInvalidateInvoke,
@@ -85,17 +86,30 @@ export default function Id() {
 
 	// Check for changes
 	useEffect(() => {
-		if (!app.data || !metadata.data || !localApp || !localMetadata) {
-			setHasChanges(false);
-			return;
-		}
+        if (!app.data || !metadata.data || !localApp || !localMetadata) {
+            setHasChanges(false);
+            return;
+        }
 
-		const appChanged = JSON.stringify(app.data) !== JSON.stringify(localApp);
-		const metadataChanged =
-			JSON.stringify(metadata.data) !== JSON.stringify(localMetadata);
+        const appData = { ...app.data };
+		const localData = { ...localApp };
 
-		setHasChanges(appChanged || metadataChanged);
-	}, [app.data, metadata.data, localApp, localMetadata]);
+		appData.visibility = IAppVisibility.Offline
+		localData.visibility = IAppVisibility.Offline
+
+		appData.updated_at = nowSystemTime();
+		localData.updated_at = nowSystemTime()
+
+
+        const appChanged =
+            JSON.stringify(localData) !==
+            JSON.stringify(appData);
+
+        const metadataChanged =
+            JSON.stringify(metadata.data) !== JSON.stringify(localMetadata);
+
+        setHasChanges(appChanged || metadataChanged);
+    }, [app.data, metadata.data, localApp, localMetadata]);
 
 	const isReady = useTauriInvoke<boolean>(
 		"app_configured",
