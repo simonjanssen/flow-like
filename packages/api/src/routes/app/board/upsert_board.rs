@@ -39,6 +39,7 @@ pub async fn upsert_board(
     let mut id = board_id.clone();
     if !app.boards.contains(&board_id) {
         id = app.create_board(None).await?;
+        app.save().await?;
     }
 
     let board = app.open_board(id, Some(false), None).await?;

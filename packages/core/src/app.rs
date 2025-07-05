@@ -697,7 +697,9 @@ impl App {
             .child(self.id.clone())
             .child("manifest.app");
 
-        let proto_app = self.to_proto();
+        let mut proto_app = self.to_proto();
+        let mut seen = std::collections::HashSet::with_capacity(self.boards.len());
+        proto_app.boards.retain(|b| seen.insert(b.clone()));
         compress_to_file(store, manifest_path, &proto_app).await?;
 
         Ok(())

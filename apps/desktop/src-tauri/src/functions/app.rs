@@ -122,6 +122,7 @@ pub async fn upsert_board(
     let mut app = App::load(app_id, flow_like_state).await?;
 
     if app.boards.contains(&board_id) {
+        println!("Updating board: {}", board_id);
         let board = app.open_board(board_id, None, None).await?;
         let mut board = board.lock().await;
         board.name = name;
@@ -148,10 +149,14 @@ pub async fn upsert_board(
         board.save(None).await?;
         return Ok(());
     }
+    println!("Creating new board: {}", board_id);
 
     if let Some(board_data) = board_data {
+        println!("Using provided board data for: {}", board_id);
         let new_board = app.create_board(Some(board_data.id.clone())).await?;
+        app.save().await?;
         let board = app.open_board(new_board, Some(false), None).await?;
+        drop(app);
         let mut board = board.lock().await;
         board.name = name;
         board.description = description;
@@ -168,12 +173,11 @@ pub async fn upsert_board(
         board.created_at = board_data.created_at;
         board.updated_at = board_data.updated_at;
         board.save(None).await?;
-        app.boards.push(board.id.clone());
-        app.save().await?;
         return Ok(());
     }
 
     if app.boards.len() == 0 && template == Some("blank".to_string()) {
+        println!("Creating blank templated board: {}", board_id);
         let bits_map = app
             .bits
             .iter()

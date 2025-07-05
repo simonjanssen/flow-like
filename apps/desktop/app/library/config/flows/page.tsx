@@ -1,4 +1,5 @@
 "use client";
+import { createId } from "@paralleldrive/cuid2";
 import { invoke } from "@tauri-apps/api/core";
 import {
 	Badge,
@@ -21,6 +22,8 @@ import {
 	DialogTrigger,
 	type IApp,
 	type IBoard,
+	IExecutionStage,
+	ILogLevel,
 	Input,
 	Label,
 	Separator,
@@ -162,11 +165,8 @@ export default function Page() {
 									</Button>
 									<Button
 										onClick={async () => {
-											await invoke("upsert_board", {
-												appId: app.data?.id,
-												name: boardCreation.name,
-												description: boardCreation.description,
-											});
+											if(!id) return;
+											await backend.upsertBoard(id, createId(), boardCreation.name, boardCreation.description, ILogLevel.Debug, IExecutionStage.Dev);
 											await Promise.allSettled([
 												await boards.refetch(),
 												await app.refetch(),

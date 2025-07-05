@@ -62,7 +62,7 @@ export class TauriBackend implements IBackendState {
 		private queryClient?: QueryClient,
 		private auth?: AuthContextProps,
 		private profile?: IProfile,
-	) {}
+	) { }
 
 	pushProfile(profile: IProfile) {
 		this.profile = profile;
@@ -169,7 +169,7 @@ export class TauriBackend implements IBackendState {
 			boardId: boardId,
 			name: "Main Board",
 			description: "The main board for the app",
-			template: "blank",
+			template: template,
 		});
 
 		return app;
@@ -590,15 +590,6 @@ export class TauriBackend implements IBackendState {
 		if (!boardUpdate?.id) {
 			throw new Error("Failed to update board");
 		}
-
-		await invoke("upsert_board", {
-			appId: appId,
-			boardId: boardUpdate.id,
-			name: name,
-			description: description,
-			logLevel: logLevel,
-			stage: stage,
-		});
 	}
 
 	async closeBoard(boardId: string) {
@@ -1429,9 +1420,10 @@ export class TauriBackend implements IBackendState {
 	}
 
 	async getBoards(appId: string): Promise<IBoard[]> {
-		const boards: IBoard[] = await invoke("get_app_boards", {
+		let boards: IBoard[] = await invoke("get_app_boards", {
 			appId: appId,
 		});
+		boards = Array.from(new Map(boards.map((b) => [b.id, b])).values());
 
 		const isOffline = await this.isOffline(appId);
 
@@ -1456,15 +1448,13 @@ export class TauriBackend implements IBackendState {
 				}
 
 				for (const board of remoteData) {
-					if (mergedBoards.has(board.id)) {
-						await invoke("upsert_board", {
-							appId: appId,
-							boardId: board.id,
-							name: board.name,
-							description: board.description,
-							boardData: board,
-						});
-					}
+					if(!isEqual(board, mergedBoards.get(board.id))) await invoke("upsert_board", {
+						appId: appId,
+						boardId: board.id,
+						name: board.name,
+						description: board.description,
+						boardData: board,
+					});
 					mergedBoards.set(board.id, board);
 				}
 
