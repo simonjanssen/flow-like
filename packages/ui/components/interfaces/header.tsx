@@ -68,7 +68,7 @@ const HeaderInner = forwardRef<IToolBarActions, HeaderProps>(
 				<div className="flex items-center gap-2">
 					<h1 className="text-lg font-semibold">{metadata?.name}</h1>
 					<Link
-						href={`/library/config/events?id=${appId}&eventId=${currentEvent.id}`}
+						href={`/library/config?id=${appId}&eventId=${currentEvent.id}`}
 					>
 						<Button
 							variant="ghost"

@@ -104,7 +104,7 @@ export default function Page() {
 		if (!appId) return;
 		if (sortedEvents.length === 0 && events.data) {
 			console.log("No events found, redirecting to event config");
-			router.replace(`/library/config/events?id=${appId}`);
+			router.replace(`/library/config?id=${appId}`);
 			return;
 		}
 
@@ -114,7 +114,7 @@ export default function Page() {
 
 		if (!rerouteEvent && usableEvents.size > 0 && events.data) {
 			console.log("No usable events found, redirecting to event config");
-			router.replace(`/library/config/events?id=${appId}`);
+			router.replace(`/library/config?id=${appId}`);
 			return;
 		}
 

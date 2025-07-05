@@ -27,8 +27,7 @@ export default function JoinPage() {
 			toast.success("Successfully joined the app!");
 			router.push(`/use?id=${appId}`);
 		} catch (error) {
-			console.error("Failed to join app:", error);
-			toast.error("Failed to join app, please try again later.");
+			router.push(`/use?id=${appId}`);
 		}
 	}, [backend, appId, token]);
 
