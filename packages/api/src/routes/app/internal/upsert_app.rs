@@ -1,3 +1,5 @@
+use std::{collections::HashSet, sync::Arc, time::SystemTime};
+
 use crate::{
     entity::{
         app, membership, meta, role,
@@ -9,12 +11,13 @@ use crate::{
     routes::LanguageParams,
     state::AppState,
 };
+use aws_config::default_provider::app_name;
 use axum::{
     Extension, Json,
     extract::{Path, Query, State},
 };
-use flow_like::{app::App, bit::Metadata};
-use flow_like_types::create_id;
+use flow_like::{app::App, bit::Metadata, flow::variable::Variable, protobuf::metadata};
+use flow_like_types::{anyhow, create_id, sync::Mutex};
 use sea_orm::{
     ActiveModelTrait,
     ActiveValue::{NotSet, Set},
@@ -27,6 +30,7 @@ use serde::{Deserialize, Serialize};
 pub struct AppUpsertBody {
     pub app: Option<App>,
     pub meta: Option<Metadata>,
+    pub bits: Option<Vec<String>>,
 }
 
 #[tracing::instrument(name = "PUT /apps/{app_id}", skip(state, user, app_body, query))]
@@ -54,6 +58,21 @@ pub async fn upsert_app(
         if !sub.has_permission(RolePermissions::Owner) {
             return Err(ApiError::Forbidden);
         }
+
+        {
+            let mut bucket_app = state.scoped_app(&sub.sub()?, &app_id, &state).await?;
+
+            bucket_app.changelog = app_updates.changelog.clone();
+            bucket_app.primary_category = app_updates.primary_category.clone();
+            bucket_app.secondary_category = app_updates.secondary_category.clone();
+            bucket_app.price = app_updates.price.clone();
+            bucket_app.updated_at = SystemTime::now();
+            bucket_app.bits = app_updates.bits.clone();
+            bucket_app.status = app_updates.status.clone();
+            bucket_app.version = app_updates.version.clone();
+            bucket_app.save().await?;
+        }
+
         let app_updates = app::Model::from(app_updates.clone());
         let mut app: app::ActiveModel = app.clone().into();
         app.status = sea_orm::ActiveValue::Set(app_updates.status);
@@ -73,14 +92,20 @@ pub async fn upsert_app(
         return Err(ApiError::Forbidden);
     }
 
+    let Some(metadata) = app_body.meta else {
+        return Err(ApiError::Internal(
+            anyhow!("Meta is required for new apps").into(),
+        ));
+    };
+
     if tier.max_non_visible_projects == 0 {
         return Err(ApiError::Forbidden);
     }
 
     if tier.max_non_visible_projects > 0 {
         let count = membership::Entity::find()
-            .join(JoinType::InnerJoin, app::Relation::Membership.def())
-            .join(JoinType::InnerJoin, role::Relation::Membership.def())
+            .join(JoinType::InnerJoin, membership::Relation::App.def())
+            .join(JoinType::InnerJoin, membership::Relation::Role.def())
             .filter(
                 app::Column::Visibility
                     .eq(Visibility::Prototype)
@@ -96,12 +121,46 @@ pub async fn upsert_app(
         }
     }
 
+    let new_id = create_id();
+    let board_id = {
+        let credentials = state.scoped_credentials(&sub, &new_id).await?;
+        let flow_like_state = Arc::new(Mutex::new(credentials.to_state(state.clone()).await?));
+        let mut new_app = App::new(
+            Some(new_id.clone()),
+            metadata.clone(),
+            app_body.bits.clone().unwrap_or_default(),
+            flow_like_state,
+        )
+        .await?;
+        let board = new_app.create_board(None).await?;
+
+        if let Some(bits) = app_body.bits {
+            let bits_map = bits.iter().map(|b| b.clone()).collect::<HashSet<String>>();
+            let board = new_app.open_board(board.clone(), Some(false), None).await?;
+            let mut variable = Variable::new(
+                "Embedding Models",
+                flow_like::flow::variable::VariableType::String,
+                flow_like::flow::pin::ValueType::HashSet,
+            );
+            variable
+                .set_exposed(false)
+                .set_editable(false)
+                .set_default_value(serde_json::json!(bits_map));
+            let mut board = board.lock().await;
+            board.variables.insert(variable.id.clone(), variable);
+            board.save(None).await?;
+        }
+
+        new_app.save().await?;
+        board.clone()
+    };
+
     let app = state
         .db
         .transaction::<_, app::Model, DbErr>(|txn| {
             Box::pin(async move {
                 let app = app::ActiveModel {
-                    id: Set(create_id()),
+                    id: Set(new_id),
                     status: Set(Status::Active),
                     created_at: Set(now.clone()),
                     updated_at: Set(now.clone()),
@@ -112,21 +171,19 @@ pub async fn upsert_app(
                 let app = app.insert(txn).await?;
                 let app_id = app.id.clone();
 
-                if let Some(meta) = app_body.meta {
-                    let meta = meta::ActiveModel {
-                        id: Set(create_id()),
-                        app_id: Set(Some(app_id.clone())),
-                        name: Set(meta.name),
-                        description: Set(Some(meta.description)),
-                        long_description: Set(meta.long_description),
-                        tags: Set(Some(meta.tags)),
-                        lang: Set(language),
-                        created_at: Set(now.clone()),
-                        updated_at: Set(now.clone()),
-                        ..Default::default()
-                    };
-                    meta.insert(txn).await?;
-                }
+                let meta = meta::ActiveModel {
+                    id: Set(create_id()),
+                    app_id: Set(Some(app_id.clone())),
+                    name: Set(metadata.name),
+                    description: Set(Some(metadata.description)),
+                    long_description: Set(metadata.long_description),
+                    tags: Set(Some(metadata.tags)),
+                    lang: Set(language),
+                    created_at: Set(now.clone()),
+                    updated_at: Set(now.clone()),
+                    ..Default::default()
+                };
+                meta.insert(txn).await?;
 
                 let owner_role = role::ActiveModel {
                     id: Set(create_id()),
@@ -193,5 +250,8 @@ pub async fn upsert_app(
         })
         .await?;
 
-    Ok(Json(App::from(app)))
+    let mut app = App::from(app);
+    app.boards = vec![board_id];
+
+    Ok(Json(app))
 }

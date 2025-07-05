@@ -7,7 +7,7 @@ use axum::{
     extract::{Path, State},
 };
 use flow_like::flow::{board::ExecutionStage, execution::LogLevel};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Deserialize)]
 pub struct UpsertBoard {
@@ -15,6 +15,11 @@ pub struct UpsertBoard {
     pub description: Option<String>,
     pub stage: Option<ExecutionStage>,
     pub log_level: Option<LogLevel>,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct UpsertBoardResponse {
+    pub id: String,
 }
 
 #[tracing::instrument(
@@ -26,7 +31,7 @@ pub async fn upsert_board(
     Extension(user): Extension<AppUser>,
     Path((app_id, board_id)): Path<(String, String)>,
     Json(params): Json<UpsertBoard>,
-) -> Result<Json<()>, ApiError> {
+) -> Result<Json<UpsertBoardResponse>, ApiError> {
     let permission = ensure_permission!(user, &app_id, &state, RolePermissions::WriteBoards);
     let sub = permission.sub()?;
 
@@ -44,5 +49,7 @@ pub async fn upsert_board(
     board.log_level = params.log_level.unwrap_or(board.log_level);
     board.save(None).await?;
 
-    Ok(Json(()))
+    Ok(Json(UpsertBoardResponse {
+        id: board.id.clone(),
+    }))
 }

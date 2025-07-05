@@ -4,6 +4,7 @@ import { type Event, type UnlistenFn, listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
 import { mkdir, open as openFile } from "@tauri-apps/plugin-fs";
 
+import { createId } from "@paralleldrive/cuid2";
 import {
 	type IApp,
 	IAppVisibility,
@@ -36,13 +37,15 @@ import {
 	type QueryClient,
 	injectData,
 	injectDataFunction,
+	isEqual,
+	offlineSyncDB,
 	useBackend,
 	useBackendStore,
 	useDownloadManager,
 	useInvoke,
 	useQueryClient,
 } from "@tm9657/flow-like-ui";
-import type { IStorageItem } from "@tm9657/flow-like-ui/lib";
+import type { ICommandSync, IStorageItem } from "@tm9657/flow-like-ui/lib";
 import type { IBitSearchQuery } from "@tm9657/flow-like-ui/lib/schema/hub/bit-search-query";
 import type {
 	INotificationsOverview,
@@ -81,6 +84,45 @@ export class TauriBackend implements IBackendState {
 		return true;
 	}
 
+	async pushOfflineSyncCommand(
+		appId: string,
+		boardId: string,
+		commands: IGenericCommand[],
+	) {
+		console.log("Pushing offline sync command", { appId, boardId, commands });
+		await offlineSyncDB.commands.put({
+			commandId: createId(),
+			appId: appId,
+			boardId: boardId,
+			commands: commands,
+			createdAt: new Date(),
+		});
+	}
+
+	async getOfflineSyncCommands(
+		appId: string,
+		boardId: string,
+	): Promise<ICommandSync[]> {
+		const commands = await offlineSyncDB.commands
+			.where({
+				appId: appId,
+				boardId: boardId,
+			})
+			.toArray();
+
+		return commands.toSorted(
+			(a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
+		);
+	}
+
+	async clearOfflineSyncCommands(
+		commandId: string,
+		appId: string,
+		boardId: string,
+	): Promise<void> {
+		await offlineSyncDB.commands.delete(commandId);
+	}
+
 	async createApp(
 		metadata: IMetadata,
 		bits: string[],
@@ -88,10 +130,11 @@ export class TauriBackend implements IBackendState {
 		online: boolean,
 	): Promise<IApp> {
 		let appId: string | undefined;
+		let boardId: string | undefined;
 		if (online && this.profile) {
 			const app: IApp = await put(
 				this.profile,
-				`app/new`,
+				`apps/new`,
 				{
 					meta: metadata,
 				},
@@ -104,12 +147,14 @@ export class TauriBackend implements IBackendState {
 			});
 
 			appId = app.id;
+			if (app.boards.length > 0) {
+				boardId = app.boards[0];
+			}
 		}
 
 		const app: IApp = await invoke("create_app", {
 			metadata: metadata,
 			bits: bits,
-			template: template,
 			id: appId,
 		});
 
@@ -118,6 +163,14 @@ export class TauriBackend implements IBackendState {
 				app: { ...app, visibility: IAppVisibility.Private },
 			});
 		}
+
+		await invoke("upsert_board", {
+			appId: app.id,
+			boardId: boardId,
+			name: "Main Board",
+			description: "The main board for the app",
+			template: "blank",
+		});
 
 		return app;
 	}
@@ -182,6 +235,86 @@ export class TauriBackend implements IBackendState {
 			boardId: boardId,
 			version: version,
 		});
+
+		const isOffline = await this.isOffline(appId);
+
+		if (isOffline || !this.profile || !this.auth || !this.queryClient) {
+			return board;
+		}
+
+		const getOfflineSyncCommands = this.getOfflineSyncCommands.bind(this);
+		const clearOfflineSyncCommands = this.clearOfflineSyncCommands.bind(this);
+
+		const promise = injectDataFunction(
+			async () => {
+				const unsyncedCommands = await getOfflineSyncCommands(appId, boardId);
+				for (const commandSync of unsyncedCommands) {
+					try {
+						// Only sync commands up to a week old
+						if (
+							commandSync.createdAt.getTime() <
+							Date.now() - 7 * 24 * 60 * 60 * 1000
+						)
+							await fetcher(
+								this.profile!,
+								`apps/${appId}/board/${boardId}`,
+								{
+									method: "POST",
+									body: JSON.stringify({
+										commands: commandSync.commands,
+									}),
+								},
+								this.auth,
+							);
+						console.log(
+							"Executed offline sync command:",
+							commandSync.commandId,
+						);
+						await clearOfflineSyncCommands(
+							commandSync.commandId,
+							appId,
+							boardId,
+						);
+					} catch (e) {
+						console.warn("Failed to execute offline sync command:", e);
+					}
+				}
+
+				const remoteData = await fetcher<IBoard>(
+					this.profile!,
+					`apps/${appId}/board/${boardId}`,
+					{
+						method: "GET",
+					},
+					this.auth,
+				);
+
+				if (!remoteData) {
+					throw new Error("Failed to fetch board data");
+				}
+
+				if (!isEqual(remoteData, board) && typeof version === "undefined") {
+					await invoke("upsert_board", {
+						appId: appId,
+						boardId: boardId,
+						name: remoteData.name,
+						description: remoteData.description,
+						boardData: remoteData,
+					});
+				}
+
+				return remoteData;
+			},
+			this,
+			this.queryClient,
+			this.getBoard,
+			[appId, boardId, version],
+			[],
+			board,
+		);
+
+		this.backgroundTaskHandler(promise);
+
 		return board;
 	}
 
@@ -198,6 +331,37 @@ export class TauriBackend implements IBackendState {
 				versionType: versionType,
 			},
 		);
+
+		const isOffline = await this.isOffline(appId);
+		if (isOffline || !this.profile || !this.auth || !this.queryClient) {
+			return newVersion;
+		}
+
+		const promise = injectDataFunction(
+			async () => {
+				const remoteData = await fetcher<[number, number, number]>(
+					this.profile!,
+					`apps/${appId}/board/${boardId}`,
+					{
+						method: "PATCH",
+						body: JSON.stringify({
+							version_type: versionType,
+						}),
+					},
+					this.auth,
+				);
+
+				return remoteData;
+			},
+			this,
+			this.queryClient,
+			this.createBoardVersion,
+			[appId, boardId, versionType],
+			[],
+			newVersion,
+		);
+
+		this.backgroundTaskHandler(promise);
 
 		return newVersion;
 	}
@@ -380,7 +544,7 @@ export class TauriBackend implements IBackendState {
 		});
 	}
 
-	async updateBoardMeta(
+	async upsertBoard(
 		appId: string,
 		boardId: string,
 		name: string,
@@ -388,9 +552,48 @@ export class TauriBackend implements IBackendState {
 		logLevel: ILogLevel,
 		stage: IExecutionStage,
 	) {
-		await invoke("update_board_meta", {
+		const isOffline = await this.isOffline(appId);
+
+		if (isOffline) {
+			await invoke("upsert_board", {
+				appId: appId,
+				boardId: boardId,
+				name: name,
+				description: description,
+				logLevel: logLevel,
+				stage: stage,
+			});
+			return;
+		}
+
+		if (!this.profile || !this.auth || !this.queryClient) {
+			throw new Error(
+				"Profile, auth or query client not set. Cannot push board update.",
+			);
+		}
+
+		const boardUpdate = await fetcher<{ id: string }>(
+			this.profile,
+			`apps/${appId}/board/${boardId}`,
+			{
+				method: "PUT",
+				body: JSON.stringify({
+					name: name,
+					description: description,
+					log_level: logLevel,
+					stage: stage,
+				}),
+			},
+			this.auth,
+		);
+
+		if (!boardUpdate?.id) {
+			throw new Error("Failed to update board");
+		}
+
+		await invoke("upsert_board", {
 			appId: appId,
-			boardId: boardId,
+			boardId: boardUpdate.id,
 			name: name,
 			description: description,
 			logLevel: logLevel,
@@ -422,11 +625,40 @@ export class TauriBackend implements IBackendState {
 		boardId: string,
 		command: IGenericCommand,
 	): Promise<IGenericCommand> {
-		return await invoke("execute_command", {
+		const returnValue = await invoke<IGenericCommand>("execute_command", {
 			appId: appId,
 			boardId: boardId,
 			command: command,
 		});
+
+		const isOffline = await this.isOffline(appId);
+		if (isOffline) {
+			return returnValue;
+		}
+
+		if (!this.profile || !this.auth || !this.queryClient) {
+			await this.pushOfflineSyncCommand(appId, boardId, [command]);
+			return returnValue;
+		}
+
+		try {
+			await fetcher(
+				this.profile,
+				`apps/${appId}/board/${boardId}`,
+				{
+					method: "POST",
+					body: JSON.stringify({
+						commands: [command],
+					}),
+				},
+				this.auth,
+			);
+		} catch (error) {
+			console.error("Failed to push command to server:", error);
+			await this.pushOfflineSyncCommand(appId, boardId, [command]);
+		}
+
+		return returnValue;
 	}
 
 	async executeCommands(
@@ -434,11 +666,40 @@ export class TauriBackend implements IBackendState {
 		boardId: string,
 		commands: IGenericCommand[],
 	): Promise<IGenericCommand[]> {
-		return await invoke("execute_commands", {
+		const returnValue = await invoke<IGenericCommand[]>("execute_commands", {
 			appId: appId,
 			boardId: boardId,
 			commands: commands,
 		});
+
+		const isOffline = await this.isOffline(appId);
+		if (isOffline) {
+			return returnValue;
+		}
+
+		if (!this.profile || !this.auth || !this.queryClient) {
+			await this.pushOfflineSyncCommand(appId, boardId, commands);
+			return returnValue;
+		}
+
+		try {
+			const pushTask = await fetcher(
+				this.profile,
+				`apps/${appId}/board/${boardId}`,
+				{
+					method: "POST",
+					body: JSON.stringify({
+						commands: commands,
+					}),
+				},
+				this.auth,
+			);
+		} catch (error) {
+			console.error("Failed to push commands to server:", error);
+			await this.pushOfflineSyncCommand(appId, boardId, commands);
+		}
+
+		return returnValue;
 	}
 
 	// Event Operations
@@ -1171,6 +1432,54 @@ export class TauriBackend implements IBackendState {
 		const boards: IBoard[] = await invoke("get_app_boards", {
 			appId: appId,
 		});
+
+		const isOffline = await this.isOffline(appId);
+
+		if (isOffline || !this.profile || !this.auth || !this.queryClient) {
+			return boards;
+		}
+
+		const promise = injectDataFunction(
+			async () => {
+				const mergedBoards = new Map<string, IBoard>();
+				const remoteData = await fetcher<IBoard[]>(
+					this.profile!,
+					`apps/${appId}/board`,
+					{
+						method: "GET",
+					},
+					this.auth,
+				);
+
+				for (const board of boards) {
+					mergedBoards.set(board.id, board);
+				}
+
+				for (const board of remoteData) {
+					if (mergedBoards.has(board.id)) {
+						await invoke("upsert_board", {
+							appId: appId,
+							boardId: board.id,
+							name: board.name,
+							description: board.description,
+							boardData: board,
+						});
+					}
+					mergedBoards.set(board.id, board);
+				}
+
+				return Array.from(mergedBoards.values());
+			},
+			this,
+			this.queryClient,
+			this.getBoards,
+			[appId],
+			[],
+			boards,
+		);
+
+		this.backgroundTaskHandler(promise);
+
 		return boards;
 	}
 

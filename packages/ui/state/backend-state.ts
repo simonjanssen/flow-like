@@ -130,7 +130,7 @@ export interface IBackendState {
 		commands: IGenericCommand[],
 	): Promise<void>;
 
-	updateBoardMeta(
+	upsertBoard(
 		appId: string,
 		boardId: string,
 		name: string,

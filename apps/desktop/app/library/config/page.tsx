@@ -86,30 +86,27 @@ export default function Id() {
 
 	// Check for changes
 	useEffect(() => {
-        if (!app.data || !metadata.data || !localApp || !localMetadata) {
-            setHasChanges(false);
-            return;
-        }
+		if (!app.data || !metadata.data || !localApp || !localMetadata) {
+			setHasChanges(false);
+			return;
+		}
 
-        const appData = { ...app.data };
+		const appData = { ...app.data };
 		const localData = { ...localApp };
 
-		appData.visibility = IAppVisibility.Offline
-		localData.visibility = IAppVisibility.Offline
+		appData.visibility = IAppVisibility.Offline;
+		localData.visibility = IAppVisibility.Offline;
 
 		appData.updated_at = nowSystemTime();
-		localData.updated_at = nowSystemTime()
+		localData.updated_at = nowSystemTime();
 
+		const appChanged = JSON.stringify(localData) !== JSON.stringify(appData);
 
-        const appChanged =
-            JSON.stringify(localData) !==
-            JSON.stringify(appData);
+		const metadataChanged =
+			JSON.stringify(metadata.data) !== JSON.stringify(localMetadata);
 
-        const metadataChanged =
-            JSON.stringify(metadata.data) !== JSON.stringify(localMetadata);
-
-        setHasChanges(appChanged || metadataChanged);
-    }, [app.data, metadata.data, localApp, localMetadata]);
+		setHasChanges(appChanged || metadataChanged);
+	}, [app.data, metadata.data, localApp, localMetadata]);
 
 	const isReady = useTauriInvoke<boolean>(
 		"app_configured",

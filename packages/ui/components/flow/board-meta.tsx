@@ -73,7 +73,7 @@ export function BoardMeta({
 	}, [invalidate, appId, boardId, backend]);
 
 	const saveMeta = useCallback(async () => {
-		await backend.updateBoardMeta(
+		await backend.upsertBoard(
 			appId,
 			boardId,
 			boardMeta.name,

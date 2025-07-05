@@ -162,7 +162,7 @@ export default function Page() {
 									</Button>
 									<Button
 										onClick={async () => {
-											await invoke("create_app_board", {
+											await invoke("upsert_board", {
 												appId: app.data?.id,
 												name: boardCreation.name,
 												description: boardCreation.description,
@@ -264,7 +264,11 @@ export default function Page() {
 					) : (
 						<div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pb-6">
 							{app.data &&
-								boards.data?.map((board) => (
+								Array.from(
+									new Map(
+										(boards.data ?? []).map((board) => [board.id, board]),
+									).values(),
+								).map((board) => (
 									<Board
 										key={board.id}
 										board={board}
@@ -315,7 +319,10 @@ function Board({
 	return (
 		<ContextMenu>
 			<ContextMenuTrigger asChild>
-				<Card className="relative group border-0 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer bg-gradient-to-br from-card to-card/80 hover:from-card/90 hover:to-card/70">
+				<Card
+					title={board.id}
+					className="relative group border-0 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer bg-gradient-to-br from-card to-card/80 hover:from-card/90 hover:to-card/70"
+				>
 					<CardHeader className="pb-3">
 						<div className="flex items-start justify-between">
 							<div className="flex items-center space-x-3">

@@ -6,6 +6,7 @@ import {
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
+import { isEqual } from "lodash";
 import { type IBackendState, useBackend } from "../state/backend-state";
 
 type BackendFunction<T, Args extends any[]> = (...args: Args) => Promise<T>;
@@ -257,6 +258,7 @@ export async function injectDataFunction<T, Args extends any[]>(
 	backendFn: BackendFunction<T, Args>,
 	args: Args,
 	additionalDeps: any[] = [],
+	oldData?: T,
 ): Promise<UseQueryResult<T, Error>> {
 	try {
 		const boundLambda = lambda.bind(backend);
@@ -267,7 +269,9 @@ export async function injectDataFunction<T, Args extends any[]>(
 			...additionalDeps,
 		];
 
-		queryClient?.setQueryData(queryKey, result);
+		if (!isEqual(result, oldData)) {
+			queryClient?.setQueryData(queryKey, result);
+		}
 		console.log("Injected data into query cache:", queryKey, result);
 
 		return {
@@ -284,7 +288,16 @@ export async function injectDataFunction<T, Args extends any[]>(
 		if (error instanceof Error) {
 			throw error;
 		}
-		throw new Error(String(error));
+		return {
+			data: oldData as T,
+			error: error as Error,
+			isLoading: false,
+			isError: true,
+			isSuccess: false,
+			status: "error",
+			refetch: () =>
+				Promise.resolve({ data: oldData as T, error: error as Error }),
+		} as UseQueryResult<T, Error>;
 	}
 }
 

@@ -34,21 +34,6 @@ pub async fn save_board(handler: AppHandle, board_id: String) -> Result<(), Taur
 }
 
 #[tauri::command(async)]
-pub async fn create_board(app_handle: AppHandle) -> Result<Board, TauriFunctionError> {
-    let path = Path::from("debug").child("boards");
-    let flow_like_state = TauriFlowLikeState::construct(&app_handle).await?;
-    let board = Board::new(None, path, flow_like_state);
-
-    let board_state = TauriFlowLikeState::construct(&app_handle).await?;
-    board_state.lock().await.register_board(
-        &board.id,
-        Arc::new(Mutex::new(board.clone())),
-        None,
-    )?;
-    Ok(board)
-}
-
-#[tauri::command(async)]
 pub async fn create_board_version(
     handler: AppHandle,
     app_id: String,
@@ -173,28 +158,6 @@ pub async fn get_open_boards(
     }
 
     Ok(boards)
-}
-
-#[tauri::command(async)]
-pub async fn update_board_meta(
-    handler: AppHandle,
-    app_id: String,
-    board_id: String,
-    name: String,
-    description: String,
-    log_level: LogLevel,
-    stage: ExecutionStage,
-) -> Result<Board, TauriFunctionError> {
-    let store = TauriFlowLikeState::get_project_meta_store(&handler).await?;
-    let board_state = TauriFlowLikeState::construct(&handler).await?;
-    let board = board_state.lock().await.get_board(&board_id, None)?;
-    let mut board = board.lock().await;
-    board.name = name;
-    board.description = description;
-    board.log_level = log_level;
-    board.stage = stage;
-    board.save(Some(store.clone())).await?;
-    Ok(board.clone())
 }
 
 #[tauri::command(async)]

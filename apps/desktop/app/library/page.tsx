@@ -70,7 +70,7 @@ export default function YoursPage() {
 	const { addAll, removeAll, clearSearch, search, searchResults } =
 		useMiniSearch(
 			apps.data?.map(([app, meta]) => ({ ...meta, id: app.id, app: app })) ||
-			[],
+				[],
 			{
 				fields: [
 					"name",
@@ -183,7 +183,8 @@ export default function YoursPage() {
 								Join a Project
 							</DialogTitle>
 							<DialogDescription className="text-center text-muted-foreground">
-								Paste your invite link below to join a project.<br />
+								Paste your invite link below to join a project.
+								<br />
 								You’ll instantly get access if the link is valid.
 							</DialogDescription>
 						</DialogHeader>
@@ -192,7 +193,7 @@ export default function YoursPage() {
 								autoFocus
 								placeholder="Paste invite link here…"
 								value={inviteLink}
-								onChange={e => setInviteLink(e.target.value)}
+								onChange={(e) => setInviteLink(e.target.value)}
 								className="w-full"
 							/>
 							<p className="text-xs text-muted-foreground text-center">
@@ -203,10 +204,7 @@ export default function YoursPage() {
 							<DialogClose asChild>
 								<Button variant="outline">Cancel</Button>
 							</DialogClose>
-							<Button
-								onClick={handleJoin}
-								disabled={!inviteLink.trim()}
-							>
+							<Button onClick={handleJoin} disabled={!inviteLink.trim()}>
 								<Link2 className="mr-2 h-4 w-4" />
 								Join
 							</Button>

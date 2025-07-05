@@ -46,6 +46,7 @@ pub async fn execute_commands(
     };
 
     let commands = board.execute_commands(params.commands, flow_state).await?;
+    board.save(None).await?;
 
     Ok(Json(commands))
 }

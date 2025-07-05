@@ -135,7 +135,7 @@ impl AwsRuntimeCredentials {
               {
                 "Effect": "Allow",
                 "Action": [
-                    "s3express:CreateSesssion",
+                    "s3express:CreateSession",
                 ],
                 "Resource": [
                     "*"

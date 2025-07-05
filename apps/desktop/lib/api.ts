@@ -34,30 +34,36 @@ export async function fetcher<T>(
 	}
 
 	const url = constructUrl(profile, path);
-	const response = await tauriFetch(url, {
-		...options,
-		headers: {
-			"Content-Type": "application/json",
-			...options?.headers,
-			...headers,
-		},
-		keepalive: true,
-		priority: "high",
-	});
+	try {
+		const response = await tauriFetch(url, {
+			...options,
+			headers: {
+				"Content-Type": "application/json",
+				...options?.headers,
+				...headers,
+			},
+			keepalive: true,
+			priority: "high",
+		});
 
-	if (!response.ok) {
-		if (response.status === 401 && auth) {
-			auth?.startSilentRenew();
+		if (!response.ok) {
+			if (response.status === 401 && auth) {
+				auth?.startSilentRenew();
+			}
+			console.error(`Error fetching ${path}:`, response);
+			console.groupEnd();
+			throw new Error(`Error fetching data: ${response.statusText}`);
 		}
-		console.error(`Error fetching ${path}:`, response);
-		console.groupEnd();
-		throw new Error(`Error fetching data: ${response.statusText}`);
-	}
 
-	const json = await response.json();
-	console.dir(json, { depth: null });
-	console.groupEnd();
-	return json as T;
+		const json = await response.json();
+		console.dir(json, { depth: null });
+		console.groupEnd();
+		return json as T;
+	} catch (error) {
+		console.error(`Error fetching ${path}:`, error);
+		console.groupEnd();
+		throw new Error(`Error fetching data: ${error}`);
+	}
 }
 
 export async function post<T>(
