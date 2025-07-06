@@ -4,8 +4,6 @@ use flow_like::{
         execution::{
             LogLevel,
             context::ExecutionContext,
-            internal_node::InternalNode,
-            log::{LogMessage, LogStat},
         },
         node::{Node, NodeLogic},
         pin::PinOptions,
@@ -13,11 +11,7 @@ use flow_like::{
     },
     state::FlowLikeState,
 };
-use flow_like_model_provider::{
-    history::{History, HistoryMessage, Role},
-    llm::LLMCallback,
-    response_chunk::ResponseChunk,
-};
+use flow_like_model_provider::history::{History, HistoryMessage, Role};
 use flow_like_types::{anyhow, async_trait, json};
 use serde::Deserialize;
 
@@ -55,7 +49,7 @@ Here is the tool, you **must** use to make your response:
 Previous tool outputs are indicated with a [TOOLOUTPUT] prefix.
 
 # Output Format
-You have only one options to answer:
+You have only one option to answer:
 - Use a tool: [TOOLUSE]{"name": "name of the tool", "args": ...}
 "#;
 
@@ -98,8 +92,12 @@ impl NodeLogic for LLMBranchNode {
             .set_options(PinOptions::new().set_enforce_schema(true).build());
 
         // todo: name this 'Condition' to align with Branch node?
-        node.add_input_pin("prompt", "Prompt", "", VariableType::String)
-            .set_default_value(Some(json::json!("")));
+        node.add_input_pin(
+            "prompt",
+            "Prompt",
+            "Input Message that can be answered with yes or no.",
+            VariableType::String,
+        );
 
         node.add_output_pin(
             "true",
@@ -163,7 +161,7 @@ impl NodeLogic for LLMBranchNode {
             Ok(value) => value,
             Err(err) => {
                 return Err(anyhow!(
-                    format!("Failed to serialize tool call: {:?}", err).to_string()
+                    format!("Failed to serialize tool call: {err:?}").to_string()
                 ));
             }
         };

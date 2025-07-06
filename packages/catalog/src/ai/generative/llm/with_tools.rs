@@ -1,4 +1,3 @@
-use core::panic;
 use flow_like::{
     bit::Bit,
     flow::{
@@ -6,8 +5,6 @@ use flow_like::{
         execution::{
             LogLevel,
             context::ExecutionContext,
-            internal_node::InternalNode,
-            log::{LogMessage, LogStat},
         },
         node::{Node, NodeLogic},
         pin::{PinOptions, PinType},
@@ -16,9 +13,9 @@ use flow_like::{
     state::FlowLikeState,
 };
 use flow_like_model_provider::{
-    history::History, llm::LLMCallback, response::Response, response_chunk::ResponseChunk,
+    history::History, response::Response,
 };
-use flow_like_types::{Error, Value, async_trait, json};
+use flow_like_types::{Value, async_trait, json};
 use serde::Deserialize;
 use std::{
     collections::{HashMap, HashSet},
@@ -134,7 +131,7 @@ impl NodeLogic for LLMWithTools {
         let update_tools: Vec<Tool> = match json::from_str(&schema_str) {
             Ok(value) => value,
             Err(err) => {
-                node.error = Some(format!("Failed to parse tools: {:?}", err).to_string());
+                node.error = Some(format!("Failed to parse tools: {err:?}").to_string());
                 return;
             }
         };

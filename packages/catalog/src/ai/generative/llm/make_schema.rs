@@ -8,8 +8,6 @@ use flow_like::{
         execution::{
             LogLevel,
             context::ExecutionContext,
-            internal_node::InternalNode,
-            log::{LogMessage, LogStat},
         },
         node::{Node, NodeLogic},
         pin::PinOptions,
@@ -17,12 +15,8 @@ use flow_like::{
     },
     state::FlowLikeState,
 };
-use flow_like_model_provider::{
-    history::{History, HistoryMessage, Role},
-    llm::LLMCallback,
-    response_chunk::ResponseChunk,
-};
-use flow_like_types::{Value, anyhow, async_trait, json};
+use flow_like_model_provider::history::{History, HistoryMessage, Role};
+use flow_like_types::{anyhow, async_trait};
 
 const SYSTEM_PROMPT: &str = r#"
 # Instructions
@@ -162,7 +156,7 @@ impl NodeLogic for LLMMakeSchema {
             Some(value) => value,
             _ => return Err(anyhow!("Failed to parse function definition from response")),
         };
-        let defintion = validate_openai_function(&definition_str)?;
+        let defintion = validate_openai_function(definition_str)?;
 
         // set outputs
         context.set_pin_value("function", defintion).await?;

@@ -8,8 +8,6 @@ use flow_like::{
         execution::{
             LogLevel,
             context::ExecutionContext,
-            internal_node::InternalNode,
-            log::{LogMessage, LogStat},
         },
         node::{Node, NodeLogic},
         pin::PinOptions,
@@ -17,12 +15,8 @@ use flow_like::{
     },
     state::FlowLikeState,
 };
-use flow_like_model_provider::{
-    history::{History, HistoryMessage, Role},
-    llm::LLMCallback,
-    response_chunk::ResponseChunk,
-};
-use flow_like_types::{Value, anyhow, async_trait, json};
+use flow_like_model_provider::history::{History, HistoryMessage, Role};
+use flow_like_types::{anyhow, async_trait};
 
 const SYSTEM_PROMPT_TEMPLATE: &str = r#"
 # Instruction
@@ -144,7 +138,7 @@ impl NodeLogic for LLMWithStructuredOutput {
             Some(value) => value,
             _ => return Err(anyhow!("Failed to parse tool call from response")),
         };
-        let tool_call = validate_openai_tool_call(&definition_str, &tool_call_str)?;
+        let tool_call = validate_openai_tool_call(&definition_str, tool_call_str)?;
 
         // set outputs
         context.set_pin_value("response", tool_call).await?;
