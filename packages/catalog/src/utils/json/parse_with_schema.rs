@@ -11,7 +11,7 @@ use flow_like::{
 };
 use flow_like_types::{Error, Value, anyhow, async_trait, json, jsonschema};
 
-/// Is this JSON an OpenAI Function Definition?
+/// Is this JSON Value an OpenAI Function Definition?
 /// https://platform.openai.com/docs/guides/function-calling?api-mode=responses#defining-functions
 pub fn is_openai(data: &Value) -> bool {
     let map = match data.as_object() {
@@ -31,6 +31,55 @@ pub fn is_openai(data: &Value) -> bool {
         }
     }
     true
+}
+
+/// Validates JSON against OpenAI Function Definition Schema
+/// https://platform.openai.com/docs/guides/function-calling?api-mode=responses#defining-functions
+/// Returns parsed JSON Value if valid
+pub fn validate_openai_function(definition_str: &str) -> Result<Value, Error> {
+    // Is definition input pin value valid JSON?
+    let definition: Value = match json::from_str(&definition_str) {
+        Ok(definition) => definition,
+        Err(e) => {
+            return Err(anyhow!(format!(
+                "Failed to load definition/schema from input string: {}",
+                e
+            )));
+        }
+    };
+
+    let map = match definition.as_object() {
+        Some(m) => m,
+        None => return Err(anyhow!("Invalid JSON definition")),
+    };
+
+    // "type" should always be function
+    if map.get("type") != Some(&Value::String("function".into())) {
+        return Err(anyhow!("As of now, 'type' should always be 'function'"));
+    }
+
+    // check required keys
+    for key in ["name", "description", "strict"] {
+        if map.get(key).map_or(true, Value::is_null) {
+            return Err(anyhow!(format!("Missing required key {}", key)));
+        }
+    }
+
+    // check whether 'parameters' is valid JSON schema
+    match map.get("parameters") {
+        Some(parameters) => {
+            if !jsonschema::meta::is_valid(parameters) {
+                return Err(anyhow!(
+                    "'parameters' value is not a valid JSON schema definition"
+                ));
+            }
+        }
+        None => return Err(anyhow!("Missing required key: parameters")),
+    };
+
+    // todo: add strict option to ensure all properties in parameters have descriptions
+
+    Ok(definition)
 }
 
 /// Converts OpenAI Function Defintion to JSON Schema
@@ -56,8 +105,8 @@ pub fn into_json_schema(data: Value) -> Result<Value, Error> {
     }
 }
 
-/// Validates JSON data against JSON/OpenAI Schema and returns JSON data as Value
-fn validate_json(definition_str: &str, data_str: &str) -> Result<Value, Error> {
+/// Creates a JSON Schema Validator for a JSON Schema or OpenAI Function Definition
+fn get_schema_validator(definition_str: &str) -> Result<jsonschema::Validator, Error> {
     // Is definition input pin value valid JSON?
     let definition: Value = match json::from_str(&definition_str) {
         Ok(definition) => definition,
@@ -77,6 +126,14 @@ fn validate_json(definition_str: &str, data_str: &str) -> Result<Value, Error> {
         Ok(validator) => validator,
         Err(e) => return Err(anyhow!(format!("Failed to load schema validator: {}", e))),
     };
+    Ok(validator)
+}
+
+/// Validates JSON data against JSON/OpenAI Schema and returns JSON data as Value
+/// Returns a JSON Value that is compliant with the given definition
+pub fn validate_json_data(definition_str: &str, data_str: &str) -> Result<Value, Error> {
+    // Get schema validator
+    let validator = get_schema_validator(definition_str)?;
 
     // Is data input pin value valid JSON?
     let data: Value = match json::from_str(data_str) {
@@ -93,6 +150,42 @@ fn validate_json(definition_str: &str, data_str: &str) -> Result<Value, Error> {
 
     if error_msg.len() < 1 {
         return Ok(data);
+    } else {
+        return Err(anyhow!(format!("Schema validation failed: {}", error_msg)));
+    }
+}
+
+// todo: multiple defintions + tool_call name
+pub fn validate_openai_tool_call(
+    definition_str: &str,
+    tool_call_str: &str,
+) -> Result<Value, Error> {
+    // Get schema validator
+    let validator = get_schema_validator(definition_str)?;
+
+    // Is data input pin value valid JSON?
+    let tool_call: Value = match json::from_str(tool_call_str) {
+        Ok(data) => data,
+        Err(e) => return Err(anyhow!(format!("Failed to parse JSON data: {}", e))),
+    };
+
+    let data = match tool_call.as_object() {
+        Some(data) => match data.get("args") {
+            Some(data) => data,
+            None => return Err(anyhow!("Missing tool call args")),
+        },
+        None => return Err(anyhow!("Invalid tool call")),
+    };
+
+    // Validate input data againts JSON schema
+    let errors = validator.iter_errors(&data);
+    let error_msg = errors
+        .map(|e| format!("Error: {}, Location: {}", e, e.instance_path))
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    if error_msg.len() < 1 {
+        return Ok(data.clone());
     } else {
         return Err(anyhow!(format!("Schema validation failed: {}", error_msg)));
     }
@@ -127,9 +220,9 @@ impl NodeLogic for ParseWithSchema {
         );
 
         node.add_input_pin(
-            "definition",
-            "Definition",
-            "JSON/OpenAI Schema Definition",
+            "schema",
+            "Schema",
+            "JSON Schema or OpenAI Function Definition",
             VariableType::String,
         );
 
@@ -159,10 +252,10 @@ impl NodeLogic for ParseWithSchema {
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
         context.deactivate_exec_pin("exec_out").await?;
-        let definition_str: String = context.evaluate_pin("definition").await?;
+        let definition_str: String = context.evaluate_pin("schema").await?;
         let data_str: String = context.evaluate_pin("data").await?;
 
-        let validated = validate_json(&definition_str, &data_str)?;
+        let validated = validate_json_data(&definition_str, &data_str)?;
 
         context.set_pin_value("parsed", validated).await?;
         context.activate_exec_pin("exec_out").await?;
