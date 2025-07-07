@@ -15,10 +15,10 @@ bitflags! {
         const ReadBoards        =   0b00000000_00000001_00000000;
         const ExecuteBoards     =   0b00000000_00000010_00000000;
         const WriteBoards       =   0b00000000_00000100_00000000;
-        const ListReleases      =   0b00000000_00001000_00000000;
-        const ReadReleases      =   0b00000000_00010000_00000000;
-        const ExecuteReleases   =   0b00000000_00100000_00000000;
-        const WriteReleases     =   0b00000000_01000000_00000000;
+        const ListEvents        =   0b00000000_00001000_00000000;
+        const ReadEvents        =   0b00000000_00010000_00000000;
+        const ExecuteEvents     =   0b00000000_00100000_00000000;
+        const WriteEvents       =   0b00000000_01000000_00000000;
         const ReadLogs          =   0b00000000_10000000_00000000;
         const ReadAnalytics     =   0b00000001_00000000_00000000;
         const ReadConfig        =   0b00000010_00000000_00000000;

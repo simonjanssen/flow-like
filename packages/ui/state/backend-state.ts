@@ -52,6 +52,7 @@ export interface IBackendState {
 		template: string,
 		online: boolean,
 	): Promise<IApp>;
+	deleteApp(appId: string): Promise<void>;
 	getApps(): Promise<[IApp, IMetadata | undefined][]>;
 	getApp(appId: string): Promise<IApp>;
 	updateApp(app: IApp): Promise<void>;
@@ -77,6 +78,7 @@ export interface IBackendState {
 		appId: string,
 		boardId: string,
 	): Promise<[number, number, number][]>;
+	deleteBoard(appId: string, boardId: string): Promise<void>;
 	// [AppId, BoardId, BoardName]
 	getOpenBoards(): Promise<[string, string, string][]>;
 	getBoardSettings(): Promise<"straight" | "step" | "simpleBezier">;
@@ -183,17 +185,15 @@ export interface IBackendState {
 	upsertEventFeedback(
 		appId: string,
 		eventId: string,
-		messageId: string,
+		feedbackId: string,
 		feedback: {
-			// 0: remove, 1: positive, -1: negative
 			rating: number;
 			history?: any[];
 			globalState?: Record<string, any>;
 			localState?: Record<string, any>;
 			comment?: string;
-			sub?: boolean;
 		},
-	): Promise<void>;
+	): Promise<string>;
 
 	// Template Operations
 

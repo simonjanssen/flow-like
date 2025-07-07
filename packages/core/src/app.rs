@@ -442,10 +442,13 @@ impl App {
         &mut self,
         event: Event,
         version_type: Option<VersionType>,
+        enforce_id: Option<bool>,
     ) -> flow_like_types::Result<Event> {
+        let enforce_id = enforce_id.unwrap_or(false);
+        println!("Upserting event: {}", event.id);
         let mut event = event;
 
-        event.upsert(self, version_type).await?;
+        event.upsert(self, version_type, enforce_id).await?;
 
         if !self.events.contains(&event.id) {
             self.events.push(event.id.clone());

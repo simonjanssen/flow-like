@@ -100,6 +100,7 @@ const navigationItems = [
 		label: "Explore Data",
 		icon: DatabaseIcon,
 		description: "Browse and query your data",
+		disabled: true,
 	},
 	{
 		href: "/library/config/team",
@@ -128,12 +129,14 @@ const navigationItems = [
 		label: "Analytics",
 		icon: ChartAreaIcon,
 		description: "Performance metrics and insights",
+		disabled: true,
 	},
 	{
 		href: "/library/config/endpoints",
 		label: "Endpoints",
 		icon: GlobeIcon,
 		description: "API endpoints and integrations",
+		disabled: true,
 	},
 ];
 
@@ -372,7 +375,7 @@ export default function Id({
 											.filter(
 												(item) =>
 													!item.visibilities ||
-													(item.visibilities as IAppVisibility[]).includes(
+													item.visibilities.includes(
 														online?.visibility ?? IAppVisibility.Offline,
 													),
 											)
@@ -382,19 +385,47 @@ export default function Id({
 												);
 												const Icon = item.icon;
 
+												if (item.disabled) {
+													return (
+														<Tooltip key={item.href} delayDuration={300}>
+															<TooltipTrigger asChild>
+																<div
+																	className={`
+																		flex items-center gap-3 px-3 py-2 rounded-lg text-sm
+																		text-muted-foreground bg-muted/50 opacity-60 cursor-not-allowed
+																	`}
+																	tabIndex={-1}
+																	aria-disabled="true"
+																>
+																	<Icon className="w-4 h-4 flex-shrink-0" />
+																	<span className="truncate">{item.label}</span>
+																</div>
+															</TooltipTrigger>
+															<TooltipContent side="right" className="max-w-xs">
+																<p className="font-bold">
+																	{item.label} (Coming soon!)
+																</p>
+																<p className="text-xs mt-1">
+																	{item.description}
+																</p>
+															</TooltipContent>
+														</Tooltip>
+													);
+												}
+
 												return (
 													<Tooltip key={item.href} delayDuration={300}>
 														<TooltipTrigger asChild>
 															<Link
 																href={`${item.href}?id=${id}`}
 																className={`
-                                                                flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all
-                                                                ${
-																																	isActive
-																																		? "bg-primary text-primary-foreground shadow-sm font-medium"
-																																		: "hover:bg-muted text-muted-foreground hover:text-foreground"
-																																}
-                                                            `}
+                            flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all
+                            ${
+															isActive
+																? "bg-primary text-primary-foreground shadow-sm font-medium"
+																: "hover:bg-muted text-muted-foreground hover:text-foreground"
+														}
+                        `}
 															>
 																<Icon className="w-4 h-4 flex-shrink-0" />
 																<span className="truncate">{item.label}</span>

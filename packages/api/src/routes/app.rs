@@ -10,6 +10,7 @@ pub mod internal;
 
 pub mod board;
 pub mod data;
+pub mod events;
 pub mod meta;
 pub mod roles;
 pub mod team;
@@ -37,6 +38,7 @@ pub fn routes() -> Router<AppState> {
         .nest("/{app_id}/meta", meta::routes())
         .nest("/{app_id}/roles", roles::routes())
         .nest("/{app_id}/team", team::routes())
+        .nest("/{app_id}/events", events::routes())
         .nest("/{app_id}/data", data::routes())
 }
 

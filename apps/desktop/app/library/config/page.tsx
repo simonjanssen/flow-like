@@ -29,6 +29,7 @@ import {
 	useInvalidateInvoke,
 	useInvoke,
 } from "@tm9657/flow-like-ui";
+import { isEqual } from "lodash-es";
 import {
 	BombIcon,
 	CalendarIcon,
@@ -99,11 +100,17 @@ export default function Id() {
 
 		appData.updated_at = nowSystemTime();
 		localData.updated_at = nowSystemTime();
+		appData.created_at = nowSystemTime();
+		localData.created_at = nowSystemTime();
 
-		const appChanged = JSON.stringify(localData) !== JSON.stringify(appData);
+		const appMetadata = {
+			...metadata.data,
+			created_at: localMetadata.created_at,
+			updated_at: localMetadata.updated_at,
+		};
 
-		const metadataChanged =
-			JSON.stringify(metadata.data) !== JSON.stringify(localMetadata);
+		const appChanged = !isEqual(localData, appData);
+		const metadataChanged = !isEqual(appMetadata, localMetadata);
 
 		setHasChanges(appChanged || metadataChanged);
 	}, [app.data, metadata.data, localApp, localMetadata]);
@@ -158,7 +165,7 @@ export default function Id() {
 	}, [app.data, metadata.data]);
 
 	async function deleteApp() {
-		await invoke("delete_app", { appId: id });
+		await backend.deleteApp(id ?? "");
 		await invalidate(backend.getApps, []);
 		router.push("/library/apps");
 	}

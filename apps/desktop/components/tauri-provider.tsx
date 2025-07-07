@@ -53,6 +53,7 @@ import type {
 } from "@tm9657/flow-like-ui/state/backend-state/types";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { type AuthContextProps, useAuth } from "react-oidc-context";
+import { toast } from "sonner";
 import { fetcher, put } from "../lib/api";
 import { appsDB } from "../lib/apps-db";
 
@@ -62,7 +63,7 @@ export class TauriBackend implements IBackendState {
 		private queryClient?: QueryClient,
 		private auth?: AuthContextProps,
 		private profile?: IProfile,
-	) { }
+	) {}
 
 	pushProfile(profile: IProfile) {
 		this.profile = profile;
@@ -123,6 +124,34 @@ export class TauriBackend implements IBackendState {
 		await offlineSyncDB.commands.delete(commandId);
 	}
 
+	async deleteApp(appId: string): Promise<void> {
+		const isOffline = await this.isOffline(appId);
+		if (isOffline) {
+			await invoke("delete_app", {
+				appId: appId,
+			});
+			return;
+		}
+
+		if (!this.profile || !this.auth || !this.queryClient) {
+			throw new Error(
+				"Profile, auth or query client not set. Cannot delete app.",
+			);
+		}
+
+		await fetcher(
+			this.profile,
+			`apps/${appId}`,
+			{
+				method: "DELETE",
+			},
+			this.auth,
+		);
+		await invoke("delete_app", {
+			appId: appId,
+		});
+	}
+
 	async createApp(
 		metadata: IMetadata,
 		bits: string[],
@@ -176,9 +205,32 @@ export class TauriBackend implements IBackendState {
 	}
 
 	async updateApp(app: IApp): Promise<void> {
-		await invoke("update_app", {
-			app: app,
-		});
+		const isOffline = await this.isOffline(app.id);
+
+		if (isOffline) {
+			await invoke("update_app", {
+				app: app,
+			});
+			return;
+		}
+
+		if (!this.profile || !this.auth || !this.queryClient) {
+			throw new Error(
+				"Profile, auth or query client not set. Cannot update app.",
+			);
+		}
+
+		await fetcher(
+			this.profile,
+			`apps/${app.id}`,
+			{
+				method: "PUT",
+				body: JSON.stringify({
+					app: app,
+				}),
+			},
+			this.auth,
+		);
 	}
 
 	async changeAppVisibility(
@@ -213,6 +265,31 @@ export class TauriBackend implements IBackendState {
 		metadata: IMetadata,
 		language?: string,
 	): Promise<void> {
+		const isOffline = await this.isOffline(appId);
+
+		if (isOffline) {
+			await invoke("push_app_meta", {
+				appId: appId,
+				metadata: metadata,
+				language,
+			});
+			return;
+		}
+
+		if (!this.profile || !this.auth || !this.queryClient) {
+			throw new Error(
+				"Profile, auth or query client not set. Cannot push app meta.",
+			);
+		}
+		await fetcher(
+			this.profile,
+			`apps/${appId}/meta?language=${language ?? "en"}`,
+			{
+				method: "PUT",
+				body: JSON.stringify(metadata),
+			},
+			this.auth,
+		);
 		await invoke("push_app_meta", {
 			appId: appId,
 			metadata: metadata,
@@ -377,7 +454,67 @@ export class TauriBackend implements IBackendState {
 				boardId: boardId,
 			},
 		);
+
+		const isOffline = await this.isOffline(appId);
+		if (isOffline || !this.profile || !this.auth || !this.queryClient) {
+			return boardVersions;
+		}
+
+		const promise = injectDataFunction(
+			async () => {
+				const remoteData = await fetcher<[number, number, number][]>(
+					this.profile!,
+					`apps/${appId}/board/${boardId}/version`,
+					{
+						method: "GET",
+					},
+					this.auth,
+				);
+
+				return remoteData;
+			},
+			this,
+			this.queryClient,
+			this.getBoardVersions,
+			[appId, boardId],
+			[],
+			boardVersions,
+		);
+
+		this.backgroundTaskHandler(promise);
+
 		return boardVersions;
+	}
+
+	async deleteBoard(appId: string, boardId: string): Promise<void> {
+		const isOffline = await this.isOffline(appId);
+		if (isOffline) {
+			await invoke("delete_app_board", {
+				appId: appId,
+				boardId: boardId,
+			});
+			return;
+		}
+
+		if (!this.profile || !this.auth || !this.queryClient) {
+			throw new Error(
+				"Profile, auth or query client not set. Cannot delete board.",
+			);
+		}
+
+		await fetcher(
+			this.profile,
+			`apps/${appId}/board/${boardId}`,
+			{
+				method: "DELETE",
+			},
+			this.auth,
+		);
+
+		await invoke("delete_app_board", {
+			appId: appId,
+			boardId: boardId,
+		});
 	}
 
 	async getOpenBoards(): Promise<[string, string, string][]> {
@@ -529,19 +666,67 @@ export class TauriBackend implements IBackendState {
 	}
 
 	async undoBoard(appId: string, boardId: string, commands: IGenericCommand[]) {
-		await invoke("undo_board", {
-			appId: appId,
-			boardId: boardId,
-			commands: commands,
-		});
+		const isOffline = await this.isOffline(appId);
+
+		if (isOffline) {
+			await invoke("undo_board", {
+				appId: appId,
+				boardId: boardId,
+				commands: commands,
+			});
+			return;
+		}
+
+		if (!this.profile || !this.auth || !this.queryClient) {
+			toast.error("Undo only works when you are online.");
+			throw new Error(
+				"Profile, auth or query client not set. Cannot push board update.",
+			);
+		}
+
+		await fetcher(
+			this.profile,
+			`apps/${appId}/board/${boardId}/undo`,
+			{
+				method: "PATCH",
+				body: JSON.stringify({
+					commands: commands,
+				}),
+			},
+			this.auth,
+		);
 	}
 
 	async redoBoard(appId: string, boardId: string, commands: IGenericCommand[]) {
-		await invoke("redo_board", {
-			appId: appId,
-			boardId: boardId,
-			commands: commands,
-		});
+		const isOffline = await this.isOffline(appId);
+
+		if (isOffline) {
+			await invoke("redo_board", {
+				appId: appId,
+				boardId: boardId,
+				commands: commands,
+			});
+			return;
+		}
+
+		if (!this.profile || !this.auth || !this.queryClient) {
+			toast.error("Undo only works when you are online.");
+			throw new Error(
+				"Profile, auth or query client not set. Cannot push board update.",
+			);
+		}
+
+		await fetcher(
+			this.profile,
+			`apps/${appId}/board/${boardId}/redo`,
+			{
+				method: "PATCH",
+				body: JSON.stringify({
+					commands: commands,
+				}),
+			},
+			this.auth,
+		);
 	}
 
 	async upsertBoard(
@@ -699,27 +884,140 @@ export class TauriBackend implements IBackendState {
 		eventId: string,
 		version?: [number, number, number],
 	): Promise<IEvent> {
-		return await invoke("get_event", {
+		const event = await invoke<IEvent>("get_event", {
 			appId: appId,
 			eventId: eventId,
 			version: version,
 		});
+
+		const isOffline = await this.isOffline(appId);
+		if (isOffline || !this.profile || !this.auth || !this.queryClient) {
+			return event;
+		}
+
+		const promise = injectDataFunction(
+			async () => {
+				let url = `apps/${appId}/events/${eventId}`;
+				if (version) {
+					url += `?version=${version.join("_")}`;
+				}
+				const remoteData = await fetcher<IEvent>(
+					this.profile!,
+					url,
+					{
+						method: "GET",
+					},
+					this.auth,
+				);
+
+				if (!remoteData) {
+					throw new Error("Failed to fetch event data");
+				}
+
+				if (!isEqual(remoteData, event) && typeof version === "undefined") {
+					await invoke("upsert_event", {
+						appId: appId,
+						event: remoteData,
+						enforceId: true,
+					});
+				}
+
+				return remoteData;
+			},
+			this,
+			this.queryClient,
+			this.getEvent,
+			[appId, eventId, version],
+			[],
+			event,
+		);
+
+		this.backgroundTaskHandler(promise);
+		return event;
 	}
 
 	async getEvents(appId: string): Promise<IEvent[]> {
-		return await invoke("get_events", {
+		const events = await invoke<IEvent[]>("get_events", {
 			appId: appId,
 		});
+		const isOffline = await this.isOffline(appId);
+		if (isOffline || !this.profile || !this.auth || !this.queryClient) {
+			return events;
+		}
+
+		const promise = injectDataFunction(
+			async () => {
+				const remoteData = await fetcher<IEvent[]>(
+					this.profile!,
+					`apps/${appId}/events`,
+					{
+						method: "GET",
+					},
+					this.auth,
+				);
+
+				for (const event of remoteData) {
+					await invoke("upsert_event", {
+						appId: appId,
+						event: event,
+						enforceId: true,
+					});
+				}
+
+				return remoteData;
+			},
+			this,
+			this.queryClient,
+			this.getEvents,
+			[appId],
+			[],
+			events,
+		);
+
+		this.backgroundTaskHandler(promise);
+		return events;
 	}
 
 	async getEventVersions(
 		appId: string,
 		eventId: string,
 	): Promise<[number, number, number][]> {
-		return await invoke("get_event_versions", {
-			appId: appId,
-			eventId: eventId,
-		});
+		const versions = await invoke<[number, number, number][]>(
+			"get_event_versions",
+			{
+				appId: appId,
+				eventId: eventId,
+			},
+		);
+
+		const isOffline = await this.isOffline(appId);
+		if (isOffline || !this.profile || !this.auth || !this.queryClient) {
+			return versions;
+		}
+
+		const promise = injectDataFunction(
+			async () => {
+				const remoteData = await fetcher<[number, number, number][]>(
+					this.profile!,
+					`apps/${appId}/events/${eventId}/versions`,
+					{
+						method: "GET",
+					},
+					this.auth,
+				);
+
+				return remoteData;
+			},
+			this,
+			this.queryClient,
+			this.getEventVersions,
+			[appId, eventId],
+			[],
+			versions,
+		);
+
+		this.backgroundTaskHandler(promise);
+		return versions;
 	}
 
 	async upsertEvent(
@@ -727,14 +1025,63 @@ export class TauriBackend implements IBackendState {
 		event: IEvent,
 		versionType?: IVersionType,
 	): Promise<IEvent> {
-		return await invoke("upsert_event", {
+		const isOffline = await this.isOffline(appId);
+		if (isOffline) {
+			return await invoke("upsert_event", {
+				appId: appId,
+				event: event,
+				versionType: versionType,
+			});
+		}
+		if (!this.profile || !this.auth || !this.queryClient) {
+			throw new Error(
+				"Profile, auth or query client not set. Cannot upsert event.",
+			);
+		}
+		const response = await fetcher<IEvent>(
+			this.profile,
+			`apps/${appId}/events/${event.id}`,
+			{
+				method: "PUT",
+				body: JSON.stringify({
+					event: event,
+					version_type: versionType,
+				}),
+			},
+			this.auth,
+		);
+		await invoke("upsert_event", {
 			appId: appId,
-			event: event,
+			event: response,
 			versionType: versionType,
+			enforceId: true,
 		});
+		return response;
 	}
 
 	async deleteEvent(appId: string, eventId: string): Promise<void> {
+		const isOffline = await this.isOffline(appId);
+		if (isOffline) {
+			await invoke("delete_event", {
+				appId: appId,
+				eventId: eventId,
+			});
+		}
+
+		if (!this.profile || !this.auth || !this.queryClient) {
+			throw new Error(
+				"Profile, auth or query client not set. Cannot delete event.",
+			);
+		}
+
+		await fetcher(
+			this.profile,
+			`apps/${appId}/events/${eventId}`,
+			{
+				method: "DELETE",
+			},
+			this.auth,
+		);
 		await invoke("delete_event", {
 			appId: appId,
 			eventId: eventId,
@@ -746,27 +1093,75 @@ export class TauriBackend implements IBackendState {
 		eventId: string,
 		version?: [number, number, number],
 	): Promise<void> {
-		return await invoke("validate_event", {
-			appId: appId,
-			eventId: eventId,
-			version: version,
-		});
+		const isOffline = await this.isOffline(appId);
+		if (isOffline) {
+			return await invoke("validate_event", {
+				appId: appId,
+				eventId: eventId,
+				version: version,
+			});
+		}
+
+		if (!this.profile || !this.auth || !this.queryClient) {
+			throw new Error(
+				"Profile, auth or query client not set. Cannot validate event.",
+			);
+		}
+
+		return await fetcher(
+			this.profile,
+			`apps/${appId}/events/${eventId}/validate`,
+			{
+				method: "POST",
+				body: JSON.stringify({
+					version: version,
+				}),
+			},
+			this.auth,
+		);
 	}
 
 	async upsertEventFeedback(
 		appId: string,
 		eventId: string,
-		messageId: string,
+		feedbackId: string,
 		feedback: {
 			rating: number;
 			history?: any[];
 			globalState?: Record<string, any>;
 			localState?: Record<string, any>;
 			comment?: string;
-			sub?: boolean;
 		},
-	): Promise<void> {
-		// TODO: Only relevant for online events
+	): Promise<string> {
+		const isOffline = await this.isOffline(appId);
+		if (isOffline) return "";
+
+		if (!this.profile || !this.auth || !this.queryClient) {
+			throw new Error(
+				"Profile, auth or query client not set. Cannot upsert event feedback.",
+			);
+		}
+
+		const response = await fetcher<{ feedback_id: string }>(
+			this.profile,
+			`apps/${appId}/events/${eventId}/feedback`,
+			{
+				method: "PUT",
+				body: JSON.stringify({
+					rating: feedback.rating,
+					context: {
+						history: feedback.history,
+						global_state: feedback.globalState,
+						local_state: feedback.localState,
+					},
+					comment: feedback.comment,
+					feedback_id: feedbackId,
+				}),
+			},
+			this.auth,
+		);
+
+		return response.feedback_id;
 	}
 
 	// Template Operations
@@ -1448,13 +1843,14 @@ export class TauriBackend implements IBackendState {
 				}
 
 				for (const board of remoteData) {
-					if(!isEqual(board, mergedBoards.get(board.id))) await invoke("upsert_board", {
-						appId: appId,
-						boardId: board.id,
-						name: board.name,
-						description: board.description,
-						boardData: board,
-					});
+					if (!isEqual(board, mergedBoards.get(board.id)))
+						await invoke("upsert_board", {
+							appId: appId,
+							boardId: board.id,
+							name: board.name,
+							description: board.description,
+							boardData: board,
+						});
 					mergedBoards.set(board.id, board);
 				}
 

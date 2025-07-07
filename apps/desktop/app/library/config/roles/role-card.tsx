@@ -192,8 +192,8 @@ export function RoleCard({
 										<AlertDialogHeader>
 											<AlertDialogTitle>Delete Role</AlertDialogTitle>
 											<AlertDialogDescription>
-												Are you sure you want to delete the "{role.name}" role?
-												This action cannot be undone.
+												Are you sure you want to delete the &quot;{role.name}
+												&quot; role? This action cannot be undone.
 											</AlertDialogDescription>
 										</AlertDialogHeader>
 										<AlertDialogFooter>

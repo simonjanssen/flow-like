@@ -114,6 +114,7 @@ impl Event {
         &mut self,
         app: &App,
         version_type: Option<VersionType>,
+        enforce_id: bool,
     ) -> flow_like_types::Result<Self> {
         if self.id.is_empty() {
             self.id = create_id();
@@ -160,7 +161,9 @@ impl Event {
             return Ok(updated_event.clone());
         }
 
-        self.id = create_id();
+        if !enforce_id {
+            self.id = create_id();
+        }
         self.event_version = (0, 0, 0);
         self.created_at = SystemTime::now();
         self.updated_at = SystemTime::now();

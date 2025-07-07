@@ -212,8 +212,8 @@ pub async fn upsert_app(
                 admin_role.insert(txn).await?;
 
                 let mut user_permission = RolePermissions::ReadTemplates;
-                user_permission.insert(RolePermissions::ExecuteReleases);
-                user_permission.insert(RolePermissions::ListReleases);
+                user_permission.insert(RolePermissions::ExecuteEvents);
+                user_permission.insert(RolePermissions::ListEvents);
 
                 let user_role = role::ActiveModel {
                     id: Set(create_id()),

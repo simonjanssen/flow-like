@@ -165,8 +165,15 @@ export default function Page() {
 									</Button>
 									<Button
 										onClick={async () => {
-											if(!id) return;
-											await backend.upsertBoard(id, createId(), boardCreation.name, boardCreation.description, ILogLevel.Debug, IExecutionStage.Dev);
+											if (!id) return;
+											await backend.upsertBoard(
+												id,
+												createId(),
+												boardCreation.name,
+												boardCreation.description,
+												ILogLevel.Debug,
+												IExecutionStage.Dev,
+											);
 											await Promise.allSettled([
 												await boards.refetch(),
 												await app.refetch(),
@@ -314,6 +321,7 @@ function Board({
 	app: IApp;
 	boardsQuery: UseQueryResult<IBoard[]>;
 }>) {
+	const backend = useBackend();
 	const router = useRouter();
 
 	return (
@@ -391,10 +399,7 @@ function Board({
 				<ContextMenuItem
 					disabled={(boardsQuery.data?.length ?? 2) <= 1}
 					onClick={async () => {
-						await invoke("delete_app_board", {
-							appId: app.id,
-							boardId: board.id,
-						});
+						await backend.deleteBoard(app.id, board.id);
 						await boardsQuery.refetch();
 					}}
 					className="bg-destructive text-destructive-foreground"

@@ -53,7 +53,8 @@ pub async fn upsert_meta(
         payload_model.thumbnail = existing_meta.thumbnail;
         payload_model.template_id = existing_meta.template_id;
 
-        let active_model: meta::ActiveModel = payload_model.into();
+        let mut active_model: meta::ActiveModel = payload_model.into();
+        active_model = active_model.reset_all();
 
         active_model.update(&state.db).await?;
         return Ok(Json(()));

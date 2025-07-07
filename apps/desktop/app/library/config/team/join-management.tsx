@@ -108,10 +108,7 @@ function RequestCard({
 	refresh,
 }: Readonly<{ appId: string; request: IJoinRequest; refresh: () => void }>) {
 	const backend = useBackend();
-	const user =
-		request.user_id === "user_987654321"
-			? { data: exampleUserData }
-			: useInvoke(backend.lookupUser, [request.user_id]);
+	const user = useInvoke(backend.lookupUser, [request.user_id]);
 	const userData = user.data;
 
 	const acceptRequest = useCallback(async () => {
@@ -238,7 +235,7 @@ function RequestCard({
 							</span>
 						</div>
 						<p className="text-sm text-muted-foreground leading-relaxed pl-3.5">
-							"{request.comment}"
+							&quot;{request.comment}&quot;
 						</p>
 					</div>
 				)}

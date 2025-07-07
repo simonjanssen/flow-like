@@ -470,9 +470,9 @@ export function InviteManagement({ appId }: Readonly<{ appId: string }>) {
 															Delete Invite Link
 														</AlertDialogTitle>
 														<AlertDialogDescription>
-															Are you sure you want to delete "{link.name}"?
-															This action cannot be undone and the link will no
-															longer work.
+															Are you sure you want to delete &quot;{link.name}
+															&quot;? This action cannot be undone and the link
+															will no longer work.
 														</AlertDialogDescription>
 													</AlertDialogHeader>
 													<AlertDialogFooter>

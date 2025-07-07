@@ -200,7 +200,7 @@ export function VisibilityStatusSwitcher({
 					Visibility Status
 				</CardTitle>
 				<CardDescription>
-					Control who can access your app and how it's shared.{" "}
+					Control who can access your app and how it&apos;s shared.{" "}
 					<a
 						href="https://docs.flow-like.com/guides/Apps/visibility/"
 						target="_blank"
