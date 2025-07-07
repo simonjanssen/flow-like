@@ -144,6 +144,11 @@ impl State {
         Ok(claims)
     }
 
+    #[tracing::instrument(
+        name = "scoped_credentials",
+        skip(self),
+        fields(sub, app_id, board_id, version)
+    )]
     pub async fn scoped_credentials(
         &self,
         sub: &str,
@@ -159,6 +164,11 @@ impl State {
         Ok(Arc::new(credentials))
     }
 
+    #[tracing::instrument(
+        name = "scoped_app",
+        skip(self, state),
+        fields(sub, app_id, board_id, version)
+    )]
     pub async fn scoped_app(
         &self,
         sub: &str,
@@ -173,6 +183,11 @@ impl State {
         Ok(app)
     }
 
+    #[tracing::instrument(
+        name = "scoped_board",
+        skip(self, state),
+        fields(sub, app_id, board_id, version)
+    )]
     pub async fn scoped_board(
         &self,
         sub: &str,
@@ -181,12 +196,30 @@ impl State {
         state: &AppState,
         version: Option<(u32, u32, u32)>,
     ) -> flow_like_types::Result<Board> {
+        let span = tracing::info_span!(
+            "scoped_board",
+            sub = %sub,
+            app_id = %app_id,
+            board_id = %board_id,
+            version = ?version
+        );
+        let _enter = span.enter();
+
+        tracing::info!("Getting scoped credentials...");
         let credentials = self.scoped_credentials(sub, app_id).await?;
+        tracing::info!("Got scoped credentials");
+
+        tracing::info!("Building app_state...");
         let app_state = Arc::new(Mutex::new(credentials.to_state(state.clone()).await?));
+        tracing::info!("Built app_state");
 
+        tracing::info!("Building storage_root...");
         let storage_root = Path::from("apps").child(app_id.to_string());
+        tracing::info!(?storage_root, "Built storage_root");
 
+        tracing::info!("Loading board...");
         let board = Board::load(storage_root, board_id, app_state, version).await?;
+        tracing::info!("Board loaded");
 
         Ok(board)
     }
