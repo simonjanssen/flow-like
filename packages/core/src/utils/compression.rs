@@ -52,8 +52,11 @@ where
     let read_span = tracing::info_span!("read_file");
     let _read_enter = read_span.enter();
     let reader = store.get(&file_path).await?;
-    let bytes = reader.bytes().await?;
     drop(_read_enter);
+    let bytes_span = tracing::info_span!("read_bytes");
+    let _bytes_enter = bytes_span.enter();
+    let bytes = reader.bytes().await?;
+    drop(_bytes_enter);
 
     let decompress_span = tracing::info_span!("decompress");
     let _decompress_enter = decompress_span.enter();
