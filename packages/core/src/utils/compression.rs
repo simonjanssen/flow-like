@@ -49,11 +49,22 @@ where
     let span = tracing::info_span!("from_compressed", file_path = %file_path);
     let _enter = span.enter();
 
+    let read_span = tracing::info_span!("read_file");
+    let _read_enter = read_span.enter();
     let reader = store.get(&file_path).await?;
     let bytes = reader.bytes().await?;
-    let data = decompress_size_prepended(&bytes)?;
+    drop(_read_enter);
 
+    let decompress_span = tracing::info_span!("decompress");
+    let _decompress_enter = decompress_span.enter();
+    let data = decompress_size_prepended(&bytes)?;
+    drop(_decompress_enter);
+
+    let decode_span = tracing::info_span!("decode_message");
+    let _decode_enter = decode_span.enter();
     let message = T::decode(&data[..])?;
+    drop(_decode_enter);
+
     Ok(message)
 }
 
