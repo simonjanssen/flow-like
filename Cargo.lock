@@ -4531,6 +4531,7 @@ name = "flow-like-desktop"
 version = "0.0.2"
 dependencies = [
  "anyhow",
+ "cocoa",
  "dirs-next",
  "flow-like",
  "flow-like-catalog",
