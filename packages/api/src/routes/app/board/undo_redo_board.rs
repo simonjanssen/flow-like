@@ -31,18 +31,14 @@ pub async fn undo_board(
     let permission = ensure_permission!(user, &app_id, &state, RolePermissions::WriteBoards);
     let sub = permission.sub()?;
 
-    let flow_state = state
-        .scoped_credentials(&sub, &app_id)
-        .await?
-        .to_state(state.clone())
+    let mut board = state
+        .master_board(&sub, &app_id, &board_id, &state, None)
         .await?;
 
-    let mut board = state
-        .scoped_board(&sub, &app_id, &board_id, &state, None)
-        .await?;
+    let flow_state = board.app_state.clone().ok_or(ApiError::Internal(anyhow!("No app state found for board").into()))?.clone();
 
     board
-        .undo(params.commands, Arc::new(Mutex::new(flow_state)))
+        .undo(params.commands, flow_state.clone())
         .await?;
     board.save(None).await?;
 
@@ -62,18 +58,14 @@ pub async fn redo_board(
     let permission = ensure_permission!(user, &app_id, &state, RolePermissions::WriteBoards);
     let sub = permission.sub()?;
 
-    let flow_state = state
-        .scoped_credentials(&sub, &app_id)
-        .await?
-        .to_state(state.clone())
+    let mut board = state
+        .master_board(&sub, &app_id, &board_id, &state, None)
         .await?;
 
-    let mut board = state
-        .scoped_board(&sub, &app_id, &board_id, &state, None)
-        .await?;
+    let flow_state = board.app_state.clone().ok_or(ApiError::Internal(anyhow!("No app state found for board").into()))?.clone();
 
     board
-        .undo(params.commands, Arc::new(Mutex::new(flow_state)))
+        .redo(params.commands, flow_state.clone())
         .await?;
     board.save(None).await?;
 
