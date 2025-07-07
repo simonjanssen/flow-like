@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{
     entity::{membership, pat, prelude::*, role, sea_orm_active_enums, technical_user, user},
     error::{ApiError, AuthorizationError},
@@ -52,7 +54,7 @@ pub enum AppUser {
 pub struct AppPermissionResponse {
     pub state: AppState,
     pub permissions: RolePermissions,
-    pub role: role::Model,
+    pub role: Arc<role::Model>,
     pub sub: Option<String>,
     pub identifier: String,
 }
@@ -171,6 +173,22 @@ impl AppUser {
     ) -> Result<AppPermissionResponse, ApiError> {
         let sub = self.sub();
         if let Ok(sub) = sub {
+            let cached_permission = state
+                .permission_cache
+                .get(&sub);
+
+            if let Some(role_model) = cached_permission {
+                let permissions = RolePermissions::from_bits(role_model.permissions)
+                    .ok_or_else(|| anyhow!("Invalid role permission bits"))?;
+                return Ok(AppPermissionResponse {
+                    state: state.clone(),
+                    permissions,
+                    role: role_model.clone(),
+                    sub: Some(sub.clone()),
+                    identifier: sub,
+                });
+            }
+
             let role_model = role::Entity::find()
                 .join(JoinType::InnerJoin, role::Relation::Membership.def())
                 .filter(
@@ -187,10 +205,15 @@ impl AppUser {
 
             let permissions = RolePermissions::from_bits(role_model.permissions)
                 .ok_or_else(|| anyhow!("Invalid role permission bits"))?;
+
+            state
+                .permission_cache
+                .insert(sub.clone(), Arc::new(role_model.clone()));
+
             return Ok(AppPermissionResponse {
                 state: state.clone(),
                 permissions,
-                role: role_model,
+                role: Arc::new(role_model),
                 sub: Some(sub.clone()),
                 identifier: sub,
             });
@@ -214,7 +237,7 @@ impl AppUser {
             return Ok(AppPermissionResponse {
                 state: state.clone(),
                 permissions,
-                role: role_model,
+                role: Arc::new(role_model),
                 sub: None,
                 identifier: api_key.key_id.clone(),
             });

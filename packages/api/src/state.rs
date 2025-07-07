@@ -26,6 +26,7 @@ use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use crate::credentials::RuntimeCredentials;
+use crate::entity::role;
 
 pub type AppState = Arc<State>;
 
@@ -43,6 +44,7 @@ pub struct State {
     pub catalog: Arc<Vec<Arc<dyn NodeLogic>>>,
     pub registry: Arc<FlowNodeRegistryInner>,
     pub provider: Arc<ModelProviderConfiguration>,
+    pub permission_cache: moka::sync::Cache<String, Arc<role::Model>>,
     pub credentials_cache: moka::sync::Cache<String, Arc<RuntimeCredentials>>,
     pub state_cache: moka::sync::Cache<String, Arc<Mutex<FlowLikeState>>>,
     pub cdn_bucket: Arc<FlowLikeStore>,
@@ -123,9 +125,13 @@ impl State {
             catalog,
             provider: Arc::new(provider),
             registry: Arc::new(registry),
+            permission_cache: moka::sync::Cache::builder()
+                .max_capacity(32 * 1024 * 1024)
+                .time_to_live(Duration::from_secs(120))
+                .build(),
             state_cache: moka::sync::Cache::builder()
                 .max_capacity(32 * 1024 * 1024) // 32 MB
-                .time_to_live(Duration::from_secs(30 * 60)) // 30 minutes
+                .time_to_live(Duration::from_secs(30 * 60))
                 .build(),
             credentials_cache: cache,
             cdn_bucket,
@@ -307,6 +313,30 @@ impl State {
         self.credentials_cache
             .insert("master".to_string(), credentials.clone());
         Ok(credentials)
+    }
+
+    pub fn check_permission(
+        &self,
+        sub: &str,
+        app_id: &str
+    ) -> Option<Arc<role::Model>> {
+        let key = format!("{}:{}", sub, app_id);
+        self.permission_cache.get(&key)
+    }
+
+    pub fn put_permission(
+        &self,
+        sub: &str,
+        app_id: &str,
+        role: Arc<role::Model>,
+    ) {
+        let key = format!("{}:{}", sub, app_id);
+        self.permission_cache.insert(key, role);
+    }
+
+    pub fn invalidate_permission(&self, sub: &str, app_id: &str) {
+        let key = format!("{}:{}", sub, app_id);
+        self.permission_cache.invalidate(&key);
     }
 
     pub fn get_cache<T>(&self, key: &str) -> Option<T>

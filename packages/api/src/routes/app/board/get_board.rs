@@ -38,7 +38,7 @@ pub async fn get_board(
     };
 
     let mut board = state
-        .scoped_board(&sub, &app_id, &board_id, &state, version_opt)
+        .master_board(&sub, &app_id, &board_id, &state, version_opt)
         .await?;
 
     board.variables.iter_mut().for_each(|(id, var)| {
