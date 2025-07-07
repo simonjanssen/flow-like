@@ -46,7 +46,7 @@ pub async fn execute_commands(
 
     tracing::info!("Loading board...");
     let mut board = state
-        .scoped_board(&sub, &app_id, &board_id, &state, None)
+        .master_board(&sub, &app_id, &board_id, &state, None)
         .await?;
     tracing::info!("Board loaded");
 

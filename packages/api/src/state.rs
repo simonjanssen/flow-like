@@ -44,6 +44,7 @@ pub struct State {
     pub registry: Arc<FlowNodeRegistryInner>,
     pub provider: Arc<ModelProviderConfiguration>,
     pub credentials_cache: moka::sync::Cache<String, Arc<RuntimeCredentials>>,
+    pub state_cache: moka::sync::Cache<String, Arc<Mutex<FlowLikeState>>>,
     pub cdn_bucket: Arc<FlowLikeStore>,
     pub response_cache: moka::sync::Cache<String, Value>,
 }
@@ -122,6 +123,10 @@ impl State {
             catalog,
             provider: Arc::new(provider),
             registry: Arc::new(registry),
+            state_cache: moka::sync::Cache::builder()
+                .max_capacity(32 * 1024 * 1024) // 32 MB
+                .time_to_live(Duration::from_secs(30 * 60)) // 30 minutes
+                .build(),
             credentials_cache: cache,
             cdn_bucket,
             response_cache,
@@ -211,6 +216,57 @@ impl State {
 
         tracing::info!("Building app_state...");
         let app_state = Arc::new(Mutex::new(credentials.to_state(state.clone()).await?));
+        tracing::info!("Built app_state");
+
+        tracing::info!("Building storage_root...");
+        let storage_root = Path::from("apps").child(app_id.to_string());
+        tracing::info!(?storage_root, "Built storage_root");
+
+        tracing::info!("Loading board...");
+        let board = Board::load(storage_root, board_id, app_state, version).await?;
+        tracing::info!("Board loaded");
+
+        Ok(board)
+    }
+
+     #[tracing::instrument(
+        name = "scoped_board",
+        skip(self, state),
+        fields(sub, app_id, board_id, version)
+    )]
+    pub async fn master_board(
+        &self,
+        sub: &str,
+        app_id: &str,
+        board_id: &str,
+        state: &AppState,
+        version: Option<(u32, u32, u32)>,
+    ) -> flow_like_types::Result<Board> {
+        let span = tracing::info_span!(
+            "scoped_board",
+            sub = %sub,
+            app_id = %app_id,
+            board_id = %board_id,
+            version = ?version
+        );
+        let _enter = span.enter();
+
+        tracing::info!("Getting scoped credentials...");
+        let credentials = self.master_credentials().await?;
+        tracing::info!("Got scoped credentials");
+
+        tracing::info!("Building app_state...");
+        let app_state = self.state_cache.get("master")
+            .map(|state| state.clone());
+
+        let app_state = match app_state {
+            Some(state) => state,
+            None => {
+                let state = Arc::new(Mutex::new(credentials.to_state(state.clone()).await?));
+                self.state_cache.insert("master".to_string(), state.clone());
+                state
+            }
+        };
         tracing::info!("Built app_state");
 
         tracing::info!("Building storage_root...");
