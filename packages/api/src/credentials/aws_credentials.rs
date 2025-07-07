@@ -176,122 +176,130 @@ impl AwsRuntimeCredentials {
 #[cfg(feature = "aws")]
 #[async_trait]
 impl RuntimeCredentialsTrait for AwsRuntimeCredentials {
-
     #[tracing::instrument(name = "AwsRuntimeCredentials::to_store", skip(self, meta), fields(meta = meta))]
     async fn to_store(&self, meta: bool) -> Result<FlowLikeStore> {
-        let mut builder = AmazonS3Builder::new()
-            .with_access_key_id(
-                self.access_key_id
-                    .clone()
-                    .ok_or(anyhow!("AWS_ACCESS_KEY_ID is not set"))?,
-            )
-            .with_secret_access_key(
-                self.secret_access_key
-                    .clone()
-                    .ok_or(anyhow!("AWS_SECRET_ACCESS_KEY is not set"))?,
-            )
-            .with_token(
-                self.session_token
-                    .clone()
-                    .ok_or(anyhow!("SESSION TOKEN is not set"))?,
-            )
-            .with_bucket_name(if meta {
-                &self.meta_bucket
-            } else {
-                &self.content_bucket
-            })
-            .with_region(&self.region);
+        use flow_like_types::tokio;
 
-        if meta {
-            builder = builder.with_s3_express(true);
-        }
+        let builder = {
+            let mut builder = AmazonS3Builder::new()
+                .with_access_key_id(
+                    self.access_key_id
+                        .clone()
+                        .ok_or(anyhow!("AWS_ACCESS_KEY_ID is not set"))?,
+                )
+                .with_secret_access_key(
+                    self.secret_access_key
+                        .clone()
+                        .ok_or(anyhow!("AWS_SECRET_ACCESS_KEY is not set"))?,
+                )
+                .with_token(
+                    self.session_token
+                        .clone()
+                        .ok_or(anyhow!("SESSION TOKEN is not set"))?,
+                )
+                .with_bucket_name(if meta {
+                    &self.meta_bucket
+                } else {
+                    &self.content_bucket
+                })
+                .with_region(&self.region);
 
-        let store = builder.build()?;
+            if meta {
+                builder = builder.with_s3_express(true);
+            }
+            builder
+        };
+
+        let store = tokio::task::spawn_blocking(move || builder.build())
+            .await
+            .map_err(|e| anyhow!("Failed to spawn blocking task: {}", e))??;
         Ok(FlowLikeStore::AWS(Arc::new(store)))
     }
 
     #[tracing::instrument(name = "AwsRuntimeCredentials::to_state", skip(self, state))]
-async fn to_state(&self, state: AppState) -> Result<FlowLikeState> {
-    let span = tracing::info_span!("to_state");
-    let _enter = span.enter();
-
-    // Parallelize meta_store, content_store, and http_client creation
-    let (meta_store, content_store, (http_client, _refetch_rx)) = {
-        use flow_like_types::tokio;
-
-        let span = tracing::info_span!("parallel_init");
+    async fn to_state(&self, state: AppState) -> Result<FlowLikeState> {
+        let span = tracing::info_span!("to_state");
         let _enter = span.enter();
-        tokio::join!(
-            async {
-                let span = tracing::info_span!("create_meta_store");
-                let _enter = span.enter();
-                self.to_store(true).await
-            },
-            async {
-                let span = tracing::info_span!("create_content_store");
-                let _enter = span.enter();
-                self.to_store(false).await
-            },
-            async {
-                let span = tracing::info_span!("create_http_client");
-                let _enter = span.enter();
-                HTTPClient::new()
-            }
-        )
-    };
 
-    // Unwrap results from join!
-    let meta_store = meta_store?;
-    let content_store = content_store?;
+        // Parallelize meta_store, content_store, and http_client creation
+        let (meta_store, content_store, (http_client, _refetch_rx)) = {
+            use flow_like_types::tokio;
 
-    let mut config = {
-        let span = tracing::info_span!("setup_config");
-        let _enter = span.enter();
-        let mut cfg = FlowLikeConfig::with_default_store(content_store);
-        cfg.register_app_meta_store(meta_store.clone());
-        cfg
-    };
+            let span = tracing::info_span!("parallel_init");
+            let _enter = span.enter();
+            tokio::join!(
+                async {
+                    let span = tracing::info_span!("create_meta_store");
+                    let _enter = span.enter();
+                    self.to_store(true).await
+                },
+                async {
+                    let span = tracing::info_span!("create_content_store");
+                    let _enter = span.enter();
+                    self.to_store(false).await
+                },
+                async {
+                    let span = tracing::info_span!("create_http_client");
+                    let _enter = span.enter();
+                    HTTPClient::new()
+                }
+            )
+        };
 
-    let (bkt, key, secret, token) = (
-        self.content_bucket.clone(),
-        self.access_key_id
-            .clone()
-            .ok_or(anyhow!("AWS_ACCESS_KEY_ID is not set"))?,
-        self.secret_access_key
-            .clone()
-            .ok_or(anyhow!("AWS_SECRET_ACCESS_KEY is not set"))?,
-        self.session_token
-            .clone()
-            .ok_or(anyhow!("SESSION_TOKEN is not set"))?,
-    );
+        // Unwrap results from join!
+        let meta_store = meta_store?;
+        let content_store = content_store?;
 
-    {
-        let span = tracing::info_span!("register_build_databases");
-        let _enter = span.enter();
-        config.register_build_logs_database(Arc::new(make_s3_builder(
-            bkt.clone(),
-            key.clone(),
-            secret.clone(),
-            token.clone(),
-        )));
-        config.register_build_project_database(Arc::new(make_s3_builder(bkt, key, secret, token)));
+        let mut config = {
+            let span = tracing::info_span!("setup_config");
+            let _enter = span.enter();
+            let mut cfg = FlowLikeConfig::with_default_store(content_store);
+            cfg.register_app_meta_store(meta_store.clone());
+            cfg
+        };
+
+        let (bkt, key, secret, token) = (
+            self.content_bucket.clone(),
+            self.access_key_id
+                .clone()
+                .ok_or(anyhow!("AWS_ACCESS_KEY_ID is not set"))?,
+            self.secret_access_key
+                .clone()
+                .ok_or(anyhow!("AWS_SECRET_ACCESS_KEY is not set"))?,
+            self.session_token
+                .clone()
+                .ok_or(anyhow!("SESSION_TOKEN is not set"))?,
+        );
+
+        {
+            let span = tracing::info_span!("register_build_databases");
+            let _enter = span.enter();
+            config.register_build_logs_database(Arc::new(make_s3_builder(
+                bkt.clone(),
+                key.clone(),
+                secret.clone(),
+                token.clone(),
+            )));
+            config.register_build_project_database(Arc::new(make_s3_builder(
+                bkt, key, secret, token,
+            )));
+        }
+
+        let mut flow_like_state = {
+            let span = tracing::info_span!("construct_flow_like_state");
+            let _enter = span.enter();
+            FlowLikeState::new(config, http_client)
+        };
+
+        {
+            let span = tracing::info_span!("finalize_state");
+            let _enter = span.enter();
+            flow_like_state.model_provider_config = state.provider.clone();
+            flow_like_state.node_registry.write().await.node_registry = state.registry.clone();
+        }
+
+        Ok(flow_like_state)
     }
-
-    let mut flow_like_state = {
-        let span = tracing::info_span!("construct_flow_like_state");
-        let _enter = span.enter();
-        FlowLikeState::new(config, http_client)
-    };
-
-    {
-        let span = tracing::info_span!("finalize_state");
-        let _enter = span.enter();
-        flow_like_state.model_provider_config = state.provider.clone();
-        flow_like_state.node_registry.write().await.node_registry = state.registry.clone();
-    }
-
-    Ok(flow_like_state)
-}
 }
 
 fn make_s3_builder(
