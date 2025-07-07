@@ -23,6 +23,7 @@ use std::{
     sync::{Arc, Weak},
     time::SystemTime,
 };
+use tracing::instrument;
 
 pub mod commands;
 
@@ -577,12 +578,16 @@ impl Board {
         Ok(version_list)
     }
 
+    #[instrument(skip(app_state))]
     pub async fn load(
         path: Path,
         id: &str,
         app_state: Arc<Mutex<FlowLikeState>>,
         version: Option<(u32, u32, u32)>,
     ) -> flow_like_types::Result<Self> {
+        let span = tracing::info_span!("Board::load", board_id = %id, ?version, board_path = %path);
+        let _enter = span.enter();
+
         let store = app_state
             .lock()
             .await
@@ -592,7 +597,10 @@ impl Board {
             .stores
             .app_meta_store
             .clone()
-            .ok_or(flow_like_types::anyhow!("Project store not found"))?
+            .ok_or_else(|| {
+                tracing::error!("Project store not found while loading board: id={}", id);
+                flow_like_types::anyhow!("Project store not found")
+            })?
             .as_generic();
 
         let board_dir = path.clone();
@@ -603,6 +611,8 @@ impl Board {
         } else {
             path.child(format!("{}.board", id))
         };
+
+        tracing::debug!("Loading board from path: {:?}", path);
 
         let board: flow_like_types::proto::Board = from_compressed(store, path).await?;
         let mut board = Board::from_proto(board);

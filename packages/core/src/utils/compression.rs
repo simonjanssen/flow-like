@@ -4,6 +4,7 @@ use flow_like_types::Message;
 use lz4_flex::{compress_prepend_size, decompress_size_prepended};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use tracing::instrument;
 use std::sync::Arc;
 
 ///Write a Serde Serializable Struct to compressed file using bitcode + lz4
@@ -37,6 +38,7 @@ where
 }
 
 /// Read from a compressed file and deserialize it into a Serde Deserializable Struct
+#[instrument(skip(store))]
 pub async fn from_compressed<T>(
     store: Arc<dyn ObjectStore>,
     file_path: Path,
@@ -44,6 +46,9 @@ pub async fn from_compressed<T>(
 where
     T: Message + Default,
 {
+    let span = tracing::info_span!("from_compressed", file_path = %file_path);
+    let _enter = span.enter();
+
     let reader = store.get(&file_path).await?;
     let bytes = reader.bytes().await?;
     let data = decompress_size_prepended(&bytes)?;

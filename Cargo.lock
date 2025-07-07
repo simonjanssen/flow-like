@@ -4461,6 +4461,7 @@ dependencies = [
  "strsim",
  "sysinfo 0.33.1",
  "tempfile",
+ "tracing",
  "url",
 ]
 

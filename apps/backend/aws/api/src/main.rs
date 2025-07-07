@@ -5,7 +5,7 @@ use lambda_http::{Error, run_with_streaming_response, tracing};
 use std::sync::Arc;
 use tracing_subscriber::prelude::*;
 
-#[flow_like_types::tokio::main(flavor = "current_thread")]
+#[flow_like_types::tokio::main]
 async fn main() -> Result<(), Error> {
     let sentry_endpoint = std::env::var("SENTRY_ENDPOINT").unwrap_or_default();
 

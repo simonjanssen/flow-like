@@ -30,7 +30,8 @@ pub async fn execute_commands(
     let permission = {
         let span = tracing::info_span!("ensure_permission");
         span.in_scope(|| tracing::info!("Ensuring permission"));
-        let permission = ensure_permission!(user, &app_id, &state, RolePermissions::WriteBoards);
+        let permission: crate::middleware::jwt::AppPermissionResponse = ensure_permission!(user, &app_id, &state, RolePermissions::WriteBoards);
+
         span.in_scope(|| tracing::info!("Permission ensured"));
         permission
     };
