@@ -176,6 +176,8 @@ impl AwsRuntimeCredentials {
 #[cfg(feature = "aws")]
 #[async_trait]
 impl RuntimeCredentialsTrait for AwsRuntimeCredentials {
+
+    #[tracing::instrument(name = "AwsRuntimeCredentials::to_store", skip(self, meta), fields(meta = meta))]
     async fn to_store(&self, meta: bool) -> Result<FlowLikeStore> {
         let mut builder = AmazonS3Builder::new()
             .with_access_key_id(
@@ -208,12 +210,29 @@ impl RuntimeCredentialsTrait for AwsRuntimeCredentials {
         Ok(FlowLikeStore::AWS(Arc::new(store)))
     }
 
+    #[tracing::instrument(name = "AwsRuntimeCredentials::to_state", skip(self, state))]
     async fn to_state(&self, state: AppState) -> Result<FlowLikeState> {
-        let meta_store = self.to_store(true).await?;
-        let content_store = self.to_store(false).await?;
+        let span = tracing::info_span!("to_state");
+        let _enter = span.enter();
 
-        let mut config = FlowLikeConfig::with_default_store(content_store);
-        config.register_app_meta_store(meta_store.clone());
+        let meta_store = {
+            let span = tracing::info_span!("create_meta_store");
+            let _enter = span.enter();
+            self.to_store(true).await?
+        };
+        let content_store = {
+            let span = tracing::info_span!("create_content_store");
+            let _enter = span.enter();
+            self.to_store(false).await?
+        };
+
+        let mut config = {
+            let span = tracing::info_span!("setup_config");
+            let _enter = span.enter();
+            let mut cfg = FlowLikeConfig::with_default_store(content_store);
+            cfg.register_app_meta_store(meta_store.clone());
+            cfg
+        };
 
         let (bkt, key, secret, token) = (
             self.content_bucket.clone(),
@@ -228,18 +247,37 @@ impl RuntimeCredentialsTrait for AwsRuntimeCredentials {
                 .ok_or(anyhow!("SESSION_TOKEN is not set"))?,
         );
 
-        config.register_build_logs_database(Arc::new(make_s3_builder(
-            bkt.clone(),
-            key.clone(),
-            secret.clone(),
-            token.clone(),
-        )));
-        config.register_build_project_database(Arc::new(make_s3_builder(bkt, key, secret, token)));
+        {
+            let span = tracing::info_span!("register_build_databases");
+            let _enter = span.enter();
+            config.register_build_logs_database(Arc::new(make_s3_builder(
+                bkt.clone(),
+                key.clone(),
+                secret.clone(),
+                token.clone(),
+            )));
+            config.register_build_project_database(Arc::new(make_s3_builder(bkt, key, secret, token)));
+        }
 
-        let (http_client, _refetch_rx) = HTTPClient::new();
-        let mut flow_like_state = FlowLikeState::new(config, http_client);
-        flow_like_state.model_provider_config = state.provider.clone();
-        flow_like_state.node_registry.write().await.node_registry = state.registry.clone();
+        let (http_client, _refetch_rx) = {
+            let span = tracing::info_span!("create_http_client");
+            let _enter = span.enter();
+            HTTPClient::new()
+        };
+
+        let mut flow_like_state = {
+            let span = tracing::info_span!("construct_flow_like_state");
+            let _enter = span.enter();
+            FlowLikeState::new(config, http_client)
+        };
+
+        {
+            let span = tracing::info_span!("finalize_state");
+            let _enter = span.enter();
+            flow_like_state.model_provider_config = state.provider.clone();
+            flow_like_state.node_registry.write().await.node_registry = state.registry.clone();
+        }
+
         Ok(flow_like_state)
     }
 }
