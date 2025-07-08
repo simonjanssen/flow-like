@@ -37,26 +37,21 @@ import { useLiveQuery } from "dexie-react-hooks";
 import {
 	CableIcon,
 	ChartAreaIcon,
-	CircleUserIcon,
-	CloudAlertIcon,
 	CogIcon,
+	CopyIcon,
 	CrownIcon,
 	DatabaseIcon,
-	FlaskConicalIcon,
-	FolderArchiveIcon,
 	FolderClosedIcon,
 	GlobeIcon,
-	GlobeLockIcon,
 	LayoutGridIcon,
 	Maximize2Icon,
 	Minimize2Icon,
 	PlayCircleIcon,
-	Share2Icon,
 	SparklesIcon,
 	SquarePenIcon,
 	UsersRoundIcon,
 	WorkflowIcon,
-	ZapIcon,
+	ZapIcon
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -82,6 +77,12 @@ const navigationItems = [
 		label: "Flows",
 		icon: WorkflowIcon,
 		description: "Business logic and workflow definitions",
+	},
+	{
+		href: "/library/config/templates",
+		label: "Templates",
+		icon: CopyIcon,
+		description: "Reusable Flow templates",
 	},
 	{
 		href: "/library/config/events",
