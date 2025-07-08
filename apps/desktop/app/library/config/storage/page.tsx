@@ -1,28 +1,13 @@
 "use client";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
-import { writeText } from "@tauri-apps/plugin-clipboard-manager";
-import {
-	IStorageItem,
-	StorageSystem,
-	useBackend,
-	useInvoke,
-} from "@tm9657/flow-like-ui";
+import { StorageSystem } from "@tm9657/flow-like-ui";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
-import { toast } from "sonner";
-import { useTauriInvoke } from "../../../../components/useInvoke";
 
 export default function Page() {
-	const backend = useBackend();
 	const searchParams = useSearchParams();
 	const id = searchParams.get("id");
 	const prefix = searchParams.get("prefix") ?? "";
-	const files = useInvoke(
-		backend.storageState.listStorageItems,
-		backend.storageState,
-		[id!, prefix],
-		typeof id === "string",
-	);
 	const router = useRouter();
 
 	const fileToUrl = useCallback(
@@ -32,41 +17,6 @@ export default function Page() {
 				prefix: file.split("/").slice(3).join("/"),
 			});
 			return convertFileSrc(url);
-		},
-		[id],
-	);
-
-	const uploadFile = useCallback(
-		async (file: string, folder: boolean) => {
-			await invoke<string>("storage_add", {
-				appId: id,
-				prefix: file,
-				folder,
-			});
-			await files.refetch();
-		},
-		[id],
-	);
-
-	const deleteFile = useCallback(
-		async (file: string) => {
-			await invoke<string>("storage_remove", {
-				appId: id,
-				prefix: file,
-			});
-			await files.refetch();
-		},
-		[id],
-	);
-
-	const shareFile = useCallback(
-		async (file: string) => {
-			const url = await invoke<string>("storage_get", {
-				appId: id,
-				prefix: file,
-			});
-			writeText(url);
-			toast.success("Copied to clipboard");
 		},
 		[id],
 	);

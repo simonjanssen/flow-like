@@ -11,26 +11,17 @@ import {
 	CollapsibleContent,
 	CollapsibleTrigger,
 	type IBoard,
-	IValueType,
 	type IVariable,
-	type IVariableType,
-	Label,
 	Separator,
 	VariableConfigCard,
-	VariablesMenuEdit,
 	upsertVariableCommand,
 	useBackend,
 	useInvalidateInvoke,
 	useInvoke,
 } from "@tm9657/flow-like-ui";
-import { typeToColor } from "@tm9657/flow-like-ui/components/flow/utils";
-import { parseUint8ArrayToJson } from "@tm9657/flow-like-ui/lib/uint8";
 import {
 	ChevronDownIcon,
 	ChevronRightIcon,
-	EllipsisVerticalIcon,
-	GripIcon,
-	ListIcon,
 	SettingsIcon,
 	WorkflowIcon,
 } from "lucide-react";

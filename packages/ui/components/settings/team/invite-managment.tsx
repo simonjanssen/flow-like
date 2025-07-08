@@ -1,5 +1,28 @@
 "use client";
 
+import { useDebounce } from "@uidotdev/usehooks";
+import {
+	Clock,
+	Copy,
+	Link,
+	LinkIcon,
+	Mail,
+	MailIcon,
+	MoreVertical,
+	Plus,
+	RefreshCw,
+	Settings,
+	Trash2,
+	User,
+	UserCheck,
+	UserPlus,
+	UserPlus2Icon,
+	UserX,
+	Users,
+	UsersIcon,
+} from "lucide-react";
+import { useCallback, useState } from "react";
+import { toast } from "sonner";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -13,7 +36,6 @@ import {
 	Avatar,
 	AvatarFallback,
 	AvatarImage,
-	Badge,
 	Button,
 	Card,
 	CardContent,
@@ -32,52 +54,14 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 	EmptyState,
-	IHub,
-	IInvite,
 	Input,
 	Label,
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
 	Separator,
-	Tabs,
-	TabsContent,
-	TabsList,
-	TabsTrigger,
 	Textarea,
 	useBackend,
 	useHub,
 	useInvoke,
-} from "@tm9657/flow-like-ui";
-import { useDebounce } from "@uidotdev/usehooks";
-import {
-	Check,
-	Clock,
-	Copy,
-	Crown,
-	Link,
-	LinkIcon,
-	Mail,
-	MailIcon,
-	MoreVertical,
-	Plus,
-	RefreshCw,
-	Settings,
-	Shield,
-	Trash2,
-	User,
-	UserCheck,
-	UserPlus,
-	UserPlus2Icon,
-	UserX,
-	Users,
-	UsersIcon,
-	X,
-} from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
+} from "../../../";
 
 export function InviteManagement({ appId }: Readonly<{ appId: string }>) {
 	const backend = useBackend();
@@ -91,7 +75,7 @@ export function InviteManagement({ appId }: Readonly<{ appId: string }>) {
 	const [showCreateLinkDialog, setShowCreateLinkDialog] = useState(false);
 	const [newLinkName, setNewLinkName] = useState("");
 	const [newLinkMaxUses, setNewLinkMaxUses] = useState<string>("");
-	const { hub, refetch } = useHub();
+	const { hub } = useHub();
 
 	const userSearch = useInvoke(
 		backend.userState.searchUsers,
@@ -267,6 +251,7 @@ export function InviteManagement({ appId }: Readonly<{ appId: string }>) {
 																			setInvitee("");
 																			setMessage("");
 																		} catch (error) {
+																			console.error(error);
 																			toast.error(
 																				`Failed to send invite. Please try again.`,
 																			);

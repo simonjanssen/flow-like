@@ -1,6 +1,7 @@
 "use client";
 
 import { createId } from "@paralleldrive/cuid2";
+import { useCallback, useEffect, useState } from "react";
 import {
 	Badge,
 	Button,
@@ -16,9 +17,8 @@ import {
 	ScrollArea,
 	Switch,
 	Textarea,
-} from "@tm9657/flow-like-ui";
-import { RolePermissions } from "@tm9657/flow-like-ui";
-import { useCallback, useEffect, useState } from "react";
+} from "../../../";
+import { RolePermissions } from "../../../lib";
 
 interface RoleDialogProps {
 	open: boolean;

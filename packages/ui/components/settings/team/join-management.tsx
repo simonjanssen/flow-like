@@ -1,5 +1,8 @@
 "use client";
 
+import { Check, Clock, UserCheck, X } from "lucide-react";
+import { useCallback } from "react";
+import { toast } from "sonner";
 import {
 	Avatar,
 	AvatarFallback,
@@ -15,29 +18,7 @@ import {
 	useBackend,
 	useInfiniteInvoke,
 	useInvoke,
-} from "@tm9657/flow-like-ui";
-import { Check, Clock, UserCheck, X } from "lucide-react";
-import { useCallback } from "react";
-import { toast } from "sonner";
-
-const exampleRequest: IJoinRequest = {
-	id: "req_123456789",
-	user_id: "user_987654321",
-	created_at: "2025-07-03T10:30:00Z",
-	app_id: "app_123456789",
-	updated_at: "2025-07-03T10:30:00Z",
-	comment:
-		"Hi! I'd love to join your team. I'm a frontend developer with 3 years of experience in React and TypeScript. I've been following your project and would be excited to contribute!",
-};
-
-const exampleUserData = {
-	id: "user_987654321",
-	username: "johndoe",
-	name: "John Doe",
-	email: "john.doe@example.com",
-	avatar_url:
-		"https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-};
+} from "../../../";
 
 export function TeamJoinManagement({ appId }: Readonly<{ appId: string }>) {
 	const backend = useBackend();

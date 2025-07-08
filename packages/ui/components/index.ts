@@ -5,3 +5,4 @@ export * from "./ui/index";
 export * from "./verification-dialog";
 export * from "./storage/index";
 export * from "./interfaces/index";
+export * from "./settings/index";

@@ -219,15 +219,16 @@ export class Bit implements IBit {
 			console.groupEnd();
 			const totalProgress = new Download(this.toObject(), dependencies.bits);
 
-			const download: undefined | IBit[] = await this.backend?.bitState?.downloadBit(
-				this.toObject(),
-				dependencies.toObject(),
-				(progress) => {
-					const lastElement = progress.pop();
-					if (lastElement) totalProgress.push(lastElement);
-					if (cb) cb(totalProgress);
-				},
-			);
+			const download: undefined | IBit[] =
+				await this.backend?.bitState?.downloadBit(
+					this.toObject(),
+					dependencies.toObject(),
+					(progress) => {
+						const lastElement = progress.pop();
+						if (lastElement) totalProgress.push(lastElement);
+						if (cb) cb(totalProgress);
+					},
+				);
 
 			if (!download) {
 				throw new Error("No dependencies found");

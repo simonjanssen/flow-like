@@ -1,5 +1,6 @@
 "use client";
 
+import { Filter, Grid3X3, List, Search, X } from "lucide-react";
 import {
 	Badge,
 	Button,
@@ -9,8 +10,7 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@tm9657/flow-like-ui";
-import { Filter, Grid3X3, List, Search, X } from "lucide-react";
+} from "../../../";
 
 interface RoleFiltersProps {
 	searchTerm: string;
