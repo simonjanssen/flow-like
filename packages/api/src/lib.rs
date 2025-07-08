@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 
 use axum::{Json, Router, middleware::from_fn_with_state, routing::get};
 use error::InternalError;
@@ -10,7 +10,6 @@ use tower_http::{
     compression::{CompressionLayer, DefaultPredicate, Predicate, predicate::NotForContentType},
     cors::CorsLayer,
     decompression::RequestDecompressionLayer,
-    timeout::TimeoutLayer,
 };
 
 pub mod entity;

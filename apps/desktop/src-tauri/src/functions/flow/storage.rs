@@ -5,7 +5,7 @@ use flow_like::{
     flow_like_storage::{
         Path,
         files::store::{FlowLikeStore, StorageItem},
-        object_store::{MultipartUpload, ObjectMeta, PutPayload},
+        object_store::{MultipartUpload, PutPayload},
     },
     utils::storage::construct_storage,
 };
@@ -14,9 +14,7 @@ use flow_like_types::{
     tokio::io::{AsyncReadExt, BufReader},
 };
 use futures::{StreamExt, TryStreamExt};
-use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, ipc::Channel};
-use tauri_plugin_dialog::DialogExt;
+use tauri::AppHandle;
 
 use crate::{functions::TauriFunctionError, state::TauriFlowLikeState};
 
@@ -136,7 +134,7 @@ pub async fn storage_remove(
 ) -> Result<(), TauriFunctionError> {
     let state = TauriFlowLikeState::construct(&app_handle).await?;
     for prefix in prefixes.iter() {
-        let (store, path) = construct_storage(&state, &app_id, &prefix, false).await?;
+        let (store, path) = construct_storage(&state, &app_id, prefix, false).await?;
         let generic = store.as_generic();
         let locations = generic.list(Some(&path)).map_ok(|m| m.location).boxed();
         generic
@@ -193,7 +191,7 @@ pub async fn storage_get(
     let mut urls = Vec::with_capacity(prefixes.len());
 
     for prefix in prefixes.iter() {
-        let (store, path) = construct_storage(&state, &app_id, &prefix, false).await?;
+        let (store, path) = construct_storage(&state, &app_id, prefix, false).await?;
         let signed_url = match store
             .sign("GET", &path, Duration::from_secs(60 * 60 * 24))
             .await
@@ -221,7 +219,7 @@ pub async fn storage_get(
             "url": signed_url.to_string(),
         }));
     }
-    return Ok(urls);
+    Ok(urls)
 }
 
 #[tauri::command(async)]

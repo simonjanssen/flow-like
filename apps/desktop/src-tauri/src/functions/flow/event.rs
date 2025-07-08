@@ -20,7 +20,7 @@ pub async fn get_event(
         return Ok(event);
     }
 
-    return Err(TauriFunctionError::new("Event not found"));
+    Err(TauriFunctionError::new("Event not found"))
 }
 
 #[tauri::command(async)]
@@ -36,7 +36,7 @@ pub async fn get_event_versions(
         return Ok(versions);
     }
 
-    return Err(TauriFunctionError::new("Event not found"));
+    Err(TauriFunctionError::new("Event not found"))
 }
 
 #[tauri::command(async)]

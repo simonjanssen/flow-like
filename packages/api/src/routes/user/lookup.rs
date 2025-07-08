@@ -5,7 +5,6 @@ use axum::{
 };
 use flow_like::hub::Lookup;
 use flow_like_types::Value;
-use flow_like_types::anyhow;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QuerySelect, sqlx::types::chrono};
 use serde::{Deserialize, Serialize};
 
@@ -25,17 +24,17 @@ impl UserLookupResponse {
     fn parse(user: user::Model, lookup_config: Lookup) -> Self {
         UserLookupResponse {
             id: user.id,
-            email: lookup_config.email.then(|| user.email).flatten(),
-            username: lookup_config.username.then(|| user.username).flatten(),
-            name: lookup_config.name.then(|| user.name).flatten(),
-            avatar_url: lookup_config.avatar.then(|| user.avatar_url).flatten(),
+            email: lookup_config.email.then_some(user.email).flatten(),
+            username: lookup_config.username.then_some(user.username).flatten(),
+            name: lookup_config.name.then_some(user.name).flatten(),
+            avatar_url: lookup_config.avatar.then_some(user.avatar_url).flatten(),
             additional_information: lookup_config
                 .additional_information
-                .then(|| user.additional_information)
+                .then_some(user.additional_information)
                 .flatten(),
             description: lookup_config
                 .description
-                .then(|| user.description)
+                .then_some(user.description)
                 .flatten(),
             created_at: lookup_config.created_at.then_some(user.created_at),
         }

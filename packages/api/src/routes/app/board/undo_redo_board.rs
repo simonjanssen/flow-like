@@ -1,16 +1,13 @@
-use std::sync::Arc;
-
 use crate::{
     ensure_permission, error::ApiError, middleware::jwt::AppUser,
-    permission::role_permission::RolePermissions,
-    routes::app::template::get_template::VersionQuery, state::AppState,
+    permission::role_permission::RolePermissions, state::AppState,
 };
 use axum::{
     Extension, Json,
-    extract::{Path, Query, State},
+    extract::{Path, State},
 };
-use flow_like::flow::board::{Board, commands::GenericCommand};
-use flow_like_types::{anyhow, sync::Mutex};
+use flow_like::flow::board::commands::GenericCommand;
+use flow_like_types::anyhow;
 use serde::Deserialize;
 
 #[derive(Clone, Deserialize)]

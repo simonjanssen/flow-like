@@ -8,7 +8,7 @@ pub mod validate_event;
 
 use axum::{
     Router,
-    routing::{get, patch, post, put},
+    routing::{get, post, put},
 };
 
 use crate::state::AppState;

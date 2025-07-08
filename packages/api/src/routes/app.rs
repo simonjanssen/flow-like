@@ -49,7 +49,7 @@ macro_rules! ensure_permission {
         if !sub.has_permission($perm) {
             let user_id = sub.sub()?;
             $state.invalidate_permission(&user_id, $app_id);
-            return Err(crate::error::ApiError::Forbidden);
+            return Err($crate::error::ApiError::Forbidden);
         }
         sub
     }};
@@ -69,7 +69,7 @@ macro_rules! ensure_permissions {
         let sub = $user.app_permission($app_id, $state).await?;
         for perm in $perms.iter() {
             if !sub.has_permission(perm) {
-                return Err(crate::error::ApiError::Forbidden);
+                return Err($crate::error::ApiError::Forbidden);
             }
         }
         sub

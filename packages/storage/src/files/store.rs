@@ -83,7 +83,7 @@ impl FlowLikeStore {
         let prefix_parts: Vec<&str> = prefix.split('/').filter(|s| !s.is_empty()).collect();
 
         for (index, prefix) in prefix_parts.iter().enumerate() {
-            if construct_dirs && (prefix_parts.len() > 0) && (index < prefix_parts.len() - 1) {
+            if construct_dirs && (!prefix_parts.is_empty()) && (index < prefix_parts.len() - 1) {
                 let dir_marker = base_path.child(format!("_{}_._path", prefix));
                 let exists = self.as_generic().head(&dir_marker).await;
                 if exists.is_err() {

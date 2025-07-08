@@ -24,7 +24,7 @@ pub async fn get_template(
         return Ok(template);
     }
 
-    return Err(TauriFunctionError::new("Event not found"));
+    Err(TauriFunctionError::new("Event not found"))
 }
 
 #[tauri::command(async)]
@@ -40,7 +40,7 @@ pub async fn get_template_versions(
         return Ok(event);
     }
 
-    return Err(TauriFunctionError::new("Event not found"));
+    Err(TauriFunctionError::new("Event not found"))
 }
 
 /// Fetches all the templates for a given app.

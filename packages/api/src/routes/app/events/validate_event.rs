@@ -6,10 +6,6 @@ use axum::{
     Extension, Json,
     extract::{Path, Query, State},
 };
-use flow_like::flow::{
-    board::{Board, VersionType},
-    event::Event,
-};
 use flow_like_types::anyhow;
 use serde::Deserialize;
 
@@ -49,8 +45,8 @@ pub async fn validate_event(
         None
     };
 
-    let mut app = state.scoped_app(&sub, &app_id, &state).await?;
-    let event = app.validate_event(&event_id, version_opt).await?;
+    let app = state.scoped_app(&sub, &app_id, &state).await?;
+    app.validate_event(&event_id, version_opt).await?;
 
     Ok(Json(()))
 }

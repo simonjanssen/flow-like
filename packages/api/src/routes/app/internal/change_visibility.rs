@@ -1,28 +1,22 @@
 use crate::{
     ensure_permission,
     entity::{
-        app, membership, meta, publication_log, publication_request, role,
-        sea_orm_active_enums::{Status, Visibility},
+        app, membership, publication_log, publication_request, sea_orm_active_enums::Visibility,
     },
     error::ApiError,
     middleware::jwt::AppUser,
     permission::role_permission::RolePermissions,
-    routes::LanguageParams,
     state::AppState,
 };
 use axum::{
     Extension, Json,
-    extract::{Path, Query, State},
-};
-use flow_like::{
-    app::{App, AppVisibility},
-    bit::Metadata,
+    extract::{Path, State},
 };
 use flow_like_types::create_id;
 use sea_orm::{
     ActiveModelTrait,
     ActiveValue::{NotSet, Set},
-    ColumnTrait, DbErr, EntityTrait, IntoActiveModel, QueryFilter, TransactionTrait,
+    ColumnTrait, EntityTrait, IntoActiveModel, QueryFilter, TransactionTrait,
 };
 use serde::{Deserialize, Serialize};
 
@@ -133,7 +127,7 @@ pub async fn change_visibility(
             id: Set(create_id()),
             author_id: Set(Some(sub.clone())),
             request_id: Set(request.id),
-            message: Set(Some(format!("Request initiated"))),
+            message: Set(Some("Request initiated".to_string())),
             visibility: Set(Some(old_visibility)),
             created_at: Set(chrono::Utc::now().naive_utc()),
             updated_at: Set(chrono::Utc::now().naive_utc()),

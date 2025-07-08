@@ -4,13 +4,9 @@ use crate::{
 };
 use axum::{
     Extension, Json,
-    extract::{Path, Query, State},
+    extract::{Path, State},
 };
-use flow_like::flow::{
-    board::{Board, VersionType},
-    event::Event,
-};
-use flow_like_types::anyhow;
+use flow_like::flow::{board::VersionType, event::Event};
 use serde::Deserialize;
 
 #[derive(Deserialize)]

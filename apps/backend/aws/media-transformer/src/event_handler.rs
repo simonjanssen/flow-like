@@ -137,7 +137,7 @@ async fn process_single_record(
         }
     }
 
-    let extension = key.split('.').last().unwrap_or("");
+    let extension = key.split('.').next_back().unwrap_or("");
 
     if !is_supported_image_format(extension) {
         if is_video_format(extension) {

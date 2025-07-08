@@ -117,7 +117,7 @@ pub async fn upsert_board(
     template: Option<String>,
     board_data: Option<Board>,
 ) -> Result<(), TauriFunctionError> {
-    let board_id = board_id.unwrap_or_else(|| create_id());
+    let board_id = board_id.unwrap_or_else(create_id);
     let flow_like_state = TauriFlowLikeState::construct(&app_handle).await?;
     let mut app = App::load(app_id, flow_like_state).await?;
 
@@ -176,13 +176,9 @@ pub async fn upsert_board(
         return Ok(());
     }
 
-    if app.boards.len() == 0 && template == Some("blank".to_string()) {
+    if app.boards.is_empty() && template == Some("blank".to_string()) {
         println!("Creating blank templated board: {}", board_id);
-        let bits_map = app
-            .bits
-            .iter()
-            .map(|b| b.clone())
-            .collect::<HashSet<String>>();
+        let bits_map = app.bits.iter().cloned().collect::<HashSet<String>>();
         let board = app.create_board(Some(board_id)).await?;
         let board = app.open_board(board, Some(false), None).await?;
         let mut variable = Variable::new(
@@ -335,7 +331,7 @@ pub async fn delete_app(app_handle: AppHandle, app_id: String) -> Result<(), Tau
     let mut settings = settings.lock().await;
     for profile in settings.profiles.values_mut() {
         if let Some(apps) = &mut profile.hub_profile.apps {
-            apps.retain(|app| &app.app_id != &app_id);
+            apps.retain(|app| app.app_id != app_id);
         }
     }
     settings.serialize();

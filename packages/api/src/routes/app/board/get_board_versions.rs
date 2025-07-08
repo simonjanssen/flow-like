@@ -4,10 +4,8 @@ use crate::{
 };
 use axum::{
     Extension, Json,
-    extract::{Path, Query, State},
+    extract::{Path, State},
 };
-use flow_like::flow::board::VersionType;
-use serde::Deserialize;
 
 #[tracing::instrument(
     name = "GET /apps/{app_id}/board/{board_id}/version",

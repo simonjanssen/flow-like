@@ -1,14 +1,11 @@
 use crate::{
     ensure_permission, error::ApiError, middleware::jwt::AppUser,
-    permission::role_permission::RolePermissions,
-    routes::app::template::get_template::VersionQuery, state::AppState,
+    permission::role_permission::RolePermissions, state::AppState,
 };
 use axum::{
     Extension, Json,
-    extract::{Path, Query, State},
+    extract::{Path, State},
 };
-use flow_like::flow::board::Board;
-use flow_like_types::anyhow;
 
 #[tracing::instrument(
     name = "GET /apps/{app_id}/events/{event_id}/versions",
@@ -22,7 +19,7 @@ pub async fn get_event_versions(
     let permission = ensure_permission!(user, &app_id, &state, RolePermissions::WriteEvents);
     let sub = permission.sub()?;
 
-    let mut app = state.scoped_app(&sub, &app_id, &state).await?;
+    let app = state.scoped_app(&sub, &app_id, &state).await?;
     let versions = app.get_event_versions(&event_id).await?;
 
     Ok(Json(versions))

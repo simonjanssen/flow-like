@@ -71,10 +71,7 @@ async fn parse_messages(history: &History) -> Vec<HistoryMessage> {
                         Ok(url) => {
                             new_content.push(Content::Image {
                                 content_type: ContentType::ImageUrl,
-                                image_url: ImageUrl {
-                                    url: url,
-                                    detail: None,
-                                },
+                                image_url: ImageUrl { url, detail: None },
                             });
                         }
                         Err(e) => {

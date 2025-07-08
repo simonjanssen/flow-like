@@ -1,21 +1,17 @@
 use crate::{
-    ensure_in_project, ensure_permission,
-    entity::{app, invite_link, membership, meta, role, sea_orm_active_enums::Visibility},
+    entity::{app, invite_link, membership, sea_orm_active_enums::Visibility},
     error::ApiError,
     middleware::jwt::AppUser,
-    permission::role_permission::RolePermissions,
-    routes::LanguageParams,
     state::AppState,
 };
 use axum::{
     Extension, Json,
-    extract::{Path, Query, State},
+    extract::{Path, State},
 };
-use flow_like::{app::App, bit::Metadata};
-use flow_like_types::{anyhow, bail, create_id};
+use flow_like_types::create_id;
 use sea_orm::{
-    ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, JoinType, PaginatorTrait,
-    QueryFilter, QueryOrder, QuerySelect, RelationTrait, TransactionTrait, prelude::Expr,
+    ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter,
+    TransactionTrait,
 };
 
 #[tracing::instrument(name = "POST /apps/{app_id}/team/link/join/{token}", skip(state, user))]
@@ -60,7 +56,7 @@ pub async fn join_invite_link(
             ApiError::NotFound
         })?;
 
-    let current_count = invite_link.count_joined.clone();
+    let current_count = invite_link.count_joined;
     let max_uses = invite_link.max_uses;
 
     if max_uses > 0 && current_count >= max_uses {

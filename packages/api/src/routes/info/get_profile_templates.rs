@@ -1,13 +1,7 @@
-use crate::{
-    entity::{profile, template_profile},
-    error::ApiError,
-    middleware::jwt::AppUser,
-    state::AppState,
-};
+use crate::{entity::template_profile, error::ApiError, middleware::jwt::AppUser, state::AppState};
 use axum::{Extension, Json, extract::State};
 use flow_like::profile::{Profile, Settings};
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
-use serde_json::from_value;
+use sea_orm::EntityTrait;
 
 #[tracing::instrument(name = "GET /info/profiles", skip(state, user))]
 pub async fn get_profile_templates(

@@ -4,10 +4,9 @@ use crate::{
 };
 use axum::{
     Extension, Json,
-    extract::{Path, Query, State},
+    extract::{Path, State},
 };
-use flow_like::flow::{board::Board, event::Event};
-use flow_like_types::{Value, anyhow, create_id};
+use flow_like_types::{Value, create_id};
 use sea_orm::{
     ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, IntoActiveModel, QueryFilter,
     TransactionTrait,

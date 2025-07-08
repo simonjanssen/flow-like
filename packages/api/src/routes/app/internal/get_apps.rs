@@ -44,7 +44,7 @@ pub async fn get_apps(
             let metadata = meta_models
                 .iter()
                 .find(|meta| meta.lang == language)
-                .or_else(|| meta_models.iter().next())
+                .or_else(|| meta_models.first())
                 .map(|meta| Metadata::from(meta.clone()));
 
             (App::from(app_model), metadata)

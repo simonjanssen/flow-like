@@ -4,12 +4,9 @@ use flow_like_types::Cacheable;
 use flow_like_types::async_trait;
 use flow_like_types::{Result, Value, anyhow};
 use futures::TryStreamExt;
-use lancedb::arrow::IntoPolars;
-use lancedb::arrow::SendableRecordBatchStreamExt;
 use lancedb::index::scalar::BTreeIndexBuilder;
 use lancedb::index::scalar::BitmapIndexBuilder;
 use lancedb::index::scalar::LabelListIndexBuilder;
-use lancedb::query;
 use lancedb::query::QueryExecutionOptions;
 use lancedb::{
     Connection, Table, connect,
@@ -20,7 +17,6 @@ use lancedb::{
     query::{ExecutableQuery, QueryBase},
     table::{CompactionOptions, Duration, OptimizeOptions},
 };
-use polars::frame::DataFrame;
 
 use std::{any::Any, path::PathBuf, sync::Arc};
 
@@ -86,7 +82,7 @@ impl LanceDBVectorStore {
         sql: &str,
     ) -> Result<datafusion::dataframe::DataFrame> {
         let table = self.to_datafusion().await?;
-        let mut ctx = SessionContext::new();
+        let ctx = SessionContext::new();
         ctx.register_table(table_name, Arc::new(table))?;
         let results = ctx.sql(sql).await?;
 

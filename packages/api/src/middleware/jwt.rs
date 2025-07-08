@@ -19,7 +19,6 @@ use sea_orm::{
     ColumnTrait, EntityTrait, JoinType, QueryFilter, QuerySelect, RelationTrait,
     sqlx::types::chrono,
 };
-use serde::{Deserialize, Serialize};
 
 use crate::state::AppState;
 

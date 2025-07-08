@@ -1,9 +1,8 @@
 use crate::{
-    ensure_in_project, ensure_permission,
-    entity::{app, membership, meta},
+    ensure_in_project,
+    entity::{app, meta},
     error::ApiError,
     middleware::jwt::AppUser,
-    permission::role_permission::RolePermissions,
     routes::LanguageParams,
     state::AppState,
 };
@@ -11,11 +10,9 @@ use axum::{
     Extension, Json,
     extract::{Path, Query, State},
 };
-use flow_like::{app::App, bit::Metadata};
-use flow_like_types::{anyhow, bail};
-use sea_orm::{
-    ColumnTrait, EntityTrait, JoinType, QueryFilter, QueryOrder, QuerySelect, RelationTrait,
-};
+use flow_like::bit::Metadata;
+use flow_like_types::anyhow;
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 #[tracing::instrument(name = "GET /apps/{app_id}/meta", skip(state, user, query))]
 pub async fn get_meta(
     State(state): State<AppState>,
@@ -51,7 +48,7 @@ pub async fn get_meta(
         .1
         .iter()
         .find(|meta| meta.lang == language)
-        .or_else(|| apps[0].1.iter().next())
+        .or_else(|| apps[0].1.first())
         .map(|meta| Metadata::from(meta.clone()))
     else {
         return Err(ApiError::NotFound);

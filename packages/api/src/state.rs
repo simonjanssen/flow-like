@@ -1,6 +1,5 @@
 use aws_config::SdkConfig;
 use axum::body::Body;
-use axum::response::Response;
 use flow_like::app::App;
 use flow_like::flow::board::Board;
 use flow_like::flow::node::NodeLogic;
@@ -22,7 +21,6 @@ use jsonwebtoken::{
     jwk::{AlgorithmParameters, JwkSet},
 };
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
-use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use crate::credentials::RuntimeCredentials;
@@ -207,7 +205,7 @@ impl State {
     ) -> flow_like_types::Result<App> {
         let credentials = self.master_credentials().await?;
 
-        let app_state = self.state_cache.get("master").map(|state| state.clone());
+        let app_state = self.state_cache.get("master");
 
         let app_state = match app_state {
             Some(state) => state,
@@ -260,7 +258,7 @@ impl State {
     ) -> flow_like_types::Result<Board> {
         let credentials = self.master_credentials().await?;
 
-        let app_state = self.state_cache.get("master").map(|state| state.clone());
+        let app_state = self.state_cache.get("master");
 
         let app_state = match app_state {
             Some(state) => state,

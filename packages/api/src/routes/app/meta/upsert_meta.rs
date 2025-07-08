@@ -1,21 +1,14 @@
 use crate::{
-    entity::{app, membership, meta},
-    error::ApiError,
-    middleware::jwt::AppUser,
-    permission::role_permission::RolePermissions,
-    routes::LanguageParams,
-    state::AppState,
+    entity::meta, error::ApiError, middleware::jwt::AppUser,
+    permission::role_permission::RolePermissions, routes::LanguageParams, state::AppState,
 };
 use axum::{
     Extension, Json,
     extract::{Path, Query, State},
 };
-use flow_like::{app::App, bit::Metadata};
-use flow_like_types::{anyhow, bail, create_id};
-use sea_orm::{
-    ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, JoinType, QueryFilter,
-    QueryOrder, QuerySelect, RelationTrait,
-};
+use flow_like::bit::Metadata;
+use flow_like_types::create_id;
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter};
 
 #[tracing::instrument(name = "PUT /apps/{app_id}/meta", skip(state, user, payload, query))]
 pub async fn upsert_meta(

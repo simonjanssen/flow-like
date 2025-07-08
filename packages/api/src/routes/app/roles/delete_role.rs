@@ -1,21 +1,17 @@
 use crate::{
-    ensure_in_project, ensure_permission,
-    entity::{app, membership, meta, role},
+    ensure_permission,
+    entity::{app, membership, role},
     error::ApiError,
     middleware::jwt::AppUser,
     permission::role_permission::RolePermissions,
-    routes::LanguageParams,
     state::AppState,
 };
 use axum::{
     Extension, Json,
-    extract::{Path, Query, State},
+    extract::{Path, State},
 };
-use flow_like::{app::App, bit::Metadata};
-use flow_like_types::{anyhow, bail};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, EntityTrait, JoinType, QueryFilter, QueryOrder, QuerySelect,
-    RelationTrait, TransactionTrait, prelude::Expr,
+    ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, TransactionTrait, prelude::Expr,
 };
 
 #[tracing::instrument(name = "DELETE /apps/{app_id}/roles/{role_id}", skip(state, user))]

@@ -122,7 +122,7 @@ async fn process_s3_event(
     };
 
     // Update Postgres totals
-    if let Err(err) = update_postgres_usage(&db, user_id.as_deref(), &app_id, delta).await {
+    if let Err(err) = update_postgres_usage(db, user_id.as_deref(), &app_id, delta).await {
         tracing::error!("Failed to update Postgres usage for key {}: {}", key, err);
         delete_object(s3, bucket, &key).await?;
         delete_dynamo(dynamo, &app_id, &key).await?;

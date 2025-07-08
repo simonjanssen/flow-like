@@ -1,6 +1,6 @@
 use crate::{
     entity::{
-        app, membership, meta,
+        app, meta,
         sea_orm_active_enums::{Category, Visibility},
     },
     error::ApiError,
@@ -16,9 +16,7 @@ use flow_like::{
     app::{App, AppSearchQuery, AppSearchSort},
     bit::Metadata,
 };
-use sea_orm::{
-    ColumnTrait, EntityTrait, JoinType, QueryFilter, QueryOrder, QuerySelect, RelationTrait,
-};
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect};
 #[tracing::instrument(name = "GET /apps/search", skip(state, user, search_query, query))]
 
 pub async fn search_apps(
@@ -38,9 +36,7 @@ pub async fn search_apps(
         return Ok(Json(cached));
     }
 
-    let sort = search_query
-        .sort
-        .unwrap_or_else(|| AppSearchSort::MostRelevant);
+    let sort = search_query.sort.unwrap_or(AppSearchSort::MostRelevant);
 
     let limit = std::cmp::min(search_query.limit.unwrap_or(50), 100);
     let mut qb = app::Entity::find()
@@ -105,7 +101,7 @@ pub async fn search_apps(
             let metadata = meta_models
                 .iter()
                 .find(|meta| meta.lang == language)
-                .or_else(|| meta_models.iter().next())
+                .or_else(|| meta_models.first())
                 .map(|meta| Metadata::from(meta.clone()));
 
             (App::from(app_model), metadata)

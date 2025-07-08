@@ -6,7 +6,7 @@ use axum::{
     Extension, Json,
     extract::{Path, Query, State},
 };
-use flow_like::flow::{board::Board, event::Event};
+use flow_like::flow::event::Event;
 use flow_like_types::anyhow;
 use serde::Deserialize;
 

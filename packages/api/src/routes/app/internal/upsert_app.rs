@@ -11,12 +11,11 @@ use crate::{
     routes::LanguageParams,
     state::AppState,
 };
-use aws_config::default_provider::app_name;
 use axum::{
     Extension, Json,
     extract::{Path, Query, State},
 };
-use flow_like::{app::App, bit::Metadata, flow::variable::Variable, protobuf::metadata};
+use flow_like::{app::App, bit::Metadata, flow::variable::Variable};
 use flow_like_types::{anyhow, create_id, sync::Mutex};
 use sea_orm::{
     ActiveModelTrait,
@@ -65,7 +64,7 @@ pub async fn upsert_app(
             bucket_app.changelog = app_updates.changelog.clone();
             bucket_app.primary_category = app_updates.primary_category.clone();
             bucket_app.secondary_category = app_updates.secondary_category.clone();
-            bucket_app.price = app_updates.price.clone();
+            bucket_app.price = app_updates.price;
             bucket_app.updated_at = SystemTime::now();
             bucket_app.bits = app_updates.bits.clone();
             bucket_app.status = app_updates.status.clone();
@@ -82,7 +81,7 @@ pub async fn upsert_app(
         app.secondary_category = sea_orm::ActiveValue::Set(app_updates.secondary_category);
         app.price = sea_orm::ActiveValue::Set(app_updates.price);
         app.version = sea_orm::ActiveValue::Set(app_updates.version);
-        app.updated_at = sea_orm::ActiveValue::Set(now.clone());
+        app.updated_at = sea_orm::ActiveValue::Set(now);
         let app: app::Model = app.save(&state.db).await?.try_into()?;
         return Ok(Json(App::from(app)));
     }
@@ -135,7 +134,7 @@ pub async fn upsert_app(
         let board = new_app.create_board(None).await?;
 
         if let Some(bits) = app_body.bits {
-            let bits_map = bits.iter().map(|b| b.clone()).collect::<HashSet<String>>();
+            let bits_map = bits.iter().cloned().collect::<HashSet<String>>();
             let board = new_app.open_board(board.clone(), Some(false), None).await?;
             let mut variable = Variable::new(
                 "Embedding Models",
@@ -162,8 +161,8 @@ pub async fn upsert_app(
                 let app = app::ActiveModel {
                     id: Set(new_id),
                     status: Set(Status::Active),
-                    created_at: Set(now.clone()),
-                    updated_at: Set(now.clone()),
+                    created_at: Set(now),
+                    updated_at: Set(now),
                     visibility: Set(Visibility::Private),
                     ..Default::default()
                 };
@@ -179,8 +178,8 @@ pub async fn upsert_app(
                     long_description: Set(metadata.long_description),
                     tags: Set(Some(metadata.tags)),
                     lang: Set(language),
-                    created_at: Set(now.clone()),
-                    updated_at: Set(now.clone()),
+                    created_at: Set(now),
+                    updated_at: Set(now),
                     ..Default::default()
                 };
                 meta.insert(txn).await?;
@@ -190,8 +189,8 @@ pub async fn upsert_app(
                     name: Set("Owner".to_string()),
                     description: Set(Some("Owner role".to_string())),
                     permissions: Set(RolePermissions::Owner.bits()),
-                    created_at: Set(now.clone()),
-                    updated_at: Set(now.clone()),
+                    created_at: Set(now),
+                    updated_at: Set(now),
                     app_id: Set(Some(app_id.clone())),
                     attributes: NotSet,
                 };
@@ -203,8 +202,8 @@ pub async fn upsert_app(
                     name: Set("Admin".to_string()),
                     description: Set(Some("Admin role".to_string())),
                     permissions: Set(RolePermissions::Admin.bits()),
-                    created_at: Set(now.clone()),
-                    updated_at: Set(now.clone()),
+                    created_at: Set(now),
+                    updated_at: Set(now),
                     app_id: Set(Some(app_id.clone())),
                     attributes: NotSet,
                 };
@@ -220,8 +219,8 @@ pub async fn upsert_app(
                     name: Set("User".to_string()),
                     description: Set(Some("User role".to_string())),
                     permissions: Set(user_permission.bits()),
-                    created_at: Set(now.clone()),
-                    updated_at: Set(now.clone()),
+                    created_at: Set(now),
+                    updated_at: Set(now),
                     app_id: Set(Some(app_id.clone())),
                     attributes: NotSet,
                 };
@@ -240,8 +239,8 @@ pub async fn upsert_app(
                     app_id: Set(app.id.clone()),
                     role_id: Set(owner_role.id.clone()),
                     joined_via: NotSet,
-                    created_at: Set(now.clone()),
-                    updated_at: Set(now.clone()),
+                    created_at: Set(now),
+                    updated_at: Set(now),
                 };
                 membership.insert(txn).await?;
 

@@ -1,14 +1,12 @@
 use crate::{
     ensure_permission, error::ApiError, middleware::jwt::AppUser,
-    permission::role_permission::RolePermissions,
-    routes::app::template::get_template::VersionQuery, state::AppState,
+    permission::role_permission::RolePermissions, state::AppState,
 };
 use axum::{
     Extension, Json,
-    extract::{Path, Query, State},
+    extract::{Path, State},
 };
-use flow_like::flow::{board::Board, event::Event};
-use flow_like_types::anyhow;
+use flow_like::flow::event::Event;
 
 #[tracing::instrument(name = "GET /apps/{app_id}/events", skip(state, user))]
 pub async fn get_events(
@@ -19,7 +17,7 @@ pub async fn get_events(
     let permission = ensure_permission!(user, &app_id, &state, RolePermissions::WriteEvents);
     let sub = permission.sub()?;
 
-    let mut app = state.master_app(&sub, &app_id, &state).await?;
+    let app = state.master_app(&sub, &app_id, &state).await?;
     let events = &app.events;
     let mut loaded_events = Vec::with_capacity(events.len());
 

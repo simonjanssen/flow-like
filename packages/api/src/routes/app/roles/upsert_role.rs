@@ -1,22 +1,13 @@
 use crate::{
-    ensure_in_project, ensure_permission,
-    entity::{app, membership, meta, role},
-    error::ApiError,
-    middleware::jwt::AppUser,
-    permission::role_permission::RolePermissions,
-    routes::LanguageParams,
-    state::AppState,
+    ensure_permission, entity::role, error::ApiError, middleware::jwt::AppUser,
+    permission::role_permission::RolePermissions, state::AppState,
 };
 use axum::{
     Extension, Json,
-    extract::{Path, Query, State},
+    extract::{Path, State},
 };
-use flow_like::{app::App, bit::Metadata};
-use flow_like_types::{anyhow, bail, create_id};
-use sea_orm::{
-    ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, JoinType, QueryFilter,
-    QueryOrder, QuerySelect, RelationTrait, TransactionTrait,
-};
+use flow_like_types::create_id;
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, TransactionTrait};
 
 #[tracing::instrument(name = "PUT /apps/{app_id}/roles/{role_id}", skip(state, user))]
 pub async fn upsert_role(

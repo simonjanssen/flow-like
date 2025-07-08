@@ -133,9 +133,7 @@ impl Event {
                 || version_type.is_some()
             {
                 let version_type = version_type.unwrap_or(VersionType::Patch);
-                old_event
-                    .save(app, Some(old_event.event_version.clone()))
-                    .await?;
+                old_event.save(app, Some(old_event.event_version)).await?;
                 old_event.event_version = match version_type {
                     VersionType::Major => (old_event.event_version.0 + 1, 0, 0),
                     VersionType::Minor => {
