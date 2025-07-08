@@ -13,7 +13,7 @@ export class BitPack implements IBitPack {
 	}
 
 	async get_installed(): Promise<Bit[]> {
-		const installed = await this.backend?.getInstalledBit(this.bits);
+		const installed = await this.backend?.bitState?.getInstalledBit(this.bits);
 		if (!installed) {
 			throw new Error("No installed bits found");
 		}
@@ -21,7 +21,7 @@ export class BitPack implements IBitPack {
 	}
 
 	async size(): Promise<number> {
-		const size = await this.backend?.getPackSize(this.bits);
+		const size = await this.backend?.bitState?.getPackSize(this.bits);
 		if (!size) {
 			throw new Error("No size found");
 		}

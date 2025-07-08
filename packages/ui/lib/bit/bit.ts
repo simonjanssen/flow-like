@@ -187,7 +187,7 @@ export class Bit implements IBit {
 			| undefined
 			| {
 					bits: IBit[];
-			  } = await this.backend?.getPackFromBit(this.toObject());
+			  } = await this.backend?.bitState?.getPackFromBit(this.toObject());
 
 		if (!bits) {
 			throw new Error("No dependencies found");
@@ -219,7 +219,7 @@ export class Bit implements IBit {
 			console.groupEnd();
 			const totalProgress = new Download(this.toObject(), dependencies.bits);
 
-			const download: undefined | IBit[] = await this.backend?.downloadBit(
+			const download: undefined | IBit[] = await this.backend?.bitState?.downloadBit(
 				this.toObject(),
 				dependencies.toObject(),
 				(progress) => {
