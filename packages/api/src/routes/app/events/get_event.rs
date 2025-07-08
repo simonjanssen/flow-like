@@ -43,7 +43,7 @@ pub async fn get_event(
         None
     };
 
-    let app = state.scoped_app(&sub, &app_id, &state).await?;
+    let app = state.master_app(&sub, &app_id, &state).await?;
     let event = app.get_event(&event_id, version_opt).await?;
 
     Ok(Json(event))

@@ -19,7 +19,7 @@ pub async fn get_events(
     let permission = ensure_permission!(user, &app_id, &state, RolePermissions::WriteEvents);
     let sub = permission.sub()?;
 
-    let mut app = state.scoped_app(&sub, &app_id, &state).await?;
+    let mut app = state.master_app(&sub, &app_id, &state).await?;
     let events = &app.events;
     let mut loaded_events = Vec::with_capacity(events.len());
 

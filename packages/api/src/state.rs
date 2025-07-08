@@ -194,6 +194,41 @@ impl State {
         Ok(app)
     }
 
+     #[tracing::instrument(
+        name = "master_app",
+        skip(self, state),
+        fields(sub, app_id, board_id, version)
+    )]
+    pub async fn master_app(
+        &self,
+        sub: &str,
+        app_id: &str,
+        state: &AppState,
+    ) -> flow_like_types::Result<App> {
+        tracing::info!("Getting scoped credentials...");
+        let credentials = self.master_credentials().await?;
+        tracing::info!("Got scoped credentials");
+
+        tracing::info!("Building app_state...");
+        let app_state = self.state_cache.get("master")
+            .map(|state| state.clone());
+
+        let app_state = match app_state {
+            Some(state) => state,
+            None => {
+                let state = Arc::new(Mutex::new(credentials.to_state(state.clone()).await?));
+                self.state_cache.insert("master".to_string(), state.clone());
+                state
+            }
+        };
+        tracing::info!("Built app_state");
+
+
+        let app = App::load(app_id.to_string(), app_state.clone()).await?;
+
+        Ok(app)
+    }
+
     #[tracing::instrument(
         name = "scoped_board",
         skip(self, state),
@@ -249,7 +284,7 @@ impl State {
         version: Option<(u32, u32, u32)>,
     ) -> flow_like_types::Result<Board> {
         let span = tracing::info_span!(
-            "scoped_board",
+            "master_board",
             sub = %sub,
             app_id = %app_id,
             board_id = %board_id,

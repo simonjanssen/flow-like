@@ -23,7 +23,7 @@ pub async fn get_app(
 ) -> Result<Json<App>, ApiError> {
     ensure_in_project!(user, &app_id, &state);
 
-    let scoped_app = state.scoped_app(&user.sub()?, &app_id, &state).await?;
+    let scoped_app = state.master_app(&user.sub()?, &app_id, &state).await?;
 
     let app = app::Entity::find_by_id(&app_id)
         .one(&state.db)
