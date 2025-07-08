@@ -67,7 +67,7 @@ impl State {
             hyper_util::client::legacy::Client::<(), ()>::builder(TokioExecutor::new())
                 .build(HttpConnector::new());
         opt.max_connections(100)
-            .min_connections(3)
+            .min_connections(1)
             .connect_timeout(Duration::from_secs(8))
             .sqlx_logging(platform_config.environment == Environment::Development);
 
@@ -205,11 +205,8 @@ impl State {
         app_id: &str,
         state: &AppState,
     ) -> flow_like_types::Result<App> {
-        tracing::info!("Getting scoped credentials...");
         let credentials = self.master_credentials().await?;
-        tracing::info!("Got scoped credentials");
 
-        tracing::info!("Building app_state...");
         let app_state = self.state_cache.get("master")
             .map(|state| state.clone());
 
@@ -221,8 +218,6 @@ impl State {
                 state
             }
         };
-        tracing::info!("Built app_state");
-
 
         let app = App::load(app_id.to_string(), app_state.clone()).await?;
 
@@ -232,6 +227,7 @@ impl State {
     #[tracing::instrument(
         name = "scoped_board",
         skip(self, state),
+        level = "debug",
         fields(sub, app_id, board_id, version)
     )]
     pub async fn scoped_board(
@@ -242,37 +238,17 @@ impl State {
         state: &AppState,
         version: Option<(u32, u32, u32)>,
     ) -> flow_like_types::Result<Board> {
-        let span = tracing::info_span!(
-            "scoped_board",
-            sub = %sub,
-            app_id = %app_id,
-            board_id = %board_id,
-            version = ?version
-        );
-        let _enter = span.enter();
-
-        tracing::info!("Getting scoped credentials...");
         let credentials = self.scoped_credentials(sub, app_id).await?;
-        tracing::info!("Got scoped credentials");
-
-        tracing::info!("Building app_state...");
         let app_state = Arc::new(Mutex::new(credentials.to_state(state.clone()).await?));
-        tracing::info!("Built app_state");
-
-        tracing::info!("Building storage_root...");
         let storage_root = Path::from("apps").child(app_id.to_string());
-        tracing::info!(?storage_root, "Built storage_root");
-
-        tracing::info!("Loading board...");
         let board = Board::load(storage_root, board_id, app_state, version).await?;
-        tracing::info!("Board loaded");
-
         Ok(board)
     }
 
      #[tracing::instrument(
-        name = "scoped_board",
+        name = "master_board",
         skip(self, state),
+        level = "debug",
         fields(sub, app_id, board_id, version)
     )]
     pub async fn master_board(
@@ -283,20 +259,8 @@ impl State {
         state: &AppState,
         version: Option<(u32, u32, u32)>,
     ) -> flow_like_types::Result<Board> {
-        let span = tracing::info_span!(
-            "master_board",
-            sub = %sub,
-            app_id = %app_id,
-            board_id = %board_id,
-            version = ?version
-        );
-        let _enter = span.enter();
-
-        tracing::info!("Getting scoped credentials...");
         let credentials = self.master_credentials().await?;
-        tracing::info!("Got scoped credentials");
 
-        tracing::info!("Building app_state...");
         let app_state = self.state_cache.get("master")
             .map(|state| state.clone());
 
@@ -308,15 +272,9 @@ impl State {
                 state
             }
         };
-        tracing::info!("Built app_state");
 
-        tracing::info!("Building storage_root...");
         let storage_root = Path::from("apps").child(app_id.to_string());
-        tracing::info!(?storage_root, "Built storage_root");
-
-        tracing::info!("Loading board...");
         let board = Board::load(storage_root, board_id, app_state, version).await?;
-        tracing::info!("Board loaded");
 
         Ok(board)
     }

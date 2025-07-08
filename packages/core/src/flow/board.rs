@@ -578,16 +578,13 @@ impl Board {
         Ok(version_list)
     }
 
-    #[instrument(skip(app_state))]
+    #[instrument(name="Board::load", skip(app_state), level="debug")]
     pub async fn load(
         path: Path,
         id: &str,
         app_state: Arc<Mutex<FlowLikeState>>,
         version: Option<(u32, u32, u32)>,
     ) -> flow_like_types::Result<Self> {
-        let span = tracing::info_span!("Board::load", board_id = %id, ?version, board_path = %path);
-        let _enter = span.enter();
-
         let store = app_state
             .lock()
             .await
@@ -611,8 +608,6 @@ impl Board {
         } else {
             path.child(format!("{}.board", id))
         };
-
-        tracing::debug!("Loading board from path: {:?}", path);
 
         let board: flow_like_types::proto::Board = from_compressed(store, path).await?;
         let mut board = Board::from_proto(board);

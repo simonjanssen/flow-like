@@ -55,10 +55,8 @@ impl RuntimeCredentials {
         }
     }
 
-    #[instrument(skip(self, state), level = "debug", fields(credentials = ?self))]
+    #[instrument(skip(self, state), level = "debug")]
     pub async fn to_state(&self, state: AppState) -> Result<FlowLikeState> {
-        let span = tracing::info_span!("RuntimeCredentials::to_state", credentials = ?self);
-        let _enter = span.enter();
         match self {
             #[cfg(feature = "aws")]
             RuntimeCredentials::Aws(aws) => aws.to_state(state).await,

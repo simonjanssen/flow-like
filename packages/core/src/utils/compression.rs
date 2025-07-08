@@ -8,6 +8,7 @@ use tracing::instrument;
 use std::sync::Arc;
 
 ///Write a Serde Serializable Struct to compressed file using bitcode + lz4
+#[instrument(name="compress_to_file", skip(store, file_path, input), level="debug")]
 pub async fn compress_to_file<T>(
     store: Arc<dyn ObjectStore>,
     file_path: Path,
@@ -38,7 +39,7 @@ where
 }
 
 /// Read from a compressed file and deserialize it into a Serde Deserializable Struct
-#[instrument(skip(store))]
+#[instrument(name="from_compressed", skip(store, file_path), level="debug")]
 pub async fn from_compressed<T>(
     store: Arc<dyn ObjectStore>,
     file_path: Path,
@@ -46,27 +47,11 @@ pub async fn from_compressed<T>(
 where
     T: Message + Default,
 {
-    let span = tracing::info_span!("from_compressed", file_path = %file_path);
-    let _enter = span.enter();
-
-    let read_span = tracing::info_span!("read_file");
-    let _read_enter = read_span.enter();
     let reader = store.get(&file_path).await?;
-    drop(_read_enter);
-    let bytes_span = tracing::info_span!("read_bytes");
-    let _bytes_enter = bytes_span.enter();
     let bytes = reader.bytes().await?;
-    drop(_bytes_enter);
 
-    let decompress_span = tracing::info_span!("decompress");
-    let _decompress_enter = decompress_span.enter();
     let data = decompress_size_prepended(&bytes)?;
-    drop(_decompress_enter);
-
-    let decode_span = tracing::info_span!("decode_message");
-    let _decode_enter = decode_span.enter();
     let message = T::decode(&data[..])?;
-    drop(_decode_enter);
 
     Ok(message)
 }
