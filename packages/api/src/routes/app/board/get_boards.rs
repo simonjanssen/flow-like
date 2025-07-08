@@ -19,7 +19,7 @@ pub async fn get_boards(
 
     let mut boards = vec![];
 
-    let app = state.scoped_app(&sub, &app_id, &state).await?;
+    let app = state.master_app(&sub, &app_id, &state).await?;
     for board_id in app.boards.iter() {
         let board = app.open_board(board_id.clone(), Some(false), None).await;
         if let Ok(board) = board {

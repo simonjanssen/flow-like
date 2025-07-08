@@ -35,7 +35,7 @@ pub async fn upsert_board(
     let permission = ensure_permission!(user, &app_id, &state, RolePermissions::WriteBoards);
     let sub = permission.sub()?;
 
-    let mut app = state.scoped_app(&sub, &app_id, &state).await?;
+    let mut app = state.master_app(&sub, &app_id, &state).await?;
     let mut id = board_id.clone();
     if !app.boards.contains(&board_id) {
         id = app.create_board(None).await?;
