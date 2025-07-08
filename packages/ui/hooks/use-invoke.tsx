@@ -28,6 +28,7 @@ type BackendFunction<T, Args extends any[]> = (...args: Args) => Promise<T>;
  */
 export function useInvoke<T, Args extends any[]>(
 	backendFn: BackendFunction<T, Args>,
+	backendContext: any,
 	args: Args,
 	enabled = true,
 	additionalDeps: any[] = [],
@@ -37,7 +38,7 @@ export function useInvoke<T, Args extends any[]>(
 		queryKey: [backendFn.name || "backendFn", ...args, ...additionalDeps],
 		queryFn: async () => {
 			try {
-				const boundFn = backendFn.bind(backend);
+				const boundFn = backendFn.bind(backendContext ?? backend);
 				const response = await boundFn(...args);
 				return response; // No need to cast if types are correctly inferred/set
 			} catch (error) {
@@ -78,6 +79,7 @@ type BackendFunctionWithPagination<T, Args extends any[]> = (
  */
 export function useInfiniteInvoke<T, Args extends any[]>(
 	backendFn: BackendFunctionWithPagination<T, Args>,
+	backendContext: any,
 	args: Args,
 	pageSize = 50,
 	enabled = true,
@@ -94,7 +96,7 @@ export function useInfiniteInvoke<T, Args extends any[]>(
 		],
 		queryFn: async ({ pageParam = 0 }) => {
 			try {
-				const boundFn = backendFn.bind(backend);
+				const boundFn = backendFn.bind(backendContext ?? backend);
 				const paginationParams: PaginationParams = {
 					offset: pageParam as number,
 					limit: pageSize,

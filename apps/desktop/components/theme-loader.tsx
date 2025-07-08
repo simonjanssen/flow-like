@@ -6,7 +6,11 @@ import { useEffect } from "react";
 export function ThemeLoader() {
 	const backend = useBackend();
 
-	const profile = useInvoke(backend.getProfile, []);
+	const profile = useInvoke(
+		backend.userState.getProfile,
+		backend.userState,
+		[],
+	);
 
 	useEffect(() => {
 		if (!profile.data?.theme) {

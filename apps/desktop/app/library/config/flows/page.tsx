@@ -53,9 +53,15 @@ export default function Page() {
 	const parentRegister = useFlowBoardParentState();
 	const searchParams = useSearchParams();
 	const id = searchParams.get("id");
-	const app = useInvoke(backend.getApp, [id ?? ""], typeof id === "string");
+	const app = useInvoke(
+		backend.appState.getApp,
+		backend.appState,
+		[id ?? ""],
+		typeof id === "string",
+	);
 	const boards = useInvoke(
-		backend.getBoards,
+		backend.boardState.getBoards,
+		backend.boardState,
 		[id ?? ""],
 		typeof id === "string",
 	);
@@ -166,7 +172,7 @@ export default function Page() {
 									<Button
 										onClick={async () => {
 											if (!id) return;
-											await backend.upsertBoard(
+											await backend.boardState.upsertBoard(
 												id,
 												createId(),
 												boardCreation.name,
@@ -399,7 +405,7 @@ function Board({
 				<ContextMenuItem
 					disabled={(boardsQuery.data?.length ?? 2) <= 1}
 					onClick={async () => {
-						await backend.deleteBoard(app.id, board.id);
+						await backend.boardState.deleteBoard(app.id, board.id);
 						await boardsQuery.refetch();
 					}}
 					className="bg-destructive text-destructive-foreground"

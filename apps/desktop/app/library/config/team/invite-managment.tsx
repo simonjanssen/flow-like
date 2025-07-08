@@ -81,7 +81,9 @@ import { toast } from "sonner";
 
 export function InviteManagement({ appId }: Readonly<{ appId: string }>) {
 	const backend = useBackend();
-	const links = useInvoke(backend.getInviteLinks, [appId]);
+	const links = useInvoke(backend.teamState.getInviteLinks, backend.teamState, [
+		appId,
+	]);
 	const [message, setMessage] = useState("");
 	const [invitee, setInvitee] = useState("");
 	const inviteeSearch = useDebounce(invitee, 500);
@@ -92,7 +94,8 @@ export function InviteManagement({ appId }: Readonly<{ appId: string }>) {
 	const { hub, refetch } = useHub();
 
 	const userSearch = useInvoke(
-		backend.searchUsers,
+		backend.userState.searchUsers,
+		backend.userState,
 		[inviteeSearch],
 		inviteeSearch.length > 0,
 	);
@@ -108,7 +111,7 @@ export function InviteManagement({ appId }: Readonly<{ appId: string }>) {
 			maxUses = -1; // Allow unlimited uses if not specified
 		}
 
-		await backend.createInviteLink(appId, newLinkName, maxUses);
+		await backend.teamState.createInviteLink(appId, newLinkName, maxUses);
 		setNewLinkName("");
 		setNewLinkMaxUses("");
 		setShowCreateLinkDialog(false);
@@ -118,7 +121,7 @@ export function InviteManagement({ appId }: Readonly<{ appId: string }>) {
 
 	const deleteInviteLink = useCallback(
 		async (id: string) => {
-			await backend.removeInviteLink(appId, id);
+			await backend.teamState.removeInviteLink(appId, id);
 			await links.refetch();
 		},
 		[backend, links.refetch, appId],
@@ -252,7 +255,7 @@ export function InviteManagement({ appId }: Readonly<{ appId: string }>) {
 																	size="sm"
 																	onClick={async () => {
 																		try {
-																			await backend.inviteUser(
+																			await backend.teamState.inviteUser(
 																				appId,
 																				user.id,
 																				message,

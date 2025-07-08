@@ -43,7 +43,8 @@ export default function Home() {
 	const [question, setQuestion] = useState("");
 	const [model, setModel] = useState("");
 	const profile: UseQueryResult<ISettingsProfile> = useInvoke(
-		backend.getSettingsProfile,
+		backend.userState.getSettingsProfile,
+		backend.userState,
 		[],
 	);
 	const [response, setResponse] = useState("");

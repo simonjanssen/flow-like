@@ -22,7 +22,7 @@ pub async fn get_board_versions(
     let sub = permission.sub()?;
 
     let board = state
-        .scoped_board(&sub, &app_id, &board_id, &state, None)
+        .master_board(&sub, &app_id, &board_id, &state, None)
         .await?;
     let versions = board.get_versions(None).await?;
 

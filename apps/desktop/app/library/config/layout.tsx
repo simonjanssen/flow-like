@@ -158,13 +158,24 @@ export default function Id({
 	) ?? { visibility: IAppVisibility.Offline };
 	const currentRoute = usePathname();
 	const metadata = useInvoke(
-		backend.getAppMeta,
+		backend.appState.getAppMeta,
+		backend.appState,
 		[id ?? ""],
 		typeof id === "string",
 	);
-	const app = useInvoke(backend.getApp, [id ?? ""], typeof id === "string");
+	const app = useInvoke(
+		backend.appState.getApp,
+		backend.appState,
+		[id ?? ""],
+		typeof id === "string",
+	);
 	const [isMaximized, setIsMaximized] = useState(false);
-	const events = useInvoke(backend.getEvents, [id ?? ""], (id ?? "") !== "");
+	const events = useInvoke(
+		backend.eventState.getEvents,
+		backend.eventState,
+		[id ?? ""],
+		(id ?? "") !== "",
+	);
 
 	const usableEvents = useMemo(() => {
 		const events = new Set<string>();
@@ -181,7 +192,7 @@ export default function Id({
 
 	async function executeEvent(event: IEvent) {
 		if (!id) return;
-		const runMeta = await backend.executeEvent(
+		const runMeta = await backend.eventState.executeEvent(
 			id,
 			event.id,
 			{

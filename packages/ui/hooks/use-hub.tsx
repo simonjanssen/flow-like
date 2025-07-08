@@ -7,7 +7,11 @@ import { useInvoke } from "./use-invoke";
 
 export function useHub() {
 	const backend = useBackend();
-	const profile = useInvoke(backend.getProfile, []);
+	const profile = useInvoke(
+		backend.userState.getProfile,
+		backend.userState,
+		[],
+	);
 	const [hub, setHub] = useState<IHub | undefined>();
 
 	const fetchHub = useCallback(async () => {

@@ -23,7 +23,7 @@ export default function JoinPage() {
 		}
 
 		try {
-			await backend.joinInviteLink(appId, token);
+			await backend.teamState.joinInviteLink(appId, token);
 			toast.success("Successfully joined the app!");
 			router.push(`/use?id=${appId}`);
 		} catch (error) {

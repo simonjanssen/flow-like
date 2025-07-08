@@ -67,7 +67,11 @@ export function StorageSystem({
 		fileCount: 0,
 		currentFile: "",
 	});
-	const files = useInvoke(backend.listStorageItems, [appId, prefix]);
+	const files = useInvoke(
+		backend.storageState.listStorageItems,
+		backend.storageState,
+		[appId, prefix],
+	);
 
 	const [searchQuery, setSearchQuery] = useState("");
 	const [viewMode, setViewMode] = useState<"grid" | "list">("list");
@@ -90,7 +94,7 @@ export function StorageSystem({
 			});
 
 			try {
-				await backend.uploadStorageItems(
+				await backend.storageState.uploadStorageItems(
 					appId,
 					prefix,
 					fileList,
@@ -132,7 +136,9 @@ export function StorageSystem({
 				return;
 			}
 
-			const url = await backend.downloadStorageItems(appId, [file]);
+			const url = await backend.storageState.downloadStorageItems(appId, [
+				file,
+			]);
 
 			if (url.length === 0 || !url[0]?.url) {
 				toast.error("Failed to load file preview");
@@ -518,17 +524,19 @@ export function StorageSystem({
 														loadFile={(file) => loadFile(file)}
 														deleteFile={async (file) => {
 															const filePrefix = `${prefix}/${file}`;
-															await backend.deleteStorageItems(appId, [
-																filePrefix,
-															]);
+															await backend.storageState.deleteStorageItems(
+																appId,
+																[filePrefix],
+															);
 															await files.refetch();
 															toast.success("File deleted successfully");
 														}}
 														shareFile={async (file) => {
 															const downloadLinks =
-																await backend.downloadStorageItems(appId, [
-																	file,
-																]);
+																await backend.storageState.downloadStorageItems(
+																	appId,
+																	[file],
+																);
 															if (downloadLinks.length === 0) {
 																return;
 															}
@@ -558,9 +566,10 @@ export function StorageSystem({
 														}}
 														downloadFile={async (file) => {
 															const downloadLinks =
-																await backend.downloadStorageItems(appId, [
-																	file,
-																]);
+																await backend.storageState.downloadStorageItems(
+																	appId,
+																	[file],
+																);
 															if (downloadLinks.length === 0) {
 																return;
 															}
@@ -623,15 +632,17 @@ export function StorageSystem({
 										loadFile={loadFile}
 										deleteFile={async (file) => {
 											const filePrefix = `${prefix}/${file}`;
-											await backend.deleteStorageItems(appId, [filePrefix]);
+											await backend.storageState.deleteStorageItems(appId, [
+												filePrefix,
+											]);
 											await files.refetch();
 											toast.success("File deleted successfully");
 										}}
 										shareFile={async (file) => {
-											const downloadLinks = await backend.downloadStorageItems(
-												appId,
-												[file],
-											);
+											const downloadLinks =
+												await backend.storageState.downloadStorageItems(appId, [
+													file,
+												]);
 											if (downloadLinks.length === 0) {
 												return;
 											}
@@ -650,10 +661,10 @@ export function StorageSystem({
 											}
 										}}
 										downloadFile={async (file) => {
-											const downloadLinks = await backend.downloadStorageItems(
-												appId,
-												[file],
-											);
+											const downloadLinks =
+												await backend.storageState.downloadStorageItems(appId, [
+													file,
+												]);
 											if (downloadLinks.length === 0) {
 												return;
 											}

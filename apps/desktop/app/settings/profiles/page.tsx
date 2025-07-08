@@ -99,7 +99,11 @@ export default function SettingsPage() {
 		{},
 	);
 
-	const currentProfile = useInvoke(backend.getSettingsProfile, []);
+	const currentProfile = useInvoke(
+		backend.userState.getSettingsProfile,
+		backend.userState,
+		[],
+	);
 
 	// Local state for editing
 	const [localProfile, setLocalProfile] = useState<ISettingsProfile | null>(
@@ -137,7 +141,7 @@ export default function SettingsPage() {
 	async function upsertProfile(profile: ISettingsProfile) {
 		await invoke("upsert_profile", { profile });
 		await profiles.refetch();
-		await invalidate(backend.getProfile, []);
+		await invalidate(backend.userState.getProfile, []);
 		await currentProfile.refetch();
 	}
 

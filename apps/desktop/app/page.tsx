@@ -6,7 +6,11 @@ import { TutorialDialog } from "../components/tutorial-dialog";
 
 export default function Home() {
 	const backend = useBackend();
-	const profile = useInvoke(backend.getSettingsProfile, []);
+	const profile = useInvoke(
+		backend.userState.getSettingsProfile,
+		backend.userState,
+		[],
+	);
 	const router = useRouter();
 
 	function checkOnboarding() {

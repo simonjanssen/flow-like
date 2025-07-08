@@ -173,9 +173,7 @@ impl AppUser {
     ) -> Result<AppPermissionResponse, ApiError> {
         let sub = self.sub();
         if let Ok(sub) = sub {
-            let cached_permission = state
-                .permission_cache
-                .get(&sub);
+            let cached_permission = state.permission_cache.get(&sub);
 
             if let Some(role_model) = cached_permission {
                 let permissions = RolePermissions::from_bits(role_model.permissions)

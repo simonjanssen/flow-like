@@ -60,9 +60,15 @@ export default function Id() {
 	// Global permission state - you can modify this later
 	const [canEdit, setCanEdit] = useState(true);
 
-	const app = useInvoke(backend.getApp, [id ?? ""], typeof id === "string");
+	const app = useInvoke(
+		backend.appState.getApp,
+		backend.appState,
+		[id ?? ""],
+		typeof id === "string",
+	);
 	const metadata = useInvoke(
-		backend.getAppMeta,
+		backend.appState.getAppMeta,
+		backend.appState,
 		[id ?? ""],
 		typeof id === "string",
 	);
@@ -71,7 +77,12 @@ export default function Id() {
 	const [localMetadata, setLocalMetadata] = useState<IMetadata | undefined>();
 	const [hasChanges, setHasChanges] = useState(false);
 	const [newTag, setNewTag] = useState("");
-	const currentProfile = useInvoke(backend.getProfile, [], true);
+	const currentProfile = useInvoke(
+		backend.userState.getProfile,
+		backend.userState,
+		[],
+		true,
+	);
 
 	useEffect(() => {
 		if (!metadata.data) return;
@@ -139,13 +150,13 @@ export default function Id() {
 			return;
 		}
 
-		await backend.pushAppMeta(id, localMetadata);
-		await backend.updateApp(localApp);
+		await backend.appState.pushAppMeta(id, localMetadata);
+		await backend.appState.updateApp(localApp);
 		await app.refetch();
 		await metadata.refetch();
 		await isReady.refetch();
 		await appSize.refetch();
-		await invalidate(backend.getApps, []);
+		await invalidate(backend.appState.getApps, []);
 
 		toast.success("Changes saved successfully!", {
 			icon: <SaveIcon className="w-4 h-4" />,
@@ -165,8 +176,8 @@ export default function Id() {
 	}, [app.data, metadata.data]);
 
 	async function deleteApp() {
-		await backend.deleteApp(id ?? "");
-		await invalidate(backend.getApps, []);
+		await backend.appState.deleteApp(id ?? "");
+		await invalidate(backend.appState.getApps, []);
 		router.push("/library/apps");
 	}
 

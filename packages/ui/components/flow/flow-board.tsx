@@ -140,13 +140,22 @@ export function FlowBoard({
 
 	const { resolvedTheme } = useTheme();
 
-	const catalog: UseQueryResult<INode[]> = useInvoke(backend.getCatalog, []);
+	const catalog: UseQueryResult<INode[]> = useInvoke(
+		backend.boardState.getCatalog,
+		backend.boardState,
+		[],
+	);
 	const board = useInvoke(
-		backend.getBoard,
+		backend.boardState.getBoard,
+		backend.boardState,
 		[appId, boardId, version],
 		boardId !== "",
 	);
-	const currentProfile = useInvoke(backend.getProfile, []);
+	const currentProfile = useInvoke(
+		backend.userState.getProfile,
+		backend.userState,
+		[],
+	);
 	const { addRun, removeRun, pushUpdate } = useRunExecutionStore();
 	const { screenToFlowPosition } = useReactFlow();
 
@@ -180,7 +189,11 @@ export function FlowBoard({
 				toastError("Cannot change old version", <XIcon />);
 				return;
 			}
-			const result = await backend.executeCommand(appId, boardId, command);
+			const result = await backend.boardState.executeCommand(
+				appId,
+				boardId,
+				command,
+			);
 			await pushCommand(result, append);
 			await board.refetch();
 			return result;
@@ -195,7 +208,11 @@ export function FlowBoard({
 				return;
 			}
 			if (commands.length === 0) return;
-			const result = await backend.executeCommands(appId, boardId, commands);
+			const result = await backend.boardState.executeCommands(
+				appId,
+				boardId,
+				commands,
+			);
 			await pushCommands(result);
 			await board.refetch();
 			return result;
@@ -302,7 +319,7 @@ export function FlowBoard({
 			let runId = "";
 			let meta: ILogMetadata | undefined = undefined;
 			try {
-				meta = await backend.executeBoard(
+				meta = await backend.boardState.executeBoard(
 					appId,
 					boardId,
 					{
@@ -416,7 +433,7 @@ export function FlowBoard({
 					return;
 				}
 				const stack = await undo();
-				if (stack) await backend.undoBoard(appId, boardId, stack);
+				if (stack) await backend.boardState.undoBoard(appId, boardId, stack);
 				toastSuccess("Undo", <Undo2Icon className="w-4 h-4" />);
 				await board.refetch();
 				return;
@@ -431,7 +448,7 @@ export function FlowBoard({
 					return;
 				}
 				const stack = await redo();
-				if (stack) await backend.redoBoard(appId, boardId, stack);
+				if (stack) await backend.boardState.redoBoard(appId, boardId, stack);
 				toastSuccess("Redo", <Redo2Icon className="w-4 h-4" />);
 				await board.refetch();
 			}

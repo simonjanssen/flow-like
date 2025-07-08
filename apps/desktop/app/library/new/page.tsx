@@ -82,11 +82,15 @@ export default function CreateAppPage() {
 	const backend = useBackend();
 	const auth = useAuth();
 	const router = useRouter();
-	const templates = useInvoke(backend.searchBits, [
+	const templates = useInvoke(backend.bitState.searchBits, backend.bitState, [
 		{ bit_types: [IBitTypes.Template] },
 	]);
-	const apps = useInvoke(backend.getApps, []);
-	const currentProfile = useInvoke(backend.getSettingsProfile, []);
+	const apps = useInvoke(backend.appState.getApps, backend.appState, []);
+	const currentProfile = useInvoke(
+		backend.userState.getSettingsProfile,
+		backend.userState,
+		[],
+	);
 
 	const [selectedTemplate, setSelectedTemplate] = useState<string>("blank");
 	const [selectedModels, setSelectedModels] = useState<string[]>([]);
@@ -117,7 +121,7 @@ export default function CreateAppPage() {
 
 		setIsCreating(true);
 		try {
-			await backend.createApp(
+			await backend.appState.createApp(
 				meta,
 				selectedModels,
 				selectedTemplate,
@@ -929,14 +933,19 @@ function ModelCard({
 	typeFilter?: string;
 }>) {
 	const backend = useBackend();
-	const bitData = useInvoke(backend.getBit, [bitId, hub]);
+	const bitData = useInvoke(backend.bitState.getBit, backend.bitState, [
+		bitId,
+		hub,
+	]);
 	const isInstalled = useInvoke(
-		backend.isBitInstalled,
+		backend.bitState.isBitInstalled,
+		backend.bitState,
 		[bitData.data!],
 		!!bitData.data,
 	);
 	const bitSize = useInvoke(
-		backend.getBitSize,
+		backend.bitState.getBitSize,
+		backend.bitState,
 		[bitData.data!],
 		!!bitData.data,
 	);

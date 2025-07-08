@@ -55,9 +55,9 @@ export function VisibilityStatusSwitcher({
 				return;
 			}
 
-			await backend.changeAppVisibility(localApp.id, newVisibility);
-			await invalidate(backend.getApp, [localApp.id]);
-			await invalidate(backend.getApps, []);
+			await backend.appState.changeAppVisibility(localApp.id, newVisibility);
+			await invalidate(backend.appState.getApp, [localApp.id]);
+			await invalidate(backend.appState.getApps, []);
 		},
 		[localApp.visibility, backend, invalidate, localApp.id],
 	);

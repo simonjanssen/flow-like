@@ -174,7 +174,8 @@ export default function RolesPage() {
 	const appId = searchParams.get("id");
 	const backend = useBackend();
 	const roles = useInvoke(
-		backend.getRoles,
+		backend.roleState.getRoles,
+		backend.roleState,
 		[appId!],
 		typeof appId === "string",
 	);
@@ -267,7 +268,7 @@ export default function RolesPage() {
 		async (roleData: IBackendRole) => {
 			if (!appId) return;
 			roleData.app_id = appId;
-			await backend.upsertRole(appId, roleData);
+			await backend.roleState.upsertRole(appId, roleData);
 			await roles.refetch();
 		},
 		[appId, backend],
@@ -276,7 +277,7 @@ export default function RolesPage() {
 	const handleDuplicateRole = useCallback(
 		async (role: IBackendRole) => {
 			if (!appId) return;
-			await backend.upsertRole(appId, { ...role, id: createId() });
+			await backend.roleState.upsertRole(appId, { ...role, id: createId() });
 			await roles.refetch();
 		},
 		[appId, backend],
@@ -285,7 +286,7 @@ export default function RolesPage() {
 	const handleDeleteRole = useCallback(
 		async (roleId: string) => {
 			if (!appId) return;
-			await backend.deleteRole(appId, roleId);
+			await backend.roleState.deleteRole(appId, roleId);
 			await roles.refetch();
 		},
 		[appId, backend],
@@ -294,7 +295,7 @@ export default function RolesPage() {
 	const handleSetDefaultRole = useCallback(
 		async (roleId: string) => {
 			if (!appId) return;
-			await backend.makeRoleDefault(appId, roleId);
+			await backend.roleState.makeRoleDefault(appId, roleId);
 			await roles.refetch();
 		},
 		[appId, backend],

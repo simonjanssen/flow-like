@@ -92,7 +92,11 @@ export function DesktopAuthProvider({
 		useState<UserManagerSettings>();
 	const [userManager, setUserManager] = useState<UserManager>();
 	const backend = useBackend();
-	const currentProfile = useInvoke(backend.getProfile, []);
+	const currentProfile = useInvoke(
+		backend.userState.getProfile,
+		backend.userState,
+		[],
+	);
 
 	useEffect(() => {
 		if (!currentProfile.data) return;

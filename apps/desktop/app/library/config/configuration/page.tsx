@@ -43,7 +43,8 @@ export default function ConfigurationPage() {
 	const id = searchParams.get("id");
 
 	const boards = useInvoke(
-		backend.getBoards,
+		backend.boardState.getBoards,
+		backend.boardState,
 		[id ?? ""],
 		typeof id === "string",
 	);
@@ -140,9 +141,9 @@ function BoardConfig({
 				variable: variable,
 			});
 
-			await backend.executeCommand(appId, board.id, command);
-			await invalidate(backend.getBoard, [appId, board.id]);
-			await invalidate(backend.getBoards, [appId]);
+			await backend.boardState.executeCommand(appId, board.id, command);
+			await invalidate(backend.boardState.getBoard, [appId, board.id]);
+			await invalidate(backend.boardState.getBoards, [appId]);
 		},
 		[appId, board.id, backend, invalidate],
 	);

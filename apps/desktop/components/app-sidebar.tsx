@@ -457,9 +457,17 @@ function Profiles() {
 	const invalidate = useInvalidateInvoke();
 	const { isMobile } = useSidebar();
 	const profiles = useTauriInvoke<ISettingsProfile[]>("get_profiles", {});
-	const currentProfile = useInvoke(backend.getSettingsProfile, []);
+	const currentProfile = useInvoke(
+		backend.userState.getSettingsProfile,
+		backend.userState,
+		[],
+	);
 
-	const notifications = useInvoke(backend.getNotifications, []);
+	const notifications = useInvoke(
+		backend.userState.getNotifications,
+		backend.userState,
+		[],
+	);
 	const notificationCount = notifications.data?.invites_count ?? 0;
 
 	return (
@@ -525,10 +533,10 @@ function Profiles() {
 												profileId: profile.hub_profile.id,
 											});
 										await Promise.allSettled([
-											invalidate(backend.getProfile, []),
-											invalidate(backend.getSettingsProfile, []),
-											invalidate(backend.getApps, []),
-											invalidate(backend.searchBits, [
+											invalidate(backend.userState.getProfile, []),
+											invalidate(backend.userState.getSettingsProfile, []),
+											invalidate(backend.appState.getApps, []),
+											invalidate(backend.bitState.searchBits, [
 												{
 													bit_types: [
 														IBitTypes.Llm,
@@ -538,7 +546,7 @@ function Profiles() {
 													],
 												},
 											]),
-											invalidate(backend.searchBits, [
+											invalidate(backend.bitState.searchBits, [
 												{
 													bit_types: [IBitTypes.Template],
 												},
@@ -863,7 +871,11 @@ export function NavUser({
 	const { isMobile } = useSidebar();
 	const auth = useAuth();
 	const backend = useBackend();
-	const profile = useInvoke(backend.getProfile, []);
+	const profile = useInvoke(
+		backend.userState.getProfile,
+		backend.userState,
+		[],
+	);
 
 	const displayName: string = useMemo(() => {
 		const profile = auth?.user?.profile;
@@ -1003,7 +1015,11 @@ function Flows() {
 	const router = useRouter();
 	const pathname = usePathname();
 	const params = useSearchParams();
-	const openBoards = useInvoke(backend.getOpenBoards, []);
+	const openBoards = useInvoke(
+		backend.boardState.getOpenBoards,
+		backend.boardState,
+		[],
+	);
 
 	if ((openBoards.data?.length ?? 0) <= 0) return null;
 

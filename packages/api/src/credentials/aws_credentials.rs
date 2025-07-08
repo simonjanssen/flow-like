@@ -216,21 +216,19 @@ impl RuntimeCredentialsTrait for AwsRuntimeCredentials {
         Ok(FlowLikeStore::AWS(Arc::new(store)))
     }
 
-    #[tracing::instrument(name = "AwsRuntimeCredentials::to_state", skip(self, state), level="debug")]
+    #[tracing::instrument(
+        name = "AwsRuntimeCredentials::to_state",
+        skip(self, state),
+        level = "debug"
+    )]
     async fn to_state(&self, state: AppState) -> Result<FlowLikeState> {
         let (meta_store, content_store, (http_client, _refetch_rx)) = {
             use flow_like_types::tokio;
 
             tokio::join!(
-                async {
-                    self.to_store(true).await
-                },
-                async {
-                    self.to_store(false).await
-                },
-                async {
-                    HTTPClient::new()
-                }
+                async { self.to_store(true).await },
+                async { self.to_store(false).await },
+                async { HTTPClient::new() }
             )
         };
 
@@ -256,23 +254,18 @@ impl RuntimeCredentialsTrait for AwsRuntimeCredentials {
                 .ok_or(anyhow!("SESSION_TOKEN is not set"))?,
         );
 
-
-            config.register_build_logs_database(Arc::new(make_s3_builder(
-                bkt.clone(),
-                key.clone(),
-                secret.clone(),
-                token.clone(),
-            )));
-            config.register_build_project_database(Arc::new(make_s3_builder(
-                bkt, key, secret, token,
-            )));
-
+        config.register_build_logs_database(Arc::new(make_s3_builder(
+            bkt.clone(),
+            key.clone(),
+            secret.clone(),
+            token.clone(),
+        )));
+        config.register_build_project_database(Arc::new(make_s3_builder(bkt, key, secret, token)));
 
         let mut flow_like_state = FlowLikeState::new(config, http_client);
 
         flow_like_state.model_provider_config = state.provider.clone();
         flow_like_state.node_registry.write().await.node_registry = state.registry.clone();
-
 
         Ok(flow_like_state)
     }

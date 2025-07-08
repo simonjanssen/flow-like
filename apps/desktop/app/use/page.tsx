@@ -53,14 +53,16 @@ export default function Page() {
 	}, [EVENT_CONFIG]);
 
 	const metadata = useInvoke(
-		backend.getAppMeta,
+		backend.appState.getAppMeta,
+		backend.appState,
 		[appId ?? ""],
 		typeof appId === "string",
 	);
 
 	const eventId = searchParams.get("eventId");
 	const events = useInvoke(
-		backend.getEvents,
+		backend.eventState.getEvents,
+		backend.eventState,
 		[appId ?? ""],
 		(appId ?? "") !== "",
 	);

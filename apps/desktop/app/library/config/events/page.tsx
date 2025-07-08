@@ -66,7 +66,12 @@ export default function Page() {
 	const [editingEvent, setEditingEvent] = useState<IEvent | null>(null);
 
 	const router = useRouter();
-	const events = useInvoke(backend.getEvents, [id ?? ""], (id ?? "") !== "");
+	const events = useInvoke(
+		backend.eventState.getEvents,
+		backend.eventState,
+		[id ?? ""],
+		(id ?? "") !== "",
+	);
 
 	useEffect(() => {
 		setEditingEvent(events.data?.find((event) => event.id === eventId) ?? null);
@@ -102,7 +107,7 @@ export default function Page() {
 			canary: null,
 			notes: null,
 		};
-		await backend.upsertEvent(id, event);
+		await backend.eventState.upsertEvent(id, event);
 		await events.refetch();
 		setIsCreateDialogOpen(false);
 	};
@@ -112,7 +117,7 @@ export default function Page() {
 			console.error("App ID is required to delete an event");
 			return;
 		}
-		await backend.deleteEvent(id, eventId);
+		await backend.eventState.deleteEvent(id, eventId);
 		if (editingEvent?.id === eventId) {
 			setEditingEvent(null);
 		}
@@ -278,9 +283,15 @@ function EventConfiguration({
 	const [isEditing, setIsEditing] = useState(false);
 	const [formData, setFormData] = useState<IEvent>(event);
 
-	const boards = useInvoke(backend.getBoards, [appId], !!appId && isEditing);
+	const boards = useInvoke(
+		backend.boardState.getBoards,
+		backend.boardState,
+		[appId],
+		!!appId && isEditing,
+	);
 	const board = useInvoke(
-		backend.getBoard,
+		backend.boardState.getBoard,
+		backend.boardState,
 		[
 			appId,
 			formData.board_id,
@@ -289,7 +300,8 @@ function EventConfiguration({
 		!!event.board_id,
 	);
 	const versions = useInvoke(
-		backend.getBoardVersions,
+		backend.boardState.getBoardVersions,
+		backend.boardState,
 		[appId, formData.board_id],
 		(formData.board_id ?? "") !== "" && isEditing,
 	);
@@ -303,7 +315,7 @@ function EventConfiguration({
 	};
 
 	const handleSave = async () => {
-		await backend.upsertEvent(appId, formData);
+		await backend.eventState.upsertEvent(appId, formData);
 		onReload?.();
 		setIsEditing(false);
 	};

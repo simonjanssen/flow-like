@@ -90,7 +90,8 @@ export default function SettingsPage() {
 	);
 
 	const foundBits = useInvoke(
-		backend.searchBits,
+		backend.bitState.searchBits,
+		backend.bitState,
 		[
 			{
 				bit_types: [
@@ -181,7 +182,7 @@ export default function SettingsPage() {
 		const checkInstalled = async () => {
 			const installedSet = new Set<string>();
 			for (const bit of foundBits.data) {
-				const isInstalled = await backend.isBitInstalled(bit);
+				const isInstalled = await backend.bitState.isBitInstalled(bit);
 				if (isInstalled) {
 					installedSet.add(bit.id);
 				}

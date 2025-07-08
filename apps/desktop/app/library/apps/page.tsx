@@ -35,7 +35,7 @@ import { toast } from "sonner";
 
 export default function YoursPage() {
 	const backend = useBackend();
-	const apps = useInvoke(backend.getApps, []);
+	const apps = useInvoke(backend.appState.getApps, backend.appState, []);
 	const router = useRouter();
 	const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 	const [searchQuery, setSearchQuery] = useState("");

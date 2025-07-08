@@ -47,7 +47,9 @@ export function TeamJoinManagement({ appId }: Readonly<{ appId: string }>) {
 		fetchNextPage,
 		refetch,
 		hasNextPage,
-	} = useInfiniteInvoke(backend.getJoinRequests, [appId]);
+	} = useInfiniteInvoke(backend.teamState.getJoinRequests, backend.teamState, [
+		appId,
+	]);
 
 	const requests = requestsPages?.pages.flat() ?? [];
 
@@ -108,12 +110,14 @@ function RequestCard({
 	refresh,
 }: Readonly<{ appId: string; request: IJoinRequest; refresh: () => void }>) {
 	const backend = useBackend();
-	const user = useInvoke(backend.lookupUser, [request.user_id]);
+	const user = useInvoke(backend.userState.lookupUser, backend.userState, [
+		request.user_id,
+	]);
 	const userData = user.data;
 
 	const acceptRequest = useCallback(async () => {
 		try {
-			await backend.acceptJoinRequest(appId, request.id);
+			await backend.teamState.acceptJoinRequest(appId, request.id);
 			refresh();
 		} catch (error) {
 			console.error("Failed to accept request:", error);
@@ -123,7 +127,7 @@ function RequestCard({
 
 	const declineRequest = useCallback(async () => {
 		try {
-			await backend.rejectJoinRequest(appId, request.id);
+			await backend.teamState.rejectJoinRequest(appId, request.id);
 			refresh();
 		} catch (error) {
 			console.error("Failed to decline request:", error);

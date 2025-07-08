@@ -64,15 +64,17 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
-export function UserManagement({ appId }: { appId: string }) {
+export function UserManagement({ appId }: Readonly<{ appId: string }>) {
 	const backend = useBackend();
 	const {
 		data: team,
 		hasNextPage,
 		fetchNextPage,
 		isFetchingNextPage,
-	} = useInfiniteInvoke(backend.getTeam, [appId]);
-	const roles = useInvoke(backend.getRoles, [appId]);
+	} = useInfiniteInvoke(backend.teamState.getTeam, backend.teamState, [appId]);
+	const roles = useInvoke(backend.roleState.getRoles, backend.roleState, [
+		appId,
+	]);
 
 	const [searchQuery, setSearchQuery] = useState("");
 	const [roleFilter, setRoleFilter] = useState<string>("all");
@@ -168,7 +170,9 @@ function Member({
 	const userRole = roles.find((role) => role.id === member.role_id);
 	const permission = new RolePermissions(userRole?.permissions ?? 0);
 	const backend = useBackend();
-	const user = useInvoke(backend.lookupUser, [member.user_id]);
+	const user = useInvoke(backend.userState.lookupUser, backend.userState, [
+		member.user_id,
+	]);
 	const userData = user.data;
 	const RoleIcon = permission.contains(RolePermissions.Owner) ? (
 		<CrownIcon className="w-3 h-3 text-muted-foreground" />

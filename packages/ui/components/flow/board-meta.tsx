@@ -62,18 +62,22 @@ export function BoardMeta({
 	});
 	const backend = useBackend();
 	const invalidate = useInvalidateInvoke();
-	const versions = useInvoke(backend.getBoardVersions, [appId, boardId]);
+	const versions = useInvoke(
+		backend.boardState.getBoardVersions,
+		backend.boardState,
+		[appId, boardId],
+	);
 
 	const [localVersion, setLocalVersion] = useState<
 		[number, number, number] | undefined
 	>(board.version as [number, number, number] | undefined);
 
 	const invalidateBoard = useCallback(async () => {
-		await invalidate(backend.getBoard, [appId, boardId]);
+		await invalidate(backend.boardState.getBoard, [appId, boardId]);
 	}, [invalidate, appId, boardId, backend]);
 
 	const saveMeta = useCallback(async () => {
-		await backend.upsertBoard(
+		await backend.boardState.upsertBoard(
 			appId,
 			boardId,
 			boardMeta.name,
@@ -88,7 +92,11 @@ export function BoardMeta({
 
 	const createVersion = useCallback(
 		async (type: IVersionType) => {
-			const newVersion = await backend.createBoardVersion(appId, boardId, type);
+			const newVersion = await backend.boardState.createBoardVersion(
+				appId,
+				boardId,
+				type,
+			);
 			setLocalVersion(newVersion);
 			await versions.refetch();
 		},

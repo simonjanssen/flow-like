@@ -194,7 +194,7 @@ impl State {
         Ok(app)
     }
 
-     #[tracing::instrument(
+    #[tracing::instrument(
         name = "master_app",
         skip(self, state),
         fields(sub, app_id, board_id, version)
@@ -207,8 +207,7 @@ impl State {
     ) -> flow_like_types::Result<App> {
         let credentials = self.master_credentials().await?;
 
-        let app_state = self.state_cache.get("master")
-            .map(|state| state.clone());
+        let app_state = self.state_cache.get("master").map(|state| state.clone());
 
         let app_state = match app_state {
             Some(state) => state,
@@ -245,7 +244,7 @@ impl State {
         Ok(board)
     }
 
-     #[tracing::instrument(
+    #[tracing::instrument(
         name = "master_board",
         skip(self, state),
         level = "debug",
@@ -261,8 +260,7 @@ impl State {
     ) -> flow_like_types::Result<Board> {
         let credentials = self.master_credentials().await?;
 
-        let app_state = self.state_cache.get("master")
-            .map(|state| state.clone());
+        let app_state = self.state_cache.get("master").map(|state| state.clone());
 
         let app_state = match app_state {
             Some(state) => state,
@@ -308,21 +306,12 @@ impl State {
         Ok(credentials)
     }
 
-    pub fn check_permission(
-        &self,
-        sub: &str,
-        app_id: &str
-    ) -> Option<Arc<role::Model>> {
+    pub fn check_permission(&self, sub: &str, app_id: &str) -> Option<Arc<role::Model>> {
         let key = format!("{}:{}", sub, app_id);
         self.permission_cache.get(&key)
     }
 
-    pub fn put_permission(
-        &self,
-        sub: &str,
-        app_id: &str,
-        role: Arc<role::Model>,
-    ) {
+    pub fn put_permission(&self, sub: &str, app_id: &str, role: Arc<role::Model>) {
         let key = format!("{}:{}", sub, app_id);
         self.permission_cache.insert(key, role);
     }

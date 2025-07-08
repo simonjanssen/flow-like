@@ -44,7 +44,7 @@ export default function NotificationsPage() {
 		fetchNextPage,
 		hasNextPage,
 		refetch,
-	} = useInfiniteInvoke(backend.getInvites, []);
+	} = useInfiniteInvoke(backend.teamState.getInvites, backend.teamState, []);
 	const invitations: IInvite[] = invitationPages
 		? invitationPages.pages.flat()
 		: [];
@@ -53,9 +53,9 @@ export default function NotificationsPage() {
 		async (id: string, action: "accept" | "decline") => {
 			try {
 				if (action === "accept") {
-					await backend.acceptInvite(id);
+					await backend.teamState.acceptInvite(id);
 				} else {
-					await backend.rejectInvite(id);
+					await backend.teamState.rejectInvite(id);
 				}
 				await refetch();
 			} catch (error) {
@@ -196,7 +196,11 @@ function InvitationCard({
 	onAction,
 }: Readonly<InvitationCardProps>) {
 	const backend = useBackend();
-	const userLookup = useInvoke(backend.lookupUser, [invite.by_member_id]);
+	const userLookup = useInvoke(
+		backend.userState.lookupUser,
+		backend.userState,
+		[invite.by_member_id],
+	);
 
 	const evaluatedName =
 		userLookup.data?.name ??

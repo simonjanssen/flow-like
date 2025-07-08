@@ -32,7 +32,7 @@ export const useLogAggregation = create<ILogAggregationState>((set, get) => ({
 	currentMetadata: undefined,
 	setFilter: async (backend: IBackendState, filter: ILogAggregationFilter) => {
 		set({ filter });
-		const runs = await backend.listRuns(
+		const runs = await backend.boardState.listRuns(
 			filter.appId,
 			filter.boardId,
 			filter.nodeId,
@@ -56,7 +56,7 @@ export const useLogAggregation = create<ILogAggregationState>((set, get) => ({
 			return;
 		}
 
-		const runs = await backend.listRuns(
+		const runs = await backend.boardState.listRuns(
 			filter.appId,
 			filter.boardId,
 			filter.nodeId,

@@ -18,7 +18,8 @@ export default function Page() {
 	const id = searchParams.get("id");
 	const prefix = searchParams.get("prefix") ?? "";
 	const files = useInvoke(
-		backend.listStorageItems,
+		backend.storageState.listStorageItems,
+		backend.storageState,
 		[id!, prefix],
 		typeof id === "string",
 	);

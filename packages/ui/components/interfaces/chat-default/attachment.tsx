@@ -14,7 +14,7 @@ export async function fileToAttachment(
 	const attachments: IAttachment[] = [];
 
 	for (const file of files) {
-		const url = await backend.fileToUrl(file);
+		const url = await backend.helperState.fileToUrl(file);
 		attachments.push({
 			name: file.name,
 			type: file.type,
