@@ -1,86 +1,10 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { Plus, Search, Filter, MoreVertical, Workflow, Calendar, User, Edit, Trash2, Copy, Star } from 'lucide-react'
-import { Avatar, AvatarFallback, Badge, Button, Card, CardContent, CardHeader, CardTitle, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, formatRelativeTime, IDate, Input, Label, parseTimespan, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea, useBackend, useInvoke } from '@tm9657/flow-like-ui'
+import { useCallback, useMemo, useState } from 'react'
+import { Plus, Search, Filter, MoreVertical, Workflow, Calendar, User, Edit, Trash2, Copy, Star, CopyIcon } from 'lucide-react'
+import { Avatar, AvatarFallback, Badge, Button, Card, CardContent, CardHeader, CardTitle, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, formatRelativeTime, IDate, Input, IVersionType, Label, nowSystemTime, parseTimespan, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea, useBackend, useInvoke } from '@tm9657/flow-like-ui'
 import { useSearchParams } from 'next/navigation'
-
-// Mock data - replace with your actual data fetching
-const templates = [
-    {
-        id: '1',
-        name: 'Customer Onboarding',
-        description: 'Automated workflow for new customer registration and setup process',
-        workflowName: 'customer-onboarding-v2',
-        workflowVersion: 'v2.1',
-        createdAt: '2024-03-15',
-        author: 'John Doe',
-        isStarred: true,
-        tags: ['customer', 'automation'],
-    },
-    {
-        id: '2',
-        name: 'Invoice Processing',
-        description: 'Streamlined invoice approval and payment processing workflow',
-        workflowName: 'invoice-processor',
-        workflowVersion: 'v1.3',
-        createdAt: '2024-03-10',
-        author: 'Jane Smith',
-        isStarred: false,
-        tags: ['finance', 'approval'],
-    },
-    {
-        id: '3',
-        name: 'Content Review',
-        description: 'Multi-stage content review and approval process for marketing materials',
-        workflowName: 'content-review-flow',
-        workflowVersion: 'v3.0',
-        createdAt: '2024-03-08',
-        author: 'Mike Johnson',
-        isStarred: true,
-        tags: ['content', 'review'],
-    },
-    {
-        id: '1',
-        name: 'Customer Onboarding',
-        description: 'Automated workflow for new customer registration and setup process',
-        workflowName: 'customer-onboarding-v2',
-        workflowVersion: 'v2.1',
-        createdAt: '2024-03-15',
-        author: 'John Doe',
-        isStarred: true,
-        tags: ['customer', 'automation'],
-    },
-    {
-        id: '2',
-        name: 'Invoice Processing',
-        description: 'Streamlined invoice approval and payment processing workflow',
-        workflowName: 'invoice-processor',
-        workflowVersion: 'v1.3',
-        createdAt: '2024-03-10',
-        author: 'Jane Smith',
-        isStarred: false,
-        tags: ['finance', 'approval'],
-    },
-    {
-        id: '3',
-        name: 'Content Review',
-        description: 'Multi-stage content review and approval process for marketing materials',
-        workflowName: 'content-review-flow',
-        workflowVersion: 'v3.0',
-        createdAt: '2024-03-08',
-        author: 'Mike Johnson',
-        isStarred: true,
-        tags: ['content', 'review'],
-    },
-]
-
-const workflows = [
-    { id: 'customer-onboarding-v2', name: 'Customer Onboarding V2', versions: ['v2.1', 'v2.0', 'v1.9'] },
-    { id: 'invoice-processor', name: 'Invoice Processor', versions: ['v1.3', 'v1.2', 'v1.1'] },
-    { id: 'content-review-flow', name: 'Content Review Flow', versions: ['v3.0', 'v2.8', 'v2.7'] },
-    { id: 'user-registration', name: 'User Registration', versions: ['v1.0'] },
-]
+import { toast } from 'sonner'
 
 export default function TemplatesPage() {
     const backend = useBackend()
@@ -92,16 +16,16 @@ export default function TemplatesPage() {
     const boards = useInvoke(backend.boardState.getBoards, backend.boardState, [appId ?? ""], typeof appId === 'string')
     const templates = useInvoke(backend.templateState.getTemplates, backend.templateState, [appId ?? ""], typeof appId === 'string')
     const versions = useInvoke(
-		backend.boardState.getBoardVersions,
-		backend.boardState,
-		[appId, selectedWorkflow],
-		(selectedWorkflow ?? "") !== "" && isCreateDialogOpen,
-	);
-    const [newTemplate, setNewTemplate] = useState({
+        backend.boardState.getBoardVersions,
+        backend.boardState,
+        [appId, selectedWorkflow],
+        (selectedWorkflow ?? "") !== "" && isCreateDialogOpen,
+    );
+    const [newTemplate, setNewTemplate] = useState<any>({
         name: '',
         description: '',
         workflowId: '',
-        workflowVersion: '',
+        workflowVersion: undefined,
     })
 
     const filteredTemplates = useMemo(() => {
@@ -111,15 +35,29 @@ export default function TemplatesPage() {
         ) ?? []
     }, [templates.data, searchTerm])
 
-    const handleCreateTemplate = () => {
-        // Handle template creation logic here
-        console.log('Creating template:', newTemplate)
-        setIsCreateDialogOpen(false)
-        setNewTemplate({ name: '', description: '', workflowId: '', workflowVersion: '' })
-        setSelectedWorkflow('')
-    }
+    const handleCreateTemplate = useCallback(async () => {
 
-    const selectedWorkflowData = workflows.find(w => w.id === selectedWorkflow)
+        if (!selectedWorkflow || !newTemplate.name) {
+            toast.error('Please select a workflow and enter a template name')
+            return
+        }
+
+        const template = await backend.templateState.upsertTemplate(appId, selectedWorkflow, undefined, newTemplate.workflowVersion, IVersionType.Patch)
+        await backend.templateState.pushTemplateMeta(appId, template[0], {
+            name: newTemplate.name,
+            description: newTemplate.description,
+            tags: [],
+            long_description: '',
+            created_at: nowSystemTime(),
+            updated_at: nowSystemTime(),
+            preview_media: []
+        })
+        await templates.refetch()
+        toast.success('Template created successfully')
+        setIsCreateDialogOpen(false)
+        setSelectedWorkflow('')
+        setNewTemplate({ name: '', description: '', workflowId: '', workflowVersion: undefined })
+    }, [appId, newTemplate, backend, selectedWorkflow, templates.refetch])
 
     return (
         <main className="flex-col flex flex-grow max-h-full overflow-hidden p-6 space-y-8">
@@ -144,18 +82,23 @@ export default function TemplatesPage() {
                                 </Button>
                             </DialogTrigger>
                             <DialogContent className="sm:max-w-md">
-                                <DialogHeader>
-                                    <DialogTitle className="flex items-center gap-2">
-                                        <Workflow className="w-5 h-5 text-primary" />
+                                <DialogHeader className="space-y-3">
+                                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                                        <CopyIcon className="h-6 w-6 text-primary" />
+                                    </div>
+                                    <DialogTitle className="text-center text-xl">
                                         Create New Template
                                     </DialogTitle>
-                                    <DialogDescription>
+                                    <DialogDescription className="text-center">
                                         Create a reusable template from an existing workflow
                                     </DialogDescription>
                                 </DialogHeader>
-                                <div className="space-y-4 pt-4">
+
+                                <div className="space-y-6 py-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="template-name">Template Name</Label>
+                                        <Label htmlFor="template-name" className="text-sm font-medium">
+                                            Template Name
+                                        </Label>
                                         <Input
                                             id="template-name"
                                             placeholder="Enter template name"
@@ -163,18 +106,24 @@ export default function TemplatesPage() {
                                             onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
                                         />
                                     </div>
+
                                     <div className="space-y-2">
-                                        <Label htmlFor="template-description">Description</Label>
+                                        <Label htmlFor="template-description" className="text-sm font-medium">
+                                            Description
+                                        </Label>
                                         <Textarea
                                             id="template-description"
                                             placeholder="Describe what this template does"
                                             value={newTemplate.description}
                                             onChange={(e) => setNewTemplate({ ...newTemplate, description: e.target.value })}
-                                            rows={3}
+                                            className="min-h-[80px] resize-none"
                                         />
                                     </div>
+
                                     <div className="space-y-2">
-                                        <Label htmlFor="workflow-select">Source Workflow</Label>
+                                        <Label htmlFor="workflow-select" className="text-sm font-medium">
+                                            Source Workflow
+                                        </Label>
                                         <Select value={selectedWorkflow} onValueChange={setSelectedWorkflow}>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select a workflow" />
@@ -188,30 +137,48 @@ export default function TemplatesPage() {
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    {selectedWorkflowData && (
+
+                                    {selectedWorkflow && (
                                         <div className="space-y-2">
-                                            <Label htmlFor="version-select">Workflow Version</Label>
+                                            <Label htmlFor="version-select" className="text-sm font-medium">
+                                                Workflow Version
+                                            </Label>
                                             <Select
                                                 value={newTemplate.workflowVersion}
-                                                onValueChange={(value) => setNewTemplate({ ...newTemplate, workflowVersion: value })}
+                                                onValueChange={(value) => setNewTemplate({ ...newTemplate, workflowVersion: value === "" || value === "none" ? undefined : value.split(".").map(Number) })}
+                                                disabled={versions.isFetching}
                                             >
                                                 <SelectTrigger>
-                                                    <SelectValue placeholder="Latest" />
+                                                    <SelectValue placeholder={versions.isFetching ? "Loading versions..." : "Latest"} />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="">Latest</SelectItem>
-                                                    {selectedWorkflowData.versions.map((version) => (
-                                                        <SelectItem key={version} value={version}>
-                                                            {version}
-                                                        </SelectItem>
-                                                    ))}
+                                                    {versions.isFetching ? (
+                                                        <div className="flex items-center justify-center py-4">
+                                                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
+                                                            <span className="ml-2 text-sm text-muted-foreground">Loading versions...</span>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            {versions.data?.map((version) => (
+                                                                <SelectItem key={version.join(".")} value={version.join(".")}>
+                                                                    v{version.join(".")}
+                                                                </SelectItem>
+                                                            ))}
+                                                            <SelectItem key={""} value={"none"}>
+                                                                Latest
+                                                            </SelectItem>
+                                                        </>
+                                                    )}
                                                 </SelectContent>
                                             </Select>
                                         </div>
                                     )}
+
                                     <div className="flex gap-2 pt-4">
                                         <Button
-                                            onClick={handleCreateTemplate}
+                                            onClick={async () => {
+                                                await handleCreateTemplate()
+                                            }}
                                             disabled={!newTemplate.name || !selectedWorkflow}
                                             className="flex-1"
                                         >
@@ -247,80 +214,76 @@ export default function TemplatesPage() {
 
             {/* Templates Grid */}
             <div className='flex-1 overflow-auto'>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredTemplates.map(([appId, templateId, meta]) => (
-                    <Card key={templateId} className="group hover:shadow-xl transition-all duration-300">
-                        <CardHeader className="space-y-4">
-                            <div className="flex items-start justify-between">
-                                <div className="flex items-start gap-3">
-                                    <div className="p-2 bg-primary/10 group-hover:bg-primary/30 rounded-lg">
-                                        <Workflow className="w-5 h-5 text-primary" />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredTemplates.map(([appId, templateId, meta]) => (
+                        <Card key={templateId} className="group hover:shadow-xl transition-all duration-300">
+                            <CardHeader className="space-y-4">
+                                <div className="flex items-start justify-between">
+                                    <div className="flex items-start gap-3">
+                                        <div className="p-2 bg-primary/10 group-hover:bg-primary/30 rounded-lg">
+                                            <CopyIcon className="w-5 h-5 text-primary" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <CardTitle className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                                                {meta?.name}
+                                            </CardTitle>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <p>
+                                                    {meta?.description || 'No description provided'}
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <CardTitle className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors truncate">
-                                            {meta?.name}
-                                        </CardTitle>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <p>
-                                                {meta?.description || 'No description provided'}
-                                            </p>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <MoreVertical className="w-4 h-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem>
+                                                <Edit className="w-4 h-4 mr-2" />
+                                                Edit
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                                <Trash2 className="w-4 h-4 mr-2" />
+                                                Delete
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2">
+                                    {meta?.long_description}
+                                </p>
+
+                                <div className="flex flex-wrap gap-1">
+                                    {meta?.tags.map((tag) => (
+                                        <Badge key={tag} variant="outline" className="text-xs">
+                                            {tag}
+                                        </Badge>
+                                    ))}
+                                </div>
+
+                                <div className="pt-4 border-t">
+                                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                        <div className="flex items-center gap-1">
+                                            <Calendar className="w-3 h-3" />
+                                            {meta?.created_at && <span>{formatRelativeTime(meta?.created_at as IDate)}</span>}
                                         </div>
                                     </div>
                                 </div>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <MoreVertical className="w-4 h-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        <DropdownMenuItem>
-                                            <Edit className="w-4 h-4 mr-2" />
-                                            Edit
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem>
-                                            <Copy className="w-4 h-4 mr-2" />
-                                            Duplicate
-                                        </DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem className="text-destructive">
-                                            <Trash2 className="w-4 h-4 mr-2" />
-                                            Delete
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2">
-                                {meta?.long_description}
-                            </p>
-
-                            <div className="flex flex-wrap gap-1">
-                                {meta?.tags.map((tag) => (
-                                    <Badge key={tag} variant="outline" className="text-xs">
-                                        {tag}
-                                    </Badge>
-                                ))}
-                            </div>
-
-                            <div className="pt-4 border-t">
-                                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                    <div className="flex items-center gap-1">
-                                        <Calendar className="w-3 h-3" />
-                                        {meta?.created_at && <span>{formatRelativeTime(meta?.created_at as IDate)}</span>}
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
             </div>
 
             {filteredTemplates.length === 0 && (
                 <div className="text-center py-12">
-                    <Workflow className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                    <CopyIcon className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-foreground mb-2">No templates found</h3>
                     <p className="text-muted-foreground mb-6">
                         {searchTerm ? 'Try adjusting your search terms' : 'Create your first template to get started'}
