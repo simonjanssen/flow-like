@@ -30,7 +30,6 @@ export * from "./hover-card";
 export * from "./input";
 export * from "./label";
 export * from "./loading-screen";
-export * from "./markdown";
 export * from "./popover";
 export * from "./progress";
 export * from "./resizable";

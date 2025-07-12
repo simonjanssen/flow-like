@@ -65,7 +65,10 @@ export const safeDeserialize = (
 				return nodes;
 			}
 		} catch (error) {
-			console.error("Failed to parse prefixed Plate JSON, falling back.", error);
+			console.error(
+				"Failed to parse prefixed Plate JSON, falling back.",
+				error,
+			);
 			return [{ type: "p", children: [{ text: data }] }];
 		}
 	}
@@ -88,7 +91,10 @@ export const safeDeserialize = (
 		if (nodes.length > 0) return nodes;
 		return [{ type: "p", children: [{ text: "" }] }];
 	} catch (error) {
-		console.error("Markdown deserialization failed, attempting fallback:", error);
+		console.error(
+			"Markdown deserialization failed, attempting fallback:",
+			error,
+		);
 
 		// 4. Fallback for broken markdown: split into blocks and deserialize individually.
 		const blocks = splitMarkdownPreservingCodeBlocks(data);
@@ -171,10 +177,7 @@ function TextEditorStatic({
 
 	// The value is memoized to avoid re-creating the editor on every render.
 	const value = useMemo(() => {
-		const tempEditor = createSlateEditor({ plugins: [
-			...BaseEditorKit,
-
-		] });
+		const tempEditor = createSlateEditor({ plugins: [...BaseEditorKit] });
 		return safeDeserialize(
 			tempEditor,
 			initialContent,
@@ -189,7 +192,7 @@ function TextEditorStatic({
 		value,
 	});
 
-	return <PlateStatic editor={editor} />;
+	return <PlateStatic editor={editor} className="py-0" />;
 }
 
 type TextEditorProps = {

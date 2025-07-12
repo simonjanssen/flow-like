@@ -7,11 +7,11 @@ import type {
 	TVideoElement,
 } from "platejs";
 
+import { parseTwitterUrl, parseVideoUrl } from "@platejs/media";
 import { NodeApi, SlateElement } from "platejs";
+import { useMemo } from "react";
 import LiteYouTubeEmbed from "react-lite-youtube-embed";
 import ReactPlayer from "react-player";
-import { parseTwitterUrl, parseVideoUrl } from "@platejs/media";
-import { useMemo } from "react";
 import { cn } from "../../../lib";
 
 function getVideoType(url?: string) {
@@ -60,12 +60,7 @@ export function VideoElementStatic(
 							)}
 						/>
 					) : (
-						<ReactPlayer
-							src={url}
-							width="100%"
-							height="100%"
-							controls
-						/>
+						<ReactPlayer src={url} width="100%" height="100%" controls />
 					)}
 					{caption && <figcaption>{NodeApi.string(caption[0])}</figcaption>}
 				</figure>

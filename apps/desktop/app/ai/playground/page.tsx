@@ -20,8 +20,8 @@ import {
 	type ISettingsProfile,
 	Input,
 	Response as LLMResponse,
-	MarkdownComponent,
 	Progress,
+	TextEditor,
 	Textarea,
 	Tooltip,
 	TooltipContent,
@@ -294,7 +294,11 @@ export default function Home() {
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
-						<MarkdownComponent content={response} />
+						<TextEditor
+							initialContent={response}
+							isMarkdown={true}
+							editable={false}
+						/>
 					</CardContent>
 				</Card>
 			)}

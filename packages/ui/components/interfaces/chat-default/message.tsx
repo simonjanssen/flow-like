@@ -22,8 +22,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 	Label,
-	MarkdownComponent,
 	Switch,
+	TextEditor,
 	Textarea,
 } from "../../ui";
 import { FilePreview, type ProcessedAttachment } from "./attachment";
@@ -391,12 +391,14 @@ export function MessageComponent({
 							: undefined
 					}
 				>
-					<MarkdownComponent
-						content={
+					<TextEditor
+						initialContent={
 							messageContent.text === "" && loading
 								? "🚀 Sending Message..."
 								: messageContent.text
 						}
+						isMarkdown={true}
+						editable={false}
 					/>
 				</div>
 
