@@ -1,32 +1,22 @@
+use crate::utils::json::parse_with_schema::{OpenAIFunction, validate_openai_functions_str};
 use flow_like::{
     bit::Bit,
     flow::{
         board::Board,
-        execution::{
-            LogLevel,
-            context::ExecutionContext,
-        },
+        execution::{LogLevel, context::ExecutionContext},
         node::{Node, NodeLogic},
         pin::{PinOptions, PinType},
         variable::VariableType,
     },
     state::FlowLikeState,
 };
-use flow_like_model_provider::{
-    history::History, response::Response,
-};
+use flow_like_model_provider::{history::History, response::Response};
 use flow_like_types::{Value, async_trait, json};
 use serde::Deserialize;
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
 };
-
-#[derive(Debug, Deserialize)]
-struct Tool {
-    name: String,
-    args: String,
-}
 
 #[derive(Default)]
 pub struct LLMWithTools {}
@@ -91,16 +81,9 @@ impl NodeLogic for LLMWithTools {
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
         context.deactivate_exec_pin("exec_done").await?;
-        context.log_message("LLMWithTools node started", LogLevel::Debug);
 
         let schema_str: String = context.evaluate_pin("tools").await?;
-        let tools: Vec<Tool> = json::from_str(&schema_str)?;
-        for tool in tools {
-            context.log_message(
-                &format!("[tool] name: {}, args: {}", tool.name, tool.args),
-                LogLevel::Debug,
-            );
-        }
+        let tools: Vec<OpenAIFunction> = validate_openai_functions_str(&schema_str)?;
         context.activate_exec_pin("exec_done").await?;
         Ok(())
     }
@@ -128,8 +111,8 @@ impl NodeLogic for LLMWithTools {
             .map(|p| (p.name.clone(), *p))
             .collect::<HashMap<_, _>>();
 
-        let update_tools: Vec<Tool> = match json::from_str(&schema_str) {
-            Ok(value) => value,
+        let update_tools: Vec<OpenAIFunction> = match validate_openai_functions_str(&schema_str) {
+            Ok(tools) => tools,
             Err(err) => {
                 node.error = Some(format!("Failed to parse tools: {err:?}").to_string());
                 return;

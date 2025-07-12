@@ -1,10 +1,7 @@
 use flow_like::{
     bit::Bit,
     flow::{
-        execution::{
-            LogLevel,
-            context::ExecutionContext,
-        },
+        execution::{LogLevel, context::ExecutionContext},
         node::{Node, NodeLogic},
         pin::PinOptions,
         variable::VariableType,

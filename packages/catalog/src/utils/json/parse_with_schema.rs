@@ -1,15 +1,22 @@
-use std::fmt::format;
-
 use flow_like::{
     flow::{
-        execution::{LogLevel, context::ExecutionContext},
+        execution::context::ExecutionContext,
         node::{Node, NodeLogic},
         variable::VariableType,
     },
     state::FlowLikeState,
-    utils::json::parse_malformed_json,
 };
 use flow_like_types::{Error, Value, anyhow, async_trait, json, jsonschema};
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct OpenAIFunction {
+    pub r#type: String,
+    pub name: String,
+    pub description: String,
+    pub parameters: Value,
+    pub strict: bool,
+}
 
 /// Is this JSON Value an OpenAI Function Definition?
 /// https://platform.openai.com/docs/guides/function-calling?api-mode=responses#defining-functions
@@ -26,7 +33,7 @@ pub fn is_openai(data: &Value) -> bool {
 
     // check required fields
     for key in ["name", "description", "parameters", "strict"] {
-        if map.get(key).map_or(true, Value::is_null) {
+        if map.get(key).is_none_or(Value::is_null) {
             return false;
         }
     }
@@ -36,10 +43,53 @@ pub fn is_openai(data: &Value) -> bool {
 /// Validates JSON against OpenAI Function Definition Schema
 /// https://platform.openai.com/docs/guides/function-calling?api-mode=responses#defining-functions
 /// Returns parsed JSON Value if valid
-pub fn validate_openai_function(definition_str: &str) -> Result<Value, Error> {
+pub fn validate_openai_function(function: &OpenAIFunction) -> Result<&OpenAIFunction, Error> {
+    // "type" should always be function
+    if function.r#type != "function" {
+        return Err(anyhow!("As of now, 'type' should always be 'function'"));
+    }
+
+    // check whether 'parameters' is valid JSON schema
+    let parameters = &function.parameters;
+    if !jsonschema::meta::is_valid(parameters) {
+        return Err(anyhow!(
+            "'parameters' value is not a valid JSON schema definition"
+        ));
+    }
+
+    // todo: add strict option to ensure all properties in parameters have descriptions
+    Ok(function)
+}
+
+pub fn validate_openai_functions(
+    functions: &Vec<OpenAIFunction>,
+) -> Result<&Vec<OpenAIFunction>, Error> {
+    for function in functions {
+        validate_openai_function(function)?;
+    }
+    Ok(functions)
+}
+
+pub fn validate_openai_functions_str(functions: &str) -> Result<Vec<OpenAIFunction>, Error> {
+    let functions: Vec<OpenAIFunction> = match json::from_str(functions) {
+        Ok(functions) => functions,
+        Err(e) => {
+            return Err(anyhow!(format!(
+                "Failed to load list of functions from input string: {}",
+                e
+            )));
+        }
+    };
+    match validate_openai_functions(&functions) {
+        Ok(_) => Ok(functions),
+        Err(e) => Err(e),
+    }
+}
+
+pub fn validate_openai_function_str(function: &str) -> Result<OpenAIFunction, Error> {
     // Is definition input pin value valid JSON?
-    let definition: Value = match json::from_str(&definition_str) {
-        Ok(definition) => definition,
+    let function: OpenAIFunction = match json::from_str(function) {
+        Ok(function) => function,
         Err(e) => {
             return Err(anyhow!(format!(
                 "Failed to load definition/schema from input string: {}",
@@ -47,39 +97,10 @@ pub fn validate_openai_function(definition_str: &str) -> Result<Value, Error> {
             )));
         }
     };
-
-    let map = match definition.as_object() {
-        Some(m) => m,
-        None => return Err(anyhow!("Invalid JSON definition")),
-    };
-
-    // "type" should always be function
-    if map.get("type") != Some(&Value::String("function".into())) {
-        return Err(anyhow!("As of now, 'type' should always be 'function'"));
+    match validate_openai_function(&function) {
+        Ok(_) => Ok(function),
+        Err(e) => Err(e),
     }
-
-    // check required keys
-    for key in ["name", "description", "strict"] {
-        if map.get(key).map_or(true, Value::is_null) {
-            return Err(anyhow!(format!("Missing required key {}", key)));
-        }
-    }
-
-    // check whether 'parameters' is valid JSON schema
-    match map.get("parameters") {
-        Some(parameters) => {
-            if !jsonschema::meta::is_valid(parameters) {
-                return Err(anyhow!(
-                    "'parameters' value is not a valid JSON schema definition"
-                ));
-            }
-        }
-        None => return Err(anyhow!("Missing required key: parameters")),
-    };
-
-    // todo: add strict option to ensure all properties in parameters have descriptions
-
-    Ok(definition)
 }
 
 /// Converts OpenAI Function Defintion to JSON Schema
@@ -99,7 +120,7 @@ pub fn into_json_schema(data: Value) -> Result<Value, Error> {
                 }
             }
         }
-        return Err(anyhow!("Failed to convert OpenAI function to JSON Schema"));
+        Err(anyhow!("Failed to convert OpenAI function to JSON Schema"))
     } else {
         Ok(data)
     }
@@ -108,7 +129,7 @@ pub fn into_json_schema(data: Value) -> Result<Value, Error> {
 /// Creates a JSON Schema Validator for a JSON Schema or OpenAI Function Definition
 fn get_schema_validator(definition_str: &str) -> Result<jsonschema::Validator, Error> {
     // Is definition input pin value valid JSON?
-    let definition: Value = match json::from_str(&definition_str) {
+    let definition: Value = match json::from_str(definition_str) {
         Ok(definition) => definition,
         Err(e) => {
             return Err(anyhow!(format!(
@@ -148,10 +169,10 @@ pub fn validate_json_data(definition_str: &str, data_str: &str) -> Result<Value,
         .collect::<Vec<_>>()
         .join("\n");
 
-    if error_msg.len() < 1 {
-        return Ok(data);
+    if error_msg.is_empty() {
+        Ok(data)
     } else {
-        return Err(anyhow!(format!("Schema validation failed: {}", error_msg)));
+        Err(anyhow!(format!("Schema validation failed: {}", error_msg)))
     }
 }
 
@@ -178,16 +199,16 @@ pub fn validate_openai_tool_call(
     };
 
     // Validate input data againts JSON schema
-    let errors = validator.iter_errors(&data);
+    let errors = validator.iter_errors(data);
     let error_msg = errors
         .map(|e| format!("Error: {}, Location: {}", e, e.instance_path))
         .collect::<Vec<_>>()
         .join("\n");
 
-    if error_msg.len() < 1 {
-        return Ok(data.clone());
+    if error_msg.is_empty() {
+        Ok(data.clone())
     } else {
-        return Err(anyhow!(format!("Schema validation failed: {}", error_msg)));
+        Err(anyhow!(format!("Schema validation failed: {}", error_msg)))
     }
 }
 

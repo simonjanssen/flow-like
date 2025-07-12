@@ -5,10 +5,7 @@ use crate::utils::json::parse_with_schema::validate_openai_tool_call;
 use flow_like::{
     bit::Bit,
     flow::{
-        execution::{
-            LogLevel,
-            context::ExecutionContext,
-        },
+        execution::{LogLevel, context::ExecutionContext},
         node::{Node, NodeLogic},
         pin::PinOptions,
         variable::VariableType,

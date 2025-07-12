@@ -1,14 +1,11 @@
 /// # Invoke LLMs to generate a Function Call Definition
 /// Function call definitions or JSON Schemas are tidious to write by hand so this is an utility node to help you out.
 /// Output is guaranteed to be a valid OpenAI-like Function Call Definition
-use crate::utils::json::parse_with_schema::validate_openai_function;
+use crate::utils::json::parse_with_schema::validate_openai_function_str;
 use flow_like::{
     bit::Bit,
     flow::{
-        execution::{
-            LogLevel,
-            context::ExecutionContext,
-        },
+        execution::{LogLevel, context::ExecutionContext},
         node::{Node, NodeLogic},
         pin::PinOptions,
         variable::VariableType,
@@ -16,7 +13,7 @@ use flow_like::{
     state::FlowLikeState,
 };
 use flow_like_model_provider::history::{History, HistoryMessage, Role};
-use flow_like_types::{anyhow, async_trait};
+use flow_like_types::{anyhow, async_trait, json};
 
 const SYSTEM_PROMPT: &str = r#"
 # Instructions
@@ -156,10 +153,12 @@ impl NodeLogic for LLMMakeSchema {
             Some(value) => value,
             _ => return Err(anyhow!("Failed to parse function definition from response")),
         };
-        let defintion = validate_openai_function(definition_str)?;
+        let definition = validate_openai_function_str(definition_str)?;
 
         // set outputs
-        context.set_pin_value("function", defintion).await?;
+        context
+            .set_pin_value("function", json::json!(definition))
+            .await?;
         context.activate_exec_pin("exec_out").await?;
         Ok(())
     }
