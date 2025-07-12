@@ -76,6 +76,8 @@ import { StorageState } from "./tauri-provider/storage-state";
 import { TeamState } from "./tauri-provider/team-state";
 import { TemplateState } from "./tauri-provider/template-state";
 import { UserState } from "./tauri-provider/user-state";
+import { AiState } from "./tauri-provider/ai-state";
+import { IAIState } from "@tm9657/flow-like-ui/state/backend-state/ai-state";
 
 export class TauriBackend implements IBackendState {
 	appState: IAppState;
@@ -88,6 +90,7 @@ export class TauriBackend implements IBackendState {
 	teamState: ITeamState;
 	templateState: ITemplateState;
 	userState: IUserState;
+	aiState: IAIState;
 
 	constructor(
 		public readonly backgroundTaskHandler: (task: Promise<any>) => void,
@@ -105,6 +108,7 @@ export class TauriBackend implements IBackendState {
 		this.teamState = new TeamState(this);
 		this.templateState = new TemplateState(this);
 		this.userState = new UserState(this);
+		this.aiState = new AiState(this);
 	}
 
 	pushProfile(profile: IProfile) {
