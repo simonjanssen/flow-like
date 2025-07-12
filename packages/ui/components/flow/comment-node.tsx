@@ -156,7 +156,7 @@ export function CommentNode(props: NodeProps<CommentNode>) {
 										Edit the text content of the comment.
 									</DialogDescription>
 								</DialogHeader>
-								<div className="flex flex-col flex-grow max-h-full overflow-auto">
+								<div className="flex flex-col flex-grow max-h-full overflow-auto relative">
 									<TextEditor
 										initialContent={
 											props.data.comment.content === ""
@@ -185,7 +185,7 @@ export function CommentNode(props: NodeProps<CommentNode>) {
 								</Button>
 							</DialogContent>
 						</Dialog>
-						<div className="text-start">
+						<div className="text-start relative">
 							<TextEditor
 								initialContent={
 									props.data.comment.content === ""

@@ -14,6 +14,7 @@ import { CalloutKit } from "./plugins/callout-kit";
 import { CodeBlockKit } from "./plugins/code-block-kit";
 import { ColumnKit } from "./plugins/column-kit";
 import { CommentKit } from "./plugins/comment-kit";
+import { CopilotKit } from "./plugins/copilot-kit";
 import { CursorOverlayKit } from "./plugins/cursor-overlay-kit";
 import { DateKit } from "./plugins/date-kit";
 import { DiscussionKit } from "./plugins/discussion-kit";
@@ -39,6 +40,7 @@ import { ToggleKit } from "./plugins/toggle-kit";
 
 export const EditorKit = [
 	...AIKit,
+	...CopilotKit,
 	...BlockMenuKit,
 
 	// Elements

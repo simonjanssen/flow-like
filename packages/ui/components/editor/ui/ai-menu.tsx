@@ -285,37 +285,14 @@ Start writing a new paragraph AFTER <Document> ONLY ONE SENTENCE`
 	},
 	summarizeInBullets: {
 		icon: <ListIcon />,
-		label: 'Summarize in bullets',
-		value: 'summarizeInBullets',
+		label: "Summarize in bullets",
+		value: "summarizeInBullets",
 		onSelect: ({ editor }) => {
 			void editor.getApi(AIChatPlugin).aiChat.submit({
-			prompt: 'Summarize this content as bullet points',
+				prompt: "Summarize this content as bullet points",
 			});
 		},
-		},
-	generateTOC: {
-  icon: <BookIcon />,
-  label: 'Generate table of contents',
-  value: 'generateTOC',
-  onSelect: ({ editor }) => {
-    // Check if document has headings
-    const headings = editor.api.nodes({
-      match: (n) => ['h1', 'h2', 'h3'].includes(n.type as string),
-    });
-
-    if (headings.toArray().length === 0) {
-      void editor.getApi(AIChatPlugin).aiChat.submit({
-        mode: 'insert',
-        prompt: 'Create a table of contents with sample headings for this document',
-      });
-    } else {
-      void editor.getApi(AIChatPlugin).aiChat.submit({
-        mode: 'insert',
-        prompt: 'Generate a table of contents based on the existing headings',
-      });
-    }
-  },
-},
+	},
 	improveWriting: {
 		icon: <Wand />,
 		label: "Improve writing",
@@ -425,7 +402,6 @@ const menuStateItems: Record<
 	cursorCommand: [
 		{
 			items: [
-				aiChatItems.generateTOC,
 				aiChatItems.continueWrite,
 				aiChatItems.summarize,
 				aiChatItems.explain,

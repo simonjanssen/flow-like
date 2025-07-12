@@ -1,5 +1,6 @@
 import { create } from "zustand";
 
+import type { IAIState } from "./backend-state/ai-state";
 import type { IAppState } from "./backend-state/app-state";
 import type { IBitState } from "./backend-state/bit-state";
 import type { IBoardState } from "./backend-state/board-state";
@@ -10,24 +11,28 @@ import type { IStorageState } from "./backend-state/storage-state";
 import type { ITeamState } from "./backend-state/team-state";
 import type { ITemplateState } from "./backend-state/template-state";
 import type { IUserState } from "./backend-state/user-state";
-import type { IAIState } from "./backend-state/ai-state";
 
 export type {
 	IAppState,
 	IBitState,
-	IBoardState, IEventState, IHelperState, IRoleState,
+	IBoardState,
+	IEventState,
+	IHelperState,
+	IRoleState,
 	IStorageState,
-	ITeamState, ITemplateState, IUserState
+	ITeamState,
+	ITemplateState,
+	IUserState,
 };
 
-	export type {
-		IBackendRole,
-		IInvite,
-		IInviteLink,
-		IJoinRequest,
-		IMember,
-		IStorageItemActionResult
-	} from "./backend-state/types";
+export type {
+	IBackendRole,
+	IInvite,
+	IInviteLink,
+	IJoinRequest,
+	IMember,
+	IStorageItemActionResult,
+} from "./backend-state/types";
 
 export interface IBackendState {
 	appState: IAppState;
@@ -40,7 +45,7 @@ export interface IBackendState {
 	templateState: ITemplateState;
 	helperState: IHelperState;
 	eventState: IEventState;
-	aiState: IAIState
+	aiState: IAIState;
 }
 
 interface BackendStoreState {

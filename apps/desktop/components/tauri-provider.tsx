@@ -57,6 +57,7 @@ import {
 } from "@tm9657/flow-like-ui";
 import type { ICommandSync, IStorageItem } from "@tm9657/flow-like-ui/lib";
 import type { IBitSearchQuery } from "@tm9657/flow-like-ui/lib/schema/hub/bit-search-query";
+import type { IAIState } from "@tm9657/flow-like-ui/state/backend-state/ai-state";
 import type {
 	INotificationsOverview,
 	IUserLookup,
@@ -66,6 +67,7 @@ import { type AuthContextProps, useAuth } from "react-oidc-context";
 import { toast } from "sonner";
 import { fetcher, put } from "../lib/api";
 import { appsDB } from "../lib/apps-db";
+import { AiState } from "./tauri-provider/ai-state";
 import { AppState } from "./tauri-provider/app-state";
 import { BitState } from "./tauri-provider/bit-state";
 import { BoardState } from "./tauri-provider/board-state";
@@ -76,8 +78,6 @@ import { StorageState } from "./tauri-provider/storage-state";
 import { TeamState } from "./tauri-provider/team-state";
 import { TemplateState } from "./tauri-provider/template-state";
 import { UserState } from "./tauri-provider/user-state";
-import { AiState } from "./tauri-provider/ai-state";
-import { IAIState } from "@tm9657/flow-like-ui/state/backend-state/ai-state";
 
 export class TauriBackend implements IBackendState {
 	appState: IAppState;

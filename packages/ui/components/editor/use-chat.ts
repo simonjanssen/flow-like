@@ -6,8 +6,8 @@ import { useChat as useBaseChat } from "@ai-sdk/react";
 import { faker } from "@faker-js/faker";
 import { usePluginOption } from "platejs/react";
 
-import { aiChatPlugin } from "./plugins/ai-kit";
 import { useBackend } from "../../state/backend-state";
+import { aiChatPlugin } from "./plugins/ai-kit";
 
 export const useChat = () => {
 	const backend = useBackend();
@@ -30,20 +30,10 @@ export const useChat = () => {
 				throw new Error("useChat must be used within a BackendProvider");
 			}
 
-			const content = JSON.parse(init?.body as string).messages.at(
-						-1,
-					).content;
-
-					console.log("useChat content:", content);
-			console.dir(input, { depth: null });
-			console.dir(init, { depth: null });
-			console.dir({options}, { depth: null });
-
 			_abortFakeStream();
 			abortControllerRef.current = new AbortController();
 
 			const messages = JSON.parse(init?.body as string).messages;
-			console.dir(messages, { depth: null });
 			const chunkStream = await backend.aiState.streamChatComplete(messages);
 
 			const encoder = new TextEncoder();
@@ -55,15 +45,24 @@ export const useChat = () => {
 						for (const event of chunk) {
 							const content = event?.choices?.[0]?.delta?.content;
 							if (content) {
-								console.log(content)
-								controller.enqueue(encoder.encode(`0:${JSON.stringify(content)}\n`));
+								controller.enqueue(
+									encoder.encode(`0:${JSON.stringify(content)}\n`),
+								);
 							}
 
-							if (event?.choices?.[0]?.finish_reason === "stop" && !hasFinished) {
+							if (
+								event?.choices?.[0]?.finish_reason === "stop" &&
+								!hasFinished
+							) {
 								hasFinished = true;
-								const usage = event.usage || { promptTokens: 0, completionTokens: 0 };
+								const usage = event.usage || {
+									promptTokens: 0,
+									completionTokens: 0,
+								};
 								controller.enqueue(
-									encoder.encode(`d:{"finishReason":"stop","usage":${JSON.stringify(usage)}}\n`)
+									encoder.encode(
+										`d:{"finishReason":"stop","usage":${JSON.stringify(usage)}}\n`,
+									),
 								);
 							}
 						}
@@ -71,7 +70,9 @@ export const useChat = () => {
 					flush(controller) {
 						if (!hasFinished) {
 							controller.enqueue(
-								encoder.encode(`d:{"finishReason":"stop","usage":{"promptTokens":0,"completionTokens":500}}\n`)
+								encoder.encode(
+									`d:{"finishReason":"stop","usage":{"promptTokens":0,"completionTokens":500}}\n`,
+								),
 							);
 						}
 					},

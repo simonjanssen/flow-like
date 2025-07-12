@@ -28,7 +28,6 @@ import { KEYS, type TComboboxInputElement } from "platejs";
 import { PlateElement } from "platejs/react";
 
 import { insertBlock, insertInlineElement } from "../transforms";
-
 import {
 	InlineCombobox,
 	InlineComboboxContent,
@@ -210,7 +209,7 @@ export function SlashInputElement(
 			<InlineCombobox element={element} trigger="/">
 				<InlineComboboxInput />
 
-				<InlineComboboxContent>
+				<InlineComboboxContent className="z-[100]">
 					<InlineComboboxEmpty>No results</InlineComboboxEmpty>
 
 					{groups.map(({ group, items }) => (
