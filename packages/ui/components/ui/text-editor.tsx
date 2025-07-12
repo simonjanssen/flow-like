@@ -213,7 +213,6 @@ export const TextEditor = memo(function TextEditor({
 			<TextEditorInner
 				initialContent={initialContent}
 				onChange={(content: string) => {
-					console.log("Content changed:", content);
 					onChange(content);
 				}}
 				isMarkdown={isMarkdown}

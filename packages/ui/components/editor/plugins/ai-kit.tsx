@@ -21,19 +21,14 @@ export const aiChatPlugin = AIChatPlugin.extend({
 			body: {},
 		} as UseChatOptions,
 		promptTemplate: ({ isBlockSelecting, isSelecting }) => {
+			// return "Prompt Template\nBlock: {block}\nEditor: {editor}\nSelection:{selection}\nPrompt: {prompt}";
 			return isBlockSelecting
 				? PROMPT_TEMPLATES.userBlockSelecting
 				: isSelecting
 					? PROMPT_TEMPLATES.userSelecting
 					: PROMPT_TEMPLATES.userDefault;
 		},
-		systemTemplate: ({ isBlockSelecting, isSelecting }) => {
-			return isBlockSelecting
-				? PROMPT_TEMPLATES.systemBlockSelecting
-				: isSelecting
-					? PROMPT_TEMPLATES.systemSelecting
-					: PROMPT_TEMPLATES.systemDefault;
-		},
+		systemTemplate: ({ isBlockSelecting, isSelecting }) => "",
 	},
 	render: {
 		afterContainer: AILoadingBar,
@@ -148,11 +143,16 @@ ${systemCommon}
 </Selection>
 `;
 
-const userDefault = `<Reminder>
+const userDefault = `
+${systemDefault}
+<Reminder>
 CRITICAL: NEVER write <Block>.
 </Reminder>
 {prompt}`;
-const userSelecting = `<Reminder>
+
+const userSelecting = `
+${systemSelecting}
+<Reminder>
 If this is a question, provide a helpful and concise answer about <Selection>.
 If this is an instruction, provide ONLY the text to replace <Selection>. No explanations.
 Ensure it fits seamlessly within <Block>. If <Block> is empty, write ONE random sentence.
@@ -160,7 +160,9 @@ NEVER write <Block> or <Selection>.
 </Reminder>
 {prompt} about <Selection>`;
 
-const userBlockSelecting = `<Reminder>
+const userBlockSelecting = `
+${systemBlockSelecting}
+<Reminder>
 If this is a question, provide a helpful and concise answer about <Selection>.
 If this is an instruction, provide ONLY the content to replace the entire <Selection>. No explanations.
 Maintain the overall structure unless instructed otherwise.

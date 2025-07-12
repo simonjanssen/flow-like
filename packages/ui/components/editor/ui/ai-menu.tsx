@@ -13,11 +13,13 @@ import { Command as CommandPrimitive } from "cmdk";
 import {
 	Album,
 	BadgeHelp,
+	BookIcon,
 	BookOpenCheck,
 	Check,
 	CornerUpLeft,
 	FeatherIcon,
 	ListEnd,
+	ListIcon,
 	ListMinus,
 	ListPlus,
 	Loader2Icon,
@@ -281,26 +283,39 @@ Start writing a new paragraph AFTER <Document> ONLY ONE SENTENCE`
 			});
 		},
 	},
-	generateMarkdownSample: {
-		icon: <BookOpenCheck />,
-		label: "Generate Markdown sample",
-		value: "generateMarkdownSample",
+	summarizeInBullets: {
+		icon: <ListIcon />,
+		label: 'Summarize in bullets',
+		value: 'summarizeInBullets',
 		onSelect: ({ editor }) => {
 			void editor.getApi(AIChatPlugin).aiChat.submit({
-				prompt: "Generate a markdown sample",
+			prompt: 'Summarize this content as bullet points',
 			});
 		},
-	},
-	generateMdxSample: {
-		icon: <BookOpenCheck />,
-		label: "Generate MDX sample",
-		value: "generateMdxSample",
-		onSelect: ({ editor }) => {
-			void editor.getApi(AIChatPlugin).aiChat.submit({
-				prompt: "Generate a mdx sample",
-			});
 		},
-	},
+	generateTOC: {
+  icon: <BookIcon />,
+  label: 'Generate table of contents',
+  value: 'generateTOC',
+  onSelect: ({ editor }) => {
+    // Check if document has headings
+    const headings = editor.api.nodes({
+      match: (n) => ['h1', 'h2', 'h3'].includes(n.type as string),
+    });
+
+    if (headings.toArray().length === 0) {
+      void editor.getApi(AIChatPlugin).aiChat.submit({
+        mode: 'insert',
+        prompt: 'Create a table of contents with sample headings for this document',
+      });
+    } else {
+      void editor.getApi(AIChatPlugin).aiChat.submit({
+        mode: 'insert',
+        prompt: 'Generate a table of contents based on the existing headings',
+      });
+    }
+  },
+},
 	improveWriting: {
 		icon: <Wand />,
 		label: "Improve writing",
@@ -354,6 +369,7 @@ Start writing a new paragraph AFTER <Document> ONLY ONE SENTENCE`
 		onSelect: ({ editor }) => {
 			void editor.getApi(AIChatPlugin).aiChat.submit({
 				prompt: "Simplify the language",
+				system: "You are a helpful assistant that simplifies language.",
 			});
 		},
 	},
@@ -409,8 +425,7 @@ const menuStateItems: Record<
 	cursorCommand: [
 		{
 			items: [
-				aiChatItems.generateMdxSample,
-				aiChatItems.generateMarkdownSample,
+				aiChatItems.generateTOC,
 				aiChatItems.continueWrite,
 				aiChatItems.summarize,
 				aiChatItems.explain,
@@ -431,6 +446,7 @@ const menuStateItems: Record<
 				aiChatItems.makeShorter,
 				aiChatItems.fixSpelling,
 				aiChatItems.simplifyLanguage,
+				aiChatItems.summarizeInBullets,
 			],
 		},
 	],

@@ -7,8 +7,10 @@ import { faker } from "@faker-js/faker";
 import { usePluginOption } from "platejs/react";
 
 import { aiChatPlugin } from "./plugins/ai-kit";
+import { useBackend } from "../../state/backend-state";
 
 export const useChat = () => {
+	const backend = useBackend();
 	const options = usePluginOption(aiChatPlugin, "chatOptions");
 
 	// remove when you implement the route /api/ai/command
@@ -22,45 +24,66 @@ export const useChat = () => {
 
 	const chat = useBaseChat({
 		id: "editor",
-		// Mock the API response. Remove it when you implement the route /api/ai/command
 		// @ts-ignore
 		fetch: async (input, init) => {
-			const res = await fetch(input, init);
+			if (!backend) {
+				throw new Error("useChat must be used within a BackendProvider");
+			}
 
-			if (!res.ok) {
-				let sample: "markdown" | "mdx" | null = null;
-
-				try {
-					const content = JSON.parse(init?.body as string).messages.at(
+			const content = JSON.parse(init?.body as string).messages.at(
 						-1,
 					).content;
 
-					if (content.includes("Generate a markdown sample")) {
-						sample = "markdown";
-					} else if (content.includes("Generate a mdx sample")) {
-						sample = "mdx";
-					}
-				} catch {
-					sample = null;
-				}
+					console.log("useChat content:", content);
+			console.dir(input, { depth: null });
+			console.dir(init, { depth: null });
+			console.dir({options}, { depth: null });
 
-				abortControllerRef.current = new AbortController();
-				await new Promise((resolve) => setTimeout(resolve, 400));
+			_abortFakeStream();
+			abortControllerRef.current = new AbortController();
 
-				const stream = fakeStreamText({
-					sample,
-					signal: abortControllerRef.current.signal,
-				});
+			const messages = JSON.parse(init?.body as string).messages;
+			console.dir(messages, { depth: null });
+			const chunkStream = await backend.aiState.streamChatComplete(messages);
 
-				return new Response(stream, {
-					headers: {
-						Connection: "keep-alive",
-						"Content-Type": "text/plain",
+			const encoder = new TextEncoder();
+			let hasFinished = false;
+
+			const textStream = chunkStream.pipeThrough(
+				new TransformStream({
+					transform(chunk, controller) {
+						for (const event of chunk) {
+							const content = event?.choices?.[0]?.delta?.content;
+							if (content) {
+								console.log(content)
+								controller.enqueue(encoder.encode(`0:${JSON.stringify(content)}\n`));
+							}
+
+							if (event?.choices?.[0]?.finish_reason === "stop" && !hasFinished) {
+								hasFinished = true;
+								const usage = event.usage || { promptTokens: 0, completionTokens: 0 };
+								controller.enqueue(
+									encoder.encode(`d:{"finishReason":"stop","usage":${JSON.stringify(usage)}}\n`)
+								);
+							}
+						}
 					},
-				});
-			}
+					flush(controller) {
+						if (!hasFinished) {
+							controller.enqueue(
+								encoder.encode(`d:{"finishReason":"stop","usage":{"promptTokens":0,"completionTokens":500}}\n`)
+							);
+						}
+					},
+				}),
+			);
 
-			return res;
+			return new Response(textStream, {
+				headers: {
+					Connection: "keep-alive",
+					"Content-Type": "text/plain",
+				},
+			});
 		},
 		...options,
 	});
