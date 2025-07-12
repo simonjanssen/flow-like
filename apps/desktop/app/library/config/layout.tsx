@@ -51,7 +51,7 @@ import {
 	SquarePenIcon,
 	UsersRoundIcon,
 	WorkflowIcon,
-	ZapIcon
+	ZapIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
