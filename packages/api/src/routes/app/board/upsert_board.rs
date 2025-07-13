@@ -6,7 +6,7 @@ use axum::{
     Extension, Json,
     extract::{Path, State},
 };
-use flow_like::flow::{board::ExecutionStage, execution::LogLevel};
+use flow_like::flow::{board::{Board, ExecutionStage}, execution::LogLevel};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Deserialize)]
@@ -15,6 +15,7 @@ pub struct UpsertBoard {
     pub description: Option<String>,
     pub stage: Option<ExecutionStage>,
     pub log_level: Option<LogLevel>,
+    pub template: Option<Board>
 }
 
 #[derive(Deserialize, Serialize)]
@@ -38,7 +39,7 @@ pub async fn upsert_board(
     let mut app = state.master_app(&sub, &app_id, &state).await?;
     let mut id = board_id.clone();
     if !app.boards.contains(&board_id) {
-        id = app.create_board(None).await?;
+        id = app.create_board(None, params.template).await?;
         app.save().await?;
     }
 

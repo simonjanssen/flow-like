@@ -1,15 +1,11 @@
 use super::TauriFunctionError;
 use crate::state::{TauriFlowLikeState, TauriSettingsState};
 use flow_like::{
-    app::App,
-    bit::Metadata,
-    flow::{
+    app::App, bit::Metadata, flow::{
         board::{Board, ExecutionStage},
         execution::LogLevel,
         variable::Variable,
-    },
-    flow_like_storage::Path,
-    profile::ProfileApp,
+    }, flow_like_model_provider::tokenizers::processors::template, flow_like_storage::Path, profile::ProfileApp
 };
 use flow_like_types::create_id;
 use futures::{StreamExt, TryStreamExt};
@@ -114,15 +110,14 @@ pub async fn upsert_board(
     description: String,
     log_level: Option<LogLevel>,
     stage: Option<ExecutionStage>,
-    template: Option<String>,
     board_data: Option<Board>,
+    template: Option<Board>,
 ) -> Result<(), TauriFunctionError> {
     let board_id = board_id.unwrap_or_else(create_id);
     let flow_like_state = TauriFlowLikeState::construct(&app_handle).await?;
     let mut app = App::load(app_id, flow_like_state).await?;
 
     if app.boards.contains(&board_id) {
-        println!("Updating board: {}", board_id);
         let board = app.open_board(board_id, None, None).await?;
         let mut board = board.lock().await;
         board.name = name;
@@ -149,11 +144,9 @@ pub async fn upsert_board(
         board.save(None).await?;
         return Ok(());
     }
-    println!("Creating new board: {}", board_id);
 
     if let Some(board_data) = board_data {
-        println!("Using provided board data for: {}", board_id);
-        let new_board = app.create_board(Some(board_data.id.clone())).await?;
+        let new_board = app.create_board(Some(board_data.id.clone()), template).await?;
         app.save().await?;
         let board = app.open_board(new_board, Some(false), None).await?;
         drop(app);
@@ -176,51 +169,7 @@ pub async fn upsert_board(
         return Ok(());
     }
 
-    if app.boards.is_empty() && template == Some("blank".to_string()) {
-        println!("Creating blank templated board: {}", board_id);
-        let bits_map = app.bits.iter().cloned().collect::<HashSet<String>>();
-        let board = app.create_board(Some(board_id)).await?;
-        let board = app.open_board(board, Some(false), None).await?;
-        let mut variable = Variable::new(
-            "Embedding Models",
-            flow_like::flow::variable::VariableType::String,
-            flow_like::flow::pin::ValueType::HashSet,
-        );
-        variable
-            .set_exposed(false)
-            .set_editable(false)
-            .set_default_value(serde_json::json!(bits_map));
-
-        let mut board = board.lock().await;
-        board.variables.insert(variable.id.clone(), variable);
-        board.name = name;
-        board.description = description;
-        if let Some(log_level) = log_level {
-            board.log_level = log_level;
-        }
-        if let Some(stage) = stage {
-            board.stage = stage;
-        }
-        board.save(None).await?;
-        app.save().await?;
-        return Ok(());
-    }
-
-    let board = app
-        .boards
-        .first()
-        .ok_or(TauriFunctionError::new("No boards found"))?;
-    let board = app.open_board(board.clone(), Some(false), None).await?;
-    let board = board.lock().await;
-    let (_var_id, variable) = board
-        .variables
-        .iter()
-        .find(|(_, variable)| variable.name == "Embedding Models" && !variable.editable)
-        .ok_or(TauriFunctionError::new("No models variable found"))?;
-    let variable: Variable = variable.duplicate();
-    drop(board);
-
-    let board_id = app.create_board(Some(board_id)).await?;
+    let board_id = app.create_board(Some(board_id), template).await?;
     let board = app.open_board(board_id, Some(false), None).await?;
     app.save().await?;
 
@@ -234,7 +183,6 @@ pub async fn upsert_board(
     if let Some(stage) = stage {
         board.stage = stage;
     }
-    board.variables.insert(variable.id.clone(), variable);
     board.save(None).await?;
 
     Ok(())

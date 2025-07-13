@@ -121,37 +121,18 @@ pub async fn upsert_app(
     }
 
     let new_id = create_id();
-    let board_id = {
+    let drive_app = {
         let credentials = state.scoped_credentials(&sub, &new_id).await?;
         let flow_like_state = Arc::new(Mutex::new(credentials.to_state(state.clone()).await?));
-        let mut new_app = App::new(
+        let new_app = App::new(
             Some(new_id.clone()),
             metadata.clone(),
             app_body.bits.clone().unwrap_or_default(),
             flow_like_state,
         )
         .await?;
-        let board = new_app.create_board(None).await?;
-
-        if let Some(bits) = app_body.bits {
-            let bits_map = bits.iter().cloned().collect::<HashSet<String>>();
-            let board = new_app.open_board(board.clone(), Some(false), None).await?;
-            let mut variable = Variable::new(
-                "Embedding Models",
-                flow_like::flow::variable::VariableType::String,
-                flow_like::flow::pin::ValueType::HashSet,
-            );
-            variable
-                .set_exposed(false)
-                .set_editable(false)
-                .set_default_value(serde_json::json!(bits_map));
-            let mut board = board.lock().await;
-            board.variables.insert(variable.id.clone(), variable);
-            board.save(None).await?;
-        }
-
         new_app.save().await?;
-        board.clone()
+        new_app
     };
 
     let app = state
@@ -249,8 +230,5 @@ pub async fn upsert_app(
         })
         .await?;
 
-    let mut app = App::from(app);
-    app.boards = vec![board_id];
-
-    Ok(Json(app))
+    Ok(Json(drive_app))
 }

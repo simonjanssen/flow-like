@@ -490,6 +490,7 @@ export class BoardState implements IBoardState {
 		description: string,
 		logLevel: ILogLevel,
 		stage: IExecutionStage,
+		template?: IBoard,
 	) {
 		const isOffline = await this.backend.isOffline(appId);
 
@@ -501,6 +502,7 @@ export class BoardState implements IBoardState {
 				description: description,
 				logLevel: logLevel,
 				stage: stage,
+				template: template,
 			});
 			return;
 		}
@@ -525,6 +527,7 @@ export class BoardState implements IBoardState {
 					description: description,
 					log_level: logLevel,
 					stage: stage,
+					template: template,
 				}),
 			},
 			this.backend.auth,

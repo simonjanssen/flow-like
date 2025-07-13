@@ -3,23 +3,26 @@ import {
 	type IApp,
 	type IAppState,
 	IAppVisibility,
+	IBoard,
+	IExecutionStage,
+	ILogLevel,
 	type IMetadata,
 	injectDataFunction,
 } from "@tm9657/flow-like-ui";
 import { fetcher, put } from "../../lib/api";
 import { appsDB } from "../../lib/apps-db";
 import type { TauriBackend } from "../tauri-provider";
+import { createId } from "@paralleldrive/cuid2";
 export class AppState implements IAppState {
 	constructor(private readonly backend: TauriBackend) {}
 
 	async createApp(
 		metadata: IMetadata,
 		bits: string[],
-		template: string,
 		online: boolean,
+		template?: IBoard,
 	): Promise<IApp> {
 		let appId: string | undefined;
-		let boardId: string | undefined;
 		if (online && this.backend.profile) {
 			const app: IApp = await put(
 				this.backend.profile,
@@ -36,9 +39,6 @@ export class AppState implements IAppState {
 			});
 
 			appId = app.id;
-			if (app.boards.length > 0) {
-				boardId = app.boards[0];
-			}
 		}
 
 		const app: IApp = await invoke("create_app", {
@@ -53,13 +53,7 @@ export class AppState implements IAppState {
 			});
 		}
 
-		await invoke("upsert_board", {
-			appId: app.id,
-			boardId: boardId,
-			name: "Main Board",
-			description: "The main board for the app",
-			template: template,
-		});
+		await this.backend.boardState.upsertBoard(app.id, createId(), template?.name ?? "Initial Board", template?.description ?? "A blank canvas ready for your ideas", template?.log_level ?? ILogLevel.Debug, IExecutionStage.Dev, template);
 
 		return app;
 	}

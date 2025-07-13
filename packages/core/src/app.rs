@@ -1,7 +1,7 @@
 use crate::{
     bit::Metadata,
     flow::{
-        board::{Board, VersionType},
+        board::{Board, VersionType, commands::nodes::copy_paste::CopyPasteCommand},
         event::Event,
     },
     state::FlowLikeState,
@@ -310,13 +310,29 @@ impl App {
         Ok(())
     }
 
-    pub async fn create_board(&mut self, id: Option<String>) -> flow_like_types::Result<String> {
+    pub async fn create_board(
+        &mut self,
+        id: Option<String>,
+        template: Option<Board>,
+    ) -> flow_like_types::Result<String> {
         let storage_root = Path::from("apps").child(self.id.clone());
         let state = self
             .app_state
             .clone()
             .ok_or(flow_like_types::anyhow!("App state not found"))?;
-        let board = Board::new(id, storage_root, state);
+        let mut board = Board::new(id, storage_root, state.clone());
+        if let Some(template) = template {
+            board.variables = template.variables.clone();
+            let paste_command = {
+                let nodes = template.nodes.values().cloned().collect::<Vec<_>>();
+                let comments = template.comments.values().cloned().collect::<Vec<_>>();
+                let layers = template.layers.values().cloned().collect::<Vec<_>>();
+                CopyPasteCommand::new(nodes, comments, layers, (0.0, 0.0, 0.0))
+            };
+            let paste_command =
+                crate::flow::board::commands::GenericCommand::CopyPaste(paste_command);
+            board.execute_command(paste_command, state).await?;
+        }
         board.save(None).await?;
         self.boards.push(board.id.clone());
         self.updated_at = SystemTime::now();
