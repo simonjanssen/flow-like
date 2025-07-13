@@ -32,7 +32,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "../ui/dialog";
-import { Textarea } from "../ui/textarea";
 
 export type CommentNode = Node<
 	{
