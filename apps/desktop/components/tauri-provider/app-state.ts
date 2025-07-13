@@ -1,9 +1,10 @@
+import { createId } from "@paralleldrive/cuid2";
 import { invoke } from "@tauri-apps/api/core";
 import {
 	type IApp,
 	type IAppState,
 	IAppVisibility,
-	IBoard,
+	type IBoard,
 	IExecutionStage,
 	ILogLevel,
 	type IMetadata,
@@ -12,7 +13,6 @@ import {
 import { fetcher, put } from "../../lib/api";
 import { appsDB } from "../../lib/apps-db";
 import type { TauriBackend } from "../tauri-provider";
-import { createId } from "@paralleldrive/cuid2";
 export class AppState implements IAppState {
 	constructor(private readonly backend: TauriBackend) {}
 
@@ -53,7 +53,15 @@ export class AppState implements IAppState {
 			});
 		}
 
-		await this.backend.boardState.upsertBoard(app.id, createId(), template?.name ?? "Initial Board", template?.description ?? "A blank canvas ready for your ideas", template?.log_level ?? ILogLevel.Debug, IExecutionStage.Dev, template);
+		await this.backend.boardState.upsertBoard(
+			app.id,
+			createId(),
+			template?.name ?? "Initial Board",
+			template?.description ?? "A blank canvas ready for your ideas",
+			template?.log_level ?? ILogLevel.Debug,
+			IExecutionStage.Dev,
+			template,
+		);
 
 		return app;
 	}

@@ -4,13 +4,11 @@ use flow_like::{
     app::App, bit::Metadata, flow::{
         board::{Board, ExecutionStage},
         execution::LogLevel,
-        variable::Variable,
-    }, flow_like_model_provider::tokenizers::processors::template, flow_like_storage::Path, profile::ProfileApp
+    }, flow_like_storage::Path, profile::ProfileApp
 };
 use flow_like_types::create_id;
 use futures::{StreamExt, TryStreamExt};
 use serde_json::Value;
-use std::collections::HashSet;
 use tauri::AppHandle;
 
 #[tauri::command(async)]

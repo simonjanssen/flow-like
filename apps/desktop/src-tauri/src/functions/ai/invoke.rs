@@ -6,7 +6,6 @@ use flow_like::{
         history::{Content, History, HistoryMessage, MessageContent, Role},
         llm::LLMCallback,
         response::Response,
-        response_chunk::ResponseChunk,
     },
     flow_like_types::intercom::{BufferedInterComHandler, InterComEvent},
 };
@@ -164,7 +163,7 @@ pub async fn chat_completion(
         }
     };
 
-    let callback: LLMCallback = Arc::new(move |_response| Box::pin({ async move { Ok(()) } }));
+    let callback: LLMCallback = Arc::new(move |_response| Box::pin(async move { Ok(()) }));
 
     let mut history = History::new("local".to_string(), vec![]);
     history.messages.extend(messages);

@@ -78,7 +78,7 @@ export interface IBoardState {
 		description: string,
 		logLevel: ILogLevel,
 		stage: IExecutionStage,
-		template?: IBoard
+		template?: IBoard,
 	): Promise<void>;
 
 	closeBoard(boardId: string): Promise<void>;

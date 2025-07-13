@@ -1,4 +1,4 @@
-use std::{collections::HashSet, sync::Arc, time::SystemTime};
+use std::{sync::Arc, time::SystemTime};
 
 use crate::{
     entity::{
@@ -15,7 +15,7 @@ use axum::{
     Extension, Json,
     extract::{Path, Query, State},
 };
-use flow_like::{app::App, bit::Metadata, flow::variable::Variable};
+use flow_like::{app::App, bit::Metadata};
 use flow_like_types::{anyhow, create_id, sync::Mutex};
 use sea_orm::{
     ActiveModelTrait,
