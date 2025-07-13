@@ -255,7 +255,7 @@ export function injectData<T, Args extends any[]>(
 
 export async function injectDataFunction<T, Args extends any[]>(
 	lambda: () => Promise<T>,
-	backend: IBackendState,
+	context: any,
 	queryClient: QueryClient,
 	backendFn: BackendFunction<T, Args>,
 	args: Args,
@@ -263,7 +263,7 @@ export async function injectDataFunction<T, Args extends any[]>(
 	oldData?: T,
 ): Promise<UseQueryResult<T, Error>> {
 	try {
-		const boundLambda = lambda.bind(backend);
+		const boundLambda = lambda.bind(context);
 		const result = await boundLambda();
 		const queryKey = [
 			backendFn.name || "backendFn",

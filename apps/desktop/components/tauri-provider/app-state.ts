@@ -163,7 +163,7 @@ export class AppState implements IAppState {
 
 				return Array.from(mergedData.values());
 			},
-			this.backend,
+			this,
 			this.backend.queryClient,
 			this.getApps,
 			[],
@@ -214,7 +214,7 @@ export class AppState implements IAppState {
 
 				return remoteData;
 			},
-			this.backend,
+			this,
 			this.backend.queryClient,
 			this.getApp,
 			[appId],

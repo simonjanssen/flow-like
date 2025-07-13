@@ -56,7 +56,7 @@ export class StorageState implements IStorageState {
 
 				return Array.from(merged.values());
 			},
-			this.backend,
+			this,
 			this.backend.queryClient,
 			this.listStorageItems,
 			[appId, prefix],

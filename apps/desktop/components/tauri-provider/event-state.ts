@@ -65,7 +65,7 @@ export class EventState implements IEventState {
 
 				return remoteData;
 			},
-			this.backend,
+			this,
 			this.backend.queryClient,
 			this.getEvent,
 			[appId, eventId, version],
@@ -111,7 +111,7 @@ export class EventState implements IEventState {
 
 				return remoteData;
 			},
-			this.backend,
+			this,
 			this.backend.queryClient,
 			this.getEvents,
 			[appId],
@@ -157,7 +157,7 @@ export class EventState implements IEventState {
 
 				return remoteData;
 			},
-			this.backend,
+			this,
 			this.backend.queryClient,
 			this.getEventVersions,
 			[appId, eventId],

@@ -116,31 +116,33 @@ pub async fn upsert_board(
     let mut app = App::load(app_id, flow_like_state).await?;
 
     if app.boards.contains(&board_id) {
-        let board = app.open_board(board_id, None, None).await?;
-        let mut board = board.lock().await;
-        board.name = name;
-        board.description = description;
-        if let Some(log_level) = log_level {
-            board.log_level = log_level;
-        }
+        let board = app.open_board(board_id.clone(), None, None).await;
+        if let Ok(board) = board {
+            let mut board = board.lock().await;
+            board.name = name;
+            board.description = description;
+            if let Some(log_level) = log_level {
+                board.log_level = log_level;
+            }
 
-        if let Some(stage) = stage {
-            board.stage = stage;
-        }
+            if let Some(stage) = stage {
+                board.stage = stage;
+            }
 
-        if let Some(data) = board_data {
-            board.variables = data.variables;
-            board.comments = data.comments;
-            board.nodes = data.nodes;
-            board.layers = data.layers;
-            board.parent = data.parent;
-            board.refs = data.refs;
-            board.version = data.version;
-            board.viewport = data.viewport;
-        }
+            if let Some(data) = board_data {
+                board.variables = data.variables;
+                board.comments = data.comments;
+                board.nodes = data.nodes;
+                board.layers = data.layers;
+                board.parent = data.parent;
+                board.refs = data.refs;
+                board.version = data.version;
+                board.viewport = data.viewport;
+            }
 
-        board.save(None).await?;
-        return Ok(());
+            board.save(None).await?;
+            return Ok(());
+        }
     }
 
     if let Some(board_data) = board_data {

@@ -31,12 +31,18 @@ export class BoardState implements IBoardState {
 		const isOffline = await this.backend.isOffline(appId);
 
 		if (
-			isOffline ||
-			!this.backend.profile ||
-			!this.backend.auth ||
-			!this.backend.queryClient
+			isOffline
 		) {
 			return boards;
+		}
+
+
+		if(!this.backend.profile ||
+			!this.backend.auth ||
+			!this.backend.queryClient) {
+				throw new Error(
+					"Profile, auth or query client not set. Cannot fetch boards.",
+				);
 		}
 
 		const promise = injectDataFunction(
@@ -56,7 +62,9 @@ export class BoardState implements IBoardState {
 				}
 
 				for (const board of remoteData) {
-					if (!isEqual(board, mergedBoards.get(board.id)))
+					if (!isEqual(board, mergedBoards.get(board.id))) {
+						console.log(
+							"Board data changed, updating local state:",)
 						await invoke("upsert_board", {
 							appId: appId,
 							boardId: board.id,
@@ -64,12 +72,14 @@ export class BoardState implements IBoardState {
 							description: board.description,
 							boardData: board,
 						});
+					}
+
 					mergedBoards.set(board.id, board);
 				}
 
 				return Array.from(mergedBoards.values());
 			},
-			this.backend,
+			this,
 			this.backend.queryClient,
 			this.getBoards,
 			[appId],
@@ -172,7 +182,7 @@ export class BoardState implements IBoardState {
 
 				return remoteData;
 			},
-			this.backend,
+			this,
 			this.backend.queryClient,
 			this.getBoard,
 			[appId, boardId, version],
@@ -224,7 +234,7 @@ export class BoardState implements IBoardState {
 
 				return remoteData;
 			},
-			this.backend,
+			this,
 			this.backend.queryClient,
 			this.createBoardVersion,
 			[appId, boardId, versionType],
@@ -271,7 +281,7 @@ export class BoardState implements IBoardState {
 
 				return remoteData;
 			},
-			this.backend,
+			this,
 			this.backend.queryClient,
 			this.getBoardVersions,
 			[appId, boardId],
