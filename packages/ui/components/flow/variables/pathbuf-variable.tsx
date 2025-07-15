@@ -50,7 +50,7 @@ export function PathbufVariable({
 						"text-muted-foreground",
 				)}
 				onClick={async () => {
-					const pathBuf: any = await backend.openFileOrFolderMenu(
+					const pathBuf: any = await backend.helperState.openFileOrFolderMenu(
 						false,
 						isFolder,
 						true,
@@ -59,7 +59,7 @@ export function PathbufVariable({
 
 					if (!isFolder) {
 						console.dir(pathBuf);
-						const fileMetadata = await backend.getPathMeta(pathBuf);
+						const fileMetadata = await backend.helperState.getPathMeta(pathBuf);
 						if (!fileMetadata || fileMetadata.length === 0) return;
 						setFileOrFolder(fileMetadata[0].file_path);
 						onChange({

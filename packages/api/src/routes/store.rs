@@ -1,4 +1,4 @@
-use crate::error::AppError;
+use crate::error::InternalError;
 use crate::state::AppState;
 use axum::Json;
 use axum::extract::State;
@@ -16,7 +16,7 @@ pub fn routes() -> Router<AppState> {
 
 async fn db_state_handler(
     State(state): State<AppState>,
-) -> Result<Json<serde_json::Value>, AppError> {
+) -> Result<Json<serde_json::Value>, InternalError> {
     let state = state.db.clone();
     let now = Instant::now();
     state.ping().await?;

@@ -15,7 +15,7 @@ impl ToProto<flow_like_types::proto::Metadata> for Metadata {
             icon: self.icon.clone(),
             thumbnail: self.thumbnail.clone(),
             preview_media: self.preview_media.clone(),
-            age_rating: self.age_rating.clone(),
+            age_rating: self.age_rating,
             website: self.website.clone(),
             support_url: self.support_url.clone(),
             docs_url: self.docs_url.clone(),

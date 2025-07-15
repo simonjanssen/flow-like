@@ -34,7 +34,7 @@ export function PathbufArrayVariable({
 	// add a new path
 	const handleAdd = useCallback(async () => {
 		if (disabled) return;
-		const pathBuf: any = await backend.openFileOrFolderMenu(
+		const pathBuf: any = await backend.helperState.openFileOrFolderMenu(
 			false,
 			isFolder,
 			true,
@@ -44,7 +44,7 @@ export function PathbufArrayVariable({
 		let finalPath = pathBuf;
 
 		if (!isFolder) {
-			const meta = await backend.getPathMeta(pathBuf);
+			const meta = await backend.helperState.getPathMeta(pathBuf);
 			if (!meta || meta.length === 0) return;
 			finalPath = meta[0].file_path;
 		}

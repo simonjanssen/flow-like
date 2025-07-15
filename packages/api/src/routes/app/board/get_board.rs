@@ -10,7 +10,7 @@ use axum::{
 use flow_like::flow::board::Board;
 use flow_like_types::anyhow;
 
-#[tracing::instrument(name = "GET /app/{app_id}/board/{board_id}", skip(state, user))]
+#[tracing::instrument(name = "GET /apps/{app_id}/board/{board_id}", skip(state, user))]
 pub async fn get_board(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,
@@ -28,7 +28,7 @@ pub async fn get_board(
         match parts.as_slice() {
             [maj, min, pat] => Some((*maj, *min, *pat)),
             _ => {
-                return Err(ApiError::App(
+                return Err(ApiError::InternalError(
                     anyhow!("version must be in MAJOR_MINOR_PATCH format").into(),
                 ));
             }
@@ -37,9 +37,15 @@ pub async fn get_board(
         None
     };
 
-    let board = state
-        .scoped_board(&sub, &app_id, &board_id, &state, version_opt)
+    let mut board = state
+        .master_board(&sub, &app_id, &board_id, &state, version_opt)
         .await?;
+
+    board.variables.iter_mut().for_each(|(id, var)| {
+        if var.secret {
+            var.default_value = None;
+        }
+    });
 
     Ok(Json(board))
 }

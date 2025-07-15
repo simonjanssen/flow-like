@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MarkdownComponent } from "./markdown";
+import { TextEditor } from "./text-editor";
 
 function rawFileName(url: string) {
 	if (url.startsWith("data:")) {
@@ -173,14 +173,18 @@ export function FilePreviewer({
 
 	if (isCode(url)) {
 		return (
-			<MarkdownComponent
-				content={`\n\`\`\`${getCodeLanguage(url)}\n${content}\n\`\`\`\n`}
+			<TextEditor
+				initialContent={`\n\`\`\`${getCodeLanguage(url)}\n${content}\n\`\`\`\n`}
+				isMarkdown={true}
+				editable={false}
 			/>
 		);
 	}
 
 	if (isText(url)) {
-		return <MarkdownComponent content={content} />;
+		return (
+			<TextEditor initialContent={content} isMarkdown={true} editable={false} />
+		);
 	}
 
 	return (

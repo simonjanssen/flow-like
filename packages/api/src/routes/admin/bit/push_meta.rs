@@ -1,19 +1,14 @@
 use crate::{
-    entity::{bit, meta},
-    error::ApiError,
-    middleware::jwt::AppUser,
-    permission::global_permission::GlobalPermission,
-    state::AppState,
+    entity::meta, error::ApiError, middleware::jwt::AppUser,
+    permission::global_permission::GlobalPermission, state::AppState,
 };
 use axum::{
     Extension, Json,
     extract::{Path, State},
 };
-use flow_like::bit::{Bit, Metadata};
-use flow_like_storage::object_store::PutPayload;
-use flow_like_types::{anyhow, create_id, reqwest};
+use flow_like::bit::Metadata;
+use flow_like_types::create_id;
 use futures_util::StreamExt;
-use hyper::header::{ACCEPT_RANGES, CONTENT_LENGTH, ETAG};
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter};
 use serde_json::from_slice;
 

@@ -1,4 +1,4 @@
-use crate::app::{App, AppCategory, AppStatus, AppVisibility};
+use crate::app::{App, AppCategory, AppExecutionMode, AppStatus, AppVisibility};
 use flow_like_types::{FromProto, Timestamp, ToProto};
 use std::time::SystemTime;
 
@@ -23,6 +23,7 @@ impl ToProto<flow_like_types::proto::App> for App {
             price: self.price.map(|p| p as i32),
             rating_count: self.rating_count as i64,
             rating_sum: self.rating_sum as i64,
+            execution_mode: Some(self.execution_mode.to_proto()),
             templates: self.templates.clone(),
             created_at: Some(Timestamp::from(self.created_at)),
             updated_at: Some(Timestamp::from(self.updated_at)),
@@ -41,6 +42,7 @@ impl FromProto<flow_like_types::proto::App> for App {
             events: proto.events,
             templates: proto.templates,
             changelog: proto.changelog,
+            execution_mode: AppExecutionMode::from_proto(proto.execution_mode.unwrap_or(0)),
             avg_rating: proto.avg_rating.map(|v| v as f64),
             relevance_score: proto.relevance_score.map(|v| v as f64),
             download_count: proto.download_count as u64,
@@ -118,6 +120,25 @@ impl AppCategory {
             19 => AppCategory::Communication,
             20 => AppCategory::Anime,
             _ => AppCategory::Other, // Default
+        }
+    }
+}
+
+impl AppExecutionMode {
+    fn to_proto(&self) -> i32 {
+        match self {
+            AppExecutionMode::Any => 0,
+            AppExecutionMode::Local => 1,
+            AppExecutionMode::Remote => 2,
+        }
+    }
+
+    fn from_proto(value: i32) -> Self {
+        match value {
+            0 => AppExecutionMode::Any,
+            1 => AppExecutionMode::Local,
+            2 => AppExecutionMode::Remote,
+            _ => AppExecutionMode::Any,
         }
     }
 }

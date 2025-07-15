@@ -14,6 +14,7 @@ import { AppSidebar } from "../components/app-sidebar";
 import { DesktopAuthProvider } from "../components/auth-provider";
 import GlobalAnchorHandler from "../components/global-anchor-component";
 import { TauriProvider } from "../components/tauri-provider";
+import { ThemeLoader } from "../components/theme-loader";
 import ToastProvider from "../components/toast-provider";
 import PostHogPageView from "./PostHogPageView";
 import { ReactScan } from "./ReactScanComponent";
@@ -33,36 +34,37 @@ export default function RootLayout({
 		<html lang="en" suppressHydrationWarning suppressContentEditableWarning>
 			{/* <ReactScan /> */}
 			<PHProvider>
-			<ReactFlowProvider>
-				<PersistQueryClientProvider
-					client={queryClient}
-					persistOptions={{
-						persister,
-					}}
-				>
-					<body className={inter.className}>
-						<GlobalAnchorHandler />
-						<ThemeProvider
-							attribute="class"
-							defaultTheme="system"
-							enableSystem
-							storageKey="theme"
-							disableTransitionOnChange
-						>
-							<TooltipProvider>
-								<Toaster />
-								<ToastProvider />
-								<TauriProvider>
-									<DesktopAuthProvider>
-										<PostHogPageView />
-										<AppSidebar>{children}</AppSidebar>
-									</DesktopAuthProvider>
-								</TauriProvider>
-							</TooltipProvider>
-						</ThemeProvider>
-					</body>
-				</PersistQueryClientProvider>
-			</ReactFlowProvider>
+				<ReactFlowProvider>
+					<PersistQueryClientProvider
+						client={queryClient}
+						persistOptions={{
+							persister,
+						}}
+					>
+						<body className={inter.className}>
+							<GlobalAnchorHandler />
+							<ThemeProvider
+								attribute="class"
+								defaultTheme="system"
+								enableSystem
+								storageKey="theme"
+								disableTransitionOnChange
+							>
+								<TooltipProvider>
+									<Toaster />
+									<ToastProvider />
+									<TauriProvider>
+										<DesktopAuthProvider>
+											<PostHogPageView />
+											<ThemeLoader />
+											<AppSidebar>{children}</AppSidebar>
+										</DesktopAuthProvider>
+									</TauriProvider>
+								</TooltipProvider>
+							</ThemeProvider>
+						</body>
+					</PersistQueryClientProvider>
+				</ReactFlowProvider>
 			</PHProvider>
 		</html>
 	);

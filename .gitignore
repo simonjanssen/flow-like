@@ -8,6 +8,8 @@ pnpm-debug.log*
 lerna-debug.log*
 .venv
 
+.cargo/config.toml
+
 api.config.json
 
 node_modules
@@ -60,3 +62,4 @@ next-env.d.ts
 .yarn/install-state.gz
 .env
 .VSCodeCounter
+.cargo/config.toml

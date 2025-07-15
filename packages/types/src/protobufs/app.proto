@@ -36,6 +36,12 @@ enum AppStatus {
   ARCHIVED = 2;
 }
 
+enum AppExecutionMode {
+  ANY = 0;
+  LOCAL = 1;
+  REMOTE = 2;
+}
+
 enum AppVisibility {
   PUBLIC = 0;
   PUBLIC_REQUEST_ACCESS = 1;
@@ -69,4 +75,5 @@ message App {
   optional float relevance_score = 20;
 
   optional int32 price = 21;
+  optional AppExecutionMode execution_mode = 22;
 }

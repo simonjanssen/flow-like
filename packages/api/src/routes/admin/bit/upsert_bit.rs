@@ -13,7 +13,7 @@ use flow_like_storage::object_store::PutPayload;
 use flow_like_types::{anyhow, create_id, reqwest};
 use futures_util::StreamExt;
 use hyper::header::{ACCEPT_RANGES, CONTENT_LENGTH, ETAG};
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, sqlx};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter};
 
 #[tracing::instrument(name = "PUT /admin/bit/{bit_id}", skip(state, user, bit))]
 pub async fn upsert_bit(
@@ -123,7 +123,7 @@ async fn download_and_hash(bit: &mut bit::Model, state: AppState) -> flow_like_t
         .get(ETAG)
         .and_then(|v| v.to_str().ok())
         .map(|s| s.trim().trim_matches('"').to_string())
-        .unwrap_or_else(|| create_id());
+        .unwrap_or_else(create_id);
 
     let path = flow_like_storage::object_store::path::Path::from("bits").child(e_tag.clone());
 
@@ -157,10 +157,7 @@ async fn download_and_hash(bit: &mut bit::Model, state: AppState) -> flow_like_t
                         }
 
                         let upload_fut = upload_request.put_part(payload);
-                        pending_upload =
-                            Some(flow_like_types::tokio::spawn(
-                                async move { upload_fut.await },
-                            ));
+                        pending_upload = Some(flow_like_types::tokio::spawn(upload_fut));
 
                         total_downloaded += end - start + 1;
                         tracing::info!(

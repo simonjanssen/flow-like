@@ -79,7 +79,7 @@ pub async fn search_bits(
             let requested_lang_or_en = meta_models
                 .iter()
                 .find(|meta| meta.lang == language)
-                .or_else(|| meta_models.iter().next())
+                .or_else(|| meta_models.first())
                 .cloned();
 
             if let Some(requested_lang_or_en) = requested_lang_or_en {

@@ -46,8 +46,7 @@ pub async fn get_bit(
         .all(&state.db)
         .await?;
 
-    let metadata: Option<Vec<meta::Model>> =
-        bit.iter().next().and_then(|(_, meta)| Some(meta.clone()));
+    let metadata: Option<Vec<meta::Model>> = bit.first().map(|(_, meta)| meta.clone());
 
     let bit = match bit.into_iter().next() {
         Some((bit, _)) => bit,

@@ -1,5 +1,4 @@
 use flow_like::app::App;
-use flow_like::flow::event::Event;
 use flow_like::flow::execution::InternalRun;
 use flow_like::flow::execution::log::LogMessage;
 use flow_like::flow::execution::{LogLevel, LogMeta, RunPayload};
@@ -36,9 +35,9 @@ async fn execute_internal(
     };
 
     if let Some(event_id) = &event_id {
-        let intermediate_event = app.get_event(&event_id, None).await?;
+        let intermediate_event = app.get_event(event_id, None).await?;
         payload.id = intermediate_event.node_id.clone();
-        version = intermediate_event.board_version.clone();
+        version = intermediate_event.board_version;
         board_id = intermediate_event.board_id.clone();
         event = Some(intermediate_event);
     }

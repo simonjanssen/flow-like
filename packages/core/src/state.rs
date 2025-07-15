@@ -17,11 +17,9 @@ use crate::flow::execution::{LogMeta, log::LogMessage};
 
 #[cfg(feature = "flow-runtime")]
 use crate::flow::board::Board;
-#[cfg(feature = "flow-runtime")]
-use crate::flow::execution::InternalRun;
+use crate::flow::node::Node;
 #[cfg(feature = "flow-runtime")]
 use crate::flow::node::NodeLogic;
-use crate::flow::node::{self, Node};
 
 use crate::models::embedding_factory::EmbeddingFactory;
 #[cfg(feature = "model")]

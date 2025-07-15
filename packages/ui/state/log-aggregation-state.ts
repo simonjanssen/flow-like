@@ -32,16 +32,16 @@ export const useLogAggregation = create<ILogAggregationState>((set, get) => ({
 	currentMetadata: undefined,
 	setFilter: async (backend: IBackendState, filter: ILogAggregationFilter) => {
 		set({ filter });
-		const runs = await backend.listRuns(
+		const runs = await backend.boardState.listRuns(
 			filter.appId,
 			filter.boardId,
 			filter.nodeId,
 			filter.from,
 			filter.to,
 			filter.status,
-			filter.limit,
-			filter.offset,
 			filter.lastMeta,
+			filter.offset,
+			filter.limit,
 		);
 
 		set({ currentLogs: runs.toSorted((a, b) => b.start - a.start) });
@@ -56,16 +56,16 @@ export const useLogAggregation = create<ILogAggregationState>((set, get) => ({
 			return;
 		}
 
-		const runs = await backend.listRuns(
+		const runs = await backend.boardState.listRuns(
 			filter.appId,
 			filter.boardId,
 			filter.nodeId,
 			filter.from,
 			filter.to,
 			filter.status,
-			filter.limit,
-			filter.offset,
 			filter.lastMeta,
+			filter.offset,
+			filter.limit,
 		);
 
 		set({ currentLogs: runs.toSorted((a, b) => b.start - a.start) });

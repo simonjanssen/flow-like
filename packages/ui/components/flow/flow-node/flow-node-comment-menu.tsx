@@ -38,7 +38,11 @@ export function FlowNodeCommentMenu({
 			node: { ...node, comment },
 		});
 
-		const result = await backend.executeCommand(appId, boardId, command);
+		const result = await backend.boardState.executeCommand(
+			appId,
+			boardId,
+			command,
+		);
 		await pushCommand(result);
 		onOpenChange(false);
 		setComment("");
@@ -46,7 +50,7 @@ export function FlowNodeCommentMenu({
 	}
 
 	async function refetchBoard() {
-		await invalidate(backend.getBoard, [appId, boardId]);
+		await invalidate(backend.boardState.getBoard, [appId, boardId]);
 	}
 
 	return (

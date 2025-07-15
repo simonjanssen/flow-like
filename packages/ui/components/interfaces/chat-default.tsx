@@ -302,7 +302,7 @@ export const ChatInterfaceMemoized = memo(function ChatInterface({
 			let tmpLocalState = localState;
 			let tmpGlobalState = globalState;
 
-			await backend.executeEvent(
+			await backend.eventState.executeEvent(
 				appId,
 				event.id,
 				{

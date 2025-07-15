@@ -101,7 +101,7 @@ function FlowPinInnerComponent({
 	);
 
 	const refetchBoard = useCallback(async () => {
-		invalidate(backend.getBoard, [appId, boardId]);
+		invalidate(backend.boardState.getBoard, [appId, boardId]);
 	}, [appId, boardId, backend, invalidate]);
 
 	const updateNode = useCallback(async () => {
@@ -120,7 +120,7 @@ function FlowPinInnerComponent({
 			},
 		});
 
-		const result = await backend.executeCommand(
+		const result = await backend.boardState.executeCommand(
 			currentNode.data.appId as string,
 			boardId,
 			command,

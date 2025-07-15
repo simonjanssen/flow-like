@@ -1,4 +1,5 @@
 use arrow_array::RecordBatch;
+use datafusion::prelude::*;
 use flow_like_types::Cacheable;
 use flow_like_types::async_trait;
 use flow_like_types::{Result, Value, anyhow};
@@ -16,6 +17,7 @@ use lancedb::{
     query::{ExecutableQuery, QueryBase},
     table::{CompactionOptions, Duration, OptimizeOptions},
 };
+
 use std::{any::Any, path::PathBuf, sync::Arc};
 
 use crate::arrow_utils::record_batch_to_value;
@@ -40,14 +42,13 @@ impl Cacheable for LanceDBVectorStore {
     }
 }
 impl LanceDBVectorStore {
-    pub async fn new(path: PathBuf, table_name: String) -> Option<Self> {
+    pub async fn new(path: PathBuf, table_name: String) -> Result<Self> {
         let connection = connect(path.to_str().unwrap()).execute().await.ok();
-        connection.as_ref()?;
-        let connection: Connection = connection.unwrap();
+        let connection: Connection = connection.ok_or(anyhow!("Error connecting to LanceDB"))?;
 
         let table = connection.open_table(&table_name).execute().await.ok();
 
-        Some(LanceDBVectorStore {
+        Ok(LanceDBVectorStore {
             connection,
             table,
             table_name,
@@ -62,6 +63,30 @@ impl LanceDBVectorStore {
             table,
             table_name,
         }
+    }
+
+    pub async fn to_datafusion(&self) -> Result<lancedb::table::datafusion::BaseTableAdapter> {
+        let table = self
+            .table
+            .clone()
+            .ok_or_else(|| anyhow!("Table not initialized"))?;
+        let df_table = table.base_table();
+        let adapter =
+            lancedb::table::datafusion::BaseTableAdapter::try_new(df_table.clone()).await?;
+        Ok(adapter)
+    }
+
+    pub async fn sql(
+        &self,
+        table_name: &str,
+        sql: &str,
+    ) -> Result<datafusion::dataframe::DataFrame> {
+        let table = self.to_datafusion().await?;
+        let ctx = SessionContext::new();
+        ctx.register_table(table_name, Arc::new(table))?;
+        let results = ctx.sql(sql).await?;
+
+        Ok(results)
     }
 }
 
@@ -398,9 +423,7 @@ mod tests {
     async fn test_lance_ingest() -> Result<()> {
         let test_path = format!("./tmp/{}", create_id());
         std::fs::create_dir_all(&test_path).unwrap();
-        let mut db = LanceDBVectorStore::new(PathBuf::from(&test_path), "t".to_string())
-            .await
-            .ok_or(anyhow!("Error creating LanceDB"))?;
+        let mut db = LanceDBVectorStore::new(PathBuf::from(&test_path), "t".to_string()).await?;
         let records = vec![
             TestStruct {
                 id: 1,
@@ -430,9 +453,7 @@ mod tests {
     async fn test_lance_search_first() -> Result<()> {
         let test_path = format!("./tmp/{}", create_id());
         std::fs::create_dir_all(&test_path).unwrap();
-        let mut db = LanceDBVectorStore::new(PathBuf::from(&test_path), "t".to_string())
-            .await
-            .ok_or(anyhow!("Error creating LanceDB"))?;
+        let mut db = LanceDBVectorStore::new(PathBuf::from(&test_path), "t".to_string()).await?;
         let records = vec![
             TestStruct {
                 id: 1,
@@ -471,9 +492,7 @@ mod tests {
     async fn test_lance_search_fts() -> Result<()> {
         let test_path = format!("./tmp/{}", create_id());
         std::fs::create_dir_all(&test_path).unwrap();
-        let mut db = LanceDBVectorStore::new(PathBuf::from(&test_path), "t".to_string())
-            .await
-            .ok_or(anyhow!("Error creating LanceDB"))?;
+        let mut db = LanceDBVectorStore::new(PathBuf::from(&test_path), "t".to_string()).await?;
         let records = vec![
             TestStruct {
                 id: 1,
@@ -513,9 +532,7 @@ mod tests {
     async fn test_lance_search_second() -> Result<()> {
         let test_path = format!("./tmp/{}", create_id());
         std::fs::create_dir_all(&test_path).unwrap();
-        let mut db = LanceDBVectorStore::new(PathBuf::from(&test_path), "t".to_string())
-            .await
-            .ok_or(anyhow!("Error creating LanceDB"))?;
+        let mut db = LanceDBVectorStore::new(PathBuf::from(&test_path), "t".to_string()).await?;
         let records = vec![
             TestStruct {
                 id: 1,
@@ -554,9 +571,7 @@ mod tests {
     async fn test_lance_search_filter() -> Result<()> {
         let test_path = format!("./tmp/{}", create_id());
         std::fs::create_dir_all(&test_path).unwrap();
-        let mut db = LanceDBVectorStore::new(PathBuf::from(&test_path), "t".to_string())
-            .await
-            .ok_or(anyhow!("Error creating LanceDB"))?;
+        let mut db = LanceDBVectorStore::new(PathBuf::from(&test_path), "t".to_string()).await?;
         let records = vec![
             TestStruct {
                 id: 1,
@@ -597,9 +612,7 @@ mod tests {
     async fn test_lance_no_vec() -> Result<()> {
         let test_path = format!("./tmp/{}", create_id());
         std::fs::create_dir_all(&test_path).unwrap();
-        let mut db = LanceDBVectorStore::new(PathBuf::from(&test_path), "t".to_string())
-            .await
-            .ok_or(anyhow!("Error creating LanceDB"))?;
+        let mut db = LanceDBVectorStore::new(PathBuf::from(&test_path), "t".to_string()).await?;
         let records = vec![
             TestStruct2 {
                 id: 1,
@@ -634,7 +647,6 @@ mod tests {
         std::fs::create_dir_all(&test_path).unwrap();
         let db = LanceDBVectorStore::new(PathBuf::from(&test_path), "t".to_string())
             .await
-            .ok_or(anyhow!("Error creating LanceDB"))
             .unwrap();
         let cacheable: Arc<dyn Cacheable> = Arc::new(db.clone());
         let resolved = cacheable

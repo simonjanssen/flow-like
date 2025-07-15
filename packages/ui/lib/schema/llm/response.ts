@@ -40,10 +40,34 @@ export interface ITopLogProbs {
 }
 
 export interface IResponseMessage {
+	annotations?: IAnnotation[] | null;
+	audio?: null | IAudio;
 	content?: null | string;
 	refusal?: null | string;
 	role: string;
 	tool_calls?: IFunctionCall[];
+	[property: string]: any;
+}
+
+export interface IAnnotation {
+	type: string;
+	url_citation?: null | IURLCitation;
+	[property: string]: any;
+}
+
+export interface IURLCitation {
+	end_index: number;
+	start_index: number;
+	title: string;
+	url: string;
+	[property: string]: any;
+}
+
+export interface IAudio {
+	data: string;
+	expires_at?: number | null;
+	id: string;
+	transcript?: null | string;
 	[property: string]: any;
 }
 

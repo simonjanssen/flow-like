@@ -82,6 +82,8 @@ impl NodeLogic for IndexLocalDatabaseNode {
         let database = database.read().await;
         let column: String = context.evaluate_pin("column").await?;
         database.index(&column, Some(&index_type)).await?;
+
+        context.activate_exec_pin("exec_out").await?;
         Ok(())
     }
 }

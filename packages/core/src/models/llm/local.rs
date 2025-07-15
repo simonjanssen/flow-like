@@ -155,6 +155,7 @@ impl LocalModel {
                 std::cmp::min(context_length, execution_settings.max_context_size as u32);
             let binding = context_length.to_string();
             let port = port.to_string();
+            println!("Execution settings: {:?}", execution_settings);
             let mut args = vec![
                 "-m",
                 &gguf_path.to_str().unwrap(),
@@ -170,7 +171,7 @@ impl LocalModel {
             let mut gpu_layer = 0;
 
             if execution_settings.gpu_mode {
-                gpu_layer = 25;
+                gpu_layer = 45;
             }
 
             let gpu_layer = gpu_layer.to_string();

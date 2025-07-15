@@ -20,8 +20,8 @@ import {
 	type ISettingsProfile,
 	Input,
 	Response as LLMResponse,
-	MarkdownComponent,
 	Progress,
+	TextEditor,
 	Textarea,
 	Tooltip,
 	TooltipContent,
@@ -43,7 +43,8 @@ export default function Home() {
 	const [question, setQuestion] = useState("");
 	const [model, setModel] = useState("");
 	const profile: UseQueryResult<ISettingsProfile> = useInvoke(
-		backend.getSettingsProfile,
+		backend.userState.getSettingsProfile,
+		backend.userState,
 		[],
 	);
 	const [response, setResponse] = useState("");
@@ -293,7 +294,11 @@ export default function Home() {
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
-						<MarkdownComponent content={response} />
+						<TextEditor
+							initialContent={response}
+							isMarkdown={true}
+							editable={false}
+						/>
 					</CardContent>
 				</Card>
 			)}
