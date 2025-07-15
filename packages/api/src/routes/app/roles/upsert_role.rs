@@ -29,7 +29,6 @@ pub async fn upsert_role(
         .await?;
 
     if let Some(role) = role {
-        println!("Updating role: {:?}", role);
         let permission = RolePermissions::from_bits(role.permissions).ok_or(ApiError::Forbidden)?;
 
         payload.id = role.id;
