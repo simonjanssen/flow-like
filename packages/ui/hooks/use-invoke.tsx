@@ -35,10 +35,11 @@ export function useInvoke<T, Args extends any[]>(
 ): UseQueryResult<T, Error> {
 	const backend = useBackend();
 	const query = useQuery<T, Error>({
-		queryKey: [backendFn.name || "backendFn", ...args, ...additionalDeps],
+		queryKey: [backendFn.name || "backendFn", ...args, ...additionalDeps].filter(arg => typeof arg !== "undefined"),
 		staleTime: 1000,
 		queryFn: async () => {
 			try {
+				console.log("Invoking backend function:", [backendFn.name || "backendFn", ...args, ...additionalDeps].filter(arg => typeof arg !== "undefined"));
 				const boundFn = backendFn.bind(backendContext ?? backend);
 				const response = await boundFn(...args);
 				return response; // No need to cast if types are correctly inferred/set
@@ -94,7 +95,7 @@ export function useInfiniteInvoke<T, Args extends any[]>(
 			...args,
 			pageSize,
 			...additionalDeps,
-		],
+		].filter(arg => typeof arg !== "undefined"),
 		queryFn: async ({ pageParam = 0 }) => {
 			try {
 				const boundFn = backendFn.bind(backendContext ?? backend);
@@ -181,7 +182,7 @@ export function useInvalidateInfiniteInvoke() {
 			...args,
 			pageSize,
 			...additionalDeps,
-		];
+		].filter(arg => typeof arg !== "undefined");
 		console.log("Invalidating infinite queries with prefix:", queryKeyPrefix);
 		return queryClient.invalidateQueries({
 			queryKey: queryKeyPrefix,
@@ -220,7 +221,7 @@ export function useInvalidateInvoke() {
 			backendFn.name || "backendFn",
 			...args,
 			...additionalDeps,
-		];
+		].filter(arg => typeof arg !== "undefined");
 		console.log("Invalidating queries with prefix:", queryKeyPrefix);
 		return queryClient.invalidateQueries({
 			queryKey: queryKeyPrefix,
@@ -237,7 +238,7 @@ export function injectData<T, Args extends any[]>(
 	data: T,
 	additionalDeps: any[] = [],
 ): UseQueryResult<T, Error> {
-	const queryKey = [backendFn.name || "backendFn", ...args, ...additionalDeps];
+	const queryKey = [backendFn.name || "backendFn", ...args, ...additionalDeps].filter(arg => typeof arg !== "undefined");
 
 	// Immediately set the data in the cache
 	queryClient.setQueryData(queryKey, data);
@@ -270,7 +271,7 @@ export async function injectDataFunction<T, Args extends any[]>(
 			backendFn.name || "backendFn",
 			...args,
 			...additionalDeps,
-		];
+		].filter(arg => typeof arg !== "undefined");
 
 		if (!isEqual(result, oldData)) {
 			queryClient?.setQueryData(queryKey, result);
@@ -310,6 +311,6 @@ export function invalidateData<T, Args extends any[]>(
 	args: Args,
 	additionalDeps: any[] = [],
 ): void {
-	const queryKey = [backendFn.name || "backendFn", ...args, ...additionalDeps];
+	const queryKey = [backendFn.name || "backendFn", ...args, ...additionalDeps].filter(arg => typeof arg !== "undefined");
 	queryClient.invalidateQueries({ queryKey });
 }

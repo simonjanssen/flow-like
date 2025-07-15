@@ -538,8 +538,14 @@ impl App {
         data: Board,
         version: Option<(u32, u32, u32)>,
     ) -> flow_like_types::Result<()> {
+        let app_state = self
+            .app_state
+            .clone()
+            .ok_or(flow_like_types::anyhow!("App state not found"))?;
         let mut data = data;
+        data.app_state = Some(app_state.clone());
         data.id = template_id.clone();
+        data.board_dir = Path::from("apps").child(self.id.clone());
 
         if let Some(version) = version {
             data.overwrite_template_version(version, None).await?;

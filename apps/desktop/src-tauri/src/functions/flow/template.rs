@@ -58,6 +58,8 @@ pub async fn get_templates(
             let templates = &app.templates;
             let mut loaded_templates = Vec::with_capacity(templates.len());
 
+            println!("Loading templates for app: {}, candidates: {}", app_id, templates.len());
+
             for template in templates {
                 let template = app.get_template(template, None).await;
                 if let Ok(loaded_template) = template {
@@ -65,6 +67,7 @@ pub async fn get_templates(
                         .get_template_meta(&loaded_template.id, language.clone())
                         .await
                         .ok();
+                    println!("Loaded template: {}", loaded_template.id);
                     loaded_templates.push((app.id.clone(), loaded_template.id, metadata));
                 } else {
                     tracing::warn!("Failed to load template in app {}", app_id.clone());
@@ -117,7 +120,7 @@ pub async fn upsert_template(
         return Ok(template);
     }
 
-    Err(TauriFunctionError::new("Failed to upsert event"))
+    Err(TauriFunctionError::new("Failed to upsert template"))
 }
 
 #[tauri::command(async)]
@@ -131,9 +134,10 @@ pub async fn push_template_data(
     let flow_like_state = TauriFlowLikeState::construct(&handler).await?;
     if let Ok(app) = App::load(app_id.clone(), flow_like_state).await {
         app.push_template_data(template_id, data, version).await?;
+        return Ok(());
     }
 
-    Err(TauriFunctionError::new("Failed to upsert event"))
+    Err(TauriFunctionError::new("Failed to upsert template data"))
 }
 
 #[tauri::command(async)]

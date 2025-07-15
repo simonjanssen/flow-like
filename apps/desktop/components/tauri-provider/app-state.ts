@@ -103,7 +103,7 @@ export class AppState implements IAppState {
 		if (
 			!this?.backend?.queryClient ||
 			!this.backend.profile ||
-			!this.backend.auth?.isAuthenticated
+			!this.backend.auth
 		) {
 			console.warn(
 				"Query client, profile or auth context not available, returning local apps only.",
@@ -128,6 +128,7 @@ export class AppState implements IAppState {
 				const mergedData = new Map<string, [IApp, IMetadata | undefined]>();
 
 				for (const [app, meta] of remoteData) {
+					mergedData.set(app.id, [app, meta]);
 					await appsDB.visibility.put({
 						visibility: app.visibility ?? IAppVisibility.Private,
 						appId: app.id,
@@ -255,14 +256,20 @@ export class AppState implements IAppState {
 
 	async getAppMeta(appId: string, language?: string): Promise<IMetadata> {
 		const isOffline = await this.backend.isOffline(appId);
-		const meta: IMetadata = await invoke("get_app_meta", {
-			appId: appId,
-			language,
-		});
+		let meta: IMetadata | undefined = undefined
 
-		if (isOffline) {
+		try {
+			meta = await invoke<IMetadata>("get_app_meta", {
+				appId: appId,
+				language,
+			});
+			if (isOffline) {
 			return meta;
 		}
+		}catch (e) {
+			console.warn("Failed to get app meta from local cache:", e);
+		}
+
 
 		if (
 			!this.backend.profile ||
@@ -274,14 +281,17 @@ export class AppState implements IAppState {
 			);
 		}
 
-		const promise = injectDataFunction(
+		const remoteDataPromise = fetcher<IMetadata>(
+			this.backend.profile,
+			`apps/${appId}/meta?language=${language ?? "en"}`,
+			undefined,
+			this.backend.auth,
+		);
+
+		if (meta) {
+const promise = injectDataFunction(
 			async () => {
-				const remoteMeta: IMetadata = await fetcher<IMetadata>(
-					this.backend.profile!,
-					`apps/${appId}/meta?language=${language ?? "en"}`,
-					undefined,
-					this.backend.auth,
-				);
+				const remoteMeta: IMetadata = await remoteDataPromise;
 
 				await invoke("push_app_meta", {
 					appId: appId,
@@ -300,6 +310,19 @@ export class AppState implements IAppState {
 		this.backend.backgroundTaskHandler(promise);
 
 		return meta;
+		}
+
+		const remoteMeta: IMetadata = await remoteDataPromise;
+
+		if (remoteMeta) {
+			await invoke("push_app_meta", {
+				appId: appId,
+				metadata: remoteMeta,
+				language,
+			});
+		}
+
+		return remoteMeta;
 	}
 
 	async pushAppMeta(

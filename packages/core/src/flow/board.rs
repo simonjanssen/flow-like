@@ -650,6 +650,7 @@ impl Board {
         store: Option<Arc<dyn ObjectStore>>,
     ) -> flow_like_types::Result<()> {
         let to = self.board_dir.child(format!("{}.template", self.id));
+        println!("Saving template to: {:?}", to);
         let store = match store {
             Some(store) => store,
             None => self

@@ -11,7 +11,7 @@ import { fetcher } from "../../lib/api";
 import type { TauriBackend } from "../tauri-provider";
 
 export class TemplateState implements ITemplateState {
-	constructor(private readonly backend: TauriBackend) {}
+	constructor(private readonly backend: TauriBackend) { }
 	async getTemplates(
 		appId?: string,
 		language?: string,
@@ -45,9 +45,9 @@ export class TemplateState implements ITemplateState {
 
 					const mergedData = new Map<string, [string, string, IMetadata]>();
 
-					for (const [id, name, meta] of templates) {
+					for (const [id, templateId, meta] of templates) {
 						if (!mergedData.has(id) && meta) {
-							mergedData.set(id, [id, name, meta]);
+							mergedData.set(id, [id, templateId, meta]);
 						}
 					}
 
@@ -65,6 +65,7 @@ export class TemplateState implements ITemplateState {
 							templateId: templateId,
 							metadata: metadata,
 						});
+						await this.getTemplate(appId, templateId);
 					}
 
 					return Array.from(mergedData.values());
@@ -142,52 +143,75 @@ export class TemplateState implements ITemplateState {
 		templateId: string,
 		version?: [number, number, number],
 	): Promise<IBoard> {
-		const template = await invoke<IBoard>("get_template", {
-			appId: appId,
-			templateId: templateId,
-			version: version,
-		});
-
+		let template: IBoard | undefined = undefined;
 		const isOffline = await this.backend.isOffline(appId);
-		if (isOffline) {
-			return template;
+
+		try {
+			template = await invoke<IBoard>("get_template", {
+				appId: appId,
+				templateId: templateId,
+				version: version,
+			});
+			if (isOffline) {
+				return template;
+			}
+		} catch (error) {
+			console.error("Error fetching template:", error);
 		}
+
+
 
 		if (!this.backend.profile || !this.backend.queryClient) {
 			throw new Error("No profile set for Tauri backend");
 		}
 
-		const promise = injectDataFunction(
-			async () => {
-				const remoteData = await fetcher<IBoard>(
-					this.backend.profile!,
-					`apps/${appId}/templates/${templateId}`,
-					undefined,
-					this.backend.auth,
-				);
-
-				if (!isEqual(template, remoteData)) {
-					await invoke("push_template_data", {
-						appId: appId,
-						templateId: templateId,
-						data: remoteData,
-						version: version,
-					});
-
-					return remoteData;
-				}
-
-				return template;
-			},
-			this,
-			this.backend.queryClient,
-			this.getTemplate,
-			[appId, templateId, version],
-			[],
+		const remoteDataPromise: Promise<IBoard> = fetcher<IBoard>(
+			this.backend.profile,
+			`apps/${appId}/templates/${templateId}`,
+			undefined,
+			this.backend.auth,
 		);
-		this.backend.backgroundTaskHandler(promise);
 
-		return template;
+		if (template) {
+			const promise = injectDataFunction(
+				async () => {
+					const remoteData = await remoteDataPromise;
+
+					if (!isEqual(template, remoteData)) {
+						await invoke("push_template_data", {
+							appId: appId,
+							templateId: templateId,
+							data: remoteData,
+							version: version,
+						});
+
+						return remoteData;
+					}
+
+					return template;
+				},
+				this,
+				this.backend.queryClient,
+				this.getTemplate,
+				[appId, templateId, version],
+				[],
+			);
+			this.backend.backgroundTaskHandler(promise);
+
+			return template;
+		}
+		const remoteData = await remoteDataPromise;
+
+		if (remoteData) {
+			await invoke("push_template_data", {
+				appId: appId,
+				templateId: templateId,
+				data: remoteData,
+				version: version,
+			});
+		}
+
+		return remoteData;
 	}
 
 	async upsertTemplate(
@@ -217,7 +241,7 @@ export class TemplateState implements ITemplateState {
 			this.backend.profile,
 			`apps/${appId}/templates/${templateId ?? "new"}`,
 			{
-				method: "POST",
+				method: "PUT",
 				body: JSON.stringify({
 					board_id: boardId,
 					board_version: boardVersion,
@@ -275,14 +299,24 @@ export class TemplateState implements ITemplateState {
 	): Promise<IMetadata> {
 		const isOffline = await this.backend.isOffline(appId);
 
-		const meta: IMetadata = await invoke("get_template_meta", {
-			appId: appId,
-			templateId: templateId,
-			language: language,
-		});
+		let meta: IMetadata | undefined = undefined;
 
-		if (isOffline) {
-			return meta;
+		try {
+			meta = await invoke<IMetadata>("get_template_meta", {
+				appId: appId,
+				templateId: templateId,
+				language: language,
+			});
+			if (isOffline) {
+				return meta;
+			}
+		} catch (error) {
+			console.error("Error fetching template meta:", error);
+			if (isOffline) {
+				throw new Error(
+					"Cannot fetch template meta while offline. Please try again later.",
+				);
+			}
 		}
 
 		if (
@@ -295,33 +329,50 @@ export class TemplateState implements ITemplateState {
 			);
 		}
 
-		const promise = injectDataFunction(
-			async () => {
-				const remoteMeta: IMetadata = await fetcher<IMetadata>(
-					this.backend.profile!,
-					`apps/${appId}/meta?language=${language ?? "en"}&template_id=${templateId}`,
-					undefined,
-					this.backend.auth,
-				);
-
-				await invoke("push_template_meta", {
-					appId: appId,
-					templateId: templateId,
-					metadata: remoteMeta,
-					language,
-				});
-
-				return remoteMeta;
-			},
-			this,
-			this.backend.queryClient,
-			this.getTemplateMeta,
-			[appId, templateId, language],
-			[],
+		const remoteMetaPromise: Promise<IMetadata> = fetcher<IMetadata>(
+			this.backend.profile,
+			`apps/${appId}/meta?language=${language ?? "en"}&template_id=${templateId}`,
+			undefined,
+			this.backend.auth,
 		);
-		this.backend.backgroundTaskHandler(promise);
 
-		return meta;
+		if (meta) {
+			const promise = injectDataFunction(
+				async () => {
+					const remoteMeta = await remoteMetaPromise;
+
+					await invoke("push_template_meta", {
+						appId: appId,
+						templateId: templateId,
+						metadata: remoteMeta,
+						language,
+					});
+
+					return remoteMeta;
+				},
+				this,
+				this.backend.queryClient,
+				this.getTemplateMeta,
+				[appId, templateId, language],
+				[],
+			);
+			this.backend.backgroundTaskHandler(promise);
+
+			return meta;
+		}
+
+		const remoteMeta = await remoteMetaPromise;
+
+		if (remoteMeta) {
+			await invoke("push_template_meta", {
+				appId: appId,
+				templateId: templateId,
+				metadata: remoteMeta,
+				language,
+			});
+		}
+
+		return remoteMeta;
 	}
 
 	async pushTemplateMeta(
@@ -332,13 +383,14 @@ export class TemplateState implements ITemplateState {
 	): Promise<void> {
 		const isOffline = await this.backend.isOffline(appId);
 
+		await invoke("push_template_meta", {
+			appId: appId,
+			templateId: templateId,
+			metadata: metadata,
+			language: language,
+		});
+
 		if (isOffline) {
-			await invoke("push_template_meta", {
-				appId: appId,
-				templateId: templateId,
-				metadata: metadata,
-				language: language,
-			});
 			return;
 		}
 

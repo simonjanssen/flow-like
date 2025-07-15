@@ -43,15 +43,16 @@ export default function YoursPage() {
 	const [inviteLink, setInviteLink] = useState("");
 
 	const allItems = useMemo(() => {
-		return (
-			apps.data?.map(([app, meta]) => ({ ...meta, id: app.id, app: app })) || []
-		);
+		const map = new Map();
+		apps.data?.forEach(([app, meta]) => {
+			map.set(app.id, { ...meta, id: app.id, app });
+		});
+		return Array.from(map.values());
 	}, [apps.data]);
 
 	const { addAll, removeAll, clearSearch, search, searchResults } =
 		useMiniSearch(
-			apps.data?.map(([app, meta]) => ({ ...meta, id: app.id, app: app })) ||
-				[],
+			[...allItems],
 			{
 				fields: [
 					"name",
@@ -83,17 +84,17 @@ export default function YoursPage() {
 	}, [inviteLink, router]);
 
 	useEffect(() => {
-		if (apps.data) {
+		if (allItems.length > 0) {
 			removeAll();
 			addAll(
-				apps.data.map(([app, meta]) => ({ ...meta, id: app.id, app: app })),
+				allItems,
 			);
 		}
 		return () => {
 			removeAll();
 			clearSearch();
 		};
-	}, [apps.data]);
+	}, [allItems]);
 
 	function splitIntoColumns<T>(items: T[]): [T[], T[]] {
 		const left: T[] = [];
@@ -256,7 +257,7 @@ export default function YoursPage() {
 
 			{/* Content Section */}
 			<div className="flex-1 overflow-auto">
-				{apps.data?.length === 0 && (
+				{allItems.length === 0 && (
 					<EmptyState
 						action={{
 							label: "Create Your First App",
