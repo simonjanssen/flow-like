@@ -35,7 +35,7 @@ pub async fn undo_board(
     let flow_state = board
         .app_state
         .clone()
-        .ok_or(ApiError::Internal(
+        .ok_or(ApiError::InternalError(
             anyhow!("No app state found for board").into(),
         ))?
         .clone();
@@ -66,7 +66,7 @@ pub async fn redo_board(
     let flow_state = board
         .app_state
         .clone()
-        .ok_or(ApiError::Internal(
+        .ok_or(ApiError::InternalError(
             anyhow!("No app state found for board").into(),
         ))?
         .clone();

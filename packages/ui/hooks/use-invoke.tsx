@@ -36,6 +36,7 @@ export function useInvoke<T, Args extends any[]>(
 	const backend = useBackend();
 	const query = useQuery<T, Error>({
 		queryKey: [backendFn.name || "backendFn", ...args, ...additionalDeps],
+		staleTime: 1000,
 		queryFn: async () => {
 			try {
 				const boundFn = backendFn.bind(backendContext ?? backend);
@@ -122,8 +123,8 @@ export function useInfiniteInvoke<T, Args extends any[]>(
 			const currentOffset = (allPages.length - 1) * pageSize;
 			const nextOffset = currentOffset + pageSize;
 
-			// If lastPage is an array and has fewer items than pageSize, we've reached the end
-			if (Array.isArray(lastPage) && lastPage.length < pageSize) {
+			// If lastPage is an array and has more than 0 items, we've reached the end
+			if (Array.isArray(lastPage) && lastPage.length === 0) {
 				return undefined;
 			}
 

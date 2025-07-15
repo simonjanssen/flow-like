@@ -13,6 +13,7 @@ use flow_like::{app::App, bit::Metadata};
 use sea_orm::{
     ColumnTrait, EntityTrait, JoinType, QueryFilter, QueryOrder, QuerySelect, RelationTrait,
 };
+use tower_http::limit;
 #[tracing::instrument(name = "GET /apps", skip(state, user))]
 pub async fn get_apps(
     State(state): State<AppState>,
@@ -20,6 +21,8 @@ pub async fn get_apps(
     Query(query): Query<LanguageParams>,
 ) -> Result<Json<Vec<(App, Option<Metadata>)>>, ApiError> {
     let language = query.language.clone().unwrap_or_else(|| "en".to_string());
+
+    let limit = query.limit.unwrap_or(100).max(100);
 
     let sub = user.sub()?;
 
@@ -33,7 +36,7 @@ pub async fn get_apps(
                 .or(meta::Column::Lang.eq("en")),
         )
         .filter(membership::Column::UserId.eq(sub))
-        .limit(query.limit)
+        .limit(Some(limit.max(100)))
         .offset(query.offset)
         .all(&state.db)
         .await?;

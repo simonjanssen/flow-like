@@ -121,6 +121,22 @@ pub async fn upsert_template(
 }
 
 #[tauri::command(async)]
+pub async fn push_template_data(
+    handler: AppHandle,
+    app_id: String,
+    template_id: String,
+    data: Board,
+    version: Option<(u32, u32, u32)>,
+) -> Result<(), TauriFunctionError> {
+    let flow_like_state = TauriFlowLikeState::construct(&handler).await?;
+    if let Ok(app) = App::load(app_id.clone(), flow_like_state).await {
+        app.push_template_data(template_id, data, version).await?;
+    }
+
+    Err(TauriFunctionError::new("Failed to upsert event"))
+}
+
+#[tauri::command(async)]
 pub async fn delete_template(
     handler: AppHandle,
     app_id: String,

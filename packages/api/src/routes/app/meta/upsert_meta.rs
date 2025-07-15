@@ -1,90 +1,68 @@
 use crate::{
-    entity::meta, error::ApiError, middleware::jwt::AppUser,
-    permission::role_permission::RolePermissions, routes::LanguageParams, state::AppState,
+    ensure_permission, entity::meta, error::ApiError, middleware::jwt::AppUser, permission::role_permission::RolePermissions, routes::app::meta::{MetaMode, MetaQuery}, state::AppState
 };
 use axum::{
     Extension, Json,
     extract::{Path, Query, State},
 };
-use flow_like::bit::Metadata;
 use flow_like_types::create_id;
-use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, TransactionTrait};
 
-#[tracing::instrument(name = "PUT /apps/{app_id}/meta", skip(state, user, payload, query))]
+#[tracing::instrument(name = "PUT /apps/{app_id}/meta", skip(state, user))]
 pub async fn upsert_meta(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,
-    Query(query): Query<LanguageParams>,
     Path(app_id): Path<String>,
-    Json(payload): Json<Metadata>,
+    Query(query): Query<MetaQuery>,
+    Json(meta): Json<flow_like::bit::Metadata>,
 ) -> Result<Json<()>, ApiError> {
-    user.sub()?;
+    let mode = MetaMode::new(&query, &app_id);
+    mode.ensure_write_permission(&user, &app_id, &state).await?;
 
-    let language = query.language.clone().unwrap_or_else(|| "en".to_string());
-    let permission = user.app_permission(&app_id, &state).await?;
+    let language = query.language.as_deref().unwrap_or("en");
+    let mut model = meta::Model::from(meta.clone());
 
-    if !permission.has_permission(RolePermissions::WriteMeta) {
-        return Err(ApiError::Forbidden);
-    }
+    model.lang = language.to_string();
+    model.updated_at = chrono::Utc::now().naive_utc();
 
-    let meta = meta::Entity::find()
-        .filter(meta::Column::AppId.eq(&app_id))
-        .filter(meta::Column::Lang.eq(&language))
-        .one(&state.db)
-        .await?;
+    model.template_id = None;
+    model.bit_id = None;
+    model.app_id = None;
+    model.course_id = None;
 
-    let mut payload_model: meta::Model = payload.into();
-    payload_model.updated_at = chrono::Utc::now().naive_utc();
-
-    if let Some(existing_meta) = meta {
-        payload_model.id = existing_meta.id;
-        payload_model.lang = existing_meta.lang;
-        payload_model.app_id = existing_meta.app_id;
-        payload_model.bit_id = existing_meta.bit_id;
-        payload_model.course_id = existing_meta.course_id;
-        payload_model.icon = existing_meta.icon;
-        payload_model.thumbnail = existing_meta.thumbnail;
-        payload_model.template_id = existing_meta.template_id;
-
-        let mut active_model: meta::ActiveModel = payload_model.into();
-        active_model = active_model.reset_all();
-
-        active_model.update(&state.db).await?;
-        return Ok(Json(()));
-    }
-
-    let mut icon = None;
-    let mut thumbnail = None;
-    let mut preview_media = None;
-
-    if language != "en" {
-        let english_language_item = meta::Entity::find()
-            .filter(meta::Column::AppId.eq(&app_id))
-            .filter(meta::Column::Lang.eq("en"))
-            .one(&state.db)
-            .await?;
-
-        if let Some(english_meta) = english_language_item {
-            icon = english_meta.icon.clone();
-            thumbnail = english_meta.thumbnail.clone();
-            preview_media = english_meta.preview_media.clone();
+    match &mode {
+        MetaMode::Template(id) => {
+            model.template_id = Some(id.clone());
+        }
+        MetaMode::App(id) => {
+            model.app_id = Some(id.clone());
+        }
+        MetaMode::Course(id) => {
+            model.course_id = Some(id.clone());
         }
     }
 
-    payload_model.id = create_id();
-    payload_model.app_id = Some(app_id.clone());
-    payload_model.lang = language.clone();
-    payload_model.bit_id = None;
-    payload_model.course_id = None;
-    payload_model.template_id = None;
-    payload_model.icon = icon;
-    payload_model.thumbnail = thumbnail;
-    payload_model.preview_media = preview_media;
-    payload_model.created_at = chrono::Utc::now().naive_utc();
+    let txn = state.db.begin().await?;
 
-    let meta_model: meta::ActiveModel = payload_model.into();
+    let existing_meta = mode.find_existing_meta(language, &txn).await?;
 
-    meta_model.insert(&state.db).await?;
+    if let Some(existing) = existing_meta {
+        model.created_at = existing.created_at;
+        model.id = existing.id;
+        model.icon = existing.icon;
+        model.thumbnail = existing.thumbnail;
+        let mut active_model : meta::ActiveModel = model.into();
+        active_model = active_model.reset_all();
+        active_model.update(&txn).await?;
+        txn.commit().await?;
+        return Ok(Json(()));
+    }
+
+    model.id = create_id();
+    model.created_at = chrono::Utc::now().naive_utc();
+    let active_model: meta::ActiveModel = model.into();
+    active_model.insert(&txn).await?;
+    txn.commit().await?;
 
     Ok(Json(()))
 }

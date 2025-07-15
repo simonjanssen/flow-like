@@ -186,11 +186,7 @@ export class AppState implements IAppState {
 			console.warn(
 				"Query client, profile or auth context not available, returning local app only.",
 			);
-			console.warn({
-				queryClient: this?.backend?.queryClient,
-				profile: this?.backend?.profile,
-				auth: this?.backend?.auth,
-			});
+
 			return localApp;
 		}
 
@@ -258,12 +254,54 @@ export class AppState implements IAppState {
 	}
 
 	async getAppMeta(appId: string, language?: string): Promise<IMetadata> {
+		const isOffline = await this.backend.isOffline(appId);
 		const meta: IMetadata = await invoke("get_app_meta", {
 			appId: appId,
 			language,
 		});
+
+		if (isOffline) {
+			return meta;
+		}
+
+		if (
+			!this.backend.profile ||
+			!this.backend.auth ||
+			!this.backend.queryClient
+		) {
+			throw new Error(
+				"Profile, auth or query client not set. Cannot get app meta.",
+			);
+		}
+
+		const promise = injectDataFunction(
+			async () => {
+				const remoteMeta: IMetadata = await fetcher<IMetadata>(
+					this.backend.profile!,
+					`apps/${appId}/meta?language=${language ?? "en"}`,
+					undefined,
+					this.backend.auth,
+				);
+
+				await invoke("push_app_meta", {
+					appId: appId,
+					metadata: remoteMeta,
+					language,
+				});
+
+				return remoteMeta;
+			},
+			this,
+			this.backend.queryClient,
+			this.getAppMeta,
+			[appId, language],
+			[],
+		);
+		this.backend.backgroundTaskHandler(promise);
+
 		return meta;
 	}
+
 	async pushAppMeta(
 		appId: string,
 		metadata: IMetadata,

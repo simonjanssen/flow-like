@@ -532,6 +532,25 @@ impl App {
         Ok((template_id, template))
     }
 
+    pub async fn push_template_data(
+        &self,
+        template_id: String,
+        data: Board,
+        version: Option<(u32, u32, u32)>,
+    ) -> flow_like_types::Result<()> {
+        let mut data = data;
+        data.id = template_id.clone();
+
+        if let Some(version) = version {
+            data.overwrite_template_version(version, None).await?;
+        } else {
+            data.save_as_template(None).await?;
+        }
+
+
+        Ok(())
+    }
+
     pub async fn get_template(
         &self,
         template_id: &str,

@@ -33,7 +33,7 @@ pub fn routes() -> Router<AppState> {
             "/{app_id}/visibility",
             patch(internal::change_visibility::change_visibility),
         )
-        .nest("/{app_id}/template", template::routes())
+        .nest("/{app_id}/templates", template::routes())
         .nest("/{app_id}/board", board::routes())
         .nest("/{app_id}/meta", meta::routes())
         .nest("/{app_id}/roles", roles::routes())

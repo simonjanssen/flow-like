@@ -36,7 +36,7 @@ pub async fn validate_event(
         match parts.as_slice() {
             [maj, min, pat] => Some((*maj, *min, *pat)),
             _ => {
-                return Err(ApiError::Internal(
+                return Err(ApiError::InternalError(
                     anyhow!("version must be in MAJOR_MINOR_PATCH format").into(),
                 ));
             }

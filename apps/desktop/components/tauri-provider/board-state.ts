@@ -30,19 +30,18 @@ export class BoardState implements IBoardState {
 
 		const isOffline = await this.backend.isOffline(appId);
 
-		if (
-			isOffline
-		) {
+		if (isOffline) {
 			return boards;
 		}
 
-
-		if(!this.backend.profile ||
+		if (
+			!this.backend.profile ||
 			!this.backend.auth ||
-			!this.backend.queryClient) {
-				throw new Error(
-					"Profile, auth or query client not set. Cannot fetch boards.",
-				);
+			!this.backend.queryClient
+		) {
+			throw new Error(
+				"Profile, auth or query client not set. Cannot fetch boards.",
+			);
 		}
 
 		const promise = injectDataFunction(
@@ -63,8 +62,7 @@ export class BoardState implements IBoardState {
 
 				for (const board of remoteData) {
 					if (!isEqual(board, mergedBoards.get(board.id))) {
-						console.log(
-							"Board data changed, updating local state:",)
+						console.log("Board data changed, updating local state:");
 						await invoke("upsert_board", {
 							appId: appId,
 							boardId: board.id,

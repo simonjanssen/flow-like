@@ -11,7 +11,7 @@ use axum::{
     extract::{Path, State},
 };
 use flow_like::flow::board::VersionType;
-use flow_like_types::{anyhow, create_id};
+use flow_like_types::create_id;
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 
@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize};
 pub struct TemplateUpsert {
     pub changelog: Option<String>,
     pub version_type: Option<VersionType>,
-    pub board_id: Option<String>,
+    pub board_id: String,
     pub board_version: Option<(u32, u32, u32)>,
 }
 
@@ -29,17 +29,15 @@ async fn create_template(
     permission: &AppPermissionResponse,
     app_id: &str,
     template_data: &TemplateUpsert,
-) -> Result<template::Model, ApiError> {
+) -> Result<(String, (u32, u32, u32)), ApiError> {
     if !permission.has_permission(RolePermissions::ReadBoards) {
         return Err(ApiError::Forbidden);
     }
     let template_id = create_id();
     let sub = user.sub()?;
     let mut app = state.scoped_app(&sub, app_id, &state).await?;
-    let board_id = template_data.board_id.clone().ok_or(anyhow!(
-        "Board ID is required for new templates".to_string()
-    ))?;
-    let (_, version) = app
+    let board_id = template_data.board_id.clone();
+    let (template_id, version) = app
         .upsert_template(
             Some(template_id.clone()),
             template_data
@@ -60,7 +58,7 @@ async fn create_template(
         ..Default::default()
     };
 
-    let new_template = template::Entity::insert(new_template)
+    template::Entity::insert(new_template)
         .exec_with_returning(&state.db)
         .await?;
 
@@ -68,18 +66,18 @@ async fn create_template(
         id: Set(create_id()),
         lang: Set("en".to_string()),
         name: Set("New Template".to_string()),
-        template_id: Set(Some(template_id)),
+        template_id: Set(Some(template_id.clone())),
         created_at: Set(chrono::Utc::now().naive_utc()),
         updated_at: Set(chrono::Utc::now().naive_utc()),
         ..Default::default()
     };
 
     meta::Entity::insert(meta).exec(&state.db).await?;
-    Ok(new_template)
+    Ok((template_id, version))
 }
 
 #[tracing::instrument(
-    name = "PUT /apps/{app_id}/template/{template_id}",
+    name = "PUT /apps/{app_id}/templates/{template_id}",
     skip(state, user, template_data)
 )]
 pub async fn upsert_template(
@@ -87,7 +85,7 @@ pub async fn upsert_template(
     Extension(user): Extension<AppUser>,
     Path((app_id, template_id)): Path<(String, String)>,
     Json(template_data): Json<TemplateUpsert>,
-) -> Result<Json<template::Model>, ApiError> {
+) -> Result<Json<(String, (u32, u32, u32))>, ApiError> {
     let permission = ensure_permission!(user, &app_id, &state, RolePermissions::WriteTemplates);
 
     if template_id.is_empty() || app_id.is_empty() {
@@ -117,29 +115,30 @@ pub async fn upsert_template(
         template.changelog = Set(Some(changelog));
     }
 
-    if let (Some(version_type), Some(board_id)) =
-        (template_data.version_type, template_data.board_id)
-    {
-        if !permission.has_permission(RolePermissions::ReadBoards) {
-            return Err(ApiError::Forbidden);
-        }
+    let version_type = template_data.version_type.unwrap_or(VersionType::Patch);
 
-        // Let´s create a new template version
-        let sub = user.sub()?;
-        let mut app = state.scoped_app(&sub, &app_id, &state).await?;
-        let (_, version) = app
-            .upsert_template(
-                Some(template_id),
-                version_type,
-                board_id,
-                template_data.board_version,
-            )
-            .await?;
-        template.version = Set(Some(format!("{}.{}.{}", version.0, version.1, version.2)));
+    if !permission.has_permission(RolePermissions::ReadBoards) {
+        return Err(ApiError::Forbidden);
     }
 
-    template.updated_at = Set(chrono::Utc::now().naive_utc());
-    let template = template.update(&state.db).await?;
+    // Let´s create a new template version
+    let sub = user.sub()?;
+    let mut app = state.scoped_app(&sub, &app_id, &state).await?;
+    let app_upsert = app
+        .upsert_template(
+            Some(template_id),
+            version_type,
+            template_data.board_id,
+            template_data.board_version,
+        )
+        .await?;
+    template.version = Set(Some(format!(
+        "{}.{}.{}",
+        app_upsert.1.0, app_upsert.1.1, app_upsert.1.2
+    )));
 
-    Ok(Json(template))
+    template.updated_at = Set(chrono::Utc::now().naive_utc());
+    template.update(&state.db).await?;
+
+    Ok(Json(app_upsert))
 }

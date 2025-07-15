@@ -25,5 +25,7 @@ bitflags! {
         const WriteConfig       =   0b00000100_00000000_00000000;
         const ReadTemplates     =   0b00001000_00000000_00000000;
         const WriteTemplates    =   0b00010000_00000000_00000000;
+        const ReadCourses       =   0b00100000_00000000_00000000;
+        const WriteCourses      =   0b01000000_00000000_00000000;
     }
 }

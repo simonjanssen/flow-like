@@ -3,7 +3,7 @@ use crate::{
     entity::{app, meta},
     error::ApiError,
     middleware::jwt::AppUser,
-    routes::LanguageParams,
+    routes::{app::meta::{MetaMode, MetaQuery}, LanguageParams},
     state::AppState,
 };
 use axum::{
@@ -12,47 +12,25 @@ use axum::{
 };
 use flow_like::bit::Metadata;
 use flow_like_types::anyhow;
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, TransactionTrait};
 #[tracing::instrument(name = "GET /apps/{app_id}/meta", skip(state, user, query))]
 pub async fn get_meta(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,
-    Query(query): Query<LanguageParams>,
+    Query(query): Query<MetaQuery>,
     Path(app_id): Path<String>,
 ) -> Result<Json<Metadata>, ApiError> {
-    ensure_in_project!(user, &app_id, &state);
+    let mode = MetaMode::new(&query, &app_id);
+    mode.ensure_read_permission(&user, &app_id, &state).await?;
+
     let language = query.language.clone().unwrap_or_else(|| "en".to_string());
+    let txn = state.db.begin().await?;
 
-    let apps = app::Entity::find()
-        .find_with_related(meta::Entity)
-        .filter(
-            meta::Column::Lang
-                .eq(&language)
-                .or(meta::Column::Lang.eq("en")),
-        )
-        .filter(app::Column::Id.eq(&app_id))
-        .all(&state.db)
-        .await?;
+    let existing_meta = mode.find_existing_meta(&language, &txn).await?.ok_or_else(|| {
+        ApiError::NotFound
+    })?;
 
-    if apps.is_empty() {
-        return Err(ApiError::NotFound);
-    }
-
-    if apps.len() > 1 {
-        return Err(ApiError::Internal(
-            anyhow!("Multiple apps found for ID: {}", app_id).into(),
-        ));
-    }
-
-    let Some(metadata) = apps[0]
-        .1
-        .iter()
-        .find(|meta| meta.lang == language)
-        .or_else(|| apps[0].1.first())
-        .map(|meta| Metadata::from(meta.clone()))
-    else {
-        return Err(ApiError::NotFound);
-    };
+    let metadata = Metadata::from(existing_meta.clone());
 
     Ok(Json(metadata))
 }

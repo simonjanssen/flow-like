@@ -92,7 +92,7 @@ pub async fn upsert_app(
     }
 
     let Some(metadata) = app_body.meta else {
-        return Err(ApiError::Internal(
+        return Err(ApiError::InternalError(
             anyhow!("Meta is required for new apps").into(),
         ));
     };

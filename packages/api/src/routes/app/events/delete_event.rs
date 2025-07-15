@@ -20,7 +20,7 @@ pub async fn delete_event(
     let mut app = state.scoped_app(&sub, &app_id, &state).await?;
     app.delete_event(&event_id).await.map_err(|e| {
         tracing::error!("Failed to delete event: {}", e);
-        ApiError::Internal(anyhow!(e).into())
+        ApiError::InternalError(anyhow!(e).into())
     })?;
 
     Ok(Json(()))

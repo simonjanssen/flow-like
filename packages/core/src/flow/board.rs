@@ -673,6 +673,44 @@ impl Board {
         Ok(())
     }
 
+    pub async fn overwrite_template_version(
+        &mut self,
+        version: (u32, u32, u32),
+        store: Option<Arc<dyn ObjectStore>>,
+    ) -> flow_like_types::Result<()> {
+        let to = self
+            .board_dir
+            .child("templates")
+            .child("versions")
+            .child(self.id.clone())
+            .child(format!(
+                "{}_{}_{}.template",
+                version.0, version.1, version.2
+            ));
+
+        let store = match store {
+            Some(store) => store,
+            None => self
+                .app_state
+                .as_ref()
+                .expect("app_state should always be set")
+                .lock()
+                .await
+                .config
+                .read()
+                .await
+                .stores
+                .app_meta_store
+                .clone()
+                .ok_or(flow_like_types::anyhow!("Project store not found"))?
+                .as_generic(),
+        };
+
+        let board = self.to_proto();
+        compress_to_file(store, to, &board).await?;
+        Ok(())
+    }
+
     pub async fn create_template(
         &mut self,
         template_id: String,

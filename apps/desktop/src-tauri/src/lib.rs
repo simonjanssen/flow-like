@@ -322,6 +322,7 @@ pub fn run() {
             functions::flow::template::get_templates,
             functions::flow::template::get_template_versions,
             functions::flow::template::upsert_template,
+            functions::flow::template::push_template_data,
             functions::flow::template::delete_template,
             functions::flow::template::get_template_meta,
             functions::flow::template::push_template_meta,

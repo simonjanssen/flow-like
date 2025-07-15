@@ -8,19 +8,21 @@ pub struct AuthorizationError(flow_like_types::Error);
 pub struct NotFoundError(flow_like_types::Error);
 
 pub enum ApiError {
-    Internal(InternalError),
+    InternalError(InternalError),
     Auth(AuthorizationError),
     NotFound,
     Forbidden,
+    BadRequest(String),
 }
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         match self {
-            ApiError::Internal(err) => err.into_response(),
+            ApiError::InternalError(err) => err.into_response(),
             ApiError::Auth(err) => err.into_response(),
             ApiError::NotFound => (StatusCode::NOT_FOUND, "Not Found").into_response(),
             ApiError::Forbidden => (StatusCode::FORBIDDEN, "Forbidden").into_response(),
+            ApiError::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg).into_response(),
         }
     }
 }
@@ -32,13 +34,13 @@ where
     fn from(err: E) -> Self {
         let err = err.into();
         tracing::error!("Internal error: {:?}", err);
-        ApiError::Internal(InternalError(err))
+        ApiError::InternalError(InternalError(err))
     }
 }
 
 impl From<InternalError> for ApiError {
     fn from(err: InternalError) -> Self {
-        ApiError::Internal(err)
+        ApiError::InternalError(err)
     }
 }
 
