@@ -9,6 +9,7 @@
 		"created_at",
 		"download_count",
 		"events",
+		"execution_mode",
 		"id",
 		"interactions_count",
 		"rating_count",
@@ -109,6 +110,9 @@
 			"type": ["number", "null"],
 			"format": "double"
 		},
+		"execution_mode": {
+			"$ref": "#/definitions/AppExecutionMode"
+		},
 		"updated_at": {
 			"$ref": "#/definitions/SystemTime"
 		},
@@ -174,6 +178,10 @@
 				"Communication",
 				"Anime"
 			]
+		},
+		"AppExecutionMode": {
+			"type": "string",
+			"enum": ["Any", "Local", "Remote"]
 		},
 		"SystemTime": {
 			"type": "object",

@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { useCallback } from "react";
 import { toast } from "sonner";
-import { type INode, humanFileSize } from "../../lib";
+import { type INode, type IStorageItem, humanFileSize } from "../../lib";
 import {
 	convertJsonToUint8Array,
 	parseUint8ArrayToJson,
@@ -137,14 +137,6 @@ const TEMPLATE = JSON.parse(`{
   "comments": []
 }`);
 
-export interface IStorageItem {
-	location: string;
-	last_modified: string;
-	size: number;
-	e_tag?: string;
-	version?: string;
-}
-
 export function FileOrFolder({
 	file,
 	highlight,
@@ -158,7 +150,7 @@ export function FileOrFolder({
 	highlight: boolean;
 	changePrefix?: (prefix: string) => void;
 	loadFile?: (file: string) => void;
-	shareFile?: (file: string) => void;
+	shareFile?: (file: string, e: any) => void;
 	deleteFile?: (file: string) => void;
 	downloadFile?: (file: string) => void;
 }>) {
@@ -347,10 +339,11 @@ export function FileOrFolder({
 						)}
 						{typeof shareFile !== "undefined" && (
 							<DropdownMenuItem
+								disabled
 								onClick={(e) => {
 									e.preventDefault();
 									e.stopPropagation();
-									shareFile?.(file.location.split("/").pop() ?? "");
+									shareFile?.(file.location.split("/").pop() ?? "", e);
 								}}
 							>
 								Share

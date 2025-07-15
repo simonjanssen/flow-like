@@ -15,7 +15,7 @@ pub struct CreateVersionQuery {
 }
 
 #[tracing::instrument(
-    name = "PATCH /app/{app_id}/board/{board_id}",
+    name = "PATCH /apps/{app_id}/board/{board_id}",
     skip(state, user, params)
 )]
 pub async fn version_board(
@@ -28,7 +28,7 @@ pub async fn version_board(
     let sub = permission.sub()?;
 
     let mut board = state
-        .scoped_board(&sub, &app_id, &board_id, &state, None)
+        .master_board(&sub, &app_id, &board_id, &state, None)
         .await?;
     let version = board
         .create_version(params.version_type.unwrap_or(VersionType::Patch), None)

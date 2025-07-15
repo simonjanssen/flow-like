@@ -96,7 +96,7 @@ impl FileMetadata {
     }
 
     pub fn from_folder(folder_path: &PathBuf) -> Vec<FileMetadata> {
-        let metadata = WalkBuilder::new(folder_path)
+        WalkBuilder::new(folder_path)
             .git_ignore(true)
             .hidden(true)
             .ignore(true)
@@ -112,9 +112,7 @@ impl FileMetadata {
                     }
                 })
             })
-            .collect::<Vec<FileMetadata>>();
-
-        metadata
+            .collect::<Vec<FileMetadata>>()
     }
 
     fn from_pdf(&mut self) -> Self {

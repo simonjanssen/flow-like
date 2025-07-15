@@ -15,7 +15,11 @@ export function useApi<T>(
 ): UseQueryResult<T, Error> {
 	const auth = useAuth();
 	const backend = useBackend();
-	const profile = useInvoke(backend.getProfile, []);
+	const profile = useInvoke(
+		backend.userState.getProfile,
+		backend.userState,
+		[],
+	);
 	const query = useQuery<T, Error>({
 		queryKey: [method, path, data, auth?.user?.profile?.sub ?? "anon"],
 		queryFn: async () => {

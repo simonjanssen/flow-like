@@ -1,18 +1,15 @@
 use crate::{
-    entity::{profile, template_profile},
-    error::ApiError,
-    middleware::jwt::AppUser,
-    permission::global_permission::GlobalPermission,
-    state::AppState,
+    entity::template_profile, error::ApiError, middleware::jwt::AppUser,
+    permission::global_permission::GlobalPermission, state::AppState,
 };
 use axum::{
     Extension, Json,
     extract::{Path, State},
 };
-use flow_like::profile::{Profile, Settings};
+use flow_like::profile::Profile;
 use flow_like_types::create_id;
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter};
-use serde_json::{Value, from_value, to_value};
+use serde_json::{Value, to_value};
 
 #[tracing::instrument(name = "PUT /admin/profiles/{profile_id}", skip(state, user))]
 pub async fn upsert_profile_template(

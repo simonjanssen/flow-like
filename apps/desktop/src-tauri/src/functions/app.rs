@@ -3,13 +3,16 @@ use crate::state::{TauriFlowLikeState, TauriSettingsState};
 use flow_like::{
     app::App,
     bit::Metadata,
-    flow::{board::Board, variable::Variable},
+    flow::{
+        board::{Board, ExecutionStage},
+        execution::LogLevel,
+    },
     flow_like_storage::Path,
     profile::ProfileApp,
 };
+use flow_like_types::create_id;
 use futures::{StreamExt, TryStreamExt};
 use serde_json::Value;
-use std::collections::HashSet;
 use tauri::AppHandle;
 
 #[tauri::command(async)]
@@ -71,33 +74,13 @@ pub async fn app_configured(
 #[tauri::command(async)]
 pub async fn create_app(
     app_handle: AppHandle,
+    id: Option<String>,
     metadata: Metadata,
     bits: Vec<String>,
-    template: String,
-) -> Result<String, TauriFunctionError> {
+) -> Result<App, TauriFunctionError> {
     let flow_like_state = TauriFlowLikeState::construct(&app_handle).await?;
 
-    let bits_map: HashSet<String> = bits.clone().into_iter().collect();
-    let mut new_app = App::new(None, metadata, bits, flow_like_state).await?;
-
-    if template == "blank" {
-        let board = new_app.create_board(None).await?;
-        let board = new_app.open_board(board, Some(false), None).await?;
-        let mut variable = Variable::new(
-            "Embedding Models",
-            flow_like::flow::variable::VariableType::String,
-            flow_like::flow::pin::ValueType::HashSet,
-        );
-        variable
-            .set_exposed(false)
-            .set_editable(false)
-            .set_default_value(serde_json::json!(bits_map));
-
-        let mut board = board.lock().await;
-        board.variables.insert(variable.id.clone(), variable);
-        board.save(None).await?;
-    }
-
+    let new_app = App::new(id, metadata, bits, flow_like_state).await?;
     new_app.save().await?;
 
     let mut profile = TauriSettingsState::current_profile(&app_handle).await?;
@@ -117,41 +100,95 @@ pub async fn create_app(
         .insert(profile.hub_profile.id.clone(), profile.clone());
     settings.serialize();
 
-    Ok(new_app.id.clone())
+    Ok(new_app.clone())
 }
 
 #[tauri::command(async)]
-pub async fn create_app_board(
+pub async fn upsert_board(
     app_handle: AppHandle,
     app_id: String,
+    board_id: Option<String>,
     name: String,
     description: String,
+    log_level: Option<LogLevel>,
+    stage: Option<ExecutionStage>,
+    board_data: Option<Board>,
+    template: Option<Board>,
 ) -> Result<(), TauriFunctionError> {
+    let board_id = board_id.unwrap_or_else(create_id);
     let flow_like_state = TauriFlowLikeState::construct(&app_handle).await?;
     let mut app = App::load(app_id, flow_like_state).await?;
 
-    let board = app
-        .boards
-        .first()
-        .ok_or(TauriFunctionError::new("No boards found"))?;
-    let board = app.open_board(board.clone(), Some(false), None).await?;
-    let board = board.lock().await;
-    let (_var_id, variable) = board
-        .variables
-        .iter()
-        .find(|(_, variable)| variable.name == "Embedding Models" && !variable.editable)
-        .ok_or(TauriFunctionError::new("No models variable found"))?;
-    let variable: Variable = variable.duplicate();
-    drop(board);
+    if app.boards.contains(&board_id) {
+        let board = app.open_board(board_id.clone(), None, None).await;
+        if let Ok(board) = board {
+            let mut board = board.lock().await;
+            board.name = name;
+            board.description = description;
+            if let Some(log_level) = log_level {
+                board.log_level = log_level;
+            }
 
-    let board_id = app.create_board(None).await?;
+            if let Some(stage) = stage {
+                board.stage = stage;
+            }
+
+            if let Some(data) = board_data {
+                board.variables = data.variables;
+                board.comments = data.comments;
+                board.nodes = data.nodes;
+                board.layers = data.layers;
+                board.parent = data.parent;
+                board.refs = data.refs;
+                board.version = data.version;
+                board.viewport = data.viewport;
+            }
+
+            board.save(None).await?;
+            return Ok(());
+        }
+    }
+
+    if let Some(board_data) = board_data {
+        let new_board = app
+            .create_board(Some(board_data.id.clone()), template)
+            .await?;
+        app.save().await?;
+        let board = app.open_board(new_board, Some(false), None).await?;
+        drop(app);
+        let mut board = board.lock().await;
+        board.name = name;
+        board.description = description;
+        board.variables = board_data.variables;
+        board.comments = board_data.comments;
+        board.nodes = board_data.nodes;
+        board.layers = board_data.layers;
+        board.parent = board_data.parent;
+        board.refs = board_data.refs;
+        board.version = board_data.version;
+        board.viewport = board_data.viewport;
+        board.stage = board.stage.clone();
+        board.log_level = board.log_level;
+        board.created_at = board_data.created_at;
+        board.updated_at = board_data.updated_at;
+        board.save(None).await?;
+        return Ok(());
+    }
+
+    let board_id = app.create_board(Some(board_id), template).await?;
     let board = app.open_board(board_id, Some(false), None).await?;
     app.save().await?;
 
     let mut board = board.lock().await;
     board.name = name;
     board.description = description;
-    board.variables.insert(variable.id.clone(), variable);
+    if let Some(log_level) = log_level {
+        board.log_level = log_level;
+    }
+
+    if let Some(stage) = stage {
+        board.stage = stage;
+    }
     board.save(None).await?;
 
     Ok(())
@@ -248,7 +285,7 @@ pub async fn delete_app(app_handle: AppHandle, app_id: String) -> Result<(), Tau
     let mut settings = settings.lock().await;
     for profile in settings.profiles.values_mut() {
         if let Some(apps) = &mut profile.hub_profile.apps {
-            apps.retain(|app| &app.app_id != &app_id);
+            apps.retain(|app| app.app_id != app_id);
         }
     }
     settings.serialize();

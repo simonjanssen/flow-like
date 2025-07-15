@@ -53,14 +53,16 @@ export default function Page() {
 	}, [EVENT_CONFIG]);
 
 	const metadata = useInvoke(
-		backend.getAppMeta,
+		backend.appState.getAppMeta,
+		backend.appState,
 		[appId ?? ""],
 		typeof appId === "string",
 	);
 
 	const eventId = searchParams.get("eventId");
 	const events = useInvoke(
-		backend.getEvents,
+		backend.eventState.getEvents,
+		backend.eventState,
 		[appId ?? ""],
 		(appId ?? "") !== "",
 	);
@@ -104,7 +106,7 @@ export default function Page() {
 		if (!appId) return;
 		if (sortedEvents.length === 0 && events.data) {
 			console.log("No events found, redirecting to event config");
-			router.push(`/library/config/events?id=${appId}`);
+			router.replace(`/library/config?id=${appId}`);
 			return;
 		}
 
@@ -114,7 +116,7 @@ export default function Page() {
 
 		if (!rerouteEvent && usableEvents.size > 0 && events.data) {
 			console.log("No usable events found, redirecting to event config");
-			router.push(`/library/config/events?id=${appId}`);
+			router.replace(`/library/config?id=${appId}`);
 			return;
 		}
 

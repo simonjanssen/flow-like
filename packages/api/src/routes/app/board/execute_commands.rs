@@ -18,7 +18,7 @@ pub struct ExecuteCommandsBody {
 }
 
 #[tracing::instrument(
-    name = "POST /app/{app_id}/board/{board_id}",
+    name = "POST /apps/{app_id}/board/{board_id}",
     skip(state, user, params)
 )]
 pub async fn execute_commands(
@@ -28,24 +28,29 @@ pub async fn execute_commands(
     Json(params): Json<ExecuteCommandsBody>,
 ) -> Result<Json<Vec<GenericCommand>>, ApiError> {
     let permission = ensure_permission!(user, &app_id, &state, RolePermissions::WriteBoards);
+
     let sub = permission.sub()?;
 
     let mut board = state
-        .scoped_board(&sub, &app_id, &board_id, &state, None)
+        .master_board(&sub, &app_id, &board_id, &state, None)
         .await?;
 
-    let flow_state = if let Some(flow_state) = &board.app_state {
-        flow_state.clone()
-    } else {
-        let flow_state = state
-            .scoped_credentials(&sub, &app_id)
-            .await?
-            .to_state(state)
-            .await?;
-        Arc::new(Mutex::new(flow_state))
+    let flow_state = {
+        if let Some(flow_state) = &board.app_state {
+            flow_state.clone()
+        } else {
+            let flow_state = state
+                .scoped_credentials(&sub, &app_id)
+                .await?
+                .to_state(state)
+                .await?;
+            Arc::new(Mutex::new(flow_state))
+        }
     };
 
     let commands = board.execute_commands(params.commands, flow_state).await?;
+
+    board.save(None).await?;
 
     Ok(Json(commands))
 }

@@ -14,20 +14,14 @@ axum.workspace = true
 sea-orm.workspace = true
 serde = { workspace = true, features = ["derive", "rc"] }
 tower.workspace = true
-tracing-subscriber.workspace = true
 flow-like.workspace = true
 flow-like-types.workspace = true
 flow-like-storage.workspace = true
 serde_json.workspace = true
-dotenv.workspace = true
 jsonwebtoken.workspace = true
 hyper.workspace = true
 hyper-util.workspace = true
 tracing.workspace = true
-sentry-tracing.workspace = true
-sentry.workspace = true
-sentry-tower.workspace = true
-bytemuck.workspace = true
 tower-http.workspace = true
 chrono.workspace = true
 oasgen = {version="0.25.0", features = ["axum"]}

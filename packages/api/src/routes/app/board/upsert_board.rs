@@ -6,8 +6,11 @@ use axum::{
     Extension, Json,
     extract::{Path, State},
 };
-use flow_like::flow::{board::ExecutionStage, execution::LogLevel};
-use serde::Deserialize;
+use flow_like::flow::{
+    board::{Board, ExecutionStage},
+    execution::LogLevel,
+};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Deserialize)]
 pub struct UpsertBoard {
@@ -15,22 +18,32 @@ pub struct UpsertBoard {
     pub description: Option<String>,
     pub stage: Option<ExecutionStage>,
     pub log_level: Option<LogLevel>,
+    pub template: Option<Board>,
 }
 
-#[tracing::instrument(name = "PUT /app/{app_id}/board/{board_id}", skip(state, user, params))]
+#[derive(Deserialize, Serialize)]
+pub struct UpsertBoardResponse {
+    pub id: String,
+}
+
+#[tracing::instrument(
+    name = "PUT /apps/{app_id}/board/{board_id}",
+    skip(state, user, params)
+)]
 pub async fn upsert_board(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,
     Path((app_id, board_id)): Path<(String, String)>,
     Json(params): Json<UpsertBoard>,
-) -> Result<Json<()>, ApiError> {
+) -> Result<Json<UpsertBoardResponse>, ApiError> {
     let permission = ensure_permission!(user, &app_id, &state, RolePermissions::WriteBoards);
     let sub = permission.sub()?;
 
-    let mut app = state.scoped_app(&sub, &app_id, &state).await?;
+    let mut app = state.master_app(&sub, &app_id, &state).await?;
     let mut id = board_id.clone();
     if !app.boards.contains(&board_id) {
-        id = app.create_board(None).await?;
+        id = app.create_board(None, params.template).await?;
+        app.save().await?;
     }
 
     let board = app.open_board(id, Some(false), None).await?;
@@ -41,5 +54,7 @@ pub async fn upsert_board(
     board.log_level = params.log_level.unwrap_or(board.log_level);
     board.save(None).await?;
 
-    Ok(Json(()))
+    Ok(Json(UpsertBoardResponse {
+        id: board.id.clone(),
+    }))
 }

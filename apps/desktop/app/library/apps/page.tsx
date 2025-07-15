@@ -3,6 +3,13 @@
 import {
 	AppCard,
 	Button,
+	Dialog,
+	DialogClose,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
 	EmptyState,
 	type IMetadata,
 	Input,
@@ -15,6 +22,7 @@ import {
 	FilesIcon,
 	Grid3X3,
 	LayoutGridIcon,
+	Link2,
 	List,
 	Search,
 	SearchIcon,
@@ -22,49 +30,66 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 export default function YoursPage() {
 	const backend = useBackend();
-	const apps = useInvoke(backend.getApps, []);
+	const apps = useInvoke(backend.appState.getApps, backend.appState, []);
 	const router = useRouter();
 	const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 	const [searchQuery, setSearchQuery] = useState("");
+	const [joinDialogOpen, setJoinDialogOpen] = useState(false);
+	const [inviteLink, setInviteLink] = useState("");
 
 	const allItems = useMemo(() => {
-		return (
-			apps.data?.map(([app, meta]) => ({ ...meta, id: app.id, app: app })) || []
-		);
+		const map = new Map();
+		apps.data?.forEach(([app, meta]) => {
+			map.set(app.id, { ...meta, id: app.id, app });
+		});
+		return Array.from(map.values());
 	}, [apps.data]);
 
 	const { addAll, removeAll, clearSearch, search, searchResults } =
-		useMiniSearch(
-			apps.data?.map(([app, meta]) => ({ ...meta, id: app.id, app: app })) ||
-				[],
-			{
-				fields: [
-					"name",
-					"description",
-					"long_description",
-					"tags",
-					"category",
-					"id",
-				],
-			},
-		);
+		useMiniSearch([...allItems], {
+			fields: [
+				"name",
+				"description",
+				"long_description",
+				"tags",
+				"category",
+				"id",
+			],
+		});
+
+	const handleJoin = useCallback(async () => {
+		const url = new URL(inviteLink);
+		const queryParams = url.searchParams;
+		const appId = queryParams.get("appId");
+		if (!appId) {
+			toast.error("Invalid invite link. Please check the link and try again.");
+			return;
+		}
+		const token = queryParams.get("token");
+		if (!token) {
+			toast.error("Invalid invite link. Please check the link and try again.");
+			return;
+		}
+		router.push(`/join?appId=${appId}&token=${token}`);
+		setJoinDialogOpen(false);
+		setInviteLink("");
+	}, [inviteLink, router]);
 
 	useEffect(() => {
-		if (apps.data) {
+		if (allItems.length > 0) {
 			removeAll();
-			addAll(
-				apps.data.map(([app, meta]) => ({ ...meta, id: app.id, app: app })),
-			);
+			addAll(allItems);
 		}
 		return () => {
 			removeAll();
 			clearSearch();
 		};
-	}, [apps.data]);
+	}, [allItems]);
 
 	function splitIntoColumns<T>(items: T[]): [T[], T[]] {
 		const left: T[] = [];
@@ -78,49 +103,35 @@ export default function YoursPage() {
 	const renderAppCards = (items: any[]) => {
 		if (viewMode === "grid") {
 			return (
-				<div className="flex flex-row flex-wrap gap-2">
+				<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 px-2">
 					{items.map((meta) => (
-						<div key={viewMode + meta.id} className="group">
+						<div key={viewMode + meta.id} className="group w-full">
 							<AppCard
 								app={meta.app}
 								metadata={meta as IMetadata}
 								variant="extended"
 								onClick={() => router.push(`/use?id=${meta.id}`)}
+								className="w-full"
 							/>
 						</div>
 					))}
 				</div>
 			);
 		}
-		const [left, right] = splitIntoColumns(items);
+
 		return (
-			<div className="flex flex-row gap-6">
-				<div className="flex flex-col gap-2 flex-1">
-					{left.map((meta) => (
-						<div key={`left${meta.id}`} className="group">
-							<AppCard
-								app={meta.app}
-								metadata={meta as IMetadata}
-								variant="small"
-								onClick={() => router.push(`/use?id=${meta.id}`)}
-								className="w-full"
-							/>
-						</div>
-					))}
-				</div>
-				<div className="flex flex-col gap-2 flex-1">
-					{right.map((meta) => (
-						<div key={`right${meta.id}`} className="group">
-							<AppCard
-								app={meta.app}
-								metadata={meta as IMetadata}
-								variant="small"
-								onClick={() => router.push(`/use?id=${meta.id}`)}
-								className="w-full"
-							/>
-						</div>
-					))}
-				</div>
+			<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 px-2">
+				{items.map((meta) => (
+					<div key={`left${meta.id}`} className="group">
+						<AppCard
+							app={meta.app}
+							metadata={meta as IMetadata}
+							variant="small"
+							onClick={() => router.push(`/use?id=${meta.id}`)}
+							className="w-full"
+						/>
+					</div>
+				))}
 			</div>
 		);
 	};
@@ -143,16 +154,67 @@ export default function YoursPage() {
 							</p>
 						</div>
 					</div>
-					<Link href={"/library/new"}>
+					<div className="flex items-center space-x-2">
+						<Link href={"/library/new"}>
+							<Button
+								size="lg"
+								className="shadow-lg hover:shadow-xl transition-all duration-200"
+							>
+								<Sparkles className="mr-2 h-4 w-4" />
+								Create App
+							</Button>
+						</Link>
 						<Button
 							size="lg"
+							variant="outline"
 							className="shadow-lg hover:shadow-xl transition-all duration-200"
+							onClick={() => setJoinDialogOpen(true)}
 						>
-							<Sparkles className="mr-2 h-4 w-4" />
-							Create App
+							<Link2 className="mr-2 h-4 w-4" />
+							Join Project
 						</Button>
-					</Link>
+					</div>
 				</div>
+
+				{/* Join Project Dialog */}
+				<Dialog open={joinDialogOpen} onOpenChange={setJoinDialogOpen}>
+					<DialogContent className="sm:max-w-md animate-in fade-in-0 slide-in-from-top-8 rounded-2xl shadow-2xl border-none bg-background/95 backdrop-blur-lg">
+						<DialogHeader className="space-y-3">
+							<div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+								<Link2 className="h-6 w-6 text-primary" />
+							</div>
+							<DialogTitle className="text-center text-2xl font-bold">
+								Join a Project
+							</DialogTitle>
+							<DialogDescription className="text-center text-muted-foreground">
+								Paste your invite link below to join a project.
+								<br />
+								You’ll instantly get access if the link is valid.
+							</DialogDescription>
+						</DialogHeader>
+						<div className="flex flex-col gap-4 py-2">
+							<Input
+								autoFocus
+								placeholder="Paste invite link here…"
+								value={inviteLink}
+								onChange={(e) => setInviteLink(e.target.value)}
+								className="w-full"
+							/>
+							<p className="text-xs text-muted-foreground text-center">
+								Ask a teammate for an invite link if you don’t have one.
+							</p>
+						</div>
+						<DialogFooter className="flex flex-row gap-1 justify-center pt-2">
+							<DialogClose asChild>
+								<Button variant="outline">Cancel</Button>
+							</DialogClose>
+							<Button onClick={handleJoin} disabled={!inviteLink.trim()}>
+								<Link2 className="mr-2 h-4 w-4" />
+								Join
+							</Button>
+						</DialogFooter>
+					</DialogContent>
+				</Dialog>
 
 				{/* Search and Filter Bar */}
 				<div className="flex items-center justify-between space-x-4">
@@ -170,18 +232,17 @@ export default function YoursPage() {
 					</div>
 					<div className="flex items-center space-x-2">
 						<Button
-							variant={viewMode === "grid" ? "default" : "outline"}
+							variant={"outline"}
 							size="sm"
-							onClick={() => setViewMode("grid")}
+							onClick={() =>
+								setViewMode((old) => (old === "grid" ? "list" : "grid"))
+							}
 						>
-							<Grid3X3 className="h-4 w-4" />
-						</Button>
-						<Button
-							variant={viewMode === "list" ? "default" : "outline"}
-							size="sm"
-							onClick={() => setViewMode("list")}
-						>
-							<List className="h-4 w-4" />
+							{viewMode === "grid" ? (
+								<List className="h-4 w-4" />
+							) : (
+								<Grid3X3 className="h-4 w-4" />
+							)}
 						</Button>
 					</div>
 				</div>
@@ -191,7 +252,7 @@ export default function YoursPage() {
 
 			{/* Content Section */}
 			<div className="flex-1 overflow-auto">
-				{apps.data?.length === 0 && (
+				{allItems.length === 0 && (
 					<EmptyState
 						action={{
 							label: "Create Your First App",

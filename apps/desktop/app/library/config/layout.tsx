@@ -28,35 +28,35 @@ import {
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
+	VisibilityIcon,
 	toastError,
 	useBackend,
 	useInvoke,
 } from "@tm9657/flow-like-ui";
+import { useLiveQuery } from "dexie-react-hooks";
 import {
 	CableIcon,
 	ChartAreaIcon,
-	CircleUserIcon,
-	CloudAlertIcon,
 	CogIcon,
+	CopyIcon,
+	CrownIcon,
 	DatabaseIcon,
-	FlaskConicalIcon,
-	FolderArchiveIcon,
 	FolderClosedIcon,
 	GlobeIcon,
-	GlobeLockIcon,
 	LayoutGridIcon,
 	Maximize2Icon,
 	Minimize2Icon,
 	PlayCircleIcon,
-	Share2Icon,
 	SparklesIcon,
 	SquarePenIcon,
+	UsersRoundIcon,
 	WorkflowIcon,
 	ZapIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
+import { appsDB } from "../../../lib/apps-db";
 import { EVENT_CONFIG } from "../../../lib/event-config";
 
 const navigationItems = [
@@ -79,6 +79,12 @@ const navigationItems = [
 		description: "Business logic and workflow definitions",
 	},
 	{
+		href: "/library/config/templates",
+		label: "Templates",
+		icon: CopyIcon,
+		description: "Reusable Flow templates",
+	},
+	{
 		href: "/library/config/events",
 		label: "Events",
 		icon: CableIcon,
@@ -95,30 +101,43 @@ const navigationItems = [
 		label: "Explore Data",
 		icon: DatabaseIcon,
 		description: "Browse and query your data",
+		disabled: true,
+	},
+	{
+		href: "/library/config/team",
+		label: "Team",
+		icon: UsersRoundIcon,
+		description: "Manage team members and permissions",
+		visibilities: [
+			IAppVisibility.Public,
+			IAppVisibility.Prototype,
+			IAppVisibility.PublicRequestAccess,
+		],
+	},
+	{
+		href: "/library/config/roles",
+		label: "Roles",
+		icon: CrownIcon,
+		description: "Define user roles and access levels",
+		visibilities: [
+			IAppVisibility.Public,
+			IAppVisibility.Prototype,
+			IAppVisibility.PublicRequestAccess,
+		],
 	},
 	{
 		href: "/library/config/analytics",
 		label: "Analytics",
 		icon: ChartAreaIcon,
 		description: "Performance metrics and insights",
-	},
-	{
-		href: "/library/config/share",
-		label: "Share",
-		icon: Share2Icon,
-		description: "Collaboration and sharing settings",
+		disabled: true,
 	},
 	{
 		href: "/library/config/endpoints",
 		label: "Endpoints",
 		icon: GlobeIcon,
 		description: "API endpoints and integrations",
-	},
-	{
-		href: "/library/config/export",
-		label: "Export / Import",
-		icon: FolderArchiveIcon,
-		description: "Backup and restore functionality",
+		disabled: true,
 	},
 ];
 
@@ -130,15 +149,34 @@ export default function Id({
 	const backend = useBackend();
 	const searchParams = useSearchParams();
 	const id = searchParams.get("id");
+	const online = useLiveQuery(
+		() =>
+			appsDB.visibility
+				.where("appId")
+				.equals(id ?? "")
+				.first(),
+		[id ?? ""],
+	) ?? { visibility: IAppVisibility.Offline };
 	const currentRoute = usePathname();
 	const metadata = useInvoke(
-		backend.getAppMeta,
+		backend.appState.getAppMeta,
+		backend.appState,
 		[id ?? ""],
 		typeof id === "string",
 	);
-	const app = useInvoke(backend.getApp, [id ?? ""], typeof id === "string");
+	const app = useInvoke(
+		backend.appState.getApp,
+		backend.appState,
+		[id ?? ""],
+		typeof id === "string",
+	);
 	const [isMaximized, setIsMaximized] = useState(false);
-	const events = useInvoke(backend.getEvents, [id ?? ""], (id ?? "") !== "");
+	const events = useInvoke(
+		backend.eventState.getEvents,
+		backend.eventState,
+		[id ?? ""],
+		(id ?? "") !== "",
+	);
 
 	const usableEvents = useMemo(() => {
 		const events = new Set<string>();
@@ -155,7 +193,7 @@ export default function Id({
 
 	async function executeEvent(event: IEvent) {
 		if (!id) return;
-		const runMeta = await backend.executeEvent(
+		const runMeta = await backend.eventState.executeEvent(
 			id,
 			event.id,
 			{
@@ -248,9 +286,9 @@ export default function Id({
 					{/* Enhanced Navigation - Hidden when maximized */}
 					{!isMaximized && (
 						<Card className="h-full flex flex-col flex-grow max-h-full overflow-hidden">
-							<CardHeader className="pb-3 pt-3 border-b">
+							<CardHeader className="pb-3 pt-3 border-b relative">
 								<div className="flex flex-col gap-3">
-									<div className="flex items-center gap-2">
+									<div className="flex items-center gap-2 w-full">
 										<div className="relative">
 											<Avatar className="w-9 h-9 border border-border/50 shadow-sm transition-all duration-300 group-hover:scale-105">
 												<AvatarImage
@@ -264,33 +302,6 @@ export default function Id({
 														.toUpperCase()}
 												</AvatarFallback>
 											</Avatar>
-											{/* Visibility Badge Overlay */}
-											{app.data?.visibility && (
-												<div className="absolute -bottom-1 -right-1">
-													{app.data?.visibility === IAppVisibility.Private && (
-														<div className="bg-secondary border border-background rounded-full p-0.5">
-															<CircleUserIcon className="w-2 h-2 text-secondary-foreground" />
-														</div>
-													)}
-													{app.data?.visibility ===
-														IAppVisibility.Prototype && (
-														<div className="bg-muted border border-background rounded-full p-0.5">
-															<FlaskConicalIcon className="w-4 h-4 text-muted-foreground" />
-														</div>
-													)}
-													{app.data?.visibility ===
-														IAppVisibility.PublicRequestAccess && (
-														<div className="bg-destructive border border-background rounded-full p-0.5">
-															<GlobeLockIcon className="w-2 h-2 text-destructive-foreground" />
-														</div>
-													)}
-													{app.data?.visibility === IAppVisibility.Offline && (
-														<div className="bg-muted-foreground/20 border border-background rounded-full p-0.5">
-															<CloudAlertIcon className="w-4 h-4 text-muted-foreground" />
-														</div>
-													)}
-												</div>
-											)}
 										</div>
 										<div className="flex-1 min-w-0">
 											<CardTitle className="text-sm truncate">
@@ -301,6 +312,13 @@ export default function Id({
 												)}
 											</CardTitle>
 										</div>
+
+										{/* Visibility Badge Overlay */}
+										{app.data?.visibility && (
+											<div className="absolute top-2.5 right-2.5 bg-background rounded-full">
+												<VisibilityIcon visibility={app.data?.visibility} />
+											</div>
+										)}
 									</div>
 
 									{/* Description */}
@@ -361,38 +379,77 @@ export default function Id({
 											Navigation
 										</CardTitle>
 									</div>
-									<nav className="flex flex-col gap-1 pb-4">
-										{navigationItems.map((item) => {
-											const isActive = currentRoute.endsWith(
-												item.href.split("/").pop() ?? "",
-											);
-											const Icon = item.icon;
+									<nav
+										className="flex flex-col gap-1 pb-4"
+										key={id + (online?.visibility ?? "")}
+									>
+										{navigationItems
+											.filter(
+												(item) =>
+													!item.visibilities ||
+													item.visibilities.includes(
+														online?.visibility ?? IAppVisibility.Offline,
+													),
+											)
+											.map((item) => {
+												const isActive = currentRoute.endsWith(
+													item.href.split("/").pop() ?? "",
+												);
+												const Icon = item.icon;
 
-											return (
-												<Tooltip key={item.href} delayDuration={300}>
-													<TooltipTrigger asChild>
-														<Link
-															href={`${item.href}?id=${id}`}
-															className={`
-                                                                flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all
-                                                                ${
-																																	isActive
-																																		? "bg-primary text-primary-foreground shadow-sm font-medium"
-																																		: "hover:bg-muted text-muted-foreground hover:text-foreground"
-																																}
-                                                            `}
-														>
-															<Icon className="w-4 h-4 flex-shrink-0" />
-															<span className="truncate">{item.label}</span>
-														</Link>
-													</TooltipTrigger>
-													<TooltipContent side="right" className="max-w-xs">
-														<p className="font-bold">{item.label}</p>
-														<p className="text-xs mt-1">{item.description}</p>
-													</TooltipContent>
-												</Tooltip>
-											);
-										})}
+												if (item.disabled) {
+													return (
+														<Tooltip key={item.href} delayDuration={300}>
+															<TooltipTrigger asChild>
+																<div
+																	className={`
+																		flex items-center gap-3 px-3 py-2 rounded-lg text-sm
+																		text-muted-foreground bg-muted/50 opacity-60 cursor-not-allowed
+																	`}
+																	tabIndex={-1}
+																	aria-disabled="true"
+																>
+																	<Icon className="w-4 h-4 flex-shrink-0" />
+																	<span className="truncate">{item.label}</span>
+																</div>
+															</TooltipTrigger>
+															<TooltipContent side="right" className="max-w-xs">
+																<p className="font-bold">
+																	{item.label} (Coming soon!)
+																</p>
+																<p className="text-xs mt-1">
+																	{item.description}
+																</p>
+															</TooltipContent>
+														</Tooltip>
+													);
+												}
+
+												return (
+													<Tooltip key={item.href} delayDuration={300}>
+														<TooltipTrigger asChild>
+															<Link
+																href={`${item.href}?id=${id}`}
+																className={`
+                            flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all
+                            ${
+															isActive
+																? "bg-primary text-primary-foreground shadow-sm font-medium"
+																: "hover:bg-muted text-muted-foreground hover:text-foreground"
+														}
+                        `}
+															>
+																<Icon className="w-4 h-4 flex-shrink-0" />
+																<span className="truncate">{item.label}</span>
+															</Link>
+														</TooltipTrigger>
+														<TooltipContent side="right" className="max-w-xs">
+															<p className="font-bold">{item.label}</p>
+															<p className="text-xs mt-1">{item.description}</p>
+														</TooltipContent>
+													</Tooltip>
+												);
+											})}
 									</nav>
 
 									<Separator className="my-4 mx-3" />

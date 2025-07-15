@@ -4,6 +4,7 @@ use flow_like::state::FlowLikeState;
 use flow_like_types::Result;
 use flow_like_types::async_trait;
 use serde::{Deserialize, Serialize};
+use tracing::instrument;
 
 use crate::state::AppState;
 use crate::state::State;
@@ -54,6 +55,7 @@ impl RuntimeCredentials {
         }
     }
 
+    #[instrument(skip(self, state), level = "debug")]
     pub async fn to_state(&self, state: AppState) -> Result<FlowLikeState> {
         match self {
             #[cfg(feature = "aws")]

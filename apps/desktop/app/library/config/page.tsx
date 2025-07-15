@@ -23,11 +23,13 @@ import {
 	SelectValue,
 	Textarea,
 	VerificationDialog,
+	nowSystemTime,
 	toastError,
 	useBackend,
 	useInvalidateInvoke,
 	useInvoke,
 } from "@tm9657/flow-like-ui";
+import { isEqual } from "lodash-es";
 import {
 	BombIcon,
 	CalendarIcon,
@@ -46,6 +48,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTauriInvoke } from "../../../components/useInvoke";
+import { VisibilityStatusSwitcher } from "./visibility-status-switcher";
 
 export default function Id() {
 	const backend = useBackend();
@@ -57,9 +60,15 @@ export default function Id() {
 	// Global permission state - you can modify this later
 	const [canEdit, setCanEdit] = useState(true);
 
-	const app = useInvoke(backend.getApp, [id ?? ""], typeof id === "string");
+	const app = useInvoke(
+		backend.appState.getApp,
+		backend.appState,
+		[id ?? ""],
+		typeof id === "string",
+	);
 	const metadata = useInvoke(
-		backend.getAppMeta,
+		backend.appState.getAppMeta,
+		backend.appState,
 		[id ?? ""],
 		typeof id === "string",
 	);
@@ -68,6 +77,12 @@ export default function Id() {
 	const [localMetadata, setLocalMetadata] = useState<IMetadata | undefined>();
 	const [hasChanges, setHasChanges] = useState(false);
 	const [newTag, setNewTag] = useState("");
+	const currentProfile = useInvoke(
+		backend.userState.getProfile,
+		backend.userState,
+		[],
+		true,
+	);
 
 	useEffect(() => {
 		if (!metadata.data) return;
@@ -88,9 +103,25 @@ export default function Id() {
 			return;
 		}
 
-		const appChanged = JSON.stringify(app.data) !== JSON.stringify(localApp);
-		const metadataChanged =
-			JSON.stringify(metadata.data) !== JSON.stringify(localMetadata);
+		const appData = { ...app.data };
+		const localData = { ...localApp };
+
+		appData.visibility = IAppVisibility.Offline;
+		localData.visibility = IAppVisibility.Offline;
+
+		appData.updated_at = nowSystemTime();
+		localData.updated_at = nowSystemTime();
+		appData.created_at = nowSystemTime();
+		localData.created_at = nowSystemTime();
+
+		const appMetadata = {
+			...metadata.data,
+			created_at: localMetadata.created_at,
+			updated_at: localMetadata.updated_at,
+		};
+
+		const appChanged = !isEqual(localData, appData);
+		const metadataChanged = !isEqual(appMetadata, localMetadata);
 
 		setHasChanges(appChanged || metadataChanged);
 	}, [app.data, metadata.data, localApp, localMetadata]);
@@ -119,13 +150,13 @@ export default function Id() {
 			return;
 		}
 
-		await backend.pushAppMeta(id, localMetadata);
-		await backend.updateApp(localApp);
+		await backend.appState.pushAppMeta(id, localMetadata);
+		await backend.appState.updateApp(localApp);
 		await app.refetch();
 		await metadata.refetch();
 		await isReady.refetch();
 		await appSize.refetch();
-		await invalidate(backend.getApps, []);
+		await invalidate(backend.appState.getApps, []);
 
 		toast.success("Changes saved successfully!", {
 			icon: <SaveIcon className="w-4 h-4" />,
@@ -145,8 +176,8 @@ export default function Id() {
 	}, [app.data, metadata.data]);
 
 	async function deleteApp() {
-		await invoke("delete_app", { appId: id });
-		await invalidate(backend.getApps, []);
+		await backend.appState.deleteApp(id ?? "");
+		await invalidate(backend.appState.getApps, []);
 		router.push("/library/apps");
 	}
 
@@ -331,6 +362,15 @@ export default function Id() {
 					</div>
 				</CardContent>
 			</Card>
+
+			{/* Visibility Status */}
+			{app.data && (
+				<VisibilityStatusSwitcher
+					canEdit={canEdit}
+					localApp={app.data}
+					refreshApp={async () => await app.refetch()}
+				/>
+			)}
 
 			{/* Visual Assets */}
 			<Card>

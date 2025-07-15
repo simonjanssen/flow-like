@@ -1,7 +1,7 @@
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 
 use axum::{Json, Router, middleware::from_fn_with_state, routing::get};
-use error::AppError;
+use error::InternalError;
 use flow_like::hub::Hub;
 use middleware::jwt::jwt_middleware;
 use state::{AppState, State};
@@ -10,10 +10,9 @@ use tower_http::{
     compression::{CompressionLayer, DefaultPredicate, Predicate, predicate::NotForContentType},
     cors::CorsLayer,
     decompression::RequestDecompressionLayer,
-    timeout::TimeoutLayer,
 };
 
-mod entity;
+pub mod entity;
 mod middleware;
 mod routes;
 
@@ -28,6 +27,8 @@ pub mod auth {
     pub use middleware::jwt::AppUser;
 }
 
+pub use sea_orm;
+
 pub fn construct_router(state: Arc<State>) -> Router {
     let router = Router::new()
         .route("/", get(hub_info))
@@ -35,7 +36,7 @@ pub fn construct_router(state: Arc<State>) -> Router {
         .nest("/info", routes::info::routes())
         .nest("/user", routes::user::routes())
         .nest("/profile", routes::profile::routes())
-        .nest("/app", routes::app::routes())
+        .nest("/apps", routes::app::routes())
         .nest("/bit", routes::bit::routes())
         .nest("/store", routes::store::routes())
         .nest("/auth", routes::auth::routes())
@@ -59,6 +60,6 @@ pub fn construct_router(state: Arc<State>) -> Router {
 #[tracing::instrument(name = "GET /", skip(state))]
 async fn hub_info(
     axum::extract::State(state): axum::extract::State<AppState>,
-) -> Result<Json<Hub>, AppError> {
+) -> Result<Json<Hub>, InternalError> {
     Ok(Json(state.platform_config.clone()))
 }
