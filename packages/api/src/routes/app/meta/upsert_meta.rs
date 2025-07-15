@@ -1,12 +1,16 @@
 use crate::{
-    ensure_permission, entity::meta, error::ApiError, middleware::jwt::AppUser, permission::role_permission::RolePermissions, routes::app::meta::{MetaMode, MetaQuery}, state::AppState
+    entity::meta,
+    error::ApiError,
+    middleware::jwt::AppUser,
+    routes::app::meta::{MetaMode, MetaQuery},
+    state::AppState,
 };
 use axum::{
     Extension, Json,
     extract::{Path, Query, State},
 };
 use flow_like_types::create_id;
-use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, TransactionTrait};
+use sea_orm::{ActiveModelTrait, EntityTrait, TransactionTrait};
 
 #[tracing::instrument(name = "PUT /apps/{app_id}/meta", skip(state, user))]
 pub async fn upsert_meta(
@@ -51,7 +55,7 @@ pub async fn upsert_meta(
         model.id = existing.id;
         model.icon = existing.icon;
         model.thumbnail = existing.thumbnail;
-        let mut active_model : meta::ActiveModel = model.into();
+        let mut active_model: meta::ActiveModel = model.into();
         active_model = active_model.reset_all();
         active_model.update(&txn).await?;
         txn.commit().await?;

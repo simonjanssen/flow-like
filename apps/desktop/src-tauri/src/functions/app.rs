@@ -1,10 +1,14 @@
 use super::TauriFunctionError;
 use crate::state::{TauriFlowLikeState, TauriSettingsState};
 use flow_like::{
-    app::App, bit::Metadata, flow::{
+    app::App,
+    bit::Metadata,
+    flow::{
         board::{Board, ExecutionStage},
         execution::LogLevel,
-    }, flow_like_storage::Path, profile::ProfileApp
+    },
+    flow_like_storage::Path,
+    profile::ProfileApp,
 };
 use flow_like_types::create_id;
 use futures::{StreamExt, TryStreamExt};
@@ -146,7 +150,9 @@ pub async fn upsert_board(
     }
 
     if let Some(board_data) = board_data {
-        let new_board = app.create_board(Some(board_data.id.clone()), template).await?;
+        let new_board = app
+            .create_board(Some(board_data.id.clone()), template)
+            .await?;
         app.save().await?;
         let board = app.open_board(new_board, Some(false), None).await?;
         drop(app);

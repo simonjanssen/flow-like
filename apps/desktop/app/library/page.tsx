@@ -46,7 +46,7 @@ export default function YoursPage() {
 	const allItems = useMemo(() => {
 		const map = new Map();
 		apps.data?.forEach(([app, meta]) => {
-			if(meta) map.set(app.id, { ...meta, id: app.id, app });
+			if (meta) map.set(app.id, { ...meta, id: app.id, app });
 		});
 		return Array.from(map.values());
 	}, [apps.data]);
@@ -70,19 +70,16 @@ export default function YoursPage() {
 	}, [inviteLink, router]);
 
 	const { addAll, removeAll, clearSearch, search, searchResults } =
-		useMiniSearch(
-			allItems,
-			{
-				fields: [
-					"name",
-					"description",
-					"long_description",
-					"tags",
-					"category",
-					"id",
-				],
-			},
-		);
+		useMiniSearch(allItems, {
+			fields: [
+				"name",
+				"description",
+				"long_description",
+				"tags",
+				"category",
+				"id",
+			],
+		});
 
 	useEffect(() => {
 		if (allItems.length > 0) {

@@ -13,7 +13,6 @@ use flow_like::{app::App, bit::Metadata};
 use sea_orm::{
     ColumnTrait, EntityTrait, JoinType, QueryFilter, QueryOrder, QuerySelect, RelationTrait,
 };
-use tower_http::limit;
 #[tracing::instrument(name = "GET /apps", skip(state, user))]
 pub async fn get_apps(
     State(state): State<AppState>,

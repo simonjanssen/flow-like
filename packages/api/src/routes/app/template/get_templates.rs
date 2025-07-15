@@ -37,14 +37,14 @@ pub async fn get_templates(
         .await?;
 
     let templates = templates
-    .into_iter()
-    .filter_map(|(t, m)| {
-        m.iter()
-            .find(|meta| &meta.lang == language)
-            .or_else(|| m.iter().find(|meta| &meta.lang == "en"))
-            .map(|meta| (app_id.clone(), t.id.clone(), Metadata::from(meta.clone())))
-    })
-    .collect();
+        .into_iter()
+        .filter_map(|(t, m)| {
+            m.iter()
+                .find(|meta| &meta.lang == language)
+                .or_else(|| m.iter().find(|meta| &meta.lang == "en"))
+                .map(|meta| (app_id.clone(), t.id.clone(), Metadata::from(meta.clone())))
+        })
+        .collect();
 
     Ok(Json(templates))
 }

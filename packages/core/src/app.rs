@@ -553,7 +553,6 @@ impl App {
             data.save_as_template(None).await?;
         }
 
-
         Ok(())
     }
 

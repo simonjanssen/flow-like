@@ -3,7 +3,9 @@ use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use serde::Deserialize;
 
 use crate::{
-    auth::AppUser, ensure_in_project, ensure_permission, entity::meta, error::ApiError, middleware::jwt::AppPermissionResponse, permission::role_permission::RolePermissions, state::AppState
+    auth::AppUser, ensure_in_project, ensure_permission, entity::meta, error::ApiError,
+    middleware::jwt::AppPermissionResponse, permission::role_permission::RolePermissions,
+    state::AppState,
 };
 
 pub mod get_media;
@@ -47,13 +49,24 @@ impl MetaMode {
         state: &AppState,
     ) -> Result<AppPermissionResponse, ApiError> {
         match self {
-            MetaMode::Template(_) => {
-                Ok(ensure_permission!(user, app_id, state, RolePermissions::WriteTemplates))
-            }
-            MetaMode::Course(_) => {
-                Ok(ensure_permission!(user, app_id, state, RolePermissions::WriteCourses))
-            }
-            MetaMode::App(_) => Ok(ensure_permission!(user, app_id, state, RolePermissions::WriteMeta)),
+            MetaMode::Template(_) => Ok(ensure_permission!(
+                user,
+                app_id,
+                state,
+                RolePermissions::WriteTemplates
+            )),
+            MetaMode::Course(_) => Ok(ensure_permission!(
+                user,
+                app_id,
+                state,
+                RolePermissions::WriteCourses
+            )),
+            MetaMode::App(_) => Ok(ensure_permission!(
+                user,
+                app_id,
+                state,
+                RolePermissions::WriteMeta
+            )),
         }
     }
 
@@ -64,12 +77,18 @@ impl MetaMode {
         state: &AppState,
     ) -> Result<AppPermissionResponse, ApiError> {
         match self {
-            MetaMode::Template(_) => {
-                Ok(ensure_permission!(user, app_id, state, RolePermissions::ReadTemplates))
-            }
-            MetaMode::Course(_) => {
-                Ok(ensure_permission!(user, app_id, state, RolePermissions::ReadCourses))
-            }
+            MetaMode::Template(_) => Ok(ensure_permission!(
+                user,
+                app_id,
+                state,
+                RolePermissions::ReadTemplates
+            )),
+            MetaMode::Course(_) => Ok(ensure_permission!(
+                user,
+                app_id,
+                state,
+                RolePermissions::ReadCourses
+            )),
             MetaMode::App(_) => Ok(ensure_in_project!(user, &app_id, &state)),
         }
     }

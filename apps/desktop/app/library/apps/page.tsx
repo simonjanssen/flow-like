@@ -51,19 +51,16 @@ export default function YoursPage() {
 	}, [apps.data]);
 
 	const { addAll, removeAll, clearSearch, search, searchResults } =
-		useMiniSearch(
-			[...allItems],
-			{
-				fields: [
-					"name",
-					"description",
-					"long_description",
-					"tags",
-					"category",
-					"id",
-				],
-			},
-		);
+		useMiniSearch([...allItems], {
+			fields: [
+				"name",
+				"description",
+				"long_description",
+				"tags",
+				"category",
+				"id",
+			],
+		});
 
 	const handleJoin = useCallback(async () => {
 		const url = new URL(inviteLink);
@@ -86,9 +83,7 @@ export default function YoursPage() {
 	useEffect(() => {
 		if (allItems.length > 0) {
 			removeAll();
-			addAll(
-				allItems,
-			);
+			addAll(allItems);
 		}
 		return () => {
 			removeAll();

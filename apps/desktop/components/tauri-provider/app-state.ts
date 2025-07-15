@@ -256,7 +256,7 @@ export class AppState implements IAppState {
 
 	async getAppMeta(appId: string, language?: string): Promise<IMetadata> {
 		const isOffline = await this.backend.isOffline(appId);
-		let meta: IMetadata | undefined = undefined
+		let meta: IMetadata | undefined = undefined;
 
 		try {
 			meta = await invoke<IMetadata>("get_app_meta", {
@@ -264,12 +264,11 @@ export class AppState implements IAppState {
 				language,
 			});
 			if (isOffline) {
-			return meta;
-		}
-		}catch (e) {
+				return meta;
+			}
+		} catch (e) {
 			console.warn("Failed to get app meta from local cache:", e);
 		}
-
 
 		if (
 			!this.backend.profile ||
@@ -289,27 +288,27 @@ export class AppState implements IAppState {
 		);
 
 		if (meta) {
-const promise = injectDataFunction(
-			async () => {
-				const remoteMeta: IMetadata = await remoteDataPromise;
+			const promise = injectDataFunction(
+				async () => {
+					const remoteMeta: IMetadata = await remoteDataPromise;
 
-				await invoke("push_app_meta", {
-					appId: appId,
-					metadata: remoteMeta,
-					language,
-				});
+					await invoke("push_app_meta", {
+						appId: appId,
+						metadata: remoteMeta,
+						language,
+					});
 
-				return remoteMeta;
-			},
-			this,
-			this.backend.queryClient,
-			this.getAppMeta,
-			[appId, language],
-			[],
-		);
-		this.backend.backgroundTaskHandler(promise);
+					return remoteMeta;
+				},
+				this,
+				this.backend.queryClient,
+				this.getAppMeta,
+				[appId, language],
+				[],
+			);
+			this.backend.backgroundTaskHandler(promise);
 
-		return meta;
+			return meta;
 		}
 
 		const remoteMeta: IMetadata = await remoteDataPromise;

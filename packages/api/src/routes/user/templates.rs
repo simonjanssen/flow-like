@@ -1,6 +1,5 @@
 use crate::{
-    ensure_permission,
-    entity::{self, app, membership, meta, role, template},
+    entity::{membership, meta, role, template},
     error::ApiError,
     middleware::jwt::AppUser,
     permission::role_permission::RolePermissions,
@@ -9,10 +8,13 @@ use crate::{
 };
 use axum::{
     Extension, Json,
-    extract::{Path, Query, State},
+    extract::{Query, State},
 };
 use flow_like::bit::Metadata;
-use sea_orm::{ColumnTrait, DatabaseTransaction, EntityTrait, JoinType, QueryFilter, QueryOrder, QuerySelect, RelationTrait, TransactionTrait};
+use sea_orm::{
+    ColumnTrait, DatabaseTransaction, EntityTrait, JoinType, QueryFilter, QueryOrder, QuerySelect,
+    RelationTrait, TransactionTrait,
+};
 
 #[tracing::instrument(name = "GET /user/templates", skip(state, user))]
 pub async fn get_templates(
@@ -81,15 +83,23 @@ async fn get_templates_with_metadata(
     let result = templates
         .into_iter()
         .filter_map(|(template, metadata)| {
-            find_best_metadata(&metadata, language)
-                .map(|meta| (template.app_id.clone(), template.id.clone(), Metadata::from(meta.clone())))
+            find_best_metadata(&metadata, language).map(|meta| {
+                (
+                    template.app_id.clone(),
+                    template.id.clone(),
+                    Metadata::from(meta.clone()),
+                )
+            })
         })
         .collect();
 
     Ok(result)
 }
 
-fn find_best_metadata<'a>(metadata: &'a [meta::Model], language: &'a str) -> Option<&'a meta::Model> {
+fn find_best_metadata<'a>(
+    metadata: &'a [meta::Model],
+    language: &'a str,
+) -> Option<&'a meta::Model> {
     metadata
         .iter()
         .find(|meta| meta.lang == language)

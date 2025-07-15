@@ -58,7 +58,11 @@ pub async fn get_templates(
             let templates = &app.templates;
             let mut loaded_templates = Vec::with_capacity(templates.len());
 
-            println!("Loading templates for app: {}, candidates: {}", app_id, templates.len());
+            println!(
+                "Loading templates for app: {}, candidates: {}",
+                app_id,
+                templates.len()
+            );
 
             for template in templates {
                 let template = app.get_template(template, None).await;

@@ -11,7 +11,7 @@ import { fetcher } from "../../lib/api";
 import type { TauriBackend } from "../tauri-provider";
 
 export class TemplateState implements ITemplateState {
-	constructor(private readonly backend: TauriBackend) { }
+	constructor(private readonly backend: TauriBackend) {}
 	async getTemplates(
 		appId?: string,
 		language?: string,
@@ -158,8 +158,6 @@ export class TemplateState implements ITemplateState {
 		} catch (error) {
 			console.error("Error fetching template:", error);
 		}
-
-
 
 		if (!this.backend.profile || !this.backend.queryClient) {
 			throw new Error("No profile set for Tauri backend");

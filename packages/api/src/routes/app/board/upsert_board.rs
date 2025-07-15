@@ -6,7 +6,10 @@ use axum::{
     Extension, Json,
     extract::{Path, State},
 };
-use flow_like::flow::{board::{Board, ExecutionStage}, execution::LogLevel};
+use flow_like::flow::{
+    board::{Board, ExecutionStage},
+    execution::LogLevel,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Deserialize)]
@@ -15,7 +18,7 @@ pub struct UpsertBoard {
     pub description: Option<String>,
     pub stage: Option<ExecutionStage>,
     pub log_level: Option<LogLevel>,
-    pub template: Option<Board>
+    pub template: Option<Board>,
 }
 
 #[derive(Deserialize, Serialize)]
