@@ -2,6 +2,7 @@
 /// Function call definitions or JSON Schemas are tidious to write by hand so this is an utility node to help you out.
 /// Output is guaranteed to be a valid OpenAI-like Function Call Definition
 use crate::utils::json::parse_with_schema::validate_openai_function_str;
+use crate::ai::generative::llm::with_tools::extract_tagged;
 use flow_like::{
     bit::Bit,
     flow::{
@@ -27,7 +28,7 @@ user:
 call a weather api, with location arg for city or country and units temperature
 
 output:
-[SCHEMA]{
+<schema>{
   "type": "function",
   "name": "get_weather",
   "description": "Retrieves current weather for the given location.",
@@ -55,10 +56,11 @@ output:
   },
   "strict": true
 }
+</schema>
 
 # Output Format
 You have only one option to answer:
-- Generate a schema: [SCHEMA]{"type": "function", "name": ..., "description": ..., "parameters": ..., "strict": true }
+- Generate a schema: <schema>{"type": "function", "name": ..., "description": ..., "parameters": ..., "strict": true }</schema>
 "#;
 
 #[derive(Default)]
@@ -119,25 +121,27 @@ impl NodeLogic for LLMMakeSchema {
         let model = context.evaluate_pin::<Bit>("model").await?;
         let prompt: String = context.evaluate_pin("prompt").await?;
 
-        // load model
+        // construct system prompt + history
         let mut model_name = model.id.clone();
         if let Some(meta) = model.meta.get("en") {
             model_name = meta.name.clone();
         }
-        let model_factory = context.app_state.lock().await.model_factory.clone();
-        let model = model_factory
-            .lock()
-            .await
-            .build(&model, context.app_state.clone())
-            .await?;
         let mut history = History::new(model_name.clone(), vec![]);
-
-        // construct system prompt + history
         history.set_system_prompt(SYSTEM_PROMPT.to_string());
         history.push_message(HistoryMessage::from_string(Role::User, &prompt));
 
         // generate response
-        let response = model.invoke(&history, None).await?;
+        let response = {
+            let model_factory = context.app_state.lock().await.model_factory.clone();
+            let model = model_factory
+                .lock()
+                .await
+                .build(&model, context.app_state.clone())
+                .await?;
+            model.invoke(&history, None).await?
+        };
+        
+        // parse response
         let mut response_string = "".to_string();
         if let Some(response) = response.last_message() {
             response_string = response.content.clone().unwrap_or("".to_string());
@@ -145,19 +149,17 @@ impl NodeLogic for LLMMakeSchema {
         context.log_message(&response_string, LogLevel::Debug);
 
         // parse + validate function defintion
-        let substrings: Vec<String> = response_string
-            .split("[SCHEMA]")
-            .map(|s| s.to_string())
-            .collect();
-        let definition_str = match substrings.last() {
-            Some(value) => value,
-            _ => return Err(anyhow!("Failed to parse function definition from response")),
+        let mut schema_str= extract_tagged(&response_string, "schema")?;
+        let schema_str = if schema_str.len() == 1 {
+            schema_str.pop().unwrap()
+        } else {
+            return Err(anyhow!(format!("Invalid number of schemas: Expected 1, got {}", schema_str.len())))
         };
-        let definition = validate_openai_function_str(definition_str)?;
+        let schema = validate_openai_function_str(&schema_str)?;
 
         // set outputs
         context
-            .set_pin_value("function", json::json!(definition))
+            .set_pin_value("function", json::json!(schema))
             .await?;
         context.activate_exec_pin("exec_out").await?;
         Ok(())
