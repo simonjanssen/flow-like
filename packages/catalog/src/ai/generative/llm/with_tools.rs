@@ -1,4 +1,6 @@
-use crate::utils::json::parse_with_schema::{OpenAIFunction, validate_openai_functions_str};
+use crate::utils::json::parse_with_schema::{
+    OpenAIFunction, OpenAIToolCall, validate_openai_functions_str, validate_openai_tool_call_str,
+};
 use flow_like::{
     bit::Bit,
     flow::{
@@ -10,13 +12,44 @@ use flow_like::{
     },
     state::FlowLikeState,
 };
-use flow_like_model_provider::{history::History, response::Response};
-use flow_like_types::{Value, async_trait, json};
+use flow_like_model_provider::{
+    history::{History, HistoryMessage, Role},
+    response::Response,
+};
+
+use flow_like_types::{Error, Value, anyhow, async_trait, json, regex::Regex};
 use serde::Deserialize;
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
 };
+
+const SYSTEM_PROMPT_TEMPLATE: &str = r#"
+# Instruction
+You are a helpful assistant with access to the tools below.
+
+# Tools
+Here are the tools you *can* use:
+
+```json
+TOOLS_STR
+```
+
+# Output Format
+You have *two* options to answer:
+- Use a tool: <tooluse>{"name": "name of the tool", "args": ...}</tooluse>
+- Reply back to user: <replytouser>...</replytouser>
+"#;
+
+/// Extract tagged substrings, e.g. Hello, <tool>extract this</tool> and <tool>this</tool>, good bye.
+pub fn extract_tagged(text: &str, tag: &str) -> Result<Vec<String>, Error> {
+    let pattern = format!(r"<{tag}>(.*?)</{tag}>", tag = regex::escape(tag));
+    let re = Regex::new(&pattern)?;
+    Ok(re
+        .captures_iter(text)
+        .filter_map(|caps| caps.get(1).map(|m| m.as_str().to_string()))
+        .collect())
+}
 
 #[derive(Default)]
 pub struct LLMWithTools {}
@@ -51,7 +84,7 @@ impl NodeLogic for LLMWithTools {
         node.add_input_pin(
             "tools",
             "Tools",
-            "JSON or OpenAI Tool Schemas",
+            "JSON or OpenAI Function Definitions",
             VariableType::String,
         )
         .set_default_value(Some(json::json!("[]")));
@@ -82,13 +115,86 @@ impl NodeLogic for LLMWithTools {
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
         context.deactivate_exec_pin("exec_done").await?;
 
-        let schema_str: String = context.evaluate_pin("tools").await?;
-        let tools: Vec<OpenAIFunction> = validate_openai_functions_str(&schema_str)?;
-        context.activate_exec_pin("exec_done").await?;
+        // fetch inputs
+        let model_bit = context.evaluate_pin::<Bit>("model").await?;
+        let mut history = context.evaluate_pin::<History>("history").await?;
+        let tools_str: String = context.evaluate_pin("tools").await?;
+
+        // deactivate all function exec output pins
+        let functions = validate_openai_functions_str(&tools_str)?;
+        for function in &functions {
+            context.deactivate_exec_pin(&function.name).await?
+        }
+
+        // log model name
+        if let Some(meta) = model_bit.meta.get("en") {
+            context.log_message(&format!("Loading model {:?}", meta.name), LogLevel::Debug);
+        }
+
+        // ingest system prompt with tool definitions
+        let system_prompt = SYSTEM_PROMPT_TEMPLATE.replace("TOOLS_STR", &tools_str); // todo: serlialize tools instead?
+        context.log_message(&system_prompt, LogLevel::Debug);
+        history.set_system_prompt(system_prompt.to_string()); // todo: handle previously set system prompts
+
+        // generate response, todo: wrap this
+        let response = {
+            // load model
+            let model_factory = context.app_state.lock().await.model_factory.clone();
+            let model = model_factory
+                .lock()
+                .await
+                .build(&model_bit, context.app_state.clone())
+                .await?;
+            model.invoke(&history, None).await?
+        };
+        let mut response_string = "".to_string();
+        if let Some(response) = response.last_message() {
+            response_string = response.content.clone().unwrap_or("".to_string());
+        }
+        context.log_message(&response_string, LogLevel::Debug);
+
+        // parse response
+        if response_string.contains("<tooluse>") {
+            let tool_calls_str = extract_tagged(&response_string, "tooluse")?;
+            let tool_calls: Result<Vec<OpenAIToolCall>, Error> = tool_calls_str
+                .iter()
+                .map(|tool_call_str| validate_openai_tool_call_str(&functions, tool_call_str))
+                .collect();
+            let mut tool_calls = tool_calls?;
+            let tool_call = if tool_calls.len() == 1 {
+                // todo: remove to support parallel tool calls
+                tool_calls.pop().unwrap()
+            } else {
+                return Err(anyhow!(format!(
+                    "Invalid number of tool calls: Expected 1, got {}.",
+                    tool_calls.len()
+                )));
+            };
+            context
+                .set_pin_value("tool_args", json::json!(tool_call.args))
+                .await?;
+            context.activate_exec_pin(&tool_call.name).await?; // activate this tool call exec pin
+        } else if response_string.contains("<replytouser>") {
+            let mut response_tagged = extract_tagged(&response_string, "replytouser")?;
+            let response_tagged = if response_tagged.len() == 1 {
+                response_tagged.pop().unwrap()
+            } else {
+                return Err(anyhow!(format!(
+                    "Invalid number of responses: Expected 1, got {}.",
+                    response_tagged.len()
+                )));
+            };
+            context
+                .set_pin_value("response", json::json!(response))
+                .await?; // todo: remove prefix from response struct
+            context.activate_exec_pin("exec_done").await?;
+        } else {
+            return Err(anyhow!("Invalid response."));
+        }
+
         Ok(())
     }
 
-    // [{"name": "Tool 1", "args": "a"}, {"name": "Tool 2", "args": "b"}]
     async fn on_update(&self, node: &mut Node, board: Arc<Board>) {
         let current_tool_exec_pins: Vec<_> = node
             .pins

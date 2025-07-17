@@ -64,4 +64,5 @@ pub use image;
 pub use imageproc;
 pub use jsonschema;
 pub use minijinja;
+pub use regex;
 pub use rxing;

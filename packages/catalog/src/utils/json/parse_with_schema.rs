@@ -18,6 +18,12 @@ pub struct OpenAIFunction {
     pub strict: bool,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct OpenAIToolCall {
+    pub name: String,
+    pub args: Value,
+}
+
 /// Is this JSON Value an OpenAI Function Definition?
 /// https://platform.openai.com/docs/guides/function-calling?api-mode=responses#defining-functions
 pub fn is_openai(data: &Value) -> bool {
@@ -152,12 +158,12 @@ fn get_schema_validator(definition_str: &str) -> Result<jsonschema::Validator, E
 
 /// Validates JSON data against JSON/OpenAI Schema and returns JSON data as Value
 /// Returns a JSON Value that is compliant with the given definition
-pub fn validate_json_data(definition_str: &str, data_str: &str) -> Result<Value, Error> {
+pub fn validate_json_data(schema: &str, data: &str) -> Result<Value, Error> {
     // Get schema validator
-    let validator = get_schema_validator(definition_str)?;
+    let validator = get_schema_validator(schema)?;
 
     // Is data input pin value valid JSON?
-    let data: Value = match json::from_str(data_str) {
+    let data: Value = match json::from_str(data) {
         Ok(data) => data,
         Err(e) => return Err(anyhow!(format!("Failed to parse JSON data: {}", e))),
     };
@@ -176,40 +182,41 @@ pub fn validate_json_data(definition_str: &str, data_str: &str) -> Result<Value,
     }
 }
 
-// todo: multiple defintions + tool_call name
-pub fn validate_openai_tool_call(
-    definition_str: &str,
-    tool_call_str: &str,
-) -> Result<Value, Error> {
-    // Get schema validator
-    let validator = get_schema_validator(definition_str)?;
-
-    // Is data input pin value valid JSON?
-    let tool_call: Value = match json::from_str(tool_call_str) {
-        Ok(data) => data,
-        Err(e) => return Err(anyhow!(format!("Failed to parse JSON data: {}", e))),
+pub fn validate_openai_tool_call_str(
+    functions: &Vec<OpenAIFunction>,
+    tool_call: &str,
+) -> Result<OpenAIToolCall, Error> {
+    // Deserialize tool call
+    let tool_call: OpenAIToolCall = match json::from_str(tool_call) {
+        Ok(tool_call) => tool_call,
+        Err(e) => return Err(anyhow!(format!("Failed to parse tool call: {}", e))),
     };
 
-    let data = match tool_call.as_object() {
-        Some(data) => match data.get("args") {
-            Some(data) => data,
-            None => return Err(anyhow!("Missing tool call args")),
-        },
-        None => return Err(anyhow!("Invalid tool call")),
-    };
+    for function in functions {
+        if tool_call.name == function.name {
+            let validator = match jsonschema::validator_for(&function.parameters) {
+                Ok(validator) => validator,
+                Err(e) => return Err(anyhow!(format!("Failed to load schema validator: {}", e))),
+            };
 
-    // Validate input data againts JSON schema
-    let errors = validator.iter_errors(data);
-    let error_msg = errors
-        .map(|e| format!("Error: {}, Location: {}", e, e.instance_path))
-        .collect::<Vec<_>>()
-        .join("\n");
+            // Validate tool call agains function schema
+            let errors = validator.iter_errors(&tool_call.args);
+            let error_msg = errors
+                .map(|e| format!("Error: {}, Location: {}", e, e.instance_path))
+                .collect::<Vec<_>>()
+                .join("\n");
 
-    if error_msg.is_empty() {
-        Ok(data.clone())
-    } else {
-        Err(anyhow!(format!("Schema validation failed: {}", error_msg)))
+            if error_msg.is_empty() {
+                return Ok(tool_call);
+            } else {
+                return Err(anyhow!(format!("Invalid tool call args: {}", error_msg)));
+            }
+        }
     }
+    Err(anyhow!(format!(
+        "Unknown tool call name: {}",
+        tool_call.name
+    )))
 }
 
 #[derive(Default)]

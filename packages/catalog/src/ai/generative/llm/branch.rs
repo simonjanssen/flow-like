@@ -1,3 +1,4 @@
+use crate::ai::generative::llm::with_tools::extract_tagged;
 use flow_like::{
     bit::Bit,
     flow::{
@@ -42,24 +43,21 @@ Here is the tool, you **must** use to make your response:
 }
 ```
 
-# Input Messages
-Previous tool outputs are indicated with a [TOOLOUTPUT] prefix.
-
 # Output Format
 You have only one option to answer:
-- Use a tool: [TOOLUSE]{"name": "name of the tool", "args": ...}
+- Use a single tool: <tooluse>{"name": "submit_decision", "args": ...}</tooluse>
 "#;
 
 // refactor / share between llm nodes with tool use
 #[derive(Debug, Deserialize)]
-struct ToolArgs {
+struct BranchToolCallArgs {
     decision: bool,
 }
 
 #[derive(Debug, Deserialize)]
-struct Tool {
+struct BranchToolCall {
     name: String,
-    args: ToolArgs,
+    args: BranchToolCallArgs,
 }
 
 #[derive(Default)]
@@ -118,49 +116,46 @@ impl NodeLogic for LLMBranchNode {
         context.deactivate_exec_pin("true").await?;
         context.deactivate_exec_pin("false").await?;
 
+        // fetch inputs
         let model = context.evaluate_pin::<Bit>("model").await?;
+        let prompt: String = context.evaluate_pin::<String>("prompt").await?;
         let mut model_name = model.id.clone();
         if let Some(meta) = model.meta.get("en") {
             model_name = meta.name.clone();
         }
-        let prompt = context.evaluate_pin::<String>("prompt").await?;
-        let model_factory = context.app_state.lock().await.model_factory.clone();
-        let model = model_factory
-            .lock()
-            .await
-            .build(&model, context.app_state.clone())
-            .await?;
+
         let mut history = History::new(model_name.clone(), vec![]);
-        //let system_prompt = String::from("You are a helpful assistant");
         history.set_system_prompt(SYSTEM_PROMPT.to_string());
         history.push_message(HistoryMessage::from_string(Role::User, &prompt));
 
+        // generate response
+        let response = {
+            // load model
+            let model_factory = context.app_state.lock().await.model_factory.clone();
+            let model = model_factory
+                .lock()
+                .await
+                .build(&model, context.app_state.clone())
+                .await?;
+            model.invoke(&history, None).await?
+        };
+
         // todo: callback (?)
-        // todo: loop
-        let response = model.invoke(&history, None).await?;
         let mut response_string = "".to_string();
         if let Some(response) = response.last_message() {
             response_string = response.content.clone().unwrap_or("".to_string());
         }
-
         context.log_message(&response_string, LogLevel::Debug);
 
-        let substrings: Vec<String> = response_string
-            .split("[TOOLUSE]")
-            .map(|s| s.to_string())
-            .collect();
-        let tool_call_str = match substrings.last() {
-            Some(value) => value,
-            _ => return Err(anyhow!("Failed to parse tool call from response")),
-        };
-
-        let tool_call: Tool = match json::from_str(tool_call_str) {
-            Ok(value) => value,
-            Err(err) => {
-                return Err(anyhow!(
-                    format!("Failed to serialize tool call: {err:?}").to_string()
-                ));
-            }
+        let mut tool_calls_str = extract_tagged(&response_string, "tooluse")?;
+        let tool_call: BranchToolCall = if tool_calls_str.len() == 1 {
+            let tool_call_str = tool_calls_str.pop().unwrap();
+            json::from_str(&tool_call_str)?
+        } else {
+            return Err(anyhow!(format!(
+                "Invalid number of tool calls: Expected 1, got {}",
+                tool_calls_str.len()
+            )));
         };
 
         if tool_call.args.decision {
