@@ -52,12 +52,18 @@ export function BitCard({
 	const [progress, setProgress] = useState<undefined | number>();
 	const [isHovered, setIsHovered] = useState(false);
 	const isInstalled: UseQueryResult<boolean> = useInvoke(
-		backend.isBitInstalled,
+		backend.bitState.isBitInstalled,
+		backend.bitState,
 		[bit],
 	);
-	const bitSize: UseQueryResult<number> = useInvoke(backend.getBitSize, [bit]);
+	const bitSize: UseQueryResult<number> = useInvoke(
+		backend.bitState.getBitSize,
+		backend.bitState,
+		[bit],
+	);
 	const currentProfile: UseQueryResult<ISettingsProfile> = useInvoke(
-		backend.getSettingsProfile,
+		backend.userState.getSettingsProfile,
+		backend.userState,
 		[],
 	);
 
@@ -73,7 +79,7 @@ export function BitCard({
 	async function toggleDownload() {
 		if (isInstalled.data) {
 			console.log("Deleting Bit");
-			await backend.deleteBit(bit);
+			await backend.bitState.deleteBit(bit);
 			await isInstalled.refetch();
 			return;
 		}
@@ -271,12 +277,12 @@ export function BitCard({
 										);
 										if (bitIndex === -1) {
 											await downloadBit(bit);
-											await backend.addBit(bit, profile);
+											await backend.bitState.addBit(bit, profile);
 											await currentProfile.refetch();
 											return;
 										}
 
-										await backend.removeBit(bit, profile);
+										await backend.bitState.removeBit(bit, profile);
 										await currentProfile.refetch();
 									}}
 									className="h-8 px-3"

@@ -1,17 +1,13 @@
 use crate::{
-    entity::{profile, template_profile},
-    error::ApiError,
-    middleware::jwt::AppUser,
-    permission::global_permission::GlobalPermission,
-    state::AppState,
+    entity::template_profile, error::ApiError, middleware::jwt::AppUser,
+    permission::global_permission::GlobalPermission, state::AppState,
 };
 use axum::{
     Extension, Json,
     extract::{Path, State},
 };
-use flow_like::profile::{Profile, Settings};
+use flow_like::profile::Profile;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
-use serde_json::from_value;
 
 #[tracing::instrument(name = "DELETE /admin/profiles/{profile_id}", skip(state, user))]
 pub async fn delete_profile_template(

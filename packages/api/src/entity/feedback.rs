@@ -12,8 +12,6 @@ pub struct Model {
     pub user_id: Option<String>,
     #[sea_orm(column_type = "JsonBinary", nullable)]
     pub context: Option<Json>,
-    #[sea_orm(column_type = "Text")]
-    pub text: String,
     pub rating: i32,
     #[sea_orm(column_name = "createdAt")]
     pub created_at: DateTime,
@@ -23,6 +21,10 @@ pub struct Model {
     pub app_id: Option<String>,
     #[sea_orm(column_name = "templateId", column_type = "Text", nullable)]
     pub template_id: Option<String>,
+    #[sea_orm(column_name = "eventId", column_type = "Text", nullable)]
+    pub event_id: Option<String>,
+    #[sea_orm(column_type = "Text")]
+    pub comment: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

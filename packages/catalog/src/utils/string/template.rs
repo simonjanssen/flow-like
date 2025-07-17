@@ -63,10 +63,10 @@ impl NodeLogic for TemplateStringNode {
         jinja_env
             .add_template("template", &template_string)
             .unwrap();
-        let template = jinja_env.get_template("template").unwrap();
+        let template = jinja_env.get_template("template")?;
         let placeholders = template.undeclared_variables(false);
         context.log_message(
-            &format!("extracted placholders: {:?}", placeholders),
+            &format!("extracted placeholders: {:?}", placeholders),
             LogLevel::Debug,
         );
 
@@ -77,7 +77,7 @@ impl NodeLogic for TemplateStringNode {
         }
 
         // render template
-        let rendered = template.render(template_context).unwrap();
+        let rendered = template.render(template_context)?;
 
         // set outputs
         context.set_pin_value("rendered", json!(rendered)).await?;
@@ -104,10 +104,20 @@ impl NodeLogic for TemplateStringNode {
             .collect::<HashMap<_, _>>();
 
         let mut jinja_env = minijinja::Environment::new();
-        jinja_env
-            .add_template("template", &template_string)
-            .unwrap();
-        let template = jinja_env.get_template("template").unwrap();
+        let err = jinja_env.add_template("template", &template_string);
+
+        if let Err(e) = err {
+            println!(
+                "Failed to parse template: {}. Error: {}",
+                template_string, e
+            );
+            return;
+        }
+
+        let Ok(template) = jinja_env.get_template("template") else {
+            println!("Failed to parse template: {}", template_string);
+            return;
+        };
         let template_placeholders = template.undeclared_variables(false);
         let mut all_placeholders = HashSet::new();
         let mut missing_placeholders = HashSet::new();

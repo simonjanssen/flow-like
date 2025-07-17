@@ -95,27 +95,31 @@ pub fn run() {
         ))
     });
 
-    match guard {
-        Some(_) => {
-            tracing_subscriber::registry()
-                .with(tracing_subscriber::fmt::layer())
-                .with(sentry_tracing::layer())
-                .init();
+    #[cfg(not(debug_assertions))]
+    {
+        match guard {
+            Some(_) => {
+                tracing_subscriber::registry()
+                    .with(tracing_subscriber::fmt::layer())
+                    .with(sentry_tracing::layer())
+                    .init();
 
-            println!("Sentry Tracing Layer Initialized");
-        }
-        None => {
-            tracing_subscriber::registry()
-                .with(tracing_subscriber::fmt::layer())
-                .init();
+                println!("Sentry Tracing Layer Initialized");
+            }
+            None => {
+                tracing_subscriber::registry()
+                    .with(tracing_subscriber::fmt::layer())
+                    .init();
 
-            println!("Sentry Tracing Layer Not Initialized");
-        }
-    };
+                println!("Sentry Tracing Layer Not Initialized");
+            }
+        };
+    }
 
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_deep_link::init())
+        .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .setup(|app| {
             let relay_handle = app.app_handle().clone();
@@ -248,6 +252,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             functions::file::get_path_meta,
+            functions::ai::invoke::stream_chat_completion,
+            functions::ai::invoke::chat_completion,
             functions::ai::invoke::predict,
             functions::ai::invoke::find_best_model,
             functions::system::get_system_info,
@@ -263,7 +269,7 @@ pub fn run() {
             functions::settings::profiles::remove_bit,
             functions::settings::profiles::get_bits_in_current_profile,
             functions::app::app_configured,
-            functions::app::create_app_board,
+            functions::app::upsert_board,
             functions::app::delete_app_board,
             functions::app::get_app,
             functions::app::push_app_meta,
@@ -291,13 +297,11 @@ pub fn run() {
             functions::flow::storage::storage_get,
             functions::flow::storage::storage_to_fullpath,
             functions::flow::catalog::get_catalog,
-            functions::flow::board::create_board,
             functions::flow::board::create_board_version,
             functions::flow::board::get_board_versions,
             functions::flow::board::close_board,
             functions::flow::board::get_board,
             functions::flow::board::get_open_boards,
-            functions::flow::board::update_board_meta,
             functions::flow::board::undo_board,
             functions::flow::board::redo_board,
             functions::flow::board::execute_command,
@@ -318,6 +322,7 @@ pub fn run() {
             functions::flow::template::get_templates,
             functions::flow::template::get_template_versions,
             functions::flow::template::upsert_template,
+            functions::flow::template::push_template_data,
             functions::flow::template::delete_template,
             functions::flow::template::get_template_meta,
             functions::flow::template::push_template_meta,
@@ -326,6 +331,11 @@ pub fn run() {
     #[cfg(desktop)]
     {
         builder = builder.plugin(tauri_plugin_single_instance::init(handle_instance));
+    }
+
+    #[cfg(debug_assertions)]
+    {
+        builder = builder.plugin(tauri_plugin_devtools::init());
     }
 
     builder

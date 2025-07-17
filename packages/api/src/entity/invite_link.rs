@@ -18,6 +18,10 @@ pub struct Model {
     pub updated_at: DateTime,
     #[sea_orm(column_name = "appId", column_type = "Text")]
     pub app_id: String,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub name: Option<String>,
+    #[sea_orm(column_name = "maxUses")]
+    pub max_uses: i32,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

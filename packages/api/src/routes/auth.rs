@@ -8,7 +8,7 @@ use flow_like::hub::OpenIdConfig;
 use flow_like_types::anyhow;
 use hyper::Uri;
 
-use crate::error::AppError;
+use crate::error::InternalError;
 use crate::state::AppState;
 
 pub fn routes() -> Router<AppState> {
@@ -23,7 +23,7 @@ pub fn routes() -> Router<AppState> {
 }
 
 #[tracing::instrument(name = "GET /auth/openid", skip(state))]
-async fn openid_config(State(state): State<AppState>) -> Result<Json<OpenIdConfig>, AppError> {
+async fn openid_config(State(state): State<AppState>) -> Result<Json<OpenIdConfig>, InternalError> {
     let config = state
         .platform_config
         .authentication
@@ -74,7 +74,7 @@ async fn jwks(State(state): State<AppState>) -> Redirect {
 async fn proxy_authorize(
     State(state): State<AppState>,
     req: Request<Body>,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<impl IntoResponse, InternalError> {
     proxy_request(state, req, "authorize").await
 }
 
@@ -82,7 +82,7 @@ async fn proxy_authorize(
 async fn proxy_token(
     State(state): State<AppState>,
     req: Request<Body>,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<impl IntoResponse, InternalError> {
     proxy_request(state, req, "token").await
 }
 
@@ -90,7 +90,7 @@ async fn proxy_token(
 async fn proxy_userinfo(
     State(state): State<AppState>,
     req: Request<Body>,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<impl IntoResponse, InternalError> {
     proxy_request(state, req, "userinfo").await
 }
 
@@ -98,7 +98,7 @@ async fn proxy_userinfo(
 async fn proxy_revoke(
     State(state): State<AppState>,
     req: Request<Body>,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<impl IntoResponse, InternalError> {
     proxy_request(state, req, "revoke").await
 }
 
@@ -107,7 +107,7 @@ async fn proxy_request(
     state: AppState,
     mut req: Request<Body>,
     endpoint: &str,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<impl IntoResponse, InternalError> {
     let client = state.client.clone();
 
     let openid_config = state
@@ -126,7 +126,7 @@ async fn proxy_request(
         "token" => proxy.token.clone(),
         "userinfo" => proxy.userinfo.clone(),
         "revoke" => proxy.revoke.clone(),
-        _ => return Err(AppError::from(anyhow!("Invalid endpoint"))),
+        _ => return Err(InternalError::from(anyhow!("Invalid endpoint"))),
     }
     .ok_or(anyhow!("Invalid endpoint"))?;
 

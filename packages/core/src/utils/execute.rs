@@ -24,7 +24,10 @@ fn side_car_path(command: &PathBuf) -> flow_like_types::Result<PathBuf> {
 /// Otherwise, it will run the command directly.
 /// Returns a `flow_like_types::Result<StdCommand>`
 /// which can be used to execute the command asynchronously.
-pub async fn sidecar(command: &PathBuf, with_bash: Option<bool>) -> flow_like_types::Result<StdCommand> {
+pub async fn sidecar(
+    command: &PathBuf,
+    with_bash: Option<bool>,
+) -> flow_like_types::Result<StdCommand> {
     let path = side_car_path(command)?;
 
     if !path.exists() {

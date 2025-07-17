@@ -16,7 +16,7 @@ export type {
 } from "./bit/bit/llm-parameters";
 export type { IVlmParameters } from "./bit/bit/vlm-parameters";
 export type { IProvider } from "./bit/bit/provider";
-
+export * from "./storage/storage-item";
 export * from "./files/file-metadata";
 export * from "./flow/node";
 export { IValueType } from "./flow/variable";

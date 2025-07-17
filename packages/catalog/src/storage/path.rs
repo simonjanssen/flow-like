@@ -176,12 +176,13 @@ impl FlowPath {
     pub async fn from_cache_dir(
         context: &mut ExecutionContext,
         node: bool,
+        user: bool,
     ) -> flow_like_types::Result<Self> {
         let exec_context = context
             .execution_cache
             .clone()
             .ok_or(anyhow!("Failed to get Execution Cache"))?;
-        let dir = exec_context.get_cache(node)?;
+        let dir = exec_context.get_cache(node, user)?;
         let store_hash = format!("dirs__cache_{}", dir.as_ref());
 
         if let Some(_) = context.get_cache(&store_hash).await {
@@ -214,7 +215,7 @@ impl FlowPath {
             .execution_cache
             .clone()
             .ok_or(anyhow!("Failed to get Execution Cache"))?;
-        let dir = exec_context.get_user_cache(node)?;
+        let dir = exec_context.get_user_dir(node)?;
         let store_hash = format!("dirs__user_{}", dir.as_ref());
 
         if let Some(_) = context.get_cache(&store_hash).await {

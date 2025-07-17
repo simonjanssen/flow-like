@@ -54,6 +54,14 @@ impl NodeLogic for PathFromCacheDirNode {
         )
         .set_default_value(Some(json!(false)));
 
+        node.add_input_pin(
+            "user_scope",
+            "User Scope",
+            "Store in user context?",
+            VariableType::Boolean,
+        )
+        .set_default_value(Some(json!(false)));
+
         return node;
     }
 
@@ -61,8 +69,9 @@ impl NodeLogic for PathFromCacheDirNode {
         context.deactivate_exec_pin("exec_out").await?;
 
         let node_scope: bool = context.evaluate_pin("node_scope").await?;
+        let user_scope: bool = context.evaluate_pin("user_scope").await?;
 
-        let path = FlowPath::from_cache_dir(context, node_scope).await?;
+        let path = FlowPath::from_cache_dir(context, node_scope, user_scope).await?;
         context.set_pin_value("path", json!(path)).await?;
 
         context.activate_exec_pin("exec_out").await?;

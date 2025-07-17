@@ -45,7 +45,7 @@ async fn publish_progress(
         format!("download:{}", &bit.hash),
         BitDownloadEvent {
             hash: bit.hash.to_string(),
-            max: bit.size.unwrap(),
+            max: bit.size.unwrap_or(0),
             downloaded,
             path: path.to_string(),
         },
@@ -79,7 +79,10 @@ pub async fn download_bit(
     let store_path =
         Path::from(bit.hash.clone()).child(bit.file_name.clone().ok_or(anyhow!("No file name"))?);
     let path_name = file_store.path_to_filesystem(&store_path)?;
-    let url = bit.download_link.clone().unwrap();
+    let url = bit
+        .download_link
+        .clone()
+        .ok_or(anyhow!("No download link"))?;
 
     // Another download of that type already exists
     let exists = {
@@ -103,31 +106,25 @@ pub async fn download_bit(
         bail!("Download already exists");
     }
 
-    let client = client.unwrap();
+    let client = client.ok_or(anyhow!("No client for download"))?;
     let mut resume = false;
     let remote_size = get_remote_size(&client, &url).await;
 
     if remote_size.is_err() {
         if path_name.exists() {
             let _rem = remove_download(bit, &app_state).await;
-            let _ = publish_progress(
-                bit,
-                callback,
-                path_name.metadata().unwrap().len(),
-                &store_path,
-            )
-            .await;
+            let _ = publish_progress(bit, callback, path_name.metadata()?.len(), &store_path).await;
             return Ok(store_path);
         }
 
         bail!("Error getting remote size");
     }
 
-    let remote_size = remote_size.unwrap();
+    let remote_size = remote_size?;
 
     let mut local_size = 0;
     if path_name.exists() {
-        local_size = path_name.metadata().unwrap().len();
+        local_size = path_name.metadata()?.len();
         if local_size == remote_size {
             let _rem = remove_download(bit, &app_state).await;
             let _ = publish_progress(bit, callback, remote_size, &store_path).await;
@@ -144,7 +141,7 @@ pub async fn download_bit(
                 "Local file is bigger than remote file, deleting: {}",
                 path_name.display()
             );
-            fs::remove_file(&path_name).unwrap();
+            fs::remove_file(&path_name)?;
         }
     }
 
@@ -154,7 +151,7 @@ pub async fn download_bit(
     let mut headers = reqwest::header::HeaderMap::new();
 
     if resume {
-        headers.insert("Range", format!("bytes={}-", local_size).parse().unwrap());
+        headers.insert("Range", format!("bytes={}-", local_size).parse()?);
     }
 
     let res = match client.get(&url).headers(headers).send().await {
@@ -166,7 +163,7 @@ pub async fn download_bit(
     };
 
     if let Some(parent) = path_name.parent() {
-        fs::create_dir_all(parent).unwrap();
+        fs::create_dir_all(parent)?;
     }
 
     let mut file = match OpenOptions::new()
@@ -190,7 +187,7 @@ pub async fn download_bit(
 
     if resume {
         downloaded = local_size;
-        hasher.update(&fs::read(&path_name).unwrap());
+        hasher.update(&fs::read(&path_name)?);
     }
 
     let mut stream = res.bytes_stream();
@@ -241,7 +238,7 @@ pub async fn download_bit(
             "Error downloading file, hash does not match, deleting __ {} != {}",
             file_hash, bit.hash
         );
-        fs::remove_file(&path_name).unwrap();
+        fs::remove_file(&path_name)?;
         if retries > 0 {
             println!("Retrying download: {}", bit.hash);
             let result = Box::pin(download_bit(bit, app_state, retries - 1, callback));

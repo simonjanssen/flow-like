@@ -1,6 +1,5 @@
 use aws_config::SdkConfig;
 use axum::body::Body;
-use axum::response::Response;
 use flow_like::app::App;
 use flow_like::flow::board::Board;
 use flow_like::flow::node::NodeLogic;
@@ -22,10 +21,10 @@ use jsonwebtoken::{
     jwk::{AlgorithmParameters, JwkSet},
 };
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
-use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use crate::credentials::RuntimeCredentials;
+use crate::entity::role;
 
 pub type AppState = Arc<State>;
 
@@ -43,7 +42,9 @@ pub struct State {
     pub catalog: Arc<Vec<Arc<dyn NodeLogic>>>,
     pub registry: Arc<FlowNodeRegistryInner>,
     pub provider: Arc<ModelProviderConfiguration>,
+    pub permission_cache: moka::sync::Cache<String, Arc<role::Model>>,
     pub credentials_cache: moka::sync::Cache<String, Arc<RuntimeCredentials>>,
+    pub state_cache: moka::sync::Cache<String, Arc<Mutex<FlowLikeState>>>,
     pub cdn_bucket: Arc<FlowLikeStore>,
     pub response_cache: moka::sync::Cache<String, Value>,
 }
@@ -64,7 +65,7 @@ impl State {
             hyper_util::client::legacy::Client::<(), ()>::builder(TokioExecutor::new())
                 .build(HttpConnector::new());
         opt.max_connections(100)
-            .min_connections(5)
+            .min_connections(1)
             .connect_timeout(Duration::from_secs(8))
             .sqlx_logging(platform_config.environment == Environment::Development);
 
@@ -122,6 +123,14 @@ impl State {
             catalog,
             provider: Arc::new(provider),
             registry: Arc::new(registry),
+            permission_cache: moka::sync::Cache::builder()
+                .max_capacity(32 * 1024 * 1024)
+                .time_to_live(Duration::from_secs(120))
+                .build(),
+            state_cache: moka::sync::Cache::builder()
+                .max_capacity(32 * 1024 * 1024) // 32 MB
+                .time_to_live(Duration::from_secs(30 * 60))
+                .build(),
             credentials_cache: cache,
             cdn_bucket,
             response_cache,
@@ -144,6 +153,11 @@ impl State {
         Ok(claims)
     }
 
+    #[tracing::instrument(
+        name = "scoped_credentials",
+        skip(self),
+        fields(sub, app_id, board_id, version)
+    )]
     pub async fn scoped_credentials(
         &self,
         sub: &str,
@@ -159,6 +173,11 @@ impl State {
         Ok(Arc::new(credentials))
     }
 
+    #[tracing::instrument(
+        name = "scoped_app",
+        skip(self, state),
+        fields(sub, app_id, board_id, version)
+    )]
     pub async fn scoped_app(
         &self,
         sub: &str,
@@ -173,6 +192,41 @@ impl State {
         Ok(app)
     }
 
+    #[tracing::instrument(
+        name = "master_app",
+        skip(self, state),
+        fields(sub, app_id, board_id, version)
+    )]
+    pub async fn master_app(
+        &self,
+        sub: &str,
+        app_id: &str,
+        state: &AppState,
+    ) -> flow_like_types::Result<App> {
+        let credentials = self.master_credentials().await?;
+
+        let app_state = self.state_cache.get("master");
+
+        let app_state = match app_state {
+            Some(state) => state,
+            None => {
+                let state = Arc::new(Mutex::new(credentials.to_state(state.clone()).await?));
+                self.state_cache.insert("master".to_string(), state.clone());
+                state
+            }
+        };
+
+        let app = App::load(app_id.to_string(), app_state.clone()).await?;
+
+        Ok(app)
+    }
+
+    #[tracing::instrument(
+        name = "scoped_board",
+        skip(self, state),
+        level = "debug",
+        fields(sub, app_id, board_id, version)
+    )]
     pub async fn scoped_board(
         &self,
         sub: &str,
@@ -183,9 +237,39 @@ impl State {
     ) -> flow_like_types::Result<Board> {
         let credentials = self.scoped_credentials(sub, app_id).await?;
         let app_state = Arc::new(Mutex::new(credentials.to_state(state.clone()).await?));
+        let storage_root = Path::from("apps").child(app_id.to_string());
+        let board = Board::load(storage_root, board_id, app_state, version).await?;
+        Ok(board)
+    }
+
+    #[tracing::instrument(
+        name = "master_board",
+        skip(self, state),
+        level = "debug",
+        fields(sub, app_id, board_id, version)
+    )]
+    pub async fn master_board(
+        &self,
+        sub: &str,
+        app_id: &str,
+        board_id: &str,
+        state: &AppState,
+        version: Option<(u32, u32, u32)>,
+    ) -> flow_like_types::Result<Board> {
+        let credentials = self.master_credentials().await?;
+
+        let app_state = self.state_cache.get("master");
+
+        let app_state = match app_state {
+            Some(state) => state,
+            None => {
+                let state = Arc::new(Mutex::new(credentials.to_state(state.clone()).await?));
+                self.state_cache.insert("master".to_string(), state.clone());
+                state
+            }
+        };
 
         let storage_root = Path::from("apps").child(app_id.to_string());
-
         let board = Board::load(storage_root, board_id, app_state, version).await?;
 
         Ok(board)
@@ -220,6 +304,21 @@ impl State {
         Ok(credentials)
     }
 
+    pub fn check_permission(&self, sub: &str, app_id: &str) -> Option<Arc<role::Model>> {
+        let key = format!("{}:{}", sub, app_id);
+        self.permission_cache.get(&key)
+    }
+
+    pub fn put_permission(&self, sub: &str, app_id: &str, role: Arc<role::Model>) {
+        let key = format!("{}:{}", sub, app_id);
+        self.permission_cache.insert(key, role);
+    }
+
+    pub fn invalidate_permission(&self, sub: &str, app_id: &str) {
+        let key = format!("{}:{}", sub, app_id);
+        self.permission_cache.invalidate(&key);
+    }
+
     pub fn get_cache<T>(&self, key: &str) -> Option<T>
     where
         T: serde::de::DeserializeOwned,
@@ -236,6 +335,10 @@ impl State {
         if let Ok(json_value) = serde_json::to_value(value) {
             self.response_cache.insert(key, json_value);
         }
+    }
+
+    pub fn invalidate_cache(&self, key: &str) {
+        self.response_cache.invalidate(key);
     }
 }
 

@@ -12,6 +12,9 @@ const nextConfig = {
 	experimental: {
 		missingSuspenseWithCSRBailout: false,
 		serverComponentsHmrCache: true,
+		webpackMemoryOptimizations: true,
+		webpackBuildWorkers: true,
+		preloadEntriesOnStart: false,
 	},
 	devIndicators: {
 		appIsrStatus: false,

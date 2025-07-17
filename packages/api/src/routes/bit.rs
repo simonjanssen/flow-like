@@ -2,7 +2,7 @@ use std::{collections::HashMap, time::SystemTime};
 
 use axum::{
     Router,
-    routing::{get, post, put},
+    routing::{get, post},
 };
 use flow_like::bit::{Bit, BitTypes, Metadata};
 

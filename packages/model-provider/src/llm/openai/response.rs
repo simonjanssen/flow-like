@@ -1,7 +1,4 @@
-use openai_api_rs::v1::{
-    audio,
-    chat_completion::{ChatCompletionResponse, FinishReason, MessageRole},
-};
+use openai_api_rs::v1::chat_completion::{ChatCompletionResponse, FinishReason, MessageRole};
 
 use crate::response::{Choice, FunctionCall, Response, ResponseFunction, ResponseMessage, Usage};
 

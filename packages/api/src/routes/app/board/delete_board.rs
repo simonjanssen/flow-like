@@ -7,7 +7,7 @@ use axum::{
     extract::{Path, State},
 };
 
-#[tracing::instrument(name = "DELETE /app/{app_id}/board/{board_id}", skip(state, user))]
+#[tracing::instrument(name = "DELETE /apps/{app_id}/board/{board_id}", skip(state, user))]
 pub async fn delete_board(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,

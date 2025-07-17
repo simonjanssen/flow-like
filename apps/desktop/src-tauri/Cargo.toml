@@ -20,12 +20,12 @@ crate-type = ["lib", "cdylib"]
 tauri-build = { version = "2.2.0", features = [] }
 
 [dependencies]
-flow-like = {workspace = true, features = ["tauri"]}
+flow-like = {workspace = true, features = ["tauri"] }
 flow-like-catalog.workspace = true
 flow-like-types.workspace = true
 tauri = { version = "2.5.1", features = [ "protocol-asset", "macos-private-api"] }
 tauri-plugin-shell = "2.2.1"
-tauri-plugin-log = "2.4.0"
+tauri-plugin-log = "2"
 tauri-plugin-notification = "2.2.2"
 window-vibrancy = "0.6.0"
 anyhow = "1.0.95"
@@ -42,6 +42,15 @@ serde_json.workspace = true
 tauri-plugin = "2.2.0"
 tauri-plugin-clipboard-manager = "2.2.2"
 tauri-plugin-http = "2"
+tauri-plugin-devtools = "2.0.0"
+tauri-plugin-fs = "2.4.0"
+
+[target."cfg(any(target_os = \"macos\", windows, target_os = \"linux\"))".dependencies]
+tauri-plugin-single-instance = { version = "2.2.4", features = ["deep-link"] }
+tauri-plugin-window-state = "2.2.3"
+
+[target."cfg(target_os = \"macos\")".dependencies]
+cocoa = "0.26"
 
 [profile.release]
 panic = "abort"
@@ -51,6 +60,11 @@ opt-level = "z"
 strip = true
 incremental = false
 
-[target."cfg(any(target_os = \"macos\", windows, target_os = \"linux\"))".dependencies]
-tauri-plugin-single-instance = { version = "2.2.4", features = ["deep-link"] }
-tauri-plugin-window-state = "2.2.3"
+[profile.dev]
+opt-level = 1
+debug = 1
+split-debuginfo = "unpacked"  # macOS
+incremental = true
+
+[profile.dev.package."*"]
+opt-level = 0

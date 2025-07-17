@@ -24,6 +24,8 @@
 
 Flow-Like is a powerful and flexible automation suite designed to handle enterprise-scale workflows with ease. It's built for scalability, speed, and seamless AI integration, allowing you to streamline complex processes and boost productivity.
 
+💫 **Love what you see? Give us a star and help spread the word!**
+
 <p align="center">
    <img width="800" src="./assets/recording.gif" alt="Recording">
 </p>

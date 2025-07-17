@@ -24,32 +24,46 @@ export async function fetcher<T>(
 	options?: RequestInit,
 	auth?: AuthContextProps,
 ): Promise<T> {
+	console.groupCollapsed(`API Request: ${path}`);
 	const headers: HeadersInit = {};
 	if (auth?.user?.id_token) {
 		headers["Authorization"] = `Bearer ${auth?.user?.id_token}`;
+		if (auth?.user?.expired) {
+			auth?.startSilentRenew();
+		}
 	}
 
 	const url = constructUrl(profile, path);
-	const response = await tauriFetch(url, {
-		...options,
-		headers: {
-			"Content-Type": "application/json",
-			...options?.headers,
-			...headers,
-		},
-		keepalive: true,
-		priority: "high",
-	});
+	try {
+		const response = await tauriFetch(url, {
+			...options,
+			headers: {
+				"Content-Type": "application/json",
+				...options?.headers,
+				...headers,
+			},
+			keepalive: true,
+			priority: "high",
+		});
 
-	if (!response.ok) {
-		if (response.status === 401 && auth) {
-			await auth?.revokeTokens();
-			auth?.startSilentRenew();
+		if (!response.ok) {
+			if (response.status === 401 && auth) {
+				auth?.startSilentRenew();
+			}
+			console.error(`Error fetching ${path}:`, response);
+			console.groupEnd();
+			throw new Error(`Error fetching data: ${response.statusText}`);
 		}
-		throw new Error(`Error fetching data: ${response.statusText}`);
-	}
 
-	return response.json();
+		const json = await response.json();
+		console.dir(json, { depth: null });
+		console.groupEnd();
+		return json as T;
+	} catch (error) {
+		console.error(`Error fetching ${path}:`, error);
+		console.groupEnd();
+		throw new Error(`Error fetching data: ${error}`);
+	}
 }
 
 export async function post<T>(
