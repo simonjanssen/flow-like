@@ -167,6 +167,7 @@ const SWIMLANES: ISwimlane[] = [
 				badge: "Community",
 				icon: <IconBrandDiscordFilled className="w-5 h-5" />,
 				gradient: "from-[#7289da] to-[#99aab5] dark:to-[#424549]",
+				image: "/swimlanes/discord.jpg",
 				link: "https://discord.gg/mdBA9kMjFJ",
 			},
 			[
