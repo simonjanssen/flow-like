@@ -1,15 +1,38 @@
 use flow_like_types::{
-    Cacheable, Result, bail,
+    Cacheable, JsonSchema, Result, anyhow, bail,
     reqwest::{self, Url},
     utils::data_url::pathbuf_to_data_url,
 };
 use futures::StreamExt;
 use local_store::LocalObjectStore;
-use object_store::{ObjectStore, path::Path, signer::Signer};
+use object_store::{ObjectMeta, ObjectStore, PutPayload, path::Path, signer::Signer};
+use serde::{Deserialize, Serialize};
 use std::{sync::Arc, time::Duration};
+use urlencoding::encode;
 pub mod local_store;
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize, JsonSchema)]
+pub struct StorageItem {
+    pub location: String,
+    pub last_modified: String,
+    pub size: usize,
+    pub e_tag: Option<String>,
+    pub version: Option<String>,
+}
+
+impl From<ObjectMeta> for StorageItem {
+    fn from(meta: ObjectMeta) -> Self {
+        Self {
+            location: meta.location.to_string(),
+            last_modified: meta.last_modified.to_string(),
+            size: meta.size,
+            e_tag: meta.e_tag,
+            version: meta.version,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
 pub enum FlowLikeStore {
     Local(Arc<LocalObjectStore>),
     AWS(Arc<object_store::aws::AmazonS3>),
@@ -39,6 +62,41 @@ impl FlowLikeStore {
         }
     }
 
+    pub async fn create_folder(&self, path: &Path, folder_name: &str) -> Result<()> {
+        let content = b"0";
+        let dir_path = path.child(format!("_{}_._path", folder_name));
+        self.as_generic()
+            .put(&dir_path, PutPayload::from_static(content))
+            .await
+            .map_err(|e| anyhow!("Failed to create directory: {}", e))?;
+        Ok(())
+    }
+
+    pub async fn construct_upload(
+        &self,
+        app_id: &str,
+        prefix: &str,
+        construct_dirs: bool,
+    ) -> Result<Path> {
+        let mut base_path = Path::from("apps").child(app_id).child("upload");
+
+        let prefix_parts: Vec<&str> = prefix.split('/').filter(|s| !s.is_empty()).collect();
+
+        for (index, prefix) in prefix_parts.iter().enumerate() {
+            if construct_dirs && (!prefix_parts.is_empty()) && (index < prefix_parts.len() - 1) {
+                let dir_marker = base_path.child(format!("_{}_._path", prefix));
+                let exists = self.as_generic().head(&dir_marker).await;
+                if exists.is_err() {
+                    self.create_folder(&base_path, prefix).await?;
+                }
+            }
+
+            base_path = base_path.child(*prefix);
+        }
+
+        Ok(base_path)
+    }
+
     pub async fn sign(&self, method: &str, path: &Path, expires_after: Duration) -> Result<Url> {
         let method = match method.to_uppercase().as_str() {
             "GET" => reqwest::Method::GET,
@@ -54,7 +112,21 @@ impl FlowLikeStore {
             FlowLikeStore::Azure(store) => store.signed_url(method, path, expires_after).await?,
             FlowLikeStore::Local(store) => {
                 let local_path = store.path_to_filesystem(path)?;
-                println!("Local path: {:?}", local_path);
+
+                // Auto-detect Tauri environment
+                let is_tauri = cfg!(feature = "tauri") || std::env::var("TAURI_ENV").is_ok();
+
+                if is_tauri {
+                    let urlencoded_path = encode(local_path.to_str().unwrap_or(""));
+                    let url = if cfg!(windows) {
+                        format!("http://{}.localhost/{}", "asset", urlencoded_path)
+                    } else {
+                        format!("{}://{}", "asset", urlencoded_path)
+                    };
+                    let url = Url::parse(&url)?;
+                    return Ok(url);
+                }
+
                 let data_url = pathbuf_to_data_url(&local_path).await?;
                 return Ok(Url::parse(&data_url)?);
             }

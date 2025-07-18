@@ -1,7 +1,7 @@
 use crate::{
     bit::Metadata,
     flow::{
-        board::{Board, VersionType},
+        board::{Board, VersionType, commands::nodes::copy_paste::CopyPasteCommand},
         event::Event,
     },
     state::FlowLikeState,
@@ -68,6 +68,13 @@ pub enum AppVisibility {
     Offline = 4,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub enum AppExecutionMode {
+    Any = 0,
+    Local = 1,
+    Remote = 2,
+}
+
 #[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
 pub enum AppSearchSort {
     BestRated,
@@ -84,11 +91,13 @@ pub enum AppSearchSort {
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
 pub struct AppSearchQuery {
-    pub search: Option<String>,
+    pub id: Option<String>,
+    pub query: Option<String>,
+    pub language: Option<String>,
     pub limit: Option<u64>,
     pub offset: Option<u64>,
-    pub categories: Option<Vec<AppCategory>>,
-    pub authors: Option<Vec<String>>,
+    pub category: Option<AppCategory>,
+    pub author: Option<String>,
     pub sort: Option<AppSearchSort>,
     pub tag: Option<String>,
 }
@@ -118,6 +127,7 @@ pub struct App {
 
     pub avg_rating: Option<f64>,
     pub relevance_score: Option<f64>,
+    pub execution_mode: AppExecutionMode,
 
     pub updated_at: SystemTime,
     pub created_at: SystemTime,
@@ -156,6 +166,7 @@ impl Clone for App {
             created_at: self.created_at,
             version: self.version.clone(),
             price: self.price,
+            execution_mode: self.execution_mode.clone(),
             app_state: self.app_state.clone(),
             frontend: self.frontend.clone(),
         }
@@ -192,6 +203,7 @@ impl App {
             rating_count: 0,
             rating_sum: 0,
             relevance_score: None,
+            execution_mode: AppExecutionMode::Any,
 
             primary_category: None,
             secondary_category: None,
@@ -300,13 +312,29 @@ impl App {
         Ok(())
     }
 
-    pub async fn create_board(&mut self, id: Option<String>) -> flow_like_types::Result<String> {
+    pub async fn create_board(
+        &mut self,
+        id: Option<String>,
+        template: Option<Board>,
+    ) -> flow_like_types::Result<String> {
         let storage_root = Path::from("apps").child(self.id.clone());
         let state = self
             .app_state
             .clone()
             .ok_or(flow_like_types::anyhow!("App state not found"))?;
-        let board = Board::new(id, storage_root, state);
+        let mut board = Board::new(id, storage_root, state.clone());
+        if let Some(template) = template {
+            board.variables = template.variables.clone();
+            let paste_command = {
+                let nodes = template.nodes.values().cloned().collect::<Vec<_>>();
+                let comments = template.comments.values().cloned().collect::<Vec<_>>();
+                let layers = template.layers.values().cloned().collect::<Vec<_>>();
+                CopyPasteCommand::new(nodes, comments, layers, (0.0, 0.0, 0.0))
+            };
+            let paste_command =
+                crate::flow::board::commands::GenericCommand::CopyPaste(paste_command);
+            board.execute_command(paste_command, state).await?;
+        }
         board.save(None).await?;
         self.boards.push(board.id.clone());
         self.updated_at = SystemTime::now();
@@ -432,10 +460,13 @@ impl App {
         &mut self,
         event: Event,
         version_type: Option<VersionType>,
+        enforce_id: Option<bool>,
     ) -> flow_like_types::Result<Event> {
+        let enforce_id = enforce_id.unwrap_or(false);
+        println!("Upserting event: {}", event.id);
         let mut event = event;
 
-        event.upsert(self, version_type).await?;
+        event.upsert(self, version_type, enforce_id).await?;
 
         if !self.events.contains(&event.id) {
             self.events.push(event.id.clone());
@@ -501,6 +532,30 @@ impl App {
         self.save().await?;
 
         Ok((template_id, template))
+    }
+
+    pub async fn push_template_data(
+        &self,
+        template_id: String,
+        data: Board,
+        version: Option<(u32, u32, u32)>,
+    ) -> flow_like_types::Result<()> {
+        let app_state = self
+            .app_state
+            .clone()
+            .ok_or(flow_like_types::anyhow!("App state not found"))?;
+        let mut data = data;
+        data.app_state = Some(app_state.clone());
+        data.id = template_id.clone();
+        data.board_dir = Path::from("apps").child(self.id.clone());
+
+        if let Some(version) = version {
+            data.overwrite_template_version(version, None).await?;
+        } else {
+            data.save_as_template(None).await?;
+        }
+
+        Ok(())
     }
 
     pub async fn get_template(
@@ -687,7 +742,9 @@ impl App {
             .child(self.id.clone())
             .child("manifest.app");
 
-        let proto_app = self.to_proto();
+        let mut proto_app = self.to_proto();
+        let mut seen = std::collections::HashSet::with_capacity(self.boards.len());
+        proto_app.boards.retain(|b| seen.insert(b.clone()));
         compress_to_file(store, manifest_path, &proto_app).await?;
 
         Ok(())
@@ -732,6 +789,7 @@ mod tests {
             app_state: Some(flow_state().await),
             version: Some("1.0.0".to_string()),
             avg_rating: Some(4.5),
+            execution_mode: crate::app::AppExecutionMode::Any,
             download_count: 1000,
             interactions_count: 500,
             price: Some(9),

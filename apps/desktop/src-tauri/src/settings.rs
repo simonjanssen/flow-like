@@ -15,7 +15,7 @@ fn default_temporary_dir() -> PathBuf {
     dirs_next::data_dir()
         .unwrap_or_default()
         .join("flow-like")
-        .join("temporary")
+        .join("tmp")
 }
 
 #[derive(Serialize, Deserialize)]

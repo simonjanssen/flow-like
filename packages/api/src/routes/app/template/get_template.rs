@@ -16,7 +16,7 @@ pub struct VersionQuery {
     pub version: Option<String>,
 }
 
-#[tracing::instrument(name = "GET /app/{app_id}/template/{template_id}", skip(state, user))]
+#[tracing::instrument(name = "GET /apps/{app_id}/templates/{template_id}", skip(state, user))]
 pub async fn get_template(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,
@@ -34,7 +34,7 @@ pub async fn get_template(
         match parts.as_slice() {
             [maj, min, pat] => Some((*maj, *min, *pat)),
             _ => {
-                return Err(ApiError::App(
+                return Err(ApiError::InternalError(
                     anyhow!("version must be in MAJOR_MINOR_PATCH format").into(),
                 ));
             }

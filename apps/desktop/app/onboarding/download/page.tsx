@@ -70,8 +70,8 @@ export default function ProfileCreation() {
 			await invoke("upsert_profile", { profile });
 		}
 
-		await invalidate(backend.getProfile, []);
-		await invalidate(backend.getSettingsProfile, []);
+		await invalidate(backend.userState.getProfile, []);
+		await invalidate(backend.userState.getSettingsProfile, []);
 		await queryClient.invalidateQueries({
 			queryKey: ["get", "profiles"],
 		});

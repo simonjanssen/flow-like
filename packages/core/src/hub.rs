@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use crate::{
     bit::{Bit, BitTypes},
@@ -9,6 +9,18 @@ use flow_like_types::{Result, sync::Mutex};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use url::Url;
+
+#[derive(Clone, Debug, Serialize, JsonSchema, Deserialize)]
+pub struct UserTier {
+    pub max_non_visible_projects: i32,
+    pub max_remote_executions: i32,
+    pub execution_tier: String,
+    pub max_total_size: i64,
+    pub max_llm_calls: i32,
+    pub llm_tiers: Vec<String>,
+}
+
+pub type UserTiers = HashMap<String, UserTier>;
 
 #[derive(Clone, Debug, Serialize, JsonSchema, Deserialize)]
 pub struct Hub {
@@ -24,12 +36,16 @@ pub struct Hub {
     pub region: Option<String>,
     pub terms_of_service: String,
     pub cdn: Option<String>,
+    pub app: Option<String>,
     pub legal_notice: String,
     pub privacy_policy: String,
     pub contact: Contact,
     pub max_users_prototype: Option<i32>,
     pub default_user_plan: Option<String>,
     pub environment: Environment,
+    pub tiers: UserTiers,
+    #[serde(default)]
+    pub lookup: Lookup,
 
     #[serde(skip)]
     recursion_guard: Option<Arc<Mutex<RecursionGuard>>>,
@@ -50,6 +66,31 @@ pub struct Authentication {
     pub variant: String,
     pub openid: Option<OpenIdConfig>,
     pub oauth2: Option<OAuth2Config>,
+}
+
+#[derive(Clone, Debug, Serialize, JsonSchema, Deserialize)]
+pub struct Lookup {
+    pub email: bool,
+    pub name: bool,
+    pub username: bool,
+    pub avatar: bool,
+    pub additional_information: bool,
+    pub description: bool,
+    pub created_at: bool,
+}
+
+impl Default for Lookup {
+    fn default() -> Self {
+        Self {
+            email: false,
+            username: true,
+            name: false,
+            avatar: true,
+            additional_information: true,
+            description: true,
+            created_at: true,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize, JsonSchema, Deserialize)]

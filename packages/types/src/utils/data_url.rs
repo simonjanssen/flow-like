@@ -29,9 +29,9 @@ pub async fn make_data_url(url: &str) -> anyhow::Result<String> {
 
     if !content_type.starts_with("image/") {
         // Now we check if the url path ends with an image extension
-        let path = url.split('/').last().unwrap_or("");
+        let path = url.split('/').next_back().unwrap_or("");
         let path = path.split('?').next().unwrap_or("");
-        let extension = path.split('.').last().unwrap_or("");
+        let extension = path.split('.').next_back().unwrap_or("");
 
         content_type = match extension {
             "jpg" | "jpeg" => "image/jpeg",
@@ -73,7 +73,7 @@ pub async fn data_url_to_bytes(url: &str) -> anyhow::Result<Vec<u8>> {
 
 pub fn data_url_to_base64(url: &str) -> anyhow::Result<&str> {
     url.split(',')
-        .last()
+        .next_back()
         .ok_or_else(|| anyhow::anyhow!("Invalid Data URL"))
 }
 

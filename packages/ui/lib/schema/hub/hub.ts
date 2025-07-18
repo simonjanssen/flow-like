@@ -17,6 +17,7 @@ export interface IHub {
 	region?: null | string;
 	terms_of_service: string;
 	thumbnail?: null | string;
+	tiers: { [key: string]: IUserTier };
 	[property: string]: any;
 }
 
@@ -83,5 +84,15 @@ export interface IFeatures {
 	model_hosting: boolean;
 	premium: boolean;
 	unauthorized_read: boolean;
+	[property: string]: any;
+}
+
+export interface IUserTier {
+	execution_tier: string;
+	llm_tiers: string[];
+	max_llm_calls: number;
+	max_non_visible_projects: number;
+	max_remote_executions: number;
+	max_total_size: number;
 	[property: string]: any;
 }

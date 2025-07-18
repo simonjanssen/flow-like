@@ -1,4 +1,5 @@
 "use client";
+import { createId } from "@paralleldrive/cuid2";
 import { invoke } from "@tauri-apps/api/core";
 import {
 	Badge,
@@ -21,6 +22,8 @@ import {
 	DialogTrigger,
 	type IApp,
 	type IBoard,
+	IExecutionStage,
+	ILogLevel,
 	Input,
 	Label,
 	Separator,
@@ -50,9 +53,15 @@ export default function Page() {
 	const parentRegister = useFlowBoardParentState();
 	const searchParams = useSearchParams();
 	const id = searchParams.get("id");
-	const app = useInvoke(backend.getApp, [id ?? ""], typeof id === "string");
+	const app = useInvoke(
+		backend.appState.getApp,
+		backend.appState,
+		[id ?? ""],
+		typeof id === "string",
+	);
 	const boards = useInvoke(
-		backend.getBoards,
+		backend.boardState.getBoards,
+		backend.boardState,
 		[id ?? ""],
 		typeof id === "string",
 	);
@@ -162,11 +171,15 @@ export default function Page() {
 									</Button>
 									<Button
 										onClick={async () => {
-											await invoke("create_app_board", {
-												appId: app.data?.id,
-												name: boardCreation.name,
-												description: boardCreation.description,
-											});
+											if (!id) return;
+											await backend.boardState.upsertBoard(
+												id,
+												createId(),
+												boardCreation.name,
+												boardCreation.description,
+												ILogLevel.Debug,
+												IExecutionStage.Dev,
+											);
 											await Promise.allSettled([
 												await boards.refetch(),
 												await app.refetch(),
@@ -264,7 +277,11 @@ export default function Page() {
 					) : (
 						<div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pb-6">
 							{app.data &&
-								boards.data?.map((board) => (
+								Array.from(
+									new Map(
+										(boards.data ?? []).map((board) => [board.id, board]),
+									).values(),
+								).map((board) => (
 									<Board
 										key={board.id}
 										board={board}
@@ -310,12 +327,16 @@ function Board({
 	app: IApp;
 	boardsQuery: UseQueryResult<IBoard[]>;
 }>) {
+	const backend = useBackend();
 	const router = useRouter();
 
 	return (
 		<ContextMenu>
 			<ContextMenuTrigger asChild>
-				<Card className="relative group border-0 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer bg-gradient-to-br from-card to-card/80 hover:from-card/90 hover:to-card/70">
+				<Card
+					title={board.id}
+					className="relative group border-0 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer bg-gradient-to-br from-card to-card/80 hover:from-card/90 hover:to-card/70"
+				>
 					<CardHeader className="pb-3">
 						<div className="flex items-start justify-between">
 							<div className="flex items-center space-x-3">
@@ -384,10 +405,7 @@ function Board({
 				<ContextMenuItem
 					disabled={(boardsQuery.data?.length ?? 2) <= 1}
 					onClick={async () => {
-						await invoke("delete_app_board", {
-							appId: app.id,
-							boardId: board.id,
-						});
+						await backend.boardState.deleteBoard(app.id, board.id);
 						await boardsQuery.refetch();
 					}}
 					className="bg-destructive text-destructive-foreground"

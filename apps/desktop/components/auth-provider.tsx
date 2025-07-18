@@ -18,7 +18,7 @@ import {
 	WebStorageStateStore,
 } from "oidc-client-ts";
 import { useEffect, useState } from "react";
-import { AuthProvider, hasAuthParams, useAuth } from "react-oidc-context";
+import { AuthProvider, useAuth } from "react-oidc-context";
 import { get } from "../lib/api";
 import { TauriBackend } from "./tauri-provider";
 
@@ -92,7 +92,11 @@ export function DesktopAuthProvider({
 		useState<UserManagerSettings>();
 	const [userManager, setUserManager] = useState<UserManager>();
 	const backend = useBackend();
-	const currentProfile = useInvoke(backend.getProfile, []);
+	const currentProfile = useInvoke(
+		backend.userState.getProfile,
+		backend.userState,
+		[],
+	);
 
 	useEffect(() => {
 		if (!currentProfile.data) return;
@@ -177,10 +181,12 @@ export function DesktopAuthProvider({
 		};
 	}, [userManager, openIdAuthConfig]);
 
-	if (!openIdAuthConfig) return children;
+	if (!openIdAuthConfig)
+		return <AuthProvider key="loading-auth-config">{children}</AuthProvider>;
 
 	return (
 		<AuthProvider
+			key={openIdAuthConfig.client_id}
 			{...openIdAuthConfig}
 			automaticSilentRenew={true}
 			userStore={
@@ -194,17 +200,26 @@ export function DesktopAuthProvider({
 	);
 }
 
-function AuthInner({ children }: { children: React.ReactNode }) {
+function AuthInner({ children }: Readonly<{ children: React.ReactNode }>) {
 	const auth = useAuth();
 	const backend = useBackend();
 
 	useEffect(() => {
 		if (!auth) return;
+		if (!auth.isAuthenticated) {
+			return;
+		}
+
+		if (!auth.user?.id_token) {
+			console.warn("User is authenticated but no ID token found.");
+			return;
+		}
 
 		if (backend instanceof TauriBackend) {
+			console.log("Pushing auth context to backend:", auth);
 			backend.pushAuthContext(auth);
 		}
-	}, [auth, backend]);
+	}, [auth?.isAuthenticated, auth?.user?.id_token, backend]);
 
 	useEffect(() => {
 		if (!auth) return;
@@ -217,27 +232,29 @@ function AuthInner({ children }: { children: React.ReactNode }) {
 					return;
 				}
 
-				try {
-					const user = await auth?.signinSilent();
-					if (!user) {
-						console.warn(
-							"Silent login returned no user, attempting redirect login.",
-						);
-						await auth?.signinRedirect();
-					}
-				} catch (silentError) {
-					console.warn(
-						"Silent login failed, attempting normal login:",
-						silentError,
-					);
-
+				if (existingUser?.expired) {
 					try {
-						await auth?.signinRedirect();
-					} catch (redirectError) {
-						console.error(
-							"Both silent and redirect login failed:",
-							redirectError,
+						const user = await auth?.signinSilent();
+						if (!user) {
+							console.warn(
+								"Silent login returned no user, attempting redirect login.",
+							);
+							await auth?.signinRedirect();
+						}
+					} catch (silentError) {
+						console.warn(
+							"Silent login failed, attempting normal login:",
+							silentError,
 						);
+
+						try {
+							await auth?.signinRedirect();
+						} catch (redirectError) {
+							console.error(
+								"Both silent and redirect login failed:",
+								redirectError,
+							);
+						}
 					}
 				}
 			} catch (error) {

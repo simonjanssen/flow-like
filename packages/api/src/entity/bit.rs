@@ -45,8 +45,6 @@ pub enum Relation {
     BitTreeCache,
     #[sea_orm(has_many = "super::meta::Entity")]
     Meta,
-    #[sea_orm(has_one = "super::provider_proxy::Entity")]
-    ProviderProxy,
     #[sea_orm(has_many = "super::swimlane_item::Entity")]
     SwimlaneItem,
 }
@@ -66,12 +64,6 @@ impl Related<super::bit_tree_cache::Entity> for Entity {
 impl Related<super::meta::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Meta.def()
-    }
-}
-
-impl Related<super::provider_proxy::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::ProviderProxy.def()
     }
 }
 

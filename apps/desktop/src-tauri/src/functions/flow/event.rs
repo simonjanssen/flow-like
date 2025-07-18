@@ -20,7 +20,7 @@ pub async fn get_event(
         return Ok(event);
     }
 
-    return Err(TauriFunctionError::new("Event not found"));
+    Err(TauriFunctionError::new("Event not found"))
 }
 
 #[tauri::command(async)]
@@ -36,7 +36,7 @@ pub async fn get_event_versions(
         return Ok(versions);
     }
 
-    return Err(TauriFunctionError::new("Event not found"));
+    Err(TauriFunctionError::new("Event not found"))
 }
 
 #[tauri::command(async)]
@@ -70,11 +70,12 @@ pub async fn upsert_event(
     app_id: String,
     event: Event,
     version_type: Option<VersionType>,
+    enforce_id: Option<bool>,
 ) -> Result<Event, TauriFunctionError> {
     let flow_like_state = TauriFlowLikeState::construct(&handler).await?;
 
     if let Ok(mut app) = App::load(app_id.clone(), flow_like_state).await {
-        let event = app.upsert_event(event, version_type).await?;
+        let event = app.upsert_event(event, version_type, enforce_id).await?;
         return Ok(event);
     }
 

@@ -3,28 +3,41 @@ use std::time::SystemTime;
 use crate::{entity::app, state::AppState};
 use axum::{
     Router,
-    routing::{get, put},
+    routing::{get, patch},
 };
 
+pub mod internal;
+
 pub mod board;
-pub mod delete_app;
-pub mod get_apps;
-pub mod get_nodes;
+pub mod data;
+pub mod events;
 pub mod meta;
-pub mod search_apps;
+pub mod roles;
+pub mod team;
 pub mod template;
-pub mod upsert_app;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route("/", get(get_apps::get_apps).post(search_apps::search_apps))
-        .route("/nodes", get(get_nodes::get_nodes))
+        .route("/", get(internal::get_apps::get_apps))
+        .route("/nodes", get(internal::get_nodes::get_nodes))
+        .route("/search", get(internal::search_apps::search_apps))
         .route(
             "/{app_id}",
-            put(upsert_app::upsert_app).delete(delete_app::delete_app),
+            get(internal::get_app::get_app)
+                .put(internal::upsert_app::upsert_app)
+                .delete(internal::delete_app::delete_app),
         )
-        .nest("/{app_id}/template", template::routes())
+        .route(
+            "/{app_id}/visibility",
+            patch(internal::change_visibility::change_visibility),
+        )
+        .nest("/{app_id}/templates", template::routes())
         .nest("/{app_id}/board", board::routes())
+        .nest("/{app_id}/meta", meta::routes())
+        .nest("/{app_id}/roles", roles::routes())
+        .nest("/{app_id}/team", team::routes())
+        .nest("/{app_id}/events", events::routes())
+        .nest("/{app_id}/data", data::routes())
 }
 
 #[macro_export]
@@ -32,8 +45,18 @@ macro_rules! ensure_permission {
     ($user:expr, $app_id:expr, $state:expr, $perm:expr) => {{
         let sub = $user.app_permission($app_id, $state).await?;
         if !sub.has_permission($perm) {
-            return Err(crate::error::ApiError::Forbidden);
+            let user_id = sub.sub()?;
+            $state.invalidate_permission(&user_id, $app_id);
+            return Err($crate::error::ApiError::Forbidden);
         }
+        sub
+    }};
+}
+
+#[macro_export]
+macro_rules! ensure_in_project {
+    ($user:expr, $app_id:expr, $state:expr) => {{
+        let sub = $user.app_permission($app_id, $state).await?;
         sub
     }};
 }
@@ -44,7 +67,7 @@ macro_rules! ensure_permissions {
         let sub = $user.app_permission($app_id, $state).await?;
         for perm in $perms.iter() {
             if !sub.has_permission(perm) {
-                return Err(crate::error::ApiError::Forbidden);
+                return Err($crate::error::ApiError::Forbidden);
             }
         }
         sub
@@ -196,6 +219,17 @@ impl From<app::Model> for flow_like::app::App {
         Self {
             id: model.id,
             price: Some(model.price as u32),
+            execution_mode: match model.execution_mode {
+                crate::entity::sea_orm_active_enums::ExecutionMode::Any => {
+                    flow_like::app::AppExecutionMode::Any
+                }
+                crate::entity::sea_orm_active_enums::ExecutionMode::Local => {
+                    flow_like::app::AppExecutionMode::Local
+                }
+                crate::entity::sea_orm_active_enums::ExecutionMode::Remote => {
+                    flow_like::app::AppExecutionMode::Remote
+                }
+            },
             status: match model.status {
                 crate::entity::sea_orm_active_enums::Status::Active => {
                     flow_like::app::AppStatus::Active
@@ -253,6 +287,17 @@ impl From<flow_like::app::App> for app::Model {
     fn from(app: flow_like::app::App) -> Self {
         Self {
             id: app.id,
+            execution_mode: match app.execution_mode {
+                flow_like::app::AppExecutionMode::Any => {
+                    crate::entity::sea_orm_active_enums::ExecutionMode::Any
+                }
+                flow_like::app::AppExecutionMode::Local => {
+                    crate::entity::sea_orm_active_enums::ExecutionMode::Local
+                }
+                flow_like::app::AppExecutionMode::Remote => {
+                    crate::entity::sea_orm_active_enums::ExecutionMode::Remote
+                }
+            },
             status: match app.status {
                 flow_like::app::AppStatus::Active => {
                     crate::entity::sea_orm_active_enums::Status::Active

@@ -7,6 +7,7 @@ export interface IApp {
 	created_at: ISystemTime;
 	download_count: number;
 	events: string[];
+	execution_mode: IAppExecutionMode;
 	frontend?: null | IFrontendConfiguration;
 	id: string;
 	interactions_count: number;
@@ -28,6 +29,12 @@ export interface ISystemTime {
 	nanos_since_epoch: number;
 	secs_since_epoch: number;
 	[property: string]: any;
+}
+
+export enum IAppExecutionMode {
+	Any = "Any",
+	Local = "Local",
+	Remote = "Remote",
 }
 
 export interface IFrontendConfiguration {

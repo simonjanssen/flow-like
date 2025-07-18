@@ -1,0 +1,50 @@
+
+enum PublicationRequestStatus {
+  PENDING
+  ON_HOLD
+  ACCEPTED
+  REJECTED
+}
+
+model PublicationRequest {
+  id String @id
+
+  targetVisibility Visibility
+
+  approver User? @relation(fields: [approverId], references: [id], onDelete: SetNull)
+  approverId String?
+
+  app App @relation(fields: [appId], references: [id], onDelete: Cascade)
+  appId String
+
+  status PublicationRequestStatus
+
+  logs PublicationLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([appId])
+  @@index([approverId])
+}
+
+model PublicationLog {
+  id String @id
+
+  request PublicationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  requestId String
+
+  author User? @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  authorId String?
+
+  message String?
+  visibility Visibility?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([requestId])
+}
+
+

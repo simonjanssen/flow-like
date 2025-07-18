@@ -11,26 +11,17 @@ import {
 	CollapsibleContent,
 	CollapsibleTrigger,
 	type IBoard,
-	IValueType,
 	type IVariable,
-	type IVariableType,
-	Label,
 	Separator,
 	VariableConfigCard,
-	VariablesMenuEdit,
 	upsertVariableCommand,
 	useBackend,
 	useInvalidateInvoke,
 	useInvoke,
 } from "@tm9657/flow-like-ui";
-import { typeToColor } from "@tm9657/flow-like-ui/components/flow/utils";
-import { parseUint8ArrayToJson } from "@tm9657/flow-like-ui/lib/uint8";
 import {
 	ChevronDownIcon,
 	ChevronRightIcon,
-	EllipsisVerticalIcon,
-	GripIcon,
-	ListIcon,
 	SettingsIcon,
 	WorkflowIcon,
 } from "lucide-react";
@@ -43,7 +34,8 @@ export default function ConfigurationPage() {
 	const id = searchParams.get("id");
 
 	const boards = useInvoke(
-		backend.getBoards,
+		backend.boardState.getBoards,
+		backend.boardState,
 		[id ?? ""],
 		typeof id === "string",
 	);
@@ -140,9 +132,9 @@ function BoardConfig({
 				variable: variable,
 			});
 
-			await backend.executeCommand(appId, board.id, command);
-			await invalidate(backend.getBoard, [appId, board.id]);
-			await invalidate(backend.getBoards, [appId]);
+			await backend.boardState.executeCommand(appId, board.id, command);
+			await invalidate(backend.boardState.getBoard, [appId, board.id]);
+			await invalidate(backend.boardState.getBoards, [appId]);
 		},
 		[appId, board.id, backend, invalidate],
 	);

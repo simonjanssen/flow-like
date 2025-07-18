@@ -1,20 +1,11 @@
 use std::time::Duration;
 
 use crate::{
-    entity::{profile, template_profile},
-    error::ApiError,
-    middleware::jwt::AppUser,
-    permission::global_permission::GlobalPermission,
+    error::ApiError, middleware::jwt::AppUser, permission::global_permission::GlobalPermission,
     state::AppState,
 };
-use axum::{
-    Extension, Json,
-    extract::{Path, State},
-};
-use flow_like::profile::{Profile, Settings};
+use axum::{Extension, Json, extract::State};
 use flow_like_types::create_id;
-use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter};
-use serde_json::{Value, from_value, to_value};
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub struct SignedProfileImgUrl {
@@ -38,11 +29,11 @@ pub async fn get_signed_profile_img_url(
     let url = cdn_bucket
         .sign("PUT", &path, Duration::from_secs(60 * 60))
         .await?;
-    let final_url = if let Some(url) = state.platform_config.cdn.as_ref() {
-        Some(format!("{}/{}", url, path.to_string()))
-    } else {
-        None
-    };
+    let final_url = state
+        .platform_config
+        .cdn
+        .as_ref()
+        .map(|url| format!("{}/{}", url, path));
     let signed_url = SignedProfileImgUrl {
         url: url.to_string(),
         final_url,

@@ -86,10 +86,11 @@ impl AwsRuntimeCredentials {
 
         let client = aws_sdk_sts::Client::new(&state.aws_client);
 
-        let apps_prefix = format!("boards/{}/{}", sub, app_id);
-        let user_prefix = format!("boards/{}/{}", sub, app_id);
-        let log_prefix = format!("logs/{}/{}", sub, app_id);
-        let temporary_prefix = format!("temporary/{}/{}", sub, app_id);
+        let apps_prefix = format!("apps/{}", app_id);
+        let user_prefix = format!("users/{}/apps/{}", sub, app_id);
+        let log_prefix = format!("logs/runs/{}", app_id);
+        let temporary_user_prefix = format!("tmp/user/{}/apps/{}", sub, app_id);
+        let temporary_global_prefix = format!("tmp/global/apps/{}", app_id);
 
         let policy = json!({
             "Version": "2012-10-17",
@@ -109,7 +110,8 @@ impl AwsRuntimeCredentials {
                             format!("{}/*", apps_prefix),
                             format!("{}/*", user_prefix),
                             format!("{}/*", log_prefix),
-                            format!("{}/*", temporary_prefix)
+                            format!("{}/*", temporary_user_prefix),
+                            format!("{}/*", temporary_global_prefix)
                         ]
                     }
                 }
@@ -125,14 +127,15 @@ impl AwsRuntimeCredentials {
                     format!("arn:aws:s3:::{}/{}/*", self.content_bucket, apps_prefix),
                     format!("arn:aws:s3:::{}/{}/*", self.content_bucket, user_prefix),
                     format!("arn:aws:s3:::{}/{}/*", self.content_bucket, log_prefix),
-                    format!("arn:aws:s3:::{}/{}/*", self.content_bucket, temporary_prefix),
+                    format!("arn:aws:s3:::{}/{}/*", self.content_bucket, temporary_user_prefix),
+                    format!("arn:aws:s3:::{}/{}/*", self.content_bucket, temporary_global_prefix),
                     format!("arn:aws:s3express:::{}/{}/*", self.meta_bucket, apps_prefix),
                 ],
               },
               {
                 "Effect": "Allow",
                 "Action": [
-                    "s3express:CreateSesssion",
+                    "s3express:CreateSession",
                 ],
                 "Resource": [
                     "*"
@@ -140,6 +143,7 @@ impl AwsRuntimeCredentials {
               }
             ],
         });
+
         let policy = to_string(&policy)
             .map_err(|e| flow_like_types::anyhow!("Failed to serialize policy: {}", e))?;
 
@@ -172,44 +176,70 @@ impl AwsRuntimeCredentials {
 #[cfg(feature = "aws")]
 #[async_trait]
 impl RuntimeCredentialsTrait for AwsRuntimeCredentials {
+    #[tracing::instrument(name = "AwsRuntimeCredentials::to_store", skip(self, meta), fields(meta = meta), level="debug")]
     async fn to_store(&self, meta: bool) -> Result<FlowLikeStore> {
-        let mut builder = AmazonS3Builder::new()
-            .with_access_key_id(
-                self.access_key_id
-                    .clone()
-                    .ok_or(anyhow!("AWS_ACCESS_KEY_ID is not set"))?,
-            )
-            .with_secret_access_key(
-                self.secret_access_key
-                    .clone()
-                    .ok_or(anyhow!("AWS_SECRET_ACCESS_KEY is not set"))?,
-            )
-            .with_token(
-                self.session_token
-                    .clone()
-                    .ok_or(anyhow!("SESSION TOKEN is not set"))?,
-            )
-            .with_bucket_name(if meta {
-                &self.meta_bucket
-            } else {
-                &self.content_bucket
-            })
-            .with_region(&self.region);
+        use flow_like_types::tokio;
 
-        if meta {
-            builder = builder.with_s3_express(true);
-        }
+        let builder = {
+            let mut builder = AmazonS3Builder::new()
+                .with_access_key_id(
+                    self.access_key_id
+                        .clone()
+                        .ok_or(anyhow!("AWS_ACCESS_KEY_ID is not set"))?,
+                )
+                .with_secret_access_key(
+                    self.secret_access_key
+                        .clone()
+                        .ok_or(anyhow!("AWS_SECRET_ACCESS_KEY is not set"))?,
+                )
+                .with_token(
+                    self.session_token
+                        .clone()
+                        .ok_or(anyhow!("SESSION TOKEN is not set"))?,
+                )
+                .with_bucket_name(if meta {
+                    &self.meta_bucket
+                } else {
+                    &self.content_bucket
+                })
+                .with_region(&self.region);
 
-        let store = builder.build()?;
+            if meta {
+                builder = builder.with_s3_express(true);
+            }
+            builder
+        };
+
+        let store = tokio::task::spawn_blocking(move || builder.build())
+            .await
+            .map_err(|e| anyhow!("Failed to spawn blocking task: {}", e))??;
         Ok(FlowLikeStore::AWS(Arc::new(store)))
     }
 
+    #[tracing::instrument(
+        name = "AwsRuntimeCredentials::to_state",
+        skip(self, state),
+        level = "debug"
+    )]
     async fn to_state(&self, state: AppState) -> Result<FlowLikeState> {
-        let meta_store = self.to_store(true).await?;
-        let content_store = self.to_store(false).await?;
+        let (meta_store, content_store, (http_client, _refetch_rx)) = {
+            use flow_like_types::tokio;
 
-        let mut config = FlowLikeConfig::with_default_store(content_store);
-        config.register_app_meta_store(meta_store.clone());
+            tokio::join!(
+                async { self.to_store(true).await },
+                async { self.to_store(false).await },
+                async { HTTPClient::new() }
+            )
+        };
+
+        let meta_store = meta_store?;
+        let content_store = content_store?;
+
+        let mut config = {
+            let mut cfg = FlowLikeConfig::with_default_store(content_store);
+            cfg.register_app_meta_store(meta_store.clone());
+            cfg
+        };
 
         let (bkt, key, secret, token) = (
             self.content_bucket.clone(),
@@ -232,10 +262,11 @@ impl RuntimeCredentialsTrait for AwsRuntimeCredentials {
         )));
         config.register_build_project_database(Arc::new(make_s3_builder(bkt, key, secret, token)));
 
-        let (http_client, _refetch_rx) = HTTPClient::new();
         let mut flow_like_state = FlowLikeState::new(config, http_client);
+
         flow_like_state.model_provider_config = state.provider.clone();
         flow_like_state.node_registry.write().await.node_registry = state.registry.clone();
+
         Ok(flow_like_state)
     }
 }

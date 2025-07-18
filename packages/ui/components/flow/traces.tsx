@@ -54,8 +54,9 @@ export function Traces({
 	);
 
 	const messages = useInvoke(
-		backend.queryRun,
-		[currentMetadata!, query, limit, offset],
+		backend.boardState.queryRun,
+		backend.boardState,
+		[currentMetadata!, query, offset, limit],
 		typeof currentMetadata !== "undefined",
 	);
 

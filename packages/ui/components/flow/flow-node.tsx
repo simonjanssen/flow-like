@@ -251,7 +251,7 @@ const FlowNodeInner = memo(
 					},
 				});
 
-				const result = await backend.executeCommand(
+				const result = await backend.boardState.executeCommand(
 					props.data.appId,
 					props.data.boardId,
 					command,
@@ -259,7 +259,7 @@ const FlowNodeInner = memo(
 
 				await pushCommand(result, false);
 
-				await invalidate(backend.getBoard, [
+				await invalidate(backend.boardState.getBoard, [
 					props.data.appId,
 					props.data.boardId,
 				]);
@@ -289,7 +289,7 @@ const FlowNodeInner = memo(
 					},
 				});
 
-				const result = await backend.executeCommand(
+				const result = await backend.boardState.executeCommand(
 					props.data.appId,
 					props.data.boardId,
 					command,
@@ -297,7 +297,7 @@ const FlowNodeInner = memo(
 
 				await pushCommand(result, false);
 
-				await invalidate(backend.getBoard, [
+				await invalidate(backend.boardState.getBoard, [
 					props.data.appId,
 					props.data.boardId,
 				]);
@@ -394,7 +394,7 @@ const FlowNodeInner = memo(
 					<button
 						className="bg-background hover:bg-card group/play transition-all rounded-md hover:rounded-lg border p-1 absolute left-0 bottom-50 top-50 translate-x-[calc(-120%)] !opacity-[200%]"
 						onClick={async (e) => {
-							if (runId) await backend.cancelExecution(runId);
+							if (runId) await backend.eventState.cancelExecution(runId);
 						}}
 					>
 						<CircleStopIcon className="w-3 h-3 group-hover/play:scale-110 text-primary" />
@@ -699,13 +699,16 @@ function FlowNode(props: NodeProps<FlowNode>) {
 				},
 			});
 
-			updateNode = await backend.executeCommand(
+			updateNode = await backend.boardState.executeCommand(
 				props.data.appId,
 				props.data.boardId,
 				updateNode,
 			);
 			await pushCommand(updateNode, false);
-			invalidate(backend.getBoard, [props.data.appId, props.data.boardId]);
+			invalidate(backend.boardState.getBoard, [
+				props.data.appId,
+				props.data.boardId,
+			]);
 			return;
 		}
 
@@ -747,7 +750,7 @@ function FlowNode(props: NodeProps<FlowNode>) {
 			pin: stringPin,
 		});
 
-		const commands = await backend.executeCommands(
+		const commands = await backend.boardState.executeCommands(
 			props.data.appId,
 			props.data.boardId,
 			[command, stringCommand],
@@ -755,7 +758,10 @@ function FlowNode(props: NodeProps<FlowNode>) {
 
 		await pushCommands(commands);
 
-		invalidate(backend.getBoard, [props.data.appId, props.data.boardId]);
+		invalidate(backend.boardState.getBoard, [
+			props.data.appId,
+			props.data.boardId,
+		]);
 	}, [backend, props.data.node, props.data.appId, props.data.boardId, flow]);
 
 	const handleCollapse = useCallback(
@@ -792,13 +798,13 @@ function FlowNode(props: NodeProps<FlowNode>) {
 				current_layer: (selectedNodes[0].data.node as INode).layer,
 			});
 
-			const result = await backend.executeCommand(
+			const result = await backend.boardState.executeCommand(
 				props.data.appId,
 				props.data.boardId,
 				command,
 			);
 			await pushCommand(result, false);
-			await invalidate(backend.getBoard, [
+			await invalidate(backend.boardState.getBoard, [
 				props.data.appId,
 				props.data.boardId,
 			]);
@@ -817,14 +823,17 @@ function FlowNode(props: NodeProps<FlowNode>) {
 			});
 		});
 
-		const result = await backend.executeCommands(
+		const result = await backend.boardState.executeCommands(
 			props.data.appId,
 			props.data.boardId,
 			commands,
 		);
 		setIsOpen(false);
 		await pushCommands(result);
-		await invalidate(backend.getBoard, [props.data.appId, props.data.boardId]);
+		await invalidate(backend.boardState.getBoard, [
+			props.data.appId,
+			props.data.boardId,
+		]);
 	}, [props.data.node, invalidate, pushCommands, flow, backend]);
 
 	const orderNodes = useCallback(
@@ -884,14 +893,14 @@ function FlowNode(props: NodeProps<FlowNode>) {
 				});
 			});
 
-			const result = await backend.executeCommands(
+			const result = await backend.boardState.executeCommands(
 				props.data.appId,
 				props.data.boardId,
 				commands,
 			);
 
 			pushCommands(result);
-			await invalidate(backend.getBoard, [
+			await invalidate(backend.boardState.getBoard, [
 				props.data.appId,
 				props.data.boardId,
 			]);

@@ -6,18 +6,26 @@ use axum::{
     Extension, Json,
     extract::{Path, State},
 };
+use flow_like::flow::board::Board;
 
-#[tracing::instrument(name = "GET /app/{app_id}/board", skip(state, user))]
+#[tracing::instrument(name = "GET /apps/{app_id}/board", skip(state, user))]
 pub async fn get_boards(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,
     Path(app_id): Path<String>,
-) -> Result<Json<Vec<String>>, ApiError> {
+) -> Result<Json<Vec<Board>>, ApiError> {
     let permission = ensure_permission!(user, &app_id, &state, RolePermissions::ReadBoards);
     let sub = permission.sub()?;
 
-    let app = state.scoped_app(&sub, &app_id, &state).await?;
-    let boards = app.boards;
+    let mut boards = vec![];
+
+    let app = state.master_app(&sub, &app_id, &state).await?;
+    for board_id in app.boards.iter() {
+        let board = app.open_board(board_id.clone(), Some(false), None).await;
+        if let Ok(board) = board {
+            boards.push(board.lock().await.clone());
+        }
+    }
 
     Ok(Json(boards))
 }

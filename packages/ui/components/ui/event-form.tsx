@@ -46,15 +46,19 @@ export function EventForm({
 		config: [],
 	});
 
-	const boards = useInvoke(backend.getBoards, [appId]);
+	const boards = useInvoke(backend.boardState.getBoards, backend.boardState, [
+		appId,
+	]);
 	const board = useInvoke(
-		backend.getBoard,
+		backend.boardState.getBoard,
+		backend.boardState,
 		[appId, formData.board_id, formData.board_version],
 		(formData.board_id ?? "") !== "",
 	);
 
 	const versions = useInvoke(
-		backend.getBoardVersions,
+		backend.boardState.getBoardVersions,
+		backend.boardState,
 		[appId, formData.board_id],
 		(formData.board_id ?? "") !== "",
 	);

@@ -113,7 +113,12 @@ const DEFAULT_BIT: IBit = {
 
 export default function Page() {
 	const backend = useBackend();
-	const profile = useInvoke(backend.getProfile, [], true);
+	const profile = useInvoke(
+		backend.userState.getProfile,
+		backend.userState,
+		[],
+		true,
+	);
 	const [type, setType] = useState<IBitTypes>(IBitTypes.Llm);
 	const [bit, setBit] = useState<IBit>(DEFAULT_BIT);
 	const [loading, setLoading] = useState<boolean>(false);

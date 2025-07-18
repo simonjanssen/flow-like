@@ -1,12 +1,21 @@
 "use client";
-import { Skeleton, useBackend, useInvoke } from "@tm9657/flow-like-ui";
+import {
+	HomeSwimlanes,
+	Skeleton,
+	TutorialDialog,
+	useBackend,
+	useInvoke,
+} from "@tm9657/flow-like-ui";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { TutorialDialog } from "../components/tutorial-dialog";
 
 export default function Home() {
 	const backend = useBackend();
-	const profile = useInvoke(backend.getSettingsProfile, []);
+	const profile = useInvoke(
+		backend.userState.getSettingsProfile,
+		backend.userState,
+		[],
+	);
 	const router = useRouter();
 
 	function checkOnboarding() {
@@ -28,16 +37,24 @@ export default function Home() {
 		if (!profile.data) return;
 	}, [profile.data]);
 
+	if (checkOnboarding() || !profile.data) {
+		return (
+			<main className="min-h-screen items-center w-full max-h-dvh overflow-auto p-4 grid grid-cols-6 justify-start gap-2">
+				<TutorialDialog />
+				<Skeleton className="col-span-6 h-full min-h-[30dvh]" />
+				<Skeleton className="col-span-3 h-full min-h-[20dvh]" />
+				<Skeleton className="col-span-3 h-full" />
+				<Skeleton className="col-span-2 h-full" />
+				<Skeleton className="col-span-2 h-full" />
+				<Skeleton className="col-span-2 h-full" />
+			</main>
+		);
+	}
+
 	return (
-		<main className="min-h-screen items-center w-full max-h-dvh overflow-auto p-4 grid grid-cols-6 justify-start gap-2">
+		<main className="min-h-screen w-full max-h-dvh overflow-auto">
 			<TutorialDialog />
-			<a href="/ai/playground">Playground</a>
-			<Skeleton className="col-span-6 h-full min-h-[30dvh]" />
-			<Skeleton className="col-span-3 h-full min-h-[20dvh]" />
-			<Skeleton className="col-span-3 h-full" />
-			<Skeleton className="col-span-2 h-full" />
-			<Skeleton className="col-span-2 h-full" />
-			<Skeleton className="col-span-2 h-full" />
+			<HomeSwimlanes />
 		</main>
 	);
 }

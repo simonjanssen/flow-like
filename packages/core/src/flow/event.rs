@@ -114,6 +114,7 @@ impl Event {
         &mut self,
         app: &App,
         version_type: Option<VersionType>,
+        enforce_id: bool,
     ) -> flow_like_types::Result<Self> {
         if self.id.is_empty() {
             self.id = create_id();
@@ -132,9 +133,7 @@ impl Event {
                 || version_type.is_some()
             {
                 let version_type = version_type.unwrap_or(VersionType::Patch);
-                old_event
-                    .save(app, Some(old_event.event_version.clone()))
-                    .await?;
+                old_event.save(app, Some(old_event.event_version)).await?;
                 old_event.event_version = match version_type {
                     VersionType::Major => (old_event.event_version.0 + 1, 0, 0),
                     VersionType::Minor => {
@@ -160,7 +159,9 @@ impl Event {
             return Ok(updated_event.clone());
         }
 
-        self.id = create_id();
+        if !enforce_id {
+            self.id = create_id();
+        }
         self.event_version = (0, 0, 0);
         self.created_at = SystemTime::now();
         self.updated_at = SystemTime::now();

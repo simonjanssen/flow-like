@@ -4,10 +4,27 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-flow-like-types.workspace = true
-flow-like-storage.workspace = true
-aws_lambda_events = { version = "0.16.0", default-features = false, features = ["s3"] }
+aws_lambda_events = { version = "0.16.1", default-features = false, features = ["s3", "sqs"] }
 image = "0.25.6"
+imageproc = "0.25.0"
 
-lambda_runtime = "0.14.1"
-tokio = { version = "1", features = ["macros"] }
+serde = { workspace = true, features = ["derive", "rc"] }
+serde_json.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+aws-config.workspace = true
+aws-sdk-s3.workspace = true
+
+lambda_runtime.workspace = true
+tokio = { workspace = true, features = ["macros"] }
+urlencoding.workspace = true
+webp = "0.3.0"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+debug = false

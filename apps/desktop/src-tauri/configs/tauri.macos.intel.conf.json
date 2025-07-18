@@ -11,6 +11,9 @@
             "binaries/mac/intel/libmtmd_helper_shared.dylib",
             "binaries/mac/intel/libmtmd_shared.dylib",
             "binaries/mac/intel/llama-server"
-        ]
+        ],
+        "resources": {
+            "icons/Assets.car": "Assets.car"
+        }
 	}
 }
