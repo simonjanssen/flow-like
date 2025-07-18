@@ -1,6 +1,5 @@
 import {
 	CircleUserIcon,
-	CloudAlertIcon,
 	FlaskConicalIcon,
 	GlobeLockIcon,
 	LockIcon,
@@ -12,7 +11,6 @@ import { type IApp, IAppVisibility } from "../../lib/schema/app/app";
 import type { IMetadata } from "../../lib/schema/bit/bit";
 import { Avatar, AvatarFallback, AvatarImage } from "./avatar";
 import { Badge } from "./badge";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "./hover-card";
 
 interface AppCardProps {
 	app: IApp;
@@ -65,15 +63,15 @@ export function AppCard({
 							{metadata?.name ?? app.id}
 						</h4>
 						{app.visibility === IAppVisibility.Public && (
-							<div className="shrink-0 ml-2">
+							<div className="shrink-0">
 								{app.price && app.price > 0 ? (
-									<span className="text-xs font-medium text-primary">
+									<div className="bg-foreground/5 backdrop-blur-md text-foreground/80 rounded-full px-2.5 py-1 text-xs font-medium shadow-inner">
 										€{(app.price / 100).toFixed(2)}
-									</span>
+									</div>
 								) : (
-									<span className="text-xs font-medium text-green-600 dark:text-green-400">
-										FREE
-									</span>
+									<div className="bg-foreground/5 backdrop-blur-md text-foreground/80 rounded-full px-2.5 py-1 text-xs font-medium shadow-inner">
+										Free
+									</div>
 								)}
 							</div>
 						)}
@@ -145,8 +143,8 @@ export function AppCard({
 									€{(app.price / 100).toFixed(2)}
 								</div>
 							) : (
-								<div className="bg-green-500 text-white rounded-full px-3 py-1 text-sm font-bold shadow-lg">
-									FREE
+								<div className="bg-white/20 backdrop-blur-sm text-white/90 rounded-full px-3 py-1 text-sm font-medium shadow-lg border border-white/30">
+									Free
 								</div>
 							)}
 						</div>

@@ -5,7 +5,6 @@ use crate::{
     },
     error::ApiError,
     middleware::jwt::AppUser,
-    routes::LanguageParams,
     state::AppState,
 };
 use axum::{
@@ -17,28 +16,27 @@ use flow_like::{
     bit::Metadata,
 };
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect};
-#[tracing::instrument(name = "GET /apps/search", skip(state, user, search_query, query))]
+#[tracing::instrument(name = "GET /apps/search", skip(state, user))]
 
 pub async fn search_apps(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,
-    Query(query): Query<LanguageParams>,
-    Json(search_query): Json<AppSearchQuery>,
+    Query(query): Query<AppSearchQuery>,
 ) -> Result<Json<Vec<(App, Option<Metadata>)>>, ApiError> {
     if !state.platform_config.features.unauthorized_read {
         user.sub()?;
     }
     let language = query.language.clone().unwrap_or_else(|| "en".to_string());
 
-    let cache_key = format!("search_apps:{:?}:{}", search_query, language);
+    let cache_key = format!("search_apps:{:?}:{}", query, language);
 
     if let Some(cached) = state.get_cache(&cache_key) {
         return Ok(Json(cached));
     }
 
-    let sort = search_query.sort.unwrap_or(AppSearchSort::MostRelevant);
+    let sort = query.sort.unwrap_or(AppSearchSort::MostRelevant);
 
-    let limit = std::cmp::min(search_query.limit.unwrap_or(50), 100);
+    let limit = std::cmp::min(query.limit.unwrap_or(50), 100);
     let mut qb = app::Entity::find()
         .filter(
             app::Column::Visibility
@@ -46,7 +44,7 @@ pub async fn search_apps(
                 .or(app::Column::Visibility.eq(Visibility::PublicRequestAccess)),
         )
         .limit(Some(limit))
-        .offset(search_query.offset);
+        .offset(query.offset);
 
     match sort {
         AppSearchSort::BestRated => qb = qb.order_by_desc(app::Column::AvgRating),
@@ -61,16 +59,16 @@ pub async fn search_apps(
         AppSearchSort::OldestUpdated => qb = qb.order_by_asc(app::Column::UpdatedAt),
     }
 
-    if let Some(types) = search_query.categories {
-        let types: Vec<Category> = types.into_iter().map(Into::into).collect();
+    if let Some(category) = query.category {
+        let category: Category = category.into();
         qb = qb.filter(
             app::Column::PrimaryCategory
-                .is_in(types.clone())
-                .or(app::Column::SecondaryCategory.is_in(types)),
+                .eq(category.clone())
+                .or(app::Column::SecondaryCategory.eq(category)),
         );
     }
 
-    if let Some(search_str) = search_query.search {
+    if let Some(search_str) = query.query {
         qb = qb.filter(
             meta::Column::Description
                 .contains(&search_str)
@@ -78,7 +76,11 @@ pub async fn search_apps(
         )
     }
 
-    if let Some(tag) = search_query.tag {
+    if let Some(id) = query.id {
+        qb = qb.filter(app::Column::Id.eq(&id));
+    }
+
+    if let Some(tag) = query.tag {
         qb = qb.filter(meta::Column::Tags.contains(&tag));
     }
 

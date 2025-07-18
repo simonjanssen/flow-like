@@ -18,11 +18,9 @@ pub mod template;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route(
-            "/",
-            get(internal::get_apps::get_apps).post(internal::search_apps::search_apps),
-        )
+        .route("/", get(internal::get_apps::get_apps))
         .route("/nodes", get(internal::get_nodes::get_nodes))
+        .route("/search", get(internal::search_apps::search_apps))
         .route(
             "/{app_id}",
             get(internal::get_app::get_app)
