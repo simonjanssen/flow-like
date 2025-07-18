@@ -129,9 +129,9 @@ export function BitCard({
 				className={`
                 relative h-full w-full cursor-pointer transition-all duration-300 ease-out
                 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2
-                ${isInstalled.data ? "ring-2 ring-emerald-500/20 shadow-emerald-500/10" : ""}
+                ${isInstalled.data ? "ring-1 ring-emerald-500/20 shadow-emerald-500/10" : ""}
                 ${isInProfile ? "bg-gradient-to-br from-primary/5 to-emerald-500/5" : ""}
-                overflow-hidden border-2 hover:border-primary/30
+                overflow-hidden border-1 hover:border-primary/30
                 backdrop-blur-sm bg-card/80
             `}
 			>

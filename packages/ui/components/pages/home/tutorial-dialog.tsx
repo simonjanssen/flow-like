@@ -1,8 +1,8 @@
+import { GitHubLogoIcon } from "@radix-ui/react-icons";
 import { Button } from "@tm9657/flow-like-ui";
 import {
 	Book,
 	Code2,
-	Github,
 	Heart,
 	MessageCircle,
 	Rocket,
@@ -262,7 +262,7 @@ export function TutorialDialog() {
 		<div className="grid grid-cols-2 gap-8 h-full p-8">
 			<div className="flex flex-col justify-center items-center">
 				<div className="w-28 h-28 bg-foreground/20 backdrop-blur-md rounded-3xl flex items-center justify-center mb-6 border border-foreground/30 shadow-lg">
-					<Github className="w-14 h-14 text-foreground" />
+					<GitHubLogoIcon className="w-14 h-14 text-foreground" />
 				</div>
 			</div>
 
@@ -280,7 +280,7 @@ export function TutorialDialog() {
 						window.open("https://github.com/TM9657/flow-like", "_blank")
 					}
 				>
-					<Github className="w-4 h-4" />
+					<GitHubLogoIcon className="w-4 h-4" />
 					View Repository
 				</Button>
 			</div>

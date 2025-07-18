@@ -123,6 +123,8 @@ export class AppState implements IAppState {
 		if (author) queryParams["author"] = author;
 		if (sort) queryParams["sort"] = sort;
 		if (tag) queryParams["tag"] = tag;
+		if (offset) queryParams["offset"] = offset.toString();
+		if (limit) queryParams["limit"] = limit.toString();
 
 		const length = Array.from(Object.values(queryParams)).length;
 		if (length === 0) {

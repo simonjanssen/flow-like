@@ -16,7 +16,7 @@ use flow_like::{
     bit::Metadata,
 };
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect};
-#[tracing::instrument(name = "GET /apps/search", skip(state, user, query))]
+#[tracing::instrument(name = "GET /apps/search", skip(state, user))]
 
 pub async fn search_apps(
     State(state): State<AppState>,
@@ -72,7 +72,7 @@ pub async fn search_apps(
         qb = qb.filter(
             meta::Column::Description
                 .contains(&search_str)
-                .or(meta::Column::Name.contains(&search_str))
+                .or(meta::Column::Name.contains(&search_str)),
         )
     }
 

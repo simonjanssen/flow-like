@@ -91,7 +91,7 @@ pub enum AppSearchSort {
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
 pub struct AppSearchQuery {
-    pub id : Option<String>,
+    pub id: Option<String>,
     pub query: Option<String>,
     pub language: Option<String>,
     pub limit: Option<u64>,
