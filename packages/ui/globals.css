@@ -157,6 +157,14 @@
 		@apply bg-background text-foreground;
 	}
 
+	.scrollbar-hide {
+		-ms-overflow-style: none;
+		scrollbar-width: none;
+	}
+	.scrollbar-hide::-webkit-scrollbar {
+		display: none;
+	}
+
 	.icon {
 		fill: hsl(var(--foreground)) !important;
 		color: hsl(var(--foreground)) !important;

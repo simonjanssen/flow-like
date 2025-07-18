@@ -91,11 +91,13 @@ pub enum AppSearchSort {
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
 pub struct AppSearchQuery {
-    pub search: Option<String>,
+    pub id : Option<String>,
+    pub query: Option<String>,
+    pub language: Option<String>,
     pub limit: Option<u64>,
     pub offset: Option<u64>,
-    pub categories: Option<Vec<AppCategory>>,
-    pub authors: Option<Vec<String>>,
+    pub category: Option<AppCategory>,
+    pub author: Option<String>,
     pub sort: Option<AppSearchSort>,
     pub tag: Option<String>,
 }
