@@ -2,6 +2,7 @@ import { createId } from "@paralleldrive/cuid2";
 import { invoke } from "@tauri-apps/api/core";
 import {
 	type IApp,
+	type IAppCategory,
 	type IAppState,
 	IAppVisibility,
 	type IBoard,
@@ -10,6 +11,7 @@ import {
 	type IMetadata,
 	injectDataFunction,
 } from "@tm9657/flow-like-ui";
+import type { IAppSearchSort } from "@tm9657/flow-like-ui/lib/schema/app/app-search-query";
 import { fetcher, put } from "../../lib/api";
 import { appsDB } from "../../lib/apps-db";
 import type { TauriBackend } from "../tauri-provider";
@@ -95,6 +97,46 @@ export class AppState implements IAppState {
 		await invoke("delete_app", {
 			appId: appId,
 		});
+	}
+
+	async searchApps(
+		id?: string,
+		query?: string,
+		language?: string,
+		category?: IAppCategory,
+		author?: string,
+		sort?: IAppSearchSort,
+		tag?: string,
+		offset?: number,
+		limit?: number,
+	): Promise<[IApp, IMetadata | undefined][]> {
+		if (!this.backend.profile) {
+			throw new Error("Profile not set. Cannot search apps.");
+		}
+
+		const queryParams: Record<string, string> = {};
+
+		if (id) queryParams["id"] = id;
+		if (query) queryParams["query"] = query;
+		if (language) queryParams["language"] = language;
+		if (category) queryParams["category"] = category;
+		if (author) queryParams["author"] = author;
+		if (sort) queryParams["sort"] = sort;
+		if (tag) queryParams["tag"] = tag;
+		if (offset) queryParams["offset"] = offset.toString();
+		if (limit) queryParams["limit"] = limit.toString();
+
+		const length = Array.from(Object.values(queryParams)).length;
+		if (length === 0) {
+			return this.getApps();
+		}
+
+		return await fetcher(
+			this.backend.profile,
+			`apps/search?${new URLSearchParams(queryParams)}`,
+			undefined,
+			this.backend.auth,
+		);
 	}
 
 	async getApps(): Promise<[IApp, IMetadata | undefined][]> {
