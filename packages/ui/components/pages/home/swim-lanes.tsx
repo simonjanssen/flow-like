@@ -1,27 +1,25 @@
 "use client";
-import { IconBrandDiscordFilled } from "@tabler/icons-react";
-import { ArrowRight, ExternalLink, Play, Sparkles } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowRight, ExternalLink } from "lucide-react";
 import { useInvoke } from "../../../hooks";
 import type { IAppCategory } from "../../../lib";
-import { IAppSearchSort } from "../../../lib/schema/app/app-search-query";
+import type { IAppSearchSort } from "../../../lib/schema/app/app-search-query";
 import { type IBackendState, useBackend } from "../../../state/backend-state";
-import { BitCard, Skeleton } from "../../ui";
+import { BitCard, DynamicImage, Skeleton } from "../../ui";
 import { AppCard } from "../../ui/app-card";
 
 export interface ISwimlaneItem {
 	id: string;
 	type: "app" | "model" | "static";
-	// For apps and models
 	appId?: string;
 	modelId?: string;
 	hub?: string;
-	// For static content
 	title?: string;
 	description?: string;
 	image?: string;
 	link?: string;
 	badge?: string;
-	icon?: React.ReactNode;
+	icon?: string;
 	gradient?: string;
 }
 
@@ -46,183 +44,35 @@ export interface ISwimlane {
 	viewAllLink?: string;
 }
 
-const SWIMLANES: ISwimlane[] = [
-	{
-		id: "featured",
-		title: "Featured Apps",
-		subtitle: "Discover the most popular and trending applications",
-		size: "large",
-		items: [
-			[
-				{
-					id: "featured-1",
-					type: "app",
-					appId: "u5omdtl8ujlq244yhj6rter5",
-				},
-				{
-					id: "featured-2",
-					type: "app",
-					appId: "tzo2wf3phvijkpklyoo5krol",
-				},
-			],
-			{
-				id: "featured-3",
-				type: "static",
-				title: "Build Your First Flow",
-				description:
-					"Learn how to create powerful workflows with our comprehensive guide",
-				image: "/placeholder-thumbnail.webp",
-				link: "/docs/getting-started",
-				badge: "Tutorial",
-				icon: <Play className="w-5 h-5" />,
-				gradient: "from-blue-500 to-purple-600",
-			},
-		],
-		viewAllLink: "/apps/featured",
-	},
-	{
-		id: "ai-models",
-		title: "AI Models",
-		subtitle: "Cutting-edge embedding and image processing models",
-		size: "medium",
-		items: [
-			{
-				id: "model-1",
-				type: "model",
-				modelId: "do4rezco2ebwfipqzio6u6mk",
-				hub: "api.alpha.flow-like.com",
-			},
-			{
-				id: "model-2",
-				type: "model",
-				modelId: "jbr6vcrf6xmyswo5ldqr4l21",
-				hub: "api.alpha.flow-like.com",
-			},
-			{
-				id: "model-spotlight",
-				type: "static",
-				title: "New: Advanced Vision Models",
-				description:
-					"Experience next-generation image understanding with our latest model collection",
-				image: "/swimlanes/gemma.jpg",
-				badge: "New",
-				icon: <Sparkles className="w-4 h-4" />,
-				gradient: "from-emerald-500 to-teal-600",
-				link: "/settings/ai",
-			},
-		],
-		viewAllLink: "/settings/ai",
-	},
-	{
-		id: "productivity",
-		title: "Productivity Tools",
-		size: "medium",
-		items: [
-			{
-				id: "prod-1",
-				type: "app",
-				appId: "task-manager",
-			},
-			{
-				id: "prod-2",
-				type: "app",
-				appId: "document-processor",
-			},
-			{
-				id: "prod-3",
-				type: "app",
-				appId: "data-analyzer",
-			},
-		],
-		viewAllLink: "/apps/productivity",
-	},
-	{
-		id: "trending",
-		title: "Trending This Week",
-		size: "small",
-		items: [
-			[
-				{
-					id: "trend-1",
-					type: "app",
-					appId: "viral-app-1",
-				},
-				{
-					id: "trend-2",
-					type: "app",
-					appId: "viral-app-2",
-				},
-				{
-					id: "trend-3",
-					type: "app",
-					appId: "viral-app-3",
-				},
-			],
-			{
-				id: "trend-spotlight",
-				type: "static",
-				title: "Join Our Community!",
-				description:
-					"Connect, share, and get support on Discord. Be part of the Flow Like community.",
-				badge: "Community",
-				icon: <IconBrandDiscordFilled className="w-5 h-5" />,
-				gradient: "from-[#7289da] to-[#99aab5] dark:to-[#424549]",
-				image: "/swimlanes/discord.jpg",
-				link: "https://discord.gg/mdBA9kMjFJ",
-			},
-			[
-				{
-					id: "trend-1",
-					type: "app",
-					appId: "viral-app-1",
-				},
-				{
-					id: "trend-2",
-					type: "app",
-					appId: "viral-app-2",
-				},
-				{
-					id: "trend-3",
-					type: "app",
-					appId: "viral-app-3",
-				},
-			],
-		],
-		viewAllLink: "/trending",
-	},
-	{
-		id: "recent",
-		title: "Recently Added",
-		size: "small",
-		items: [
-			{
-				type: "search",
-				sort: IAppSearchSort.NewestCreated,
-				limit: 5,
-				offset: 0,
-			},
-			{
-				type: "search",
-				sort: IAppSearchSort.NewestCreated,
-				limit: 5,
-				offset: 5,
-			},
-			{
-				type: "search",
-				sort: IAppSearchSort.NewestCreated,
-				limit: 5,
-				offset: 10,
-			},
-		],
-		viewAllLink: "/apps/recent",
-	},
-];
+const swimlanesUrl = "https://cdn.flow-like.com/swimlanes.json";
+
+function useSwimlanes() {
+	return useQuery<ISwimlane[]>({
+		queryKey: ["swimlanes"],
+		queryFn: async () => {
+			const res = await fetch(swimlanesUrl);
+			if (!res.ok) throw new Error("Failed to fetch swimlanes");
+			return res.json();
+		},
+		retry: 1,
+		refetchOnWindowFocus: false,
+		refetchOnReconnect: true,
+		staleTime: 5 * 60 * 1000,
+		gcTime: Number.POSITIVE_INFINITY,
+		placeholderData: (previousData) => previousData,
+		networkMode: "offlineFirst",
+	});
+}
 
 export function HomeSwimlanes() {
+	const { data } = useSwimlanes();
+
+	if (!data) return null;
+
 	return (
 		<main className="min-h-screen w-full max-h-dvh overflow-auto bg-background flex flex-col items-center">
 			<div className="w-full space-y-8 p-6 max-w-[1800px]">
-				{SWIMLANES?.map((swimlane) => (
+				{data?.map((swimlane) => (
 					<SwimlaneSection key={swimlane.id} swimlane={swimlane} />
 				))}
 			</div>
@@ -491,7 +341,7 @@ function StaticCard({
 					<div className="flex items-center gap-2">
 						{item.icon && (
 							<div className="p-2 bg-white/20 backdrop-blur-sm rounded-full text-white">
-								{item.icon}
+								<DynamicImage url={item.icon} className="w-5 h-5 bg-white" />
 							</div>
 						)}
 						<h3 className="font-bold text-white text-left text-lg leading-tight">
