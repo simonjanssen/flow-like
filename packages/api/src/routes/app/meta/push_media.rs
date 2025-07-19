@@ -40,16 +40,37 @@ pub async fn push_media(
 
     let mut existing_preview = existing_meta.preview_media.clone().unwrap_or_default();
 
-    let mut model: meta::ActiveModel = existing_meta.into();
+    let mut model: meta::ActiveModel = existing_meta.clone().into();
     model.updated_at = Set(chrono::Utc::now().naive_utc());
     let item_id = create_id();
     let item_name = format!("{}.{}", item_id, query.extension);
 
+    let master_store = state.master_credentials().await?;
+    let master_store = master_store.to_store(false).await?;
+
     match &query.item {
         MediaItem::Icon => {
+            if let Some(icon) = &existing_meta.icon {
+                let file_name = format!("{}.webp", icon);
+                let path = FlowPath::from("media")
+                    .child(app_id.clone())
+                    .child(file_name);
+                if let Err(err) = master_store.as_generic().delete(&path).await {
+                    tracing::error!("Failed to delete existing icon at {}: {:?}", path, err);
+                }
+            }
             model.icon = Set(Some(item_id));
         }
         MediaItem::Thumbnail => {
+            if let Some(thumbnail) = &existing_meta.thumbnail {
+                let file_name = format!("{}.webp", thumbnail);
+                let path = FlowPath::from("media")
+                    .child(app_id.clone())
+                    .child(file_name);
+                if let Err(err) = master_store.as_generic().delete(&path).await {
+                    tracing::error!("Failed to delete existing thumbnail at {}: {:?}", path, err);
+                }
+            }
             model.thumbnail = Set(Some(item_id));
         }
         MediaItem::Preview => {
@@ -59,9 +80,6 @@ pub async fn push_media(
     }
 
     model.update(&txn).await?;
-
-    let master_store = state.master_credentials().await?;
-    let master_store = master_store.to_store(false).await?;
     let path = FlowPath::from("media")
         .child(app_id)
         .child(item_name.clone());
@@ -82,7 +100,7 @@ pub async fn push_media(
         })?;
 
     txn.commit().await?;
-    Ok(Json(PushMediaResponse{
+    Ok(Json(PushMediaResponse {
         signed_url: signed_url.to_string(),
     }))
 }

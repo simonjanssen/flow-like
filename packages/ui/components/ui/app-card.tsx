@@ -169,10 +169,6 @@ export function AppCard({
 					</Badge>
 				</div>
 
-				<div>
-					{metadata?.icon}
-				</div>
-
 				{/* Description */}
 				<p className="text-sm text-muted-foreground text-left line-clamp-3 leading-relaxed min-h-[4.4rem] mb-3 overflow-hidden">
 					{metadata?.description ?? "No description available"}
