@@ -15,6 +15,7 @@ import type { IAppSearchSort } from "@tm9657/flow-like-ui/lib/schema/app/app-sea
 import { fetcher, put } from "../../lib/api";
 import { appsDB } from "../../lib/apps-db";
 import type { TauriBackend } from "../tauri-provider";
+import { IMediaItem } from "@tm9657/flow-like-ui/state/backend-state/app-state";
 export class AppState implements IAppState {
 	constructor(private readonly backend: TauriBackend) {}
 
@@ -405,6 +406,48 @@ export class AppState implements IAppState {
 			metadata: metadata,
 			language,
 		});
+	}
+
+	async pushAppMedia(
+		appId: string,
+		item: IMediaItem,
+		file: File,
+		language?: string,
+	): Promise<void> {
+		const isOffline = await this.backend.isOffline(appId);
+
+		if (isOffline) {
+			// TODO: offline media handling
+			return;
+		}
+
+		if (
+			!this.backend.profile ||
+			!this.backend.auth ||
+			!this.backend.queryClient
+		) {
+			throw new Error(
+				"Profile, auth or query client not set. Cannot push app meta.",
+			);
+		}
+		const {signed_url} : {signed_url: string} = await fetcher(
+			this.backend.profile,
+			`apps/${appId}/meta/media?language=${language ?? "en"}&item=${item}&extension=${file.name.split(".").pop()}`,
+			{
+				method: "PUT",
+			},
+			this.backend.auth,
+		);
+
+		await fetch(signed_url, {
+			method: "PUT",
+			body: file,
+			headers: {
+				"Content-Type": file.type,
+			},
+		});
+
+		// TODO: handle media update in local cache
 	}
 
 	async changeAppVisibility(

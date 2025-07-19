@@ -15,13 +15,18 @@ use flow_like_storage::Path as FlowPath;
 use flow_like_types::{anyhow, create_id};
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, TransactionTrait};
 
+#[derive(Debug, serde::Serialize)]
+pub struct PushMediaResponse {
+    pub signed_url: String,
+}
+
 #[tracing::instrument(name = "PUT /apps/{app_id}/meta/media", skip(state, user))]
 pub async fn push_media(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,
     Path(app_id): Path<String>,
     Query(query): Query<MediaQuery>,
-) -> Result<Json<String>, ApiError> {
+) -> Result<Json<PushMediaResponse>, ApiError> {
     let mode = MetaMode::from_media_query(&query, &app_id);
     mode.ensure_write_permission(&user, &app_id, &state).await?;
     let language = query.language.as_deref().unwrap_or("en");
@@ -77,5 +82,7 @@ pub async fn push_media(
         })?;
 
     txn.commit().await?;
-    Ok(Json(signed_url.to_string()))
+    Ok(Json(PushMediaResponse{
+        signed_url: signed_url.to_string(),
+    }))
 }

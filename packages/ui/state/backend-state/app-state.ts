@@ -7,6 +7,8 @@ import type {
 } from "../../lib";
 import type { IAppSearchSort } from "../../lib/schema/app/app-search-query";
 
+export type IMediaItem = "icon" | "thumbnail" | "preview";
+
 export interface IAppState {
 	createApp(
 		metadata: IMetadata,
@@ -33,6 +35,12 @@ export interface IAppState {
 	pushAppMeta(
 		appId: string,
 		metadata: IMetadata,
+		language?: string,
+	): Promise<void>;
+	pushAppMedia(
+		appId: string,
+		item: IMediaItem,
+		file: File,
 		language?: string,
 	): Promise<void>;
 	changeAppVisibility(appId: string, visibility: IAppVisibility): Promise<void>;
