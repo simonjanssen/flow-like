@@ -25,7 +25,7 @@ pub async fn get_apps(
 
     let sub = user.sub()?;
 
-    let apps = app::Entity::find()
+    let apps_with_meta = app::Entity::find()
         .order_by_desc(app::Column::UpdatedAt)
         .join(JoinType::InnerJoin, app::Relation::Membership.def())
         .find_with_related(meta::Entity)
@@ -40,18 +40,27 @@ pub async fn get_apps(
         .all(&state.db)
         .await?;
 
-    let apps = apps
-        .into_iter()
-        .map(|(app_model, meta_models)| {
-            let metadata = meta_models
-                .iter()
-                .find(|meta| meta.lang == language)
-                .or_else(|| meta_models.first())
-                .map(|meta| Metadata::from(meta.clone()));
+    let master_store = state.master_credentials().await?;
+    let store = master_store.to_store(false).await?;
 
-            (App::from(app_model), metadata)
-        })
-        .collect();
+    let mut apps = Vec::new();
+
+    for (app_model, meta_models) in apps_with_meta {
+        let metadata = if let Some(meta) = meta_models
+            .iter()
+            .find(|meta| meta.lang == language)
+            .or_else(|| meta_models.first())
+        {
+            let mut metadata = Metadata::from(meta.clone());
+            let prefix = flow_like_storage::Path::from("meta").child(app_model.id.clone());
+            metadata.presign(prefix, &store).await;
+            Some(metadata)
+        } else {
+            None
+        };
+
+        apps.push((App::from(app_model), metadata));
+    }
 
     Ok(Json(apps))
 }

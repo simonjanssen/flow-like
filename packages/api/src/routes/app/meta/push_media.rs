@@ -15,16 +15,13 @@ use flow_like_storage::Path as FlowPath;
 use flow_like_types::{anyhow, create_id};
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, TransactionTrait};
 
-#[tracing::instrument(
-    name = "DELETE /apps/{app_id}/meta/media/{media_id}",
-    skip(state, user)
-)]
-pub async fn remove_media(
+#[tracing::instrument(name = "PUT /apps/{app_id}/meta/media", skip(state, user))]
+pub async fn push_media(
     State(state): State<AppState>,
     Extension(user): Extension<AppUser>,
-    Path((app_id, media_id)): Path<(String, String)>,
+    Path(app_id): Path<String>,
     Query(query): Query<MediaQuery>,
-) -> Result<Json<()>, ApiError> {
+) -> Result<Json<String>, ApiError> {
     let mode = MetaMode::from_media_query(&query, &app_id);
     mode.ensure_write_permission(&user, &app_id, &state).await?;
     let language = query.language.as_deref().unwrap_or("en");
@@ -36,42 +33,49 @@ pub async fn remove_media(
         .await?
         .ok_or_else(|| ApiError::NotFound)?;
 
-    let mut model: meta::ActiveModel = existing_meta.clone().into();
+    let mut existing_preview = existing_meta.preview_media.clone().unwrap_or_default();
+
+    let mut model: meta::ActiveModel = existing_meta.into();
     model.updated_at = Set(chrono::Utc::now().naive_utc());
+    let item_id = create_id();
+    let item_name = format!("{}.{}", item_id, query.extension);
 
     match &query.item {
         MediaItem::Icon => {
-            if existing_meta.icon.clone() == Some(media_id.clone()) {
-                model.icon = Set(None);
-            }
+            model.icon = Set(Some(item_id));
         }
         MediaItem::Thumbnail => {
-            if existing_meta.thumbnail.clone() == Some(media_id.clone()) {
-                model.thumbnail = Set(None);
-            }
+            model.thumbnail = Set(Some(item_id));
         }
         MediaItem::Preview => {
-            let mut existing_preview = existing_meta.preview_media.clone().unwrap_or_default();
-            existing_preview.retain(|id| id != &media_id);
+            existing_preview.push(item_id.clone());
             model.preview_media = Set(Some(existing_preview));
         }
     }
 
     model.update(&txn).await?;
 
-    let item_name = format!("{}.webp", media_id);
     let master_store = state.master_credentials().await?;
     let master_store = master_store.to_store(false).await?;
     let path = FlowPath::from("media")
         .child(app_id)
         .child(item_name.clone());
-    if let Err(e) = master_store.as_generic().delete(&path).await {
-        tracing::error!("Failed to delete media file at {}: {:?}", path, e);
-        return Err(ApiError::InternalError(
-            anyhow!("Failed to delete media file, reference ID: {}", create_id()).into(),
-        ));
-    }
-    txn.commit().await?;
+    let signed_url = master_store
+        .sign("PUT", &path, Duration::from_secs(60 * 60 * 24))
+        .await
+        .map_err(|e| {
+            let id = create_id();
+            tracing::error!(
+                "[{}] Failed to sign URL for media item '{}' - {:?}",
+                id,
+                item_name,
+                e
+            );
+            ApiError::InternalError(
+                anyhow!("Failed to create signed URL, reference ID: {}", id).into(),
+            )
+        })?;
 
-    Ok(Json(()))
+    txn.commit().await?;
+    Ok(Json(signed_url.to_string()))
 }

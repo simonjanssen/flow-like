@@ -25,7 +25,7 @@ pub async fn get_templates(
 
     let language = query.language.as_deref().unwrap_or("en");
 
-    let templates = template::Entity::find()
+    let templates_with_meta = template::Entity::find()
         .find_with_related(meta::Entity)
         .filter(template::Column::AppId.eq(&app_id))
         .filter(
@@ -36,15 +36,23 @@ pub async fn get_templates(
         .all(&state.db)
         .await?;
 
-    let templates = templates
-        .into_iter()
-        .filter_map(|(t, m)| {
-            m.iter()
-                .find(|meta| &meta.lang == language)
-                .or_else(|| m.iter().find(|meta| &meta.lang == "en"))
-                .map(|meta| (app_id.clone(), t.id.clone(), Metadata::from(meta.clone())))
-        })
-        .collect();
+    let master_store = state.master_credentials().await?;
+    let store = master_store.to_store(false).await?;
+
+    let mut templates = Vec::new();
+
+    for (template_model, meta_models) in templates_with_meta {
+        if let Some(meta) = meta_models
+            .iter()
+            .find(|meta| &meta.lang == language)
+            .or_else(|| meta_models.iter().find(|meta| &meta.lang == "en"))
+        {
+            let mut metadata = Metadata::from(meta.clone());
+            let prefix = flow_like_storage::Path::from("meta").child(template_model.id.clone());
+            metadata.presign(prefix, &store).await;
+            templates.push((app_id.clone(), template_model.id.clone(), metadata));
+        }
+    }
 
     Ok(Json(templates))
 }

@@ -275,6 +275,7 @@ async fn convert_and_store_image(
         .key(target_key)
         .body(ByteStream::from(webp_data))
         .content_type("image/webp")
+        .metadata("Cache-Control", "max-age=31536000")
         .send()
         .await
         .map_err(|e| {

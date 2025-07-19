@@ -145,6 +145,8 @@ export class StorageState implements IStorageState {
 	): Promise<void> {
 		let totalFiles = files.length;
 		let completedFiles = 0;
+		console.dir(files)
+		console.log(prefix)
 
 		const yieldControl = () => new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -157,11 +159,13 @@ export class StorageState implements IStorageState {
 		const isOffline = await this.backend.isOffline(appId);
 		const promises = [] as Promise<void>[];
 
+
 		if (!isOffline && this.backend.profile && this.backend.auth) {
 			totalFiles = files.length * 2;
 			const fileLookup = new Map(
 				files.map((file) => {
-					const filePath = `${prefix}/${file.webkitRelativePath ?? file.name}`;
+					let path = (file.webkitRelativePath ?? "") === "" ? file.name : file.webkitRelativePath;
+					const filePath = `${prefix}/${path}`;
 					return [filePath, file];
 				}),
 			);
@@ -169,9 +173,10 @@ export class StorageState implements IStorageState {
 				this.backend.profile,
 				`apps/${appId}/data`,
 				{
-					prefixes: files.map(
-						(file) => `${prefix}/${file.webkitRelativePath ?? file.name}`,
-					),
+					prefixes: files.map((file) => {
+						let path = (file.webkitRelativePath ?? "") === "" ? file.name : file.webkitRelativePath;
+						return `${prefix}/${path}`;
+					}),
 				},
 				this.backend.auth,
 			);

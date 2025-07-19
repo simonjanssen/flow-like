@@ -222,7 +222,7 @@ function Member({
 			<div className="flex items-center gap-3 min-w-0 flex-1">
 				<Avatar className="w-8 h-8 flex-shrink-0">
 					<AvatarImage src={user.data.avatar_url} />
-					<AvatarFallback className={`text-white text-xs`}>
+					<AvatarFallback className={`text-foreground text-xs`}>
 						{evaluatedName
 							.split(" ")
 							.map((n) => n[0])
