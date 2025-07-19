@@ -1,4 +1,4 @@
-import { useBackend, useInvoke, type IBackendState } from "../../../..";
+import { type IBackendState, useBackend, useInvoke } from "../../../..";
 import {
 	Select,
 	SelectContent,
@@ -25,7 +25,12 @@ export function BitVariable({
 	setValue: (value: any) => void;
 }>) {
 	const backend = useBackend();
-	const app = useInvoke(backend.appState.getApp, backend.appState, [appId], !!appId);
+	const app = useInvoke(
+		backend.appState.getApp,
+		backend.appState,
+		[appId],
+		!!appId,
+	);
 
 	return (
 		<div className="flex flex-row items-center justify-start">
@@ -56,12 +61,29 @@ export function BitVariable({
 	);
 }
 
-function BitRender({backend, bitId}: Readonly<{backend: IBackendState, bitId?: string}>) {
-	const bit = useInvoke(backend.bitState.getBit, backend.bitState, [bitId!], !!bitId);
+function BitRender({
+	backend,
+	bitId,
+}: Readonly<{ backend: IBackendState; bitId?: string }>) {
+	const bit = useInvoke(
+		backend.bitState.getBit,
+		backend.bitState,
+		[bitId!],
+		!!bitId,
+	);
 
-	if (!bitId) return <small className="text-nowrap text-start m-0">Select a bit</small>;
-	if (bit.isFetching) return <small className="text-nowrap text-start m-0">Loading</small>;
-	if (bit.error) return <small className="text-nowrap text-start m-0">Error loading bit</small>;
+	if (!bitId)
+		return <small className="text-nowrap text-start m-0">Select a bit</small>;
+	if (bit.isFetching)
+		return <small className="text-nowrap text-start m-0">Loading</small>;
+	if (bit.error)
+		return (
+			<small className="text-nowrap text-start m-0">Error loading bit</small>
+		);
 
-	return <small className="text-nowrap text-start m-0">{bit.data?.meta?.["en"]?.name}</small>;
+	return (
+		<small className="text-nowrap text-start m-0">
+			{bit.data?.meta?.["en"]?.name}
+		</small>
+	);
 }

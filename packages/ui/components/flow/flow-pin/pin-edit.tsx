@@ -11,17 +11,17 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "../../../components/ui/dialog";
+import { IValueType } from "../../../lib";
 import {
 	type IPin,
 	IPinType,
 	IVariableType,
 } from "../../../lib/schema/flow/pin";
 import { VariablesMenuEdit } from "../variables/variables-menu-edit";
+import { BitVariable } from "./variable-types/bit-select";
 import { BooleanVariable } from "./variable-types/boolean-variable";
 import { VariableDescription } from "./variable-types/default-text";
 import { EnumVariable } from "./variable-types/enum-variable";
-import { IValueType } from "../../../lib";
-import { BitVariable } from "./variable-types/bit-select";
 
 export function PinEdit({
 	pin,
@@ -63,13 +63,19 @@ export function PinEdit({
 			/>
 		);
 
-	if (pin.name.startsWith("bit_id") && pin.data_type === IVariableType.String && pin.value_type === IValueType.Normal) {
-		return <BitVariable
-			pin={pin}
-			value={cachedDefaultValue}
-			appId={appId}
-			setValue={setCachedDefaultValue}
-		/>
+	if (
+		pin.name.startsWith("bit_id") &&
+		pin.data_type === IVariableType.String &&
+		pin.value_type === IValueType.Normal
+	) {
+		return (
+			<BitVariable
+				pin={pin}
+				value={cachedDefaultValue}
+				appId={appId}
+				setValue={setCachedDefaultValue}
+			/>
+		);
 	}
 
 	return (

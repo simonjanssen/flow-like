@@ -123,11 +123,11 @@ export default function Id() {
 		];
 
 		const appChanged = editableAppFields.some(
-			(key) => localApp[key] !== app.data[key]
+			(key) => localApp[key] !== app.data[key],
 		);
 
 		const metadataChanged = editableMetadataFields.some(
-			(key) => !isEqual(localMetadata[key], metadata.data[key])
+			(key) => !isEqual(localMetadata[key], metadata.data[key]),
 		);
 
 		setHasChanges(appChanged || metadataChanged);
@@ -638,12 +638,13 @@ export default function Id() {
 										<SelectItem key={status} value={status}>
 											<div className="flex items-center gap-2">
 												<div
-													className={`w-2 h-2 rounded-full ${status === IAppStatus.Active
+													className={`w-2 h-2 rounded-full ${
+														status === IAppStatus.Active
 															? "bg-green-500"
 															: status === IAppStatus.Inactive
 																? "bg-yellow-500"
 																: "bg-gray-500"
-														}`}
+													}`}
 												/>
 												{status}
 											</div>
