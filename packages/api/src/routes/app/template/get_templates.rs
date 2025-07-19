@@ -48,7 +48,7 @@ pub async fn get_templates(
             .or_else(|| meta_models.iter().find(|meta| &meta.lang == "en"))
         {
             let mut metadata = Metadata::from(meta.clone());
-            let prefix = flow_like_storage::Path::from("meta").child(template_model.id.clone());
+            let prefix = flow_like_storage::Path::from("media").child(template_model.id.clone());
             metadata.presign(prefix, &store).await;
             templates.push((app_id.clone(), template_model.id.clone(), metadata));
         }

@@ -181,22 +181,57 @@ export default function Id() {
 		router.push("/library/apps");
 	}
 
-	// Placeholder functions for image uploads
 	const handleThumbnailUpload = useCallback(async () => {
-		// TODO: Implement thumbnail upload (1280x640)
-		console.log("Thumbnail upload placeholder");
-		toast("Thumbnail upload coming soon!", {
-			icon: <ImageIcon className="w-4 h-4" />,
-		});
-	}, []);
+    if (!id || !canEdit) {
+        toastError("Cannot upload thumbnail. App ID is missing or editing is disabled.", <BombIcon />);
+        return;
+    }
 
-	const handleIconUpload = useCallback(async () => {
-		// TODO: Implement icon upload (1024x1024)
-		console.log("Icon upload placeholder");
-		toast("Icon upload coming soon!", {
-			icon: <ImageIcon className="w-4 h-4" />,
-		});
-	}, []);
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = async (event) => {
+        const file = (event.target as HTMLInputElement).files?.[0];
+        if (!file) return;
+
+        try {
+            await backend.appState.pushAppMedia(id, "thumbnail", file);
+            toast.success("Thumbnail uploaded successfully!", {
+                icon: <ImageIcon className="w-4 h-4" />,
+            });
+        } catch (error) {
+            toastError("Failed to upload thumbnail.", <BombIcon />);
+            console.error(error);
+        }
+    };
+    input.click();
+}, [id, canEdit, backend.appState]);
+
+const handleIconUpload = useCallback(async () => {
+    if (!id || !canEdit) {
+        toastError("Cannot upload icon. App ID is missing or editing is disabled.", <BombIcon />);
+        return;
+    }
+
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = async (event) => {
+        const file = (event.target as HTMLInputElement).files?.[0];
+        if (!file) return;
+
+        try {
+            await backend.appState.pushAppMedia(id, "icon", file);
+            toast.success("Icon uploaded successfully!", {
+                icon: <ImageIcon className="w-4 h-4" />,
+            });
+        } catch (error) {
+            toastError("Failed to upload icon.", <BombIcon />);
+            console.error(error);
+        }
+    };
+    input.click();
+}, [id, canEdit, backend.appState]);
 
 	const addTag = useCallback(
 		(tag: string) => {
