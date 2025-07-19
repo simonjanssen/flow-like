@@ -20,14 +20,18 @@ import { VariablesMenuEdit } from "../variables/variables-menu-edit";
 import { BooleanVariable } from "./variable-types/boolean-variable";
 import { VariableDescription } from "./variable-types/default-text";
 import { EnumVariable } from "./variable-types/enum-variable";
+import { IValueType } from "../../../lib";
+import { BitVariable } from "./variable-types/bit-select";
 
 export function PinEdit({
 	pin,
 	defaultValue,
+	appId,
 	changeDefaultValue,
 }: Readonly<{
 	pin: IPin;
 	defaultValue: any;
+	appId: string;
 	changeDefaultValue: (value: any) => void;
 }>) {
 	const [cachedDefaultValue, setCachedDefaultValue] = useState(defaultValue);
@@ -58,6 +62,15 @@ export function PinEdit({
 				setValue={setCachedDefaultValue}
 			/>
 		);
+
+	if (pin.name.startsWith("bit_id") && pin.data_type === IVariableType.String && pin.value_type === IValueType.Normal) {
+		return <BitVariable
+			pin={pin}
+			value={cachedDefaultValue}
+			appId={appId}
+			setValue={setCachedDefaultValue}
+		/>
+	}
 
 	return (
 		<WithMenu
