@@ -518,13 +518,14 @@ impl FlowLikeState {
         let db = db_fn(base_path.clone()).execute().await?;
 
         let db = db.open_table(meta.run_id.clone()).execute().await?;
+        let rows_cnt = db.count_rows(None).await?;
         let mut q = db.query();
 
         if !query.is_empty() {
             q = q.only_if(query);
         }
 
-        let results = q.limit(limit).offset(offset).execute().await?;
+        let results = q.offset(offset).limit(limit).execute().await?;
         let results = results.try_collect::<Vec<_>>().await?;
 
         let mut log_messages = Vec::with_capacity(results.len() * 10);

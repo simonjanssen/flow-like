@@ -408,8 +408,8 @@ export class BoardState implements IBoardState {
 	async queryRun(
 		logMeta: ILogMetadata,
 		query: string,
-		limit?: number,
 		offset?: number,
+		limit?: number,
 	): Promise<ILog[]> {
 		const runs: ILog[] = await invoke("query_run", {
 			logMeta: logMeta,

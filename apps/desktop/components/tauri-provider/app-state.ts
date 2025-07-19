@@ -12,10 +12,10 @@ import {
 	injectDataFunction,
 } from "@tm9657/flow-like-ui";
 import type { IAppSearchSort } from "@tm9657/flow-like-ui/lib/schema/app/app-search-query";
+import type { IMediaItem } from "@tm9657/flow-like-ui/state/backend-state/app-state";
 import { fetcher, put } from "../../lib/api";
 import { appsDB } from "../../lib/apps-db";
 import type { TauriBackend } from "../tauri-provider";
-import { IMediaItem } from "@tm9657/flow-like-ui/state/backend-state/app-state";
 export class AppState implements IAppState {
 	constructor(private readonly backend: TauriBackend) {}
 
@@ -430,7 +430,7 @@ export class AppState implements IAppState {
 				"Profile, auth or query client not set. Cannot push app meta.",
 			);
 		}
-		const {signed_url} : {signed_url: string} = await fetcher(
+		const { signed_url }: { signed_url: string } = await fetcher(
 			this.backend.profile,
 			`apps/${appId}/meta/media?language=${language ?? "en"}&item=${item}&extension=${file.name.split(".").pop()}`,
 			{

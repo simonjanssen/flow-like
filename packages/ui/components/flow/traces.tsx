@@ -11,12 +11,12 @@ import {
 	ScrollIcon,
 	TriangleAlertIcon,
 } from "lucide-react";
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { AutoSizer } from "react-virtualized";
 import "react-virtualized/styles.css";
 import { VariableSizeList as List, type VariableSizeList } from "react-window";
 import { toast } from "sonner";
-import { type ILog, useBackend, useInvoke } from "../..";
+import { type ILog, useBackend, useInfiniteInvoke, useInvoke } from "../..";
 import { parseTimespan } from "../../lib/date";
 import { logLevelToNumber } from "../../lib/log-level";
 import { ILogLevel, type ILogMessage } from "../../lib/schema/flow/run";
@@ -53,13 +53,18 @@ export function Traces({
 		]),
 	);
 
-	const messages = useInvoke(
-		backend.boardState.queryRun,
-		backend.boardState,
-		[currentMetadata!, query, offset, limit],
-		typeof currentMetadata !== "undefined",
-	);
+	const { data, hasNextPage, fetchNextPage, isFetchingNextPage } =
+		useInfiniteInvoke(
+			backend.boardState.queryRun,
+			backend.boardState,
+			[currentMetadata!, query],
+			1000,
+			typeof currentMetadata !== "undefined",
+		);
 
+	const messages = useMemo(() => {
+		return data?.pages.flat() ?? [];
+	}, [data]);
 	const [search, setSearch] = useState<string>("");
 	const debouncedSearch = useDebounce(search, 300);
 	const rowHeights = useRef(new Map());
@@ -106,13 +111,34 @@ export function Traces({
 	}, [queryParts]);
 
 	function getRowHeight(index: number) {
+		if (hasNextPage && index === (messages?.length ?? 0)) {
+			return 50;
+		}
 		return (rowHeights.current.get(index) ?? 88) + 6;
 	}
 
 	function render(props: any) {
-		if (!messages.data) return null;
+		if (!messages) return null;
 		const { index, style } = props;
-		const log = messages.data[index];
+
+		if (hasNextPage && index === messages.length) {
+			return (
+				<div style={style} className="p-2">
+					<Button
+						className="w-full"
+						onClick={async () => {
+							if (isFetchingNextPage) return;
+							await fetchNextPage();
+						}}
+						disabled={isFetchingNextPage}
+					>
+						Load more logs
+					</Button>
+				</div>
+			);
+		}
+
+		const log = messages[index];
 		return (
 			<LogMessage
 				key={index}
@@ -239,7 +265,7 @@ export function Traces({
 						</div>
 					</div>
 					<div className="flex flex-col w-full gap-1 overflow-x-auto max-h-full flex-grow h-full">
-						{(messages.data?.length ?? 0) === 0 && (
+						{(messages?.length ?? 0) === 0 && (
 							<EmptyState
 								className="h-full w-full max-w-full"
 								icons={[LogsIcon, ScrollIcon, CheckCircle2Icon]}
@@ -247,7 +273,7 @@ export function Traces({
 								title="No Logs"
 							/>
 						)}
-						{(messages.data?.length ?? 0) > 0 && (
+						{(messages?.length ?? 0) > 0 && (
 							<AutoSizer
 								className="h-full flex-grow flex flex-col min-h-full"
 								disableWidth
@@ -256,7 +282,7 @@ export function Traces({
 									<List
 										className="log-container h-full flex-grow flex flex-col"
 										height={height}
-										itemCount={messages.data?.length ?? 0}
+										itemCount={(messages?.length ?? 0) + (hasNextPage ? 1 : 0)}
 										itemSize={getRowHeight}
 										ref={listRef}
 										width={width}
