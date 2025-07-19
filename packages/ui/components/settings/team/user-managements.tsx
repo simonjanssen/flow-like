@@ -10,7 +10,8 @@ import {
 	UserX,
 	Users,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { toast } from "sonner";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -56,6 +57,7 @@ import {
 	Skeleton,
 	useBackend,
 	useInfiniteInvoke,
+	useInvalidateInvoke,
 	useInvoke,
 } from "../../../";
 
@@ -108,10 +110,11 @@ export function UserManagement({ appId }: Readonly<{ appId: string }>) {
 						</SelectTrigger>
 						<SelectContent>
 							<SelectItem value="all">All Roles</SelectItem>
-							<SelectItem value="owner">Owner</SelectItem>
-							<SelectItem value="admin">Admin</SelectItem>
-							<SelectItem value="member">Member</SelectItem>
-							<SelectItem value="viewer">Viewer</SelectItem>
+							{roles.data?.[1].map((role) => (
+								<SelectItem key={role.id} value={role.id}>
+									{role.name}
+								</SelectItem>
+							))}
 						</SelectContent>
 					</Select>
 				</div>
@@ -162,6 +165,7 @@ function Member({
 	member,
 	roles,
 }: Readonly<{ member: IMember; roles: IBackendRole[] }>) {
+	const invalidate = useInvalidateInvoke();
 	const userRole = roles.find((role) => role.id === member.role_id);
 	const permission = new RolePermissions(userRole?.permissions ?? 0);
 	const backend = useBackend();
@@ -172,6 +176,33 @@ function Member({
 	const RoleIcon = permission.contains(RolePermissions.Owner) ? (
 		<CrownIcon className="w-3 h-3 text-muted-foreground" />
 	) : null;
+
+	const [isChangeRoleOpen, setIsChangeRoleOpen] = useState(false);
+	const [selectedRoleId, setSelectedRoleId] = useState(member.role_id);
+
+	const handleChangeRole = useCallback(
+		async (roleId: string) => {
+			if (!userRole) return;
+			if (roleId === member.role_id) return;
+			await backend.roleState.assignRole(
+				userRole.app_id,
+				roleId,
+				member.user_id,
+			);
+			invalidate(backend.teamState.getTeam, [userRole.app_id]);
+			setIsChangeRoleOpen(false);
+		},
+		[member.id, backend, userRole, invalidate],
+	);
+
+	const handleRemoveMember = useCallback(async () => {
+		if (!userRole) return;
+		await backend.teamState.removeUser(userRole.app_id, member.user_id);
+		invalidate(backend.teamState.getTeam, [userRole.app_id]);
+		toast.success(
+			`${userData?.username ?? "User"} has been removed from the team.`,
+		);
+	}, [member.id, backend, userRole, userData, invalidate]);
 
 	if (!userData) {
 		return (
@@ -223,7 +254,10 @@ function Member({
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end" className="w-40">
-							<Dialog>
+							<Dialog
+								open={isChangeRoleOpen}
+								onOpenChange={setIsChangeRoleOpen}
+							>
 								<DialogTrigger asChild>
 									<DropdownMenuItem
 										onSelect={(e) => e.preventDefault()}
@@ -243,7 +277,10 @@ function Member({
 									<div className="space-y-4 py-4">
 										<div className="space-y-2">
 											<Label htmlFor="role">Role</Label>
-											<Select defaultValue={member.role_id}>
+											<Select
+												value={selectedRoleId}
+												onValueChange={setSelectedRoleId}
+											>
 												<SelectTrigger>
 													<SelectValue />
 												</SelectTrigger>
@@ -260,8 +297,19 @@ function Member({
 										</div>
 									</div>
 									<DialogFooter>
-										<Button variant="outline">Cancel</Button>
-										<Button>Save Changes</Button>
+										<Button
+											variant="outline"
+											onClick={() => setIsChangeRoleOpen(false)}
+										>
+											Cancel
+										</Button>
+										<Button
+											onClick={async () => {
+												await handleChangeRole(selectedRoleId);
+											}}
+										>
+											Save Changes
+										</Button>
 									</DialogFooter>
 								</DialogContent>
 							</Dialog>
@@ -286,7 +334,10 @@ function Member({
 									</AlertDialogHeader>
 									<AlertDialogFooter>
 										<AlertDialogCancel>Cancel</AlertDialogCancel>
-										<AlertDialogAction className="bg-red-600 hover:bg-red-700">
+										<AlertDialogAction
+											className="bg-red-600 hover:bg-red-700"
+											onClick={handleRemoveMember}
+										>
 											Remove
 										</AlertDialogAction>
 									</AlertDialogFooter>
