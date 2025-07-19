@@ -186,8 +186,8 @@ export class Bit implements IBit {
 		const bits:
 			| undefined
 			| {
-				bits: IBit[];
-			} = await this.backend?.bitState?.getPackFromBit(this.toObject());
+					bits: IBit[];
+			  } = await this.backend?.bitState?.getPackFromBit(this.toObject());
 
 		if (!bits) {
 			throw new Error("No dependencies found");
