@@ -203,6 +203,7 @@ function FlowPinInnerComponent({
 				<div className={pinEditContainerClassName}>
 					<PinEdit
 						pin={pin}
+						appId={appId}
 						defaultValue={defaultValue}
 						changeDefaultValue={setDefaultValue}
 					/>

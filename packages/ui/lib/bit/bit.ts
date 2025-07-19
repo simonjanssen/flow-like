@@ -145,7 +145,7 @@ export class Bit implements IBit {
 	public toObject(): IBit {
 		const obj: Record<string, any> = {};
 		Object.keys(this).forEach((key) => {
-			if (typeof (this as any)[key] !== "function") {
+			if (key !== "backend" && typeof (this as any)[key] !== "function") {
 				obj[key] = (this as any)[key];
 			}
 		});

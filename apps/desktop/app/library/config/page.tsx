@@ -103,25 +103,32 @@ export default function Id() {
 			return;
 		}
 
-		const appData = { ...app.data };
-		const localData = { ...localApp };
+		const editableAppFields: (keyof IApp)[] = [
+			"version",
+			"primary_category",
+			"secondary_category",
+			"status",
+			"price",
+			"changelog",
+		];
 
-		appData.visibility = IAppVisibility.Offline;
-		localData.visibility = IAppVisibility.Offline;
+		const editableMetadataFields: (keyof IMetadata)[] = [
+			"name",
+			"description",
+			"long_description",
+			"website",
+			"docs_url",
+			"support_url",
+			"tags",
+		];
 
-		appData.updated_at = nowSystemTime();
-		localData.updated_at = nowSystemTime();
-		appData.created_at = nowSystemTime();
-		localData.created_at = nowSystemTime();
+		const appChanged = editableAppFields.some(
+			(key) => localApp[key] !== app.data[key],
+		);
 
-		const appMetadata = {
-			...metadata.data,
-			created_at: localMetadata.created_at,
-			updated_at: localMetadata.updated_at,
-		};
-
-		const appChanged = !isEqual(localData, appData);
-		const metadataChanged = !isEqual(appMetadata, localMetadata);
+		const metadataChanged = editableMetadataFields.some(
+			(key) => !isEqual(localMetadata[key], metadata.data[key]),
+		);
 
 		setHasChanges(appChanged || metadataChanged);
 	}, [app.data, metadata.data, localApp, localMetadata]);
