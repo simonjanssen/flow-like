@@ -9,7 +9,7 @@
 			"redirect_uri": "https://flow-like.com/callback",
 			"post_logout_redirect_uri": "https://flow-like.com/logout",
 			"response_type": "code",
-			"scope": "phone openid email profile",
+			"scope": "phone openid email profile aws.cognito.signin.user.admin",
 			"jwks_url": "https://cognito-idp.eu-central-1.amazonaws.com/eu-central-1_UPKl2Zus6/.well-known/jwks.json",
 			"discovery_url": "https://cognito-idp.eu-central-1.amazonaws.com/eu-central-1_UPKl2Zus6/.well-known/openid-configuration",
 			"cognito": {

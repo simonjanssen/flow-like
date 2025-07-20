@@ -1,291 +1,312 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { User, Mail, Lock, CreditCard, Upload, Eye } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage, Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label, Separator, Textarea } from "@tm9657/flow-like-ui";
-import { useAuth } from "react-oidc-context";
+import { useState, useCallback, useEffect } from "react";
+import {
+  updateUserAttributes,
+  updatePassword,
+  deleteUser,
+  type TokenProvider,
+  type AuthTokens,
+  decodeJWT,
+  fetchUserAttributes,
+  type UpdateUserAttributesInput
+} from 'aws-amplify/auth';
+import { uploadData, getUrl } from 'aws-amplify/storage';
+import { Amplify } from 'aws-amplify';
+import { Button, useHub } from "@tm9657/flow-like-ui";
+import { AuthContextProps, useAuth } from "react-oidc-context";
+import { useRouter } from "next/navigation";
+import ProfilePage, { type ProfileFormData, type ProfileActions } from "./account";
+import ChangePasswordDialog from "./change-password";
+import ChangeEmailDialog from "./change-email";
+import { toast } from "sonner";
 
-interface ProfileFormData {
-  username: string;
-  email: string;
-  name: string;
-  previewName: string;
-  description: string;
-  avatar: string;
+class AuthTokenProvider implements TokenProvider {
+  constructor(private readonly authContext: AuthContextProps) { }
+
+  async getTokens(options?: { forceRefresh?: boolean }): Promise<AuthTokens | null> {
+    if (!this.authContext.isAuthenticated || !this.authContext.user) {
+      return null;
+    }
+
+    if (!this.authContext.user.access_token || !this.authContext.user.id_token) {
+      return null;
+    }
+
+    const accessToken = decodeJWT(this.authContext.user?.access_token || "");
+    const idToken = decodeJWT(this.authContext.user?.id_token || "");
+
+    return {
+      accessToken: accessToken,
+      idToken: idToken,
+    };
+  }
 }
 
-const ProfilePage: React.FC = () => {
+const AccountPage: React.FC = () => {
+  const hub = useHub();
   const auth = useAuth();
-  const [formData, setFormData] = useState<ProfileFormData>({
-    username: "john_doe",
-    email: "john.doe@example.com",
-    name: "John Doe",
-    previewName: "John D.",
-    description: "Software developer passionate about creating innovative solutions.",
-    avatar: "/api/placeholder/150/150"
+  const router = useRouter();
+  const [profileData, setProfileData] = useState<ProfileFormData>({
+    username: "",
+    email: "",
+    name: "",
+    previewName: "",
+    description: "",
+    avatar: "/placeholder.webp"
   });
-
   const [isLoading, setIsLoading] = useState(false);
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
 
-  const handleInputChange = useCallback((field: keyof ProfileFormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  }, []);
-
-  const handleAvatarUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        setFormData(prev => ({ ...prev, avatar: result }));
-      };
-      reader.readAsDataURL(file);
+  const configureAmplify = useCallback(async () => {
+    if (!auth.isAuthenticated || !auth.user?.profile) return;
+    if (hub.hub?.authentication?.openid?.cognito?.user_pool_id) {
+      const provider = new AuthTokenProvider(auth)
+      Amplify.configure({
+        Auth: {
+          Cognito: {
+            userPoolClientId: auth.settings.client_id,
+            userPoolId: hub.hub.authentication.openid.cognito.user_pool_id,
+          },
+        },
+      },
+      {
+        Auth: {
+          tokenProvider: provider,
+        },
+      });
     }
+
+    loadUserData();
+  }, [hub, auth.settings.client_id, auth.isAuthenticated, auth.user?.profile, auth]);
+
+
+
+  const loadUserData = useCallback(async () => {
+    if (!auth.isAuthenticated || !auth.user?.profile) return;
+    console.group('User Attributes');
+    setProfileData({
+      username: auth.user?.profile?.preferred_username || "",
+      email: auth.user?.profile?.email || "",
+      name: auth.user?.profile?.name || "",
+      previewName: auth.user?.profile?.given_name || "",
+      description: "",
+      avatar: auth.user?.profile?.picture || "/placeholder.webp"
+    });
+  }, [auth.isAuthenticated, auth.user, auth.user?.profile, Amplify.getConfig]);
+
+  useEffect(() => {
+    configureAmplify();
+  }, [auth.isAuthenticated, hub.hub]);
+
+  const updateUserAttribute = useCallback(async (attributeKey: string, value: string) => {
+    try {
+      setIsLoading(true);
+      const updateInput: UpdateUserAttributesInput = {
+        userAttributes: {
+          [attributeKey]: value
+        }
+      };
+
+      await updateUserAttributes(updateInput);
+
+      toast.success("Profile updated successfully");
+    } catch (error) {
+      console.error(`Failed to update ${attributeKey}:`, error);
+      toast.error(`Failed to update ${attributeKey}`);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  const handleUpdateUsername = useCallback(async (username: string) => {
+    await updateUserAttribute('preferred_username', username);
+    setProfileData(prev => ({ ...prev, username }));
+  }, [updateUserAttribute]);
+
+  const handleUpdateEmail = useCallback(async (email: string) => {
+    setEmailDialogOpen(true);
   }, []);
 
-  const handleSave = useCallback(async () => {
-    setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsLoading(false);
+  const handleUpdateName = useCallback(async (name: string) => {
+    await updateUserAttribute('name', name);
+    setProfileData(prev => ({ ...prev, name }));
+  }, [updateUserAttribute]);
+
+  const handleUpdatePreviewName = useCallback(async (previewName: string) => {
+    await updateUserAttribute('given_name', previewName);
+    setProfileData(prev => ({ ...prev, previewName }));
+  }, [updateUserAttribute]);
+
+  const handleUpdateDescription = useCallback(async (description: string) => {
+    await updateUserAttribute('custom:description', description);
+    setProfileData(prev => ({ ...prev, description }));
+  }, [updateUserAttribute]);
+
+  const handleUpdateAvatar = useCallback(async (avatarDataUrl: string) => {
+    // try {
+    //   setIsLoading(true);
+
+    //   const response = await fetch(avatarDataUrl);
+    //   const blob = await response.blob();
+
+    //   const fileName = `avatars/${auth.user?.profile?.sub || 'user'}-${Date.now()}.jpg`;
+
+    //   const uploadResult = await uploadData({
+    //     key: fileName,
+    //     data: blob,
+    //     options: {
+    //       contentType: blob.type,
+    //       accessLevel: 'public'
+    //     }
+    //   });
+
+    //   const avatarUrl = await getUrl({
+    //     key: fileName,
+    //     options: {
+    //       accessLevel: 'public'
+    //     }
+    //   });
+
+    //   await updateUserAttribute('picture', avatarUrl.url.toString());
+    //   setProfileData(prev => ({ ...prev, avatar: avatarUrl.url.toString() }));
+
+    //   toast({
+    //     title: "Success",
+    //     description: "Avatar updated successfully",
+    //   });
+    // } catch (error) {
+    //   console.error('Failed to upload avatar:', error);
+    //   toast({
+    //     title: "Error",
+    //     description: "Failed to upload avatar",
+    //     variant: "destructive",
+    //   });
+    // } finally {
+    //   setIsLoading(false);
+    // }
+  }, [auth.user?.profile?.sub, updateUserAttribute, toast]);
+
+  const handleChangePassword = useCallback(async () => {
+    setPasswordDialogOpen(true);
   }, []);
 
-  const getInitials = useCallback((name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
-  }, []);
+  const handlePasswordChange = useCallback(async (currentPassword: string, newPassword: string) => {
+    try {
+      await updatePassword({
+        oldPassword: currentPassword,
+        newPassword: newPassword
+      });
+
+      setPasswordDialogOpen(false);
+      toast.success("Password updated successfully");
+    } catch (error) {
+      console.error('Failed to update password:', error);
+      toast.error("Failed to update password");
+      throw error;
+    }
+  }, [toast]);
+
+  const handleEmailChange = useCallback(async (newEmail: string, confirmationCode: string) => {
+    try {
+      await updateUserAttribute('email', newEmail);
+      setProfileData(prev => ({ ...prev, email: newEmail }));
+      setEmailDialogOpen(false);
+
+      toast.success("Email updated successfully");
+    } catch (error) {
+      console.error('Failed to update email:', error);
+      toast.error("Failed to update email");
+      throw error;
+    }
+  }, [updateUserAttribute, toast]);
+
+  const handleViewBilling = useCallback(async () => {
+    router.push('/billing');
+  }, [router]);
+
+  const handlePreviewProfile = useCallback(async () => {
+    router.push(`/profile/${auth.user?.profile?.sub}`);
+  }, [router, auth.user?.profile?.sub]);
+
+  const handleSave = useCallback(async (data: ProfileFormData) => {
+    try {
+      setIsLoading(true);
+
+      const updates: UpdateUserAttributesInput = {
+        userAttributes: {
+          preferred_username: data.username,
+          name: data.name,
+          given_name: data.previewName,
+          'custom:description': data.description
+        }
+      };
+
+      await updateUserAttributes(updates);
+      setProfileData(data);
+
+      toast.success("Profile saved successfully");
+    } catch (error) {
+      console.error('Failed to save profile:', error);
+      toast.error("Failed to save profile");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  const profileActions: ProfileActions = {
+    updateUsername: handleUpdateUsername,
+    updateEmail: handleUpdateEmail,
+    updateName: handleUpdateName,
+    updatePreviewName: handleUpdatePreviewName,
+    updateDescription: handleUpdateDescription,
+    updateAvatar: handleUpdateAvatar,
+    changePassword: handleChangePassword,
+    viewBilling: handleViewBilling,
+    previewProfile: handlePreviewProfile
+  };
 
   if (!auth.isAuthenticated) {
-    return <main className="flex flex-row items-center justify-center h-screen w-full">
-      <div className="text-center p-6 border rounded-lg shadow-lg bg-card">
-        <h3>Please log in to view your profile.</h3>
-        <Button onClick={() => auth.signinRedirect()} className="mt-4">Log In</Button>
-      </div>
-    </main>
+    return (
+      <main className="flex flex-row items-center justify-center h-screen w-full">
+        <div className="text-center p-6 border rounded-lg shadow-lg bg-card">
+          <h3>Please log in to view your profile.</h3>
+          <Button onClick={() => auth.signinRedirect()} className="mt-4">
+            Log In
+          </Button>
+        </div>
+      </main>
+    );
   }
 
   return (
-    <div className="container max-w-4xl mx-auto p-6 space-y-6">
-      <ProfileHeader />
+    <>
+      <ProfilePage
+        key={`${auth?.user?.profile.sub}${auth?.user?.profile.exp}`}
+        initialData={profileData}
+        actions={profileActions}
+        isLoading={isLoading}
+        onSave={handleSave}
+      />
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="md:col-span-1">
-          <AvatarSection
-            avatar={formData.avatar}
-            name={formData.name}
-            previewName={formData.previewName}
-            getInitials={getInitials}
-            onAvatarUpload={handleAvatarUpload}
-          />
-        </div>
+      <ChangePasswordDialog
+        key={auth.user?.profile?.sub + "password"}
+        open={passwordDialogOpen}
+        onOpenChange={setPasswordDialogOpen}
+        onPasswordChange={handlePasswordChange}
+      />
 
-        <div className="md:col-span-2 space-y-6">
-          <PersonalInfoCard
-            formData={formData}
-            onInputChange={handleInputChange}
-          />
-
-          <SecurityCard />
-
-          <ActionButtons
-            onSave={handleSave}
-            isLoading={isLoading}
-          />
-        </div>
-      </div>
-    </div>
+      <ChangeEmailDialog
+        key={profileData.email}
+        open={emailDialogOpen}
+        onOpenChange={setEmailDialogOpen}
+        currentEmail={profileData.email}
+        onEmailChange={handleEmailChange}
+      />
+    </>
   );
 };
 
-const ProfileHeader: React.FC = () => (
-  <div className="space-y-2">
-    <h1 className="text-3xl font-bold tracking-tight">Profile Settings</h1>
-    <p className="text-muted-foreground">
-      Manage your account settings and preferences
-    </p>
-  </div>
-);
-
-interface AvatarSectionProps {
-  avatar: string;
-  name: string;
-  previewName: string;
-  getInitials: (name: string) => string;
-  onAvatarUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
-}
-
-const AvatarSection: React.FC<AvatarSectionProps> = ({
-  avatar,
-  name,
-  previewName,
-  getInitials,
-  onAvatarUpload
-}) => (
-  <Card>
-    <CardHeader>
-      <CardTitle className="flex items-center gap-2">
-        <User className="h-5 w-5" />
-        Profile Picture
-      </CardTitle>
-    </CardHeader>
-    <CardContent className="space-y-4">
-      <div className="flex flex-col items-center space-y-4">
-        <Avatar className="h-24 w-24">
-          <AvatarImage src={avatar} alt={name} />
-          <AvatarFallback className="text-lg">
-            {getInitials(name)}
-          </AvatarFallback>
-        </Avatar>
-
-        <div className="text-center">
-          <p className="font-medium">{name}</p>
-          <Badge variant="secondary" className="text-xs">
-            {previewName}
-          </Badge>
-        </div>
-
-        <div className="w-full">
-          <Label htmlFor="avatar-upload" className="cursor-pointer">
-            <div className="flex items-center justify-center gap-2 rounded-md border border-dashed border-gray-300 p-4 hover:border-gray-400 transition-colors">
-              <Upload className="h-4 w-4" />
-              <span className="text-sm">Upload new photo</span>
-            </div>
-          </Label>
-          <input
-            id="avatar-upload"
-            type="file"
-            accept="image/*"
-            onChange={onAvatarUpload}
-            className="hidden"
-          />
-        </div>
-      </div>
-    </CardContent>
-  </Card>
-);
-
-interface PersonalInfoCardProps {
-  formData: ProfileFormData;
-  onInputChange: (field: keyof ProfileFormData, value: string) => void;
-}
-
-const PersonalInfoCard: React.FC<PersonalInfoCardProps> = ({
-  formData,
-  onInputChange
-}) => (
-  <Card>
-    <CardHeader>
-      <CardTitle>Personal Information</CardTitle>
-      <CardDescription>
-        Update your personal details and profile information
-      </CardDescription>
-    </CardHeader>
-    <CardContent className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="username">Username</Label>
-          <Input
-            id="username"
-            value={formData.username}
-            onChange={(e) => onInputChange('username', e.target.value)}
-            placeholder="Enter username"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            value={formData.email}
-            onChange={(e) => onInputChange('email', e.target.value)}
-            placeholder="Enter email"
-          />
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="name">Full Name</Label>
-          <Input
-            id="name"
-            value={formData.name}
-            onChange={(e) => onInputChange('name', e.target.value)}
-            placeholder="Enter full name"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="previewName">Display Name</Label>
-          <Input
-            id="previewName"
-            value={formData.previewName}
-            onChange={(e) => onInputChange('previewName', e.target.value)}
-            placeholder="Enter display name"
-          />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="description">Profile Description</Label>
-        <Textarea
-          id="description"
-          value={formData.description}
-          onChange={(e) => onInputChange('description', e.target.value)}
-          placeholder="Tell us about yourself..."
-          className="min-h-[100px] resize-none"
-          maxLength={2000}
-        />
-        <div className="flex justify-between items-center text-xs text-muted-foreground">
-          <span>Maximum 2000 characters</span>
-          <span>{formData.description.length}/2000</span>
-        </div>
-      </div>
-    </CardContent>
-  </Card>
-);
-
-const SecurityCard: React.FC = () => (
-  <Card>
-    <CardHeader>
-      <CardTitle className="flex items-center gap-2">
-        <Lock className="h-5 w-5" />
-        Security
-      </CardTitle>
-      <CardDescription>
-        Manage your password and security settings
-      </CardDescription>
-    </CardHeader>
-    <CardContent>
-      <Button variant="outline" className="w-full">
-        Change Password
-      </Button>
-    </CardContent>
-  </Card>
-);
-
-interface ActionButtonsProps {
-  onSave: () => void;
-  isLoading: boolean;
-}
-
-const ActionButtons: React.FC<ActionButtonsProps> = ({ onSave, isLoading }) => (
-  <div className="flex flex-col sm:flex-row gap-4">
-    <Button onClick={onSave} disabled={isLoading} className="flex-1">
-      {isLoading ? "Saving..." : "Save Changes"}
-    </Button>
-
-    <Separator orientation="vertical" className="hidden sm:block h-auto" />
-
-    <Button variant="outline" className="flex items-center gap-2">
-      <CreditCard className="h-4 w-4" />
-      Billing Settings
-    </Button>
-
-    <Button variant="outline" className="flex items-center gap-2">
-      <Eye className="h-4 w-4" />
-      Preview Profile
-    </Button>
-  </div>
-);
-
-export default ProfilePage;
+export default AccountPage;
