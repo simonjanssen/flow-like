@@ -5,7 +5,7 @@
 	"required": ["bits", "created", "name", "updated"],
 	"properties": {
 		"id": {
-			"default": "zofocyja815z4a2lku3uj40l",
+			"default": "mgpmoo3r2rn04bl5o4apgqkz",
 			"type": "string"
 		},
 		"name": {
@@ -114,7 +114,7 @@
 		},
 		"ConnectionMode": {
 			"type": "string",
-			"enum": ["straight", "step", "simplebezier"]
+			"enum": ["default", "straight", "step", "smoothstep", "simplebezier"]
 		}
 	}
 }

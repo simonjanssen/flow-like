@@ -97,18 +97,27 @@ pub async fn search_apps(
         .await
         .map_err(ApiError::from)?;
 
-    let apps = models
-        .into_iter()
-        .map(|(app_model, meta_models)| {
-            let metadata = meta_models
-                .iter()
-                .find(|meta| meta.lang == language)
-                .or_else(|| meta_models.first())
-                .map(|meta| Metadata::from(meta.clone()));
+    let master_store = state.master_credentials().await?;
+    let store = master_store.to_store(false).await?;
 
-            (App::from(app_model), metadata)
-        })
-        .collect();
+    let mut apps = Vec::new();
+
+    for (app_model, meta_models) in models {
+        let metadata = if let Some(meta) = meta_models
+            .iter()
+            .find(|meta| meta.lang == language)
+            .or_else(|| meta_models.first())
+        {
+            let mut metadata = Metadata::from(meta.clone());
+            let prefix = flow_like_storage::Path::from("media").child(app_model.id.clone());
+            metadata.presign(prefix, &store).await;
+            Some(metadata)
+        } else {
+            None
+        };
+
+        apps.push((App::from(app_model), metadata));
+    }
 
     state.set_cache(cache_key, &apps);
 

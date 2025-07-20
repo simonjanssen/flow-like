@@ -5,6 +5,7 @@ use flow_like_model_provider::provider::{
     EmbeddingModelProvider, ImageEmbeddingModelProvider, ModelProvider,
 };
 use flow_like_storage::Path;
+use flow_like_storage::files::store::FlowLikeStore;
 use flow_like_storage::files::store::local_store::LocalObjectStore;
 use flow_like_types::Value;
 use flow_like_types::intercom::InterComCallback;
@@ -35,6 +36,61 @@ pub struct Metadata {
     pub organization_specific_values: Option<Vec<u8>>,
     pub created_at: SystemTime,
     pub updated_at: SystemTime,
+}
+
+impl Metadata {
+    pub async fn presign(&mut self, prefix: Path, store: &FlowLikeStore) {
+        if let Some(icon) = &self.icon {
+            if icon.starts_with("http://") || icon.starts_with("https://") {
+                return;
+            }
+            let icon_path = prefix.child(format!("{}.webp", icon));
+            if let Ok(url) = store
+                .sign(
+                    "GET",
+                    &icon_path,
+                    std::time::Duration::from_secs(60 * 60 * 24),
+                )
+                .await
+            {
+                self.icon = Some(url.to_string());
+            }
+        }
+
+        if let Some(thumbnail) = &self.thumbnail {
+            if thumbnail.starts_with("http://") || thumbnail.starts_with("https://") {
+                return;
+            }
+            let thumbnail_path = prefix.child(format!("{}.webp", thumbnail));
+            if let Ok(url) = store
+                .sign(
+                    "GET",
+                    &thumbnail_path,
+                    std::time::Duration::from_secs(60 * 60 * 24),
+                )
+                .await
+            {
+                self.thumbnail = Some(url.to_string());
+            }
+        }
+
+        for media in &mut self.preview_media {
+            if media.starts_with("http://") || media.starts_with("https://") {
+                continue;
+            }
+            let media_path = prefix.child(format!("{}.webp", media));
+            if let Ok(url) = store
+                .sign(
+                    "GET",
+                    &media_path,
+                    std::time::Duration::from_secs(60 * 60 * 24),
+                )
+                .await
+            {
+                *media = url.to_string();
+            }
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]

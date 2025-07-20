@@ -1,4 +1,5 @@
 export interface IHub {
+	app?: null | string;
 	authentication?: null | IAuthentication;
 	cdn?: null | string;
 	contact: IContact;
@@ -10,6 +11,7 @@ export interface IHub {
 	hubs: string[];
 	icon?: null | string;
 	legal_notice: string;
+	lookup?: ILookup;
 	max_users_prototype?: number | null;
 	name: string;
 	privacy_policy: string;
@@ -84,6 +86,17 @@ export interface IFeatures {
 	model_hosting: boolean;
 	premium: boolean;
 	unauthorized_read: boolean;
+	[property: string]: any;
+}
+
+export interface ILookup {
+	additional_information: boolean;
+	avatar: boolean;
+	created_at: boolean;
+	description: boolean;
+	email: boolean;
+	name: boolean;
+	username: boolean;
 	[property: string]: any;
 }
 

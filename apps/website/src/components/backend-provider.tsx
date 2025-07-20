@@ -5,6 +5,7 @@ import {
 	type IBitPack,
 	type IBitTypes,
 	type IBoard,
+	type IConnectionMode,
 	type IDownloadProgress,
 	type IExecutionStage,
 	type IFileMetadata,
@@ -64,7 +65,7 @@ export class EmptyBackend implements IBackendState {
 	getOpenBoards(): Promise<[string, string, string][]> {
 		throw new Error("Method not implemented.");
 	}
-	getBoardSettings(): Promise<"straight" | "step" | "simpleBezier"> {
+	getBoardSettings(): Promise<IConnectionMode> {
 		throw new Error("Method not implemented.");
 	}
 	executeBoard(

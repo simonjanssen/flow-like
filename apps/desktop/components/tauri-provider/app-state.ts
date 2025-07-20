@@ -1,5 +1,6 @@
 import { createId } from "@paralleldrive/cuid2";
 import { invoke } from "@tauri-apps/api/core";
+import { mkdir, open as openFile } from "@tauri-apps/plugin-fs";
 import {
 	type IApp,
 	type IAppCategory,
@@ -12,9 +13,11 @@ import {
 	injectDataFunction,
 } from "@tm9657/flow-like-ui";
 import type { IAppSearchSort } from "@tm9657/flow-like-ui/lib/schema/app/app-search-query";
+import type { IMediaItem } from "@tm9657/flow-like-ui/state/backend-state/app-state";
 import { fetcher, put } from "../../lib/api";
 import { appsDB } from "../../lib/apps-db";
 import type { TauriBackend } from "../tauri-provider";
+
 export class AppState implements IAppState {
 	constructor(private readonly backend: TauriBackend) {}
 
@@ -404,6 +407,132 @@ export class AppState implements IAppState {
 			appId: appId,
 			metadata: metadata,
 			language,
+		});
+	}
+
+	async pushAppMedia(
+		appId: string,
+		item: IMediaItem,
+		file: File,
+		language?: string,
+	): Promise<void> {
+		const yieldControl = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+		const isOffline = await this.backend.isOffline(appId);
+
+		if (isOffline) {
+			const uploadUrl = await invoke<string>("push_app_media", {
+				appId: appId,
+				query: {
+					language: language ?? "en",
+					item: item,
+					extension: file.name.split(".").pop(),
+				},
+			});
+			let fileName = uploadUrl.split("/").pop()?.split("?")[0] ?? file.name;
+
+			if (
+				uploadUrl.startsWith("asset://") ||
+				uploadUrl.startsWith("http://asset.localhost/")
+			) {
+				const path = decodeURIComponent(
+					uploadUrl
+						.replace("http://asset.localhost/", "")
+						.replaceAll("asset://localhost/", ""),
+				);
+				fileName = path.split("/").pop() ?? file.name;
+
+				const parentDir = path.substring(0, path.lastIndexOf("/"));
+				await mkdir(parentDir, { recursive: true });
+				const fileHandle = await openFile(path, {
+					append: false,
+					create: true,
+					write: true,
+					truncate: true,
+				});
+
+				if (!fileHandle) {
+					throw new Error(`Failed to open file handle for ${path}`);
+				}
+
+				const chunkSize = 8 * 1024 * 1024;
+				if (file.size < chunkSize) {
+					const bytes = new Uint8Array(await file.arrayBuffer());
+					await fileHandle.write(bytes);
+					await fileHandle.close();
+					await invoke("transform_media", {
+						appId: appId,
+						mediaItem: fileName,
+					});
+					return;
+				}
+
+				const stream = file.stream();
+				const reader = stream.getReader();
+				let bytesWritten = 0;
+				let chunkCount = 0;
+
+				try {
+					while (true) {
+						const { done, value } = await reader.read();
+
+						if (done) {
+							break;
+						}
+
+						await fileHandle.write(value);
+						bytesWritten += value.length;
+						chunkCount++;
+
+						// Update progress and yield control every few chunks
+						if (chunkCount % 5 === 0) {
+							await yieldControl();
+						}
+					}
+				} finally {
+					reader.releaseLock();
+					await fileHandle.close();
+				}
+				await invoke("transform_media", {
+					appId: appId,
+					mediaItem: fileName,
+				});
+			} else {
+				try {
+					await this.backend.uploadSignedUrl(uploadUrl, file, 0, 1, () => {});
+				} catch (error) {
+					console.error(`Failed to upload file ${uploadUrl}:`, error);
+					throw error;
+				}
+			}
+
+			return;
+		}
+
+		if (
+			!this.backend.profile ||
+			!this.backend.auth ||
+			!this.backend.queryClient
+		) {
+			throw new Error(
+				"Profile, auth or query client not set. Cannot push app meta.",
+			);
+		}
+		const { signed_url }: { signed_url: string } = await fetcher(
+			this.backend.profile,
+			`apps/${appId}/meta/media?language=${language ?? "en"}&item=${item}&extension=${file.name.split(".").pop()}`,
+			{
+				method: "PUT",
+			},
+			this.backend.auth,
+		);
+
+		await fetch(signed_url, {
+			method: "PUT",
+			body: file,
+			headers: {
+				"Content-Type": file.type,
+			},
 		});
 	}
 

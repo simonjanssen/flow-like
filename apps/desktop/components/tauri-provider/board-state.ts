@@ -2,6 +2,7 @@ import { Channel, invoke } from "@tauri-apps/api/core";
 import {
 	type IBoard,
 	type IBoardState,
+	IConnectionMode,
 	type IExecutionStage,
 	type IGenericCommand,
 	type IIntercomEvent,
@@ -329,9 +330,11 @@ export class BoardState implements IBoardState {
 		const boards: [string, string, string][] = await invoke("get_open_boards");
 		return boards;
 	}
-	async getBoardSettings(): Promise<"straight" | "step" | "simpleBezier"> {
+	async getBoardSettings(): Promise<IConnectionMode> {
 		const profile: ISettingsProfile = await invoke("get_current_profile");
-		return profile?.hub_profile.settings?.connection_mode as any;
+		return (
+			profile?.hub_profile.settings?.connection_mode ?? IConnectionMode.Default
+		);
 	}
 
 	async executeBoard(
@@ -408,8 +411,8 @@ export class BoardState implements IBoardState {
 	async queryRun(
 		logMeta: ILogMetadata,
 		query: string,
-		limit?: number,
 		offset?: number,
+		limit?: number,
 	): Promise<ILog[]> {
 		const runs: ILog[] = await invoke("query_run", {
 			logMeta: logMeta,

@@ -139,7 +139,7 @@ async fn process_single_record(
 
     let extension = key.split('.').next_back().unwrap_or("");
 
-    if !is_supported_image_format(extension) {
+    if !flow_like_types::images::is_supported_image_format(extension) {
         if is_video_format(extension) {
             tracing::info!("Skipping video file: {}", key);
             return Ok(());
@@ -170,13 +170,6 @@ async fn process_single_record(
         .map_err(|e| Error::from(format!("Failed to delete original file {}: {}", key, e)))?;
 
     Ok(())
-}
-
-fn is_supported_image_format(extension: &str) -> bool {
-    matches!(
-        extension.to_lowercase().as_str(),
-        "jpg" | "jpeg" | "png" | "gif" | "bmp" | "tiff" | "avif" | "heic" | "ico"
-    )
 }
 
 fn is_video_format(extension: &str) -> bool {
@@ -265,9 +258,9 @@ async fn convert_and_store_image(
         .decode()
         .map_err(|e| Error::from(format!("Image decoding failed for {}: {}", source_key, e)))?;
 
-    decoded_img = resize_image(decoded_img);
+    decoded_img = flow_like_types::images::resize_image(decoded_img);
 
-    let webp_data = encode_as_webp(decoded_img)?;
+    let webp_data = flow_like_types::images::encode_as_webp(decoded_img)?;
 
     s3_client
         .put_object()
@@ -275,6 +268,7 @@ async fn convert_and_store_image(
         .key(target_key)
         .body(ByteStream::from(webp_data))
         .content_type("image/webp")
+        .metadata("Cache-Control", "max-age=31536000")
         .send()
         .await
         .map_err(|e| {
@@ -299,17 +293,6 @@ fn resize_image(img: image::DynamicImage) -> image::DynamicImage {
     } else {
         img.resize(1280, 1280, image::imageops::FilterType::Lanczos3)
     }
-}
-
-#[tracing::instrument(name = "Encode Image as WebP", skip(img))]
-fn encode_as_webp(img: image::DynamicImage) -> Result<Vec<u8>, Error> {
-    let mut buffer = Vec::new();
-
-    let encoder = webp::Encoder::from_image(&img)?;
-    let encoded = encoder.encode(0.98);
-
-    buffer.extend_from_slice(&encoded);
-    Ok(buffer)
 }
 
 #[cfg(test)]

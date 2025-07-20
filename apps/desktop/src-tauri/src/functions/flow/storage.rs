@@ -176,7 +176,22 @@ pub async fn storage_list(
         .list_with_delimiter(Some(&path))
         .await
         .map_err(|e| anyhow!("Failed to list items: {}", e))?;
-    let items: Vec<StorageItem> = items.objects.into_iter().map(StorageItem::from).collect();
+    let items: Vec<StorageItem> = items
+        .objects
+        .into_iter()
+        .map(|object| {
+            let mut item = StorageItem::from(object);
+            // Split the location, skip the first three parts, and rejoin
+            let stripped_location = item
+                .location
+                .split('/')
+                .skip(3)
+                .collect::<Vec<_>>()
+                .join("/");
+            item.location = stripped_location;
+            item
+        })
+        .collect();
     println!("Listed {} items", items.len());
     Ok(items)
 }
@@ -192,6 +207,10 @@ pub async fn storage_get(
 
     for prefix in prefixes.iter() {
         let (store, path) = construct_storage(&state, &app_id, prefix, false).await?;
+        println!(
+            "Generating signed URL for path: {:?}, from prefix: {:?}",
+            path, prefix
+        );
         let signed_url = match store
             .sign("GET", &path, Duration::from_secs(60 * 60 * 24))
             .await

@@ -3,7 +3,13 @@
 	"title": "AppSearchQuery",
 	"type": "object",
 	"properties": {
-		"search": {
+		"id": {
+			"type": ["string", "null"]
+		},
+		"query": {
+			"type": ["string", "null"]
+		},
+		"language": {
 			"type": ["string", "null"]
 		},
 		"limit": {
@@ -16,17 +22,18 @@
 			"format": "uint64",
 			"minimum": 0.0
 		},
-		"categories": {
-			"type": ["array", "null"],
-			"items": {
-				"$ref": "#/definitions/AppCategory"
-			}
+		"category": {
+			"anyOf": [
+				{
+					"$ref": "#/definitions/AppCategory"
+				},
+				{
+					"type": "null"
+				}
+			]
 		},
-		"authors": {
-			"type": ["array", "null"],
-			"items": {
-				"type": "string"
-			}
+		"author": {
+			"type": ["string", "null"]
 		},
 		"sort": {
 			"anyOf": [
