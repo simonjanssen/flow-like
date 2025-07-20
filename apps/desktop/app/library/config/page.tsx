@@ -188,22 +188,139 @@ export default function Id() {
 		router.push("/library/apps");
 	}
 
-	// Placeholder functions for image uploads
 	const handleThumbnailUpload = useCallback(async () => {
-		// TODO: Implement thumbnail upload (1280x640)
-		console.log("Thumbnail upload placeholder");
-		toast("Thumbnail upload coming soon!", {
-			icon: <ImageIcon className="w-4 h-4" />,
-		});
-	}, []);
+		if (!id || !canEdit) {
+			toastError(
+				"Cannot upload thumbnail. App ID is missing or editing is disabled.",
+				<BombIcon />,
+			);
+			return;
+		}
+
+		const input = document.createElement("input");
+		input.type = "file";
+		input.accept = "image/jpeg,image/jpg,image/png,image/webp";
+		input.onchange = async (event) => {
+			const file = (event.target as HTMLInputElement).files?.[0];
+			if (!file) return;
+
+			const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+			if (!validTypes.includes(file.type)) {
+				toastError(
+					"Please select a valid image file (JPEG, PNG, WebP, or GIF).",
+					<BombIcon />,
+				);
+				return;
+			}
+
+			const maxSize = 30 * 1024 * 1024;
+			if (file.size > maxSize) {
+				toastError(
+					"Image file is too large. Please select a file smaller than 30MB.",
+					<BombIcon />,
+				);
+				return;
+			}
+
+			try {
+				const loadingRef = toast.loading("Uploading thumbnail...", {
+					icon: <ImageIcon className="w-4 h-4" />,
+				});
+
+				await backend.appState.pushAppMedia(id, "thumbnail", file);
+
+				if (localMetadata) {
+					setLocalMetadata({
+						...localMetadata,
+						thumbnail: URL.createObjectURL(file),
+					});
+				}
+				toast.dismiss(loadingRef);
+
+				toast.success(
+					"Thumbnail uploaded successfully, it can take up to a minute to process!",
+					{
+						icon: <ImageIcon className="w-4 h-4" />,
+					},
+				);
+
+				await metadata.refetch();
+			} catch (error) {
+				toastError(
+					"Failed to upload thumbnail. Please try again.",
+					<BombIcon />,
+				);
+				console.error("Thumbnail upload error:", error);
+			}
+		};
+		input.click();
+	}, [id, canEdit, backend.appState, localMetadata, metadata]);
 
 	const handleIconUpload = useCallback(async () => {
-		// TODO: Implement icon upload (1024x1024)
-		console.log("Icon upload placeholder");
-		toast("Icon upload coming soon!", {
-			icon: <ImageIcon className="w-4 h-4" />,
-		});
-	}, []);
+		if (!id || !canEdit) {
+			toastError(
+				"Cannot upload icon. App ID is missing or editing is disabled.",
+				<BombIcon />,
+			);
+			return;
+		}
+
+		const input = document.createElement("input");
+		input.type = "file";
+		input.accept = "image/jpeg,image/jpg,image/png,image/webp";
+		input.onchange = async (event) => {
+			const file = (event.target as HTMLInputElement).files?.[0];
+			if (!file) return;
+
+			const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+			if (!validTypes.includes(file.type)) {
+				toastError(
+					"Please select a valid image file (JPEG, PNG, WebP).",
+					<BombIcon />,
+				);
+				return;
+			}
+
+			const maxSize = 20 * 1024 * 1024; // 20MB
+			if (file.size > maxSize) {
+				toastError(
+					"Icon file is too large. Please select a file smaller than 20MB.",
+					<BombIcon />,
+				);
+				return;
+			}
+
+			try {
+				const loadingRef = toast.loading("Uploading icon...", {
+					icon: <ImageIcon className="w-4 h-4" />,
+				});
+
+				await backend.appState.pushAppMedia(id, "icon", file);
+
+				if (localMetadata) {
+					setLocalMetadata({
+						...localMetadata,
+						icon: URL.createObjectURL(file),
+					});
+				}
+
+				toast.dismiss(loadingRef);
+
+				toast.success(
+					"Icon uploaded successfully, it can take up to a minute to process!",
+					{
+						icon: <ImageIcon className="w-4 h-4" />,
+					},
+				);
+
+				await metadata.refetch();
+			} catch (error) {
+				toastError("Failed to upload icon. Please try again.", <BombIcon />);
+				console.error("Icon upload error:", error);
+			}
+		};
+		input.click();
+	}, [id, canEdit, backend.appState, localMetadata, metadata]);
 
 	const addTag = useCallback(
 		(tag: string) => {
@@ -390,38 +507,112 @@ export default function Id() {
 						Upload thumbnail and icon for your application
 					</CardDescription>
 				</CardHeader>
-				<CardContent className="space-y-4">
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+				<CardContent className="space-y-6">
+					<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+						{/* Thumbnail Upload */}
 						<div className="space-y-3">
-							<Label>Thumbnail (1280x640)</Label>
-							<div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-8 text-center">
-								<ImageIcon className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-								<p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-									Click to upload thumbnail
-								</p>
-								<Button
-									variant="outline"
-									onClick={handleThumbnailUpload}
-									disabled={!canEdit}
-								>
-									Upload Thumbnail
-								</Button>
+							<div className="flex items-center justify-between">
+								<Label className="text-sm font-medium">Thumbnail</Label>
+								<Badge variant="outline" className="text-xs">
+									1280 × 640px
+								</Badge>
+							</div>
+							<div
+								className={`relative group border-2 border-dashed rounded-lg overflow-hidden transition-all duration-200 ${
+									canEdit
+										? "border-gray-300 dark:border-gray-700 hover:border-primary cursor-pointer"
+										: "border-gray-200 dark:border-gray-800 cursor-not-allowed opacity-60"
+								}`}
+								style={{ aspectRatio: "2/1" }}
+								onClick={canEdit ? handleThumbnailUpload : undefined}
+							>
+								{/* Current thumbnail or placeholder */}
+								<div className="absolute inset-0">
+									<img
+										src={
+											localMetadata?.thumbnail ?? "/placeholder-thumbnail.webp"
+										}
+										alt="App thumbnail"
+										className="w-full h-full object-cover"
+									/>
+									{/* Overlay */}
+									{canEdit && (
+										<div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-200 flex items-center justify-center">
+											<div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center gap-2 text-white">
+												<ImageIcon className="w-8 h-8" />
+												<span className="text-sm font-medium">
+													{localMetadata?.thumbnail
+														? "Change Thumbnail"
+														: "Upload Thumbnail"}
+												</span>
+											</div>
+										</div>
+									)}
+								</div>
+								{/* Upload indicator */}
+								{!localMetadata?.thumbnail && (
+									<div className="absolute inset-0 flex items-center justify-center">
+										<div className="text-center text-gray-500 dark:text-gray-400">
+											<ImageIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
+											<p className="text-sm">
+												{canEdit ? "Click to upload" : "No thumbnail"}
+											</p>
+										</div>
+									</div>
+								)}
 							</div>
 						</div>
+
+						{/* Icon Upload */}
 						<div className="space-y-3">
-							<Label>Icon (1024x1024)</Label>
-							<div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-8 text-center">
-								<ImageIcon className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-								<p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-									Click to upload icon
-								</p>
-								<Button
-									variant="outline"
-									onClick={handleIconUpload}
-									disabled={!canEdit}
+							<div className="flex items-center justify-between">
+								<Label className="text-sm font-medium">Icon</Label>
+								<Badge variant="outline" className="text-xs">
+									1024 × 1024px
+								</Badge>
+							</div>
+							<div className="flex justify-center">
+								<div
+									className={`relative group border-2 border-dashed rounded-lg overflow-hidden transition-all duration-200 w-40 h-40 ${
+										canEdit
+											? "border-gray-300 dark:border-gray-700 hover:border-primary cursor-pointer"
+											: "border-gray-200 dark:border-gray-800 cursor-not-allowed opacity-60"
+									}`}
+									onClick={canEdit ? handleIconUpload : undefined}
 								>
-									Upload Icon
-								</Button>
+									{/* Current icon or placeholder */}
+									<div className="absolute inset-0">
+										<img
+											src={localMetadata?.icon ?? "/app-logo.webp"}
+											alt="App icon"
+											className="w-full h-full object-cover rounded-lg"
+										/>
+										{/* Overlay */}
+										{canEdit && (
+											<div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-200 flex items-center justify-center rounded-lg">
+												<div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center gap-1 text-white">
+													<ImageIcon className="w-6 h-6" />
+													<span className="text-xs font-medium text-center">
+														{localMetadata?.icon
+															? "Change Icon"
+															: "Upload Icon"}
+													</span>
+												</div>
+											</div>
+										)}
+									</div>
+									{/* Upload indicator */}
+									{!localMetadata?.icon && (
+										<div className="absolute inset-0 flex items-center justify-center">
+											<div className="text-center text-gray-500 dark:text-gray-400">
+												<ImageIcon className="w-8 h-8 mx-auto mb-1 opacity-50" />
+												<p className="text-xs">
+													{canEdit ? "Click to upload" : "No icon"}
+												</p>
+											</div>
+										</div>
+									)}
+								</div>
 							</div>
 						</div>
 					</div>

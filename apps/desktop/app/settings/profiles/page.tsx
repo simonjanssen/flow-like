@@ -546,7 +546,7 @@ export default function SettingsPage() {
 								<Select
 									value={
 										localProfile.hub_profile.settings?.connection_mode ??
-										IConnectionMode.Simplebezier
+										IConnectionMode.Default
 									}
 									onValueChange={(value: IConnectionMode) =>
 										updateProfile({
@@ -564,10 +564,16 @@ export default function SettingsPage() {
 										<SelectValue placeholder="Select connection mode" />
 									</SelectTrigger>
 									<SelectContent>
+										<SelectItem value={IConnectionMode.Default}>
+											Default
+										</SelectItem>
 										<SelectItem value={IConnectionMode.Straight}>
 											Straight
 										</SelectItem>
 										<SelectItem value={IConnectionMode.Step}>Step</SelectItem>
+										<SelectItem value={IConnectionMode.Smoothstep}>
+											Smooth Step
+										</SelectItem>
 										<SelectItem value={IConnectionMode.Simplebezier}>
 											Simple Bezier
 										</SelectItem>

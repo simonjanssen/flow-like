@@ -1,4 +1,7 @@
-use axum::{Router, routing::get};
+use axum::{
+    Router,
+    routing::{delete, get, put},
+};
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use serde::Deserialize;
 
@@ -8,14 +11,17 @@ use crate::{
     state::AppState,
 };
 
-pub mod get_media;
-pub mod get_meta;
+pub mod push_media;
 pub mod remove_media;
-pub mod upload_media;
+
+pub mod get_meta;
 pub mod upsert_meta;
 
 pub fn routes() -> Router<AppState> {
-    Router::new().route("/", get(get_meta::get_meta).put(upsert_meta::upsert_meta))
+    Router::new()
+        .route("/", get(get_meta::get_meta).put(upsert_meta::upsert_meta))
+        .route("/media", put(push_media::push_media))
+        .route("/media/{media_id}", delete(remove_media::remove_media))
 }
 
 #[derive(Deserialize, Debug)]
@@ -23,6 +29,22 @@ pub struct MetaQuery {
     pub language: Option<String>,
     pub template_id: Option<String>,
     pub course_id: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "lowercase")]
+pub enum MediaItem {
+    Icon,
+    Thumbnail,
+    Preview,
+}
+#[derive(Deserialize, Debug)]
+pub struct MediaQuery {
+    pub language: Option<String>,
+    pub template_id: Option<String>,
+    pub course_id: Option<String>,
+    pub item: MediaItem,
+    pub extension: String,
 }
 
 pub enum MetaMode {
@@ -33,6 +55,16 @@ pub enum MetaMode {
 
 impl MetaMode {
     pub fn new(query: &MetaQuery, app_id: &str) -> Self {
+        if let Some(template_id) = &query.template_id {
+            MetaMode::Template(template_id.clone())
+        } else if let Some(course_id) = &query.course_id {
+            MetaMode::Course(course_id.clone())
+        } else {
+            MetaMode::App(app_id.to_string())
+        }
+    }
+
+    pub fn from_media_query(query: &MediaQuery, app_id: &str) -> Self {
         if let Some(template_id) = &query.template_id {
             MetaMode::Template(template_id.clone())
         } else if let Some(course_id) = &query.course_id {

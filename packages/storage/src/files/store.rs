@@ -117,12 +117,12 @@ impl FlowLikeStore {
                 let is_tauri = cfg!(feature = "tauri") || std::env::var("TAURI_ENV").is_ok();
 
                 if is_tauri {
+                    #[cfg(any(windows, target_os = "android"))]
+                    let base = "http://asset.localhost/";
+                    #[cfg(not(any(windows, target_os = "android")))]
+                    let base = "asset://localhost/";
                     let urlencoded_path = encode(local_path.to_str().unwrap_or(""));
-                    let url = if cfg!(windows) {
-                        format!("http://{}.localhost/{}", "asset", urlencoded_path)
-                    } else {
-                        format!("{}://{}", "asset", urlencoded_path)
-                    };
+                    let url = format!("{base}{urlencoded_path}");
                     let url = Url::parse(&url)?;
                     return Ok(url);
                 }

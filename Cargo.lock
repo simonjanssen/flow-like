@@ -4538,6 +4538,8 @@ dependencies = [
  "flow-like-catalog",
  "flow-like-types",
  "futures",
+ "image",
+ "imageproc",
  "sentry",
  "sentry-tracing",
  "serde",
@@ -4558,6 +4560,7 @@ dependencies = [
  "tauri-plugin-window-state",
  "tracing",
  "tracing-subscriber",
+ "webp",
  "window-vibrancy",
 ]
 
@@ -4633,6 +4636,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "tokio-util",
+ "webp",
 ]
 
 [[package]]
@@ -7569,6 +7573,7 @@ dependencies = [
  "aws-config",
  "aws-sdk-s3",
  "aws_lambda_events",
+ "flow-like-types",
  "image",
  "imageproc",
  "lambda_runtime",

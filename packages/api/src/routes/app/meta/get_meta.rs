@@ -9,7 +9,9 @@ use axum::{
     extract::{Path, Query, State},
 };
 use flow_like::bit::Metadata;
+use flow_like_storage::Path as FlowPath;
 use sea_orm::TransactionTrait;
+
 #[tracing::instrument(name = "GET /apps/{app_id}/meta", skip(state, user, query))]
 pub async fn get_meta(
     State(state): State<AppState>,
@@ -28,7 +30,11 @@ pub async fn get_meta(
         .await?
         .ok_or_else(|| ApiError::NotFound)?;
 
-    let metadata = Metadata::from(existing_meta.clone());
+    let mut metadata = Metadata::from(existing_meta.clone());
 
+    let master_store = state.master_credentials().await?;
+    let store = master_store.to_store(false).await?;
+    let prefix = FlowPath::from("media").child(app_id);
+    metadata.presign(prefix, &store).await;
     Ok(Json(metadata))
 }
