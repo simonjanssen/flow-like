@@ -1,5 +1,6 @@
 import type {
 	IBoard,
+	IConnectionMode,
 	IExecutionStage,
 	IGenericCommand,
 	IIntercomEvent,
@@ -31,7 +32,7 @@ export interface IBoardState {
 	deleteBoard(appId: string, boardId: string): Promise<void>;
 	// [AppId, BoardId, BoardName]
 	getOpenBoards(): Promise<[string, string, string][]>;
-	getBoardSettings(): Promise<"straight" | "step" | "simpleBezier">;
+	getBoardSettings(): Promise<IConnectionMode>;
 
 	executeBoard(
 		appId: string,

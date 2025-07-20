@@ -450,7 +450,7 @@ export function parseBoard(
 					target: connectedNodeId,
 					targetHandle: conntectedPin.id,
 					style: { stroke: typeToColor(pin.data_type) },
-					type: connectionMode ?? "simplebezier",
+					type: connectionMode ?? "default",
 					data_type: pin.data_type,
 					selected: selected.has(`${pin.id}-${connectedTo}`),
 				});

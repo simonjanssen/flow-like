@@ -32,7 +32,9 @@ export interface ISettings {
 }
 
 export enum IConnectionMode {
+	Default = "default",
 	Simplebezier = "simplebezier",
+	Smoothstep = "smoothstep",
 	Step = "step",
 	Straight = "straight",
 }

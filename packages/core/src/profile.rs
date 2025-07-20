@@ -16,8 +16,10 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, Hash, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum ConnectionMode {
+    Default,
     Straight,
     Step,
+    SmoothStep,
     SimpleBezier,
 }
 

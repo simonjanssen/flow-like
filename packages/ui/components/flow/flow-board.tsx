@@ -689,7 +689,7 @@ export function FlowBoard({
 			executeBoard,
 			executeCommand,
 			selected.current,
-			currentProfile.data?.settings?.connection_mode ?? "simpleBezier",
+			currentProfile.data?.settings?.connection_mode ?? "default",
 			nodes,
 			edges,
 			currentLayer,

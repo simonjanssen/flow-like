@@ -41,6 +41,9 @@ pub struct Metadata {
 impl Metadata {
     pub async fn presign(&mut self, prefix: Path, store: &FlowLikeStore) {
         if let Some(icon) = &self.icon {
+            if icon.starts_with("http://") || icon.starts_with("https://") {
+                return;
+            }
             let icon_path = prefix.child(format!("{}.webp", icon));
             if let Ok(url) = store
                 .sign(
@@ -55,6 +58,9 @@ impl Metadata {
         }
 
         if let Some(thumbnail) = &self.thumbnail {
+            if thumbnail.starts_with("http://") || thumbnail.starts_with("https://") {
+                return;
+            }
             let thumbnail_path = prefix.child(format!("{}.webp", thumbnail));
             if let Ok(url) = store
                 .sign(
@@ -69,6 +75,9 @@ impl Metadata {
         }
 
         for media in &mut self.preview_media {
+            if media.starts_with("http://") || media.starts_with("https://") {
+                continue;
+            }
             let media_path = prefix.child(format!("{}.webp", media));
             if let Ok(url) = store
                 .sign(

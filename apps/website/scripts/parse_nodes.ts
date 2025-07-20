@@ -63,7 +63,7 @@ for (const [pin, node] of cache.values()) {
 				target: connectedNodeId,
 				targetHandle: conntectedPin.id,
 				style: { stroke: typeToColor(pin.data_type) },
-				type: "simplebezier",
+				type: "default",
 				data_type: pin.data_type,
 			});
 	}

@@ -83,27 +83,29 @@ export function Traces({
 	const buildQuery = useCallback((parts: string[]) => {
 		if (parts.length === 0) return "";
 		if (parts.length === 1) return parts[0];
-		return parts.map(part => `(${part})`).join(" AND ");
+		return parts.map((part) => `(${part})`).join(" AND ");
 	}, []);
 
+	const handleNodeSelect = useCallback(
+		(nodeId: string) => {
+			console.log("select node", nodeId);
+			const nodes = getNodes();
 
-	const handleNodeSelect = useCallback((nodeId: string) => {
-		console.log("select node", nodeId);
-		const nodes = getNodes();
+			nodes
+				.filter((node) => node.selected && node.id !== nodeId)
+				.forEach((node) => {
+					updateNode(node.id, { selected: false });
+				});
 
-		nodes
-			.filter((node) => node.selected && node.id !== nodeId)
-			.forEach((node) => {
-				updateNode(node.id, { selected: false });
+			updateNode(nodeId, { selected: true });
+
+			fitView({
+				nodes: [{ id: nodeId }],
+				duration: 500,
 			});
-
-		updateNode(nodeId, { selected: true });
-
-		fitView({
-			nodes: [{ id: nodeId }],
-			duration: 500,
-		});
-	}, [getNodes, updateNode, fitView]);
+		},
+		[getNodes, updateNode, fitView],
+	);
 
 	useEffect(() => {
 		const parts = [];
@@ -152,39 +154,48 @@ export function Traces({
 		return (rowHeights.current.get(index) ?? 88) + 6;
 	}
 
-	const renderItem = useCallback((props: any) => {
-		if (!messages) return null;
-		const { index, style } = props;
+	const renderItem = useCallback(
+		(props: any) => {
+			if (!messages) return null;
+			const { index, style } = props;
 
-		if (hasNextPage && index === messages.length) {
+			if (hasNextPage && index === messages.length) {
+				return (
+					<div style={style} className="p-2">
+						<Button
+							className="w-full"
+							onClick={async () => {
+								if (isFetchingNextPage) return;
+								await fetchNextPage();
+							}}
+							disabled={isFetchingNextPage}
+						>
+							Load more logs
+						</Button>
+					</div>
+				);
+			}
+
+			const log = messages[index];
 			return (
-				<div style={style} className="p-2">
-					<Button
-						className="w-full"
-						onClick={async () => {
-							if (isFetchingNextPage) return;
-							await fetchNextPage();
-						}}
-						disabled={isFetchingNextPage}
-					>
-						Load more logs
-					</Button>
-				</div>
+				<LogMessage
+					key={index}
+					log={log}
+					index={index}
+					style={style}
+					onSetHeight={setRowHeight}
+					onSelectNode={handleNodeSelect}
+				/>
 			);
-		}
-
-		const log = messages[index];
-		return (
-			<LogMessage
-				key={index}
-				log={log}
-				index={index}
-				style={style}
-				onSetHeight={setRowHeight}
-				onSelectNode={handleNodeSelect}
-			/>
-		);
-	}, [messages, hasNextPage, isFetchingNextPage, fetchNextPage, handleNodeSelect]);
+		},
+		[
+			messages,
+			hasNextPage,
+			isFetchingNextPage,
+			fetchNextPage,
+			handleNodeSelect,
+		],
+	);
 
 	useEffect(() => {
 		setQuery(buildQuery(queryParts));
@@ -205,11 +216,36 @@ export function Traces({
 				<div className="ml-2 flex flex-col w-full gap-1 overflow-x-hidden max-h-full flex-grow h-full">
 					<div className="w-full flex flex-row items-center justify-between my-1">
 						<div className="flex flex-row items-center gap-1">
-							<LogFilterBadge level={ILogLevel.Debug} label="Debug" logFilter={logFilter} toggleLogFilter={toggleLogFilter} />
-							<LogFilterBadge level={ILogLevel.Info} label="Info" logFilter={logFilter} toggleLogFilter={toggleLogFilter} />
-							<LogFilterBadge level={ILogLevel.Warn} label="Warning" logFilter={logFilter} toggleLogFilter={toggleLogFilter} />
-							<LogFilterBadge level={ILogLevel.Error} label="Error" logFilter={logFilter} toggleLogFilter={toggleLogFilter} />
-							<LogFilterBadge level={ILogLevel.Fatal} label="Fatal" logFilter={logFilter} toggleLogFilter={toggleLogFilter} />
+							<LogFilterBadge
+								level={ILogLevel.Debug}
+								label="Debug"
+								logFilter={logFilter}
+								toggleLogFilter={toggleLogFilter}
+							/>
+							<LogFilterBadge
+								level={ILogLevel.Info}
+								label="Info"
+								logFilter={logFilter}
+								toggleLogFilter={toggleLogFilter}
+							/>
+							<LogFilterBadge
+								level={ILogLevel.Warn}
+								label="Warning"
+								logFilter={logFilter}
+								toggleLogFilter={toggleLogFilter}
+							/>
+							<LogFilterBadge
+								level={ILogLevel.Error}
+								label="Error"
+								logFilter={logFilter}
+								toggleLogFilter={toggleLogFilter}
+							/>
+							<LogFilterBadge
+								level={ILogLevel.Fatal}
+								label="Fatal"
+								logFilter={logFilter}
+								toggleLogFilter={toggleLogFilter}
+							/>
 						</div>
 
 						<div className="flex flex-row items-stretch">
@@ -374,7 +410,12 @@ function LogFilterBadge({
 	label,
 	logFilter,
 	toggleLogFilter,
-}: Readonly<{ level: ILogLevel; label: string, logFilter: Set<ILogLevel>; toggleLogFilter: (level: ILogLevel) => void }>) {
+}: Readonly<{
+	level: ILogLevel;
+	label: string;
+	logFilter: Set<ILogLevel>;
+	toggleLogFilter: (level: ILogLevel) => void;
+}>) {
 	return (
 		<Badge
 			className="cursor-pointer"
