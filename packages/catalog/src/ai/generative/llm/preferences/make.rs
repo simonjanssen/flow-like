@@ -1,7 +1,7 @@
 use flow_like::{
     bit::BitModelPreference,
     flow::{
-        execution::context::ExecutionContext,
+        execution::{context::ExecutionContext, LogLevel},
         node::{Node, NodeLogic},
         variable::VariableType,
     },
@@ -50,8 +50,9 @@ impl NodeLogic for MakePreferencesNode {
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
         let mut preferences = BitModelPreference::default();
+        context.log_message(&format!("New Preferences: {:?}", &preferences), LogLevel::Debug);
+        
         let multimodal = context.evaluate_pin::<bool>("multimodal").await;
-
         if let Ok(multimodal) = multimodal {
             preferences.multimodal = Some(multimodal);
         }

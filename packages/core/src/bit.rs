@@ -17,6 +17,9 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::SystemTime;
 
+const NAME_HINT_WEIGHT: f32 = 0.2; // weight of name similarity for best model preference
+const NAME_HINT_SIMILARITY_THRESHOLD: f32 = 0.5;  // minimum required similarity score to model name
+
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 pub struct Metadata {
     pub name: String,
@@ -154,32 +157,31 @@ impl BitModelClassification {
 
         for meta in bit.meta.values() {
             let local_similarity = strsim::jaro_winkler(&meta.name, hint) as f32;
+            println!("[BIT NAME SIMILARITY] similarity '{}' <-> '{}': {}", meta.name, hint, local_similarity);
             if local_similarity > similarity {
                 similarity = local_similarity;
             }
         }
 
         let provider = bit.try_to_provider();
-        if provider.is_none() {
-            return Ok(similarity);
+        match provider {
+            Some(provider) => {
+                if let Some(model_id) = provider.model_id {
+                    let local_similarity = strsim::jaro_winkler(&model_id, hint) as f32;
+                    println!("[BIT NAME SIMILARITY] similarity (provider) '{}' <-> '{}': {}", model_id, hint, local_similarity);
+                    if local_similarity > similarity {
+                        similarity = local_similarity;
+                    }
+                }
+            },
+            None => return Ok(similarity)
         }
-
-        let provider = provider.unwrap();
-        if let Some(model_id) = provider.model_id {
-            let local_similarity = strsim::jaro_winkler(&model_id, hint) as f32;
-            if local_similarity > similarity {
-                similarity = local_similarity;
-            }
-        }
-
         Ok(similarity)
     }
 
     /// Calculates the score of the model in a range from 0 to 1 based on the provided preference
     pub fn score(&self, preference: &BitModelPreference, bit: &Bit) -> f32 {
-        let mut total_score = 0.0;
-        let name_similarity_weight = 0.2;
-
+        // If preference is multimodal but model doesn't support it return a score of 0
         if let Some(multimodal) = preference.multimodal {
             if multimodal && !bit.is_multimodal() {
                 return 0.0;
@@ -200,30 +202,43 @@ impl BitModelClassification {
             (preference.coding_weight, self.coding),
         ];
 
-        // Calculate the weighted sum
-        let mut total_weight: f32 = field_weight_pairs.iter().filter_map(|(w, _)| *w).sum();
-        if total_weight == 0.0 {
-            return 0.0; // Avoid division by zero
-        }
+        // Total accumulated preferences weights set by user
+        let preferences_acc: f32 = field_weight_pairs.iter().filter_map(|(w, _)| *w).sum();
 
-        if let Some(hint) = &preference.model_hint {
-            if let Ok(name_similarity) = self.name_similarity(hint, bit) {
-                if name_similarity > 0.8 {
-                    total_score += name_similarity_weight * name_similarity;
-                    total_weight += name_similarity_weight;
-                }
+        // Model matching preferences accross all traits/characteristics
+        let mut preference_match_score = 0.0;
+        for (preference_weight, model_trait) in field_weight_pairs {
+            if let Some(preference_weight) = preference_weight {
+                preference_match_score += preference_weight * model_trait;
             }
         }
 
-        for (weight, value) in field_weight_pairs {
-            if let Some(w) = weight {
-                total_score += w * value;
-            }
-        }
+        // Model matching naming hint given by user (if any and if similarity is greater than threshold else 0.0)
+        let name_match_score = preference.model_hint.as_ref()
+            .and_then(|hint| self.name_similarity(hint, bit).ok())
+            .filter(|&score| score > NAME_HINT_SIMILARITY_THRESHOLD)
+            .unwrap_or(0.0);
 
-        total_score / total_weight
+        // Log results
+        println!("[BIT SCORING] Accumulated Preference Weight: {}", preferences_acc);
+        println!("[BIT SCORING] Static Name Hint Weight: {}", NAME_HINT_WEIGHT);
+        println!("[BIT SCORING] Accumulated Preference Score: {}", preference_match_score);
+        println!("[BIT SCORING] Name Hint Score: {}", name_match_score);
+
+        // total score = match preferences + weighted match name
+        let total_score = preference_match_score + (name_match_score * NAME_HINT_WEIGHT);
+        // total weight = accumulated preference weights + static name weight
+        let total_weight = preferences_acc + NAME_HINT_WEIGHT;
+
+        // account for numerical stability
+        if total_weight > 0.001 {
+            total_score / total_weight
+        } else {
+            0.0
+        }
     }
 }
+
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 pub struct Bit {
     pub id: String,
