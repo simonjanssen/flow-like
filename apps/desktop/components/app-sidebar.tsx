@@ -946,10 +946,10 @@ export function NavUser({
 								</DropdownMenuGroup>
 								<DropdownMenuSeparator />
 								<DropdownMenuGroup>
-									<DropdownMenuItem className="gap-2">
+									<a href="/account"><DropdownMenuItem className="gap-2">
 										<BadgeCheck className="size-4" />
 										Account
-									</DropdownMenuItem>
+									</DropdownMenuItem></a>
 									{profile.data && (
 										<DropdownMenuItem
 											className="gap-2"
