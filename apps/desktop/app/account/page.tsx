@@ -8,15 +8,16 @@ import {
   type TokenProvider,
   type AuthTokens,
   decodeJWT,
+  getCurrentUser,
   fetchUserAttributes,
-  type UpdateUserAttributesInput
+  type UpdateUserAttributesInput,
 } from 'aws-amplify/auth';
 import { uploadData, getUrl } from 'aws-amplify/storage';
 import { Amplify } from 'aws-amplify';
 import { Button, useHub } from "@tm9657/flow-like-ui";
 import { AuthContextProps, useAuth } from "react-oidc-context";
 import { useRouter } from "next/navigation";
-import ProfilePage, { type ProfileFormData, type ProfileActions } from "./account";
+import { ProfilePage, type ProfileFormData, type ProfileActions } from "./account";
 import ChangePasswordDialog from "./change-password";
 import ChangeEmailDialog from "./change-email";
 import { toast } from "sonner";
@@ -59,47 +60,6 @@ const AccountPage: React.FC = () => {
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
 
-  const configureAmplify = useCallback(async () => {
-    if (!auth.isAuthenticated || !auth.user?.profile) return;
-    if (hub.hub?.authentication?.openid?.cognito?.user_pool_id) {
-      const provider = new AuthTokenProvider(auth)
-      Amplify.configure({
-        Auth: {
-          Cognito: {
-            userPoolClientId: auth.settings.client_id,
-            userPoolId: hub.hub.authentication.openid.cognito.user_pool_id,
-          },
-        },
-      },
-      {
-        Auth: {
-          tokenProvider: provider,
-        },
-      });
-    }
-
-    loadUserData();
-  }, [hub, auth.settings.client_id, auth.isAuthenticated, auth.user?.profile, auth]);
-
-
-
-  const loadUserData = useCallback(async () => {
-    if (!auth.isAuthenticated || !auth.user?.profile) return;
-    console.group('User Attributes');
-    setProfileData({
-      username: auth.user?.profile?.preferred_username || "",
-      email: auth.user?.profile?.email || "",
-      name: auth.user?.profile?.name || "",
-      previewName: auth.user?.profile?.given_name || "",
-      description: "",
-      avatar: auth.user?.profile?.picture || "/placeholder.webp"
-    });
-  }, [auth.isAuthenticated, auth.user, auth.user?.profile, Amplify.getConfig]);
-
-  useEffect(() => {
-    configureAmplify();
-  }, [auth.isAuthenticated, hub.hub]);
-
   const updateUserAttribute = useCallback(async (attributeKey: string, value: string) => {
     try {
       setIsLoading(true);
@@ -121,14 +81,90 @@ const AccountPage: React.FC = () => {
     }
   }, [toast]);
 
+
+  const handleChangePassword = useCallback(async () => {
+    setPasswordDialogOpen(true);
+  }, []);
+
+  const handleUpdateEmail = useCallback(async (email: string) => {
+    setEmailDialogOpen(true);
+  }, []);
+
+
+
+  const configureAmplify = useCallback(async () => {
+    if (!auth.isAuthenticated || !auth.user?.profile) return;
+    if (hub.hub?.authentication?.openid?.cognito?.user_pool_id) {
+      const provider = new AuthTokenProvider(auth)
+      Amplify.configure({
+        Auth: {
+          Cognito: {
+            userPoolClientId: auth.settings.client_id,
+            userPoolId: hub.hub.authentication.openid.cognito.user_pool_id,
+          },
+        },
+      },
+        {
+          Auth: {
+            tokenProvider: provider,
+          },
+        });
+
+      const currentUser = await getCurrentUser();
+      const attributes = await fetchUserAttributes()
+
+      console.dir({
+        currentUser,
+        attributes
+      })
+
+      setProfileActions(prev => ({
+        ...prev,
+        changePassword: handleChangePassword,
+        updateEmail: handleUpdateEmail
+      }));
+    }
+
+    loadUserData();
+  }, [hub, auth.settings.client_id, auth.isAuthenticated, auth.user?.profile, auth, handleChangePassword, handleUpdateEmail]);
+
+  const handleEmailChange = useCallback(async (newEmail: string, confirmationCode: string) => {
+    try {
+      await updateUserAttribute('email', newEmail);
+      setProfileData(prev => ({ ...prev, email: newEmail }));
+      setEmailDialogOpen(false);
+
+      toast.success("Email updated successfully");
+    } catch (error) {
+      console.error('Failed to update email:', error);
+      toast.error("Failed to update email");
+      throw error;
+    }
+  }, [updateUserAttribute, toast]);
+
+  const loadUserData = useCallback(async () => {
+    if (!auth.isAuthenticated || !auth.user?.profile) return;
+    setProfileData({
+      username: auth.user?.profile?.preferred_username || "",
+      email: auth.user?.profile?.email || "",
+      name: auth.user?.profile?.name || "",
+      previewName: auth.user?.profile?.given_name || "",
+      description: "",
+      avatar: auth.user?.profile?.picture || "/placeholder.webp"
+    });
+  }, [auth.isAuthenticated, auth.user, auth.user?.profile, Amplify.getConfig]);
+
+  useEffect(() => {
+    configureAmplify();
+  }, [auth.isAuthenticated, hub.hub]);
+
+
   const handleUpdateUsername = useCallback(async (username: string) => {
     await updateUserAttribute('preferred_username', username);
     setProfileData(prev => ({ ...prev, username }));
   }, [updateUserAttribute]);
 
-  const handleUpdateEmail = useCallback(async (email: string) => {
-    setEmailDialogOpen(true);
-  }, []);
+
 
   const handleUpdateName = useCallback(async (name: string) => {
     await updateUserAttribute('name', name);
@@ -189,9 +225,7 @@ const AccountPage: React.FC = () => {
     // }
   }, [auth.user?.profile?.sub, updateUserAttribute, toast]);
 
-  const handleChangePassword = useCallback(async () => {
-    setPasswordDialogOpen(true);
-  }, []);
+
 
   const handlePasswordChange = useCallback(async (currentPassword: string, newPassword: string) => {
     try {
@@ -208,20 +242,6 @@ const AccountPage: React.FC = () => {
       throw error;
     }
   }, [toast]);
-
-  const handleEmailChange = useCallback(async (newEmail: string, confirmationCode: string) => {
-    try {
-      await updateUserAttribute('email', newEmail);
-      setProfileData(prev => ({ ...prev, email: newEmail }));
-      setEmailDialogOpen(false);
-
-      toast.success("Email updated successfully");
-    } catch (error) {
-      console.error('Failed to update email:', error);
-      toast.error("Failed to update email");
-      throw error;
-    }
-  }, [updateUserAttribute, toast]);
 
   const handleViewBilling = useCallback(async () => {
     router.push('/billing');
@@ -256,17 +276,17 @@ const AccountPage: React.FC = () => {
     }
   }, [toast]);
 
-  const profileActions: ProfileActions = {
+  const [profileActions, setProfileActions] = useState<ProfileActions>({
     updateUsername: handleUpdateUsername,
-    updateEmail: handleUpdateEmail,
+    updateEmail: undefined,
     updateName: handleUpdateName,
     updatePreviewName: handleUpdatePreviewName,
     updateDescription: handleUpdateDescription,
     updateAvatar: handleUpdateAvatar,
-    changePassword: handleChangePassword,
+    changePassword: undefined,
     viewBilling: handleViewBilling,
     previewProfile: handlePreviewProfile
-  };
+  })
 
   if (!auth.isAuthenticated) {
     return (
@@ -284,7 +304,7 @@ const AccountPage: React.FC = () => {
   return (
     <>
       <ProfilePage
-        key={`${auth?.user?.profile.sub}${auth?.user?.profile.exp}`}
+        key={`${auth?.user?.profile.sub}${profileData.username}${profileData.email}`}
         initialData={profileData}
         actions={profileActions}
         isLoading={isLoading}

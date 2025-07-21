@@ -47,12 +47,12 @@ interface ProfilePageProps {
   onSave?: (data: ProfileFormData) => Promise<void>;
 }
 
-const ProfilePage: React.FC<ProfilePageProps> = ({
+export function ProfilePage ({
   initialData,
   actions = {},
   isLoading = false,
   onSave
-}) => {
+}: Readonly<ProfilePageProps>) {
   const [formData, setFormData] = useState<ProfileFormData>(initialData);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -336,8 +336,8 @@ interface SecurityCardProps {
   onChangePassword?: () => Promise<void>;
 }
 
-const SecurityCard: React.FC<SecurityCardProps> = ({ onChangePassword }) => (
-  <Card>
+const SecurityCard: React.FC<SecurityCardProps> = ({ onChangePassword }) => {
+  if (onChangePassword) return <Card>
     <CardHeader>
       <CardTitle className="flex items-center gap-2">
         <Lock className="h-5 w-5" />
@@ -355,7 +355,9 @@ const SecurityCard: React.FC<SecurityCardProps> = ({ onChangePassword }) => (
       )}
     </CardContent>
   </Card>
-);
+
+  return null
+}
 
 interface ActionButtonsProps {
   onSave?: () => Promise<void>;
@@ -396,5 +398,3 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
     )}
   </div>
 );
-
-export default ProfilePage;
