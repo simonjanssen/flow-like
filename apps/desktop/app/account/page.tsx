@@ -18,7 +18,7 @@ import {
 } from 'aws-amplify/auth';
 import { uploadData, getUrl } from 'aws-amplify/storage';
 import { Amplify } from 'aws-amplify';
-import { Button, useHub } from "@tm9657/flow-like-ui";
+import { Button, useBackend, useHub, useInvoke } from "@tm9657/flow-like-ui";
 import { AuthContextProps, useAuth } from "react-oidc-context";
 import { useRouter } from "next/navigation";
 import { ProfilePage, type ProfileFormData, type ProfileActions } from "./account";
@@ -49,6 +49,7 @@ class AuthTokenProvider implements TokenProvider {
 }
 
 const AccountPage: React.FC = () => {
+  const backend = useBackend()
   const hub = useHub();
   const auth = useAuth();
   const router = useRouter();
@@ -63,6 +64,7 @@ const AccountPage: React.FC = () => {
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [cognito, setCognito] = useState(false);
+  const info = useInvoke(backend.userState.getInfo, backend.userState, []);
 
   const updateUserAttribute = useCallback(async (attributeKey: string, value: string) => {
     try {
@@ -126,8 +128,8 @@ const AccountPage: React.FC = () => {
           mfaPreferences
         })
 
-      setCognito(true);
-      const isFederated = Array.isArray(authSession.tokens?.idToken?.payload?.identities);
+        const isFederated = Array.isArray(authSession.tokens?.idToken?.payload?.identities);
+        setCognito(!isFederated);
 
       setProfileActions(prev => ({
         ...prev,
@@ -155,83 +157,56 @@ const AccountPage: React.FC = () => {
 
   const loadUserData = useCallback(async () => {
     if (!auth.isAuthenticated || !auth.user?.profile) return;
-    setProfileData({
-      username: auth.user?.profile?.preferred_username || "",
-      email: auth.user?.profile?.email || "",
-      previewName: auth.user?.profile?.name || "",
-      description: "",
-      avatar: auth.user?.profile?.picture || "/placeholder.webp"
-    });
-  }, [auth.isAuthenticated, auth.user, auth.user?.profile, Amplify.getConfig]);
+    setProfileData(old => ({
+      ...old,
+      username: auth.user?.profile?.preferred_username ?? "",
+      email: auth.user?.profile?.email ?? "",
+      previewName: info.data?.name ?? auth.user?.profile?.preferred_username ?? "",
+      description: info.data?.description ?? "",
+      avatar: info.data?.avatar ?? "/placeholder.webp"
+    }));
+  }, [auth.isAuthenticated, auth.user, auth.user?.profile, Amplify.getConfig, info.data]);
 
   useEffect(() => {
     configureAmplify();
-  }, [auth.isAuthenticated, hub.hub]);
+  }, [auth.isAuthenticated, hub.hub, info.data]);
 
 
   const handleUpdateUsername = useCallback(async (username: string) => {
     await updateUserAttribute('preferred_username', username);
     auth.startSilentRenew()
     setProfileData(prev => ({ ...prev, username }));
-  }, [updateUserAttribute]);
+  }, [updateUserAttribute, cognito]);
 
   const handleUpdatePreviewName = useCallback(async (previewName: string) => {
-    await updateUserAttribute('name', previewName);
-    auth.startSilentRenew()
+    await backend.userState.updateUser({
+      name: previewName
+    })
     setProfileData(prev => ({ ...prev, previewName }));
-  }, [updateUserAttribute]);
+  }, [updateUserAttribute, cognito]);
 
   const handleUpdateDescription = useCallback(async (description: string) => {
-    await updateUserAttribute('custom:description', description);
-    auth.startSilentRenew()
+    await backend.userState.updateUser({
+      description: description
+    })
     setProfileData(prev => ({ ...prev, description }));
-  }, [updateUserAttribute]);
+  }, [updateUserAttribute, cognito]);
 
-  const handleUpdateAvatar = useCallback(async (avatarDataUrl: string) => {
-    // try {
-    //   setIsLoading(true);
+  const handleUpdateAvatar = useCallback(async (avatar: File) => {
+    try {
+      setIsLoading(true);
+      await backend.userState.updateUser({}, avatar);
+      setProfileData(prev => ({ ...prev, avatar: URL.createObjectURL(avatar) }));
+      toast.success("Avatar updated successfully");
+    } catch (error) {
+      console.error('Failed to upload avatar:', error);
+      toast.error("Failed to upload avatar");
+    } finally {
+      setIsLoading(false);
+    }
 
-    //   const response = await fetch(avatarDataUrl);
-    //   const blob = await response.blob();
-
-    //   const fileName = `avatars/${auth.user?.profile?.sub || 'user'}-${Date.now()}.jpg`;
-
-    //   const uploadResult = await uploadData({
-    //     key: fileName,
-    //     data: blob,
-    //     options: {
-    //       contentType: blob.type,
-    //       accessLevel: 'public'
-    //     }
-    //   });
-
-    //   const avatarUrl = await getUrl({
-    //     key: fileName,
-    //     options: {
-    //       accessLevel: 'public'
-    //     }
-    //   });
-
-    //   await updateUserAttribute('picture', avatarUrl.url.toString());
-    //   setProfileData(prev => ({ ...prev, avatar: avatarUrl.url.toString() }));
-
-    //   toast({
-    //     title: "Success",
-    //     description: "Avatar updated successfully",
-    //   });
-    // } catch (error) {
-    //   console.error('Failed to upload avatar:', error);
-    //   toast({
-    //     title: "Error",
-    //     description: "Failed to upload avatar",
-    //     variant: "destructive",
-    //   });
-    // } finally {
-    //   setIsLoading(false);
-    // }
+    await info.refetch();
   }, [auth.user?.profile?.sub, updateUserAttribute, toast]);
-
-
 
   const handlePasswordChange = useCallback(async (currentPassword: string, newPassword: string) => {
     try {
@@ -261,16 +236,27 @@ const AccountPage: React.FC = () => {
     try {
       setIsLoading(true);
 
-      const updates: UpdateUserAttributesInput = {
-        userAttributes: {
-          preferred_username: data.username,
-          given_name: data.previewName,
-          'custom:description': data.description
-        }
-      };
+      if(cognito && (data.username !== info.data?.preferred_username)) {
+        const updates: UpdateUserAttributesInput = {
+          userAttributes: {
+            preferred_username: data.username,
+          }
+        };
+        await updateUserAttributes(updates);
+        await auth.clearStaleState();
+        auth.signinRedirect();
 
-      await updateUserAttributes(updates);
+      }
+      await backend.userState.updateUser({
+        name: data.previewName,
+        description: data.description,
+      });
       setProfileData(data);
+
+      await info.refetch();
+      if(cognito && (data.username !== info.data?.preferred_username)) setTimeout(async () => {
+        window.location.reload();
+      }, 1000);
 
       toast.success("Profile saved successfully");
     } catch (error) {
@@ -279,7 +265,7 @@ const AccountPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, cognito, updateUserAttributes, backend.userState, info.data]);
 
   const [profileActions, setProfileActions] = useState<ProfileActions>({
     updateUsername: handleUpdateUsername,

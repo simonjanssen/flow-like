@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { User, Mail, Lock, CreditCard, Upload, Eye, Edit2 } from "lucide-react";
 import {
   Avatar,
@@ -16,7 +16,8 @@ import {
   Input,
   Label,
   Separator,
-  Textarea
+  Textarea,
+  useBackend
 } from "@tm9657/flow-like-ui";
 
 export interface ProfileFormData {
@@ -33,7 +34,7 @@ export interface ProfileActions {
   updateName?: (name: string) => Promise<void>;
   updatePreviewName?: (previewName: string) => Promise<void>;
   updateDescription?: (description: string) => Promise<void>;
-  updateAvatar?: (avatar: string) => Promise<void>;
+  updateAvatar?: (avatar: File) => Promise<void>;
   changePassword?: () => Promise<void>;
   viewBilling?: () => Promise<void>;
   previewProfile?: () => Promise<void>;
@@ -55,11 +56,19 @@ export function ProfilePage ({
   const [formData, setFormData] = useState<ProfileFormData>(initialData);
   const [isSaving, setIsSaving] = useState(false);
 
+  const hasChanges = useMemo(() => {
+    return (
+      formData.username !== initialData.username ||
+      formData.previewName !== initialData.previewName ||
+      formData.description !== initialData.description
+    );
+  }, [formData, initialData]);
+
   const handleInputChange = useCallback((field: keyof ProfileFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   }, []);
 
-  const handleInlineFieldUpdate = useCallback(async (field: keyof ProfileFormData, value: string) => {
+  const handleInlineFieldUpdate = useCallback(async (field: keyof ProfileFormData, value: any) => {
     const inlineFields = ['username', 'previewName', 'description'];
     if (!inlineFields.includes(field)) return;
 
@@ -78,13 +87,7 @@ export function ProfilePage ({
   const handleAvatarUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && actions.updateAvatar) {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const result = e.target?.result as string;
-        setFormData(prev => ({ ...prev, avatar: result }));
-        await actions.updateAvatar!(result);
-      };
-      reader.readAsDataURL(file);
+    actions.updateAvatar(file)
     }
   }, [actions.updateAvatar]);
 
@@ -142,6 +145,7 @@ export function ProfilePage ({
             onViewBilling={actions.viewBilling}
             onPreviewProfile={actions.previewProfile}
             isLoading={isSaving || isLoading}
+            hasChanges={hasChanges}
           />
         </div>
       </div>
@@ -338,17 +342,20 @@ interface ActionButtonsProps {
   onViewBilling?: () => Promise<void>;
   onPreviewProfile?: () => Promise<void>;
   isLoading: boolean;
+  hasChanges?: boolean;
 }
 
 const ActionButtons: React.FC<ActionButtonsProps> = ({
   onSave,
   onViewBilling,
   onPreviewProfile,
-  isLoading
+  isLoading,
+  hasChanges
 }) => (
+
   <div className="flex flex-col sm:flex-row gap-4">
     {onSave && (
-      <Button onClick={onSave} disabled={isLoading} className="flex-1">
+      <Button onClick={onSave} disabled={isLoading || !hasChanges} className="flex-1">
         {isLoading ? "Saving..." : "Save Changes"}
       </Button>
     )}
