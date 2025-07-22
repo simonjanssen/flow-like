@@ -53,6 +53,7 @@ pub async fn push_media(
             if let Some(icon) = &existing_meta.icon {
                 let file_name = format!("{}.webp", icon);
                 let path = FlowPath::from("media")
+                    .child("apps")
                     .child(app_id.clone())
                     .child(file_name);
                 if let Err(err) = master_store.as_generic().delete(&path).await {
@@ -65,6 +66,7 @@ pub async fn push_media(
             if let Some(thumbnail) = &existing_meta.thumbnail {
                 let file_name = format!("{}.webp", thumbnail);
                 let path = FlowPath::from("media")
+                    .child("apps")
                     .child(app_id.clone())
                     .child(file_name);
                 if let Err(err) = master_store.as_generic().delete(&path).await {
@@ -81,6 +83,7 @@ pub async fn push_media(
 
     model.update(&txn).await?;
     let path = FlowPath::from("media")
+        .child("apps")
         .child(app_id)
         .child(item_name.clone());
     let signed_url = master_store

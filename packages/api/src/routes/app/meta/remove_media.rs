@@ -63,6 +63,7 @@ pub async fn remove_media(
     let master_store = state.master_credentials().await?;
     let master_store = master_store.to_store(false).await?;
     let path = FlowPath::from("media")
+        .child("apps")
         .child(app_id)
         .child(item_name.clone());
     if let Err(e) = master_store.as_generic().delete(&path).await {

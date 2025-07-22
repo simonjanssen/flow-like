@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use crate::{entity::user, error::ApiError, middleware::jwt::AppUser, state::AppState};
+use crate::{
+    entity::user, error::ApiError, middleware::jwt::AppUser, routes::user::sign_avatar,
+    state::AppState,
+};
 use axum::{Extension, Json, extract::State};
 use flow_like_types::anyhow;
 use sea_orm::{ActiveModelTrait, EntityTrait, sqlx::types::chrono};
@@ -13,24 +16,55 @@ pub async fn user_info(
     let sub = user.sub()?;
     let email = user.email().clone();
     let username = user.username().clone();
+    let preferred_username = user.preferred_username().clone();
     let user_info = user::Entity::find_by_id(&sub).one(&state.db).await?;
-    if let Some(user_info) = user_info {
+    if let Some(mut user_info) = user_info {
+        let mut updated_user: Option<user::ActiveModel> = None;
         if let Some(email) = &email {
             if user_info.email != Some(email.clone()) {
-                let mut updated_user: user::ActiveModel = user_info.clone().into();
-                updated_user.email = sea_orm::ActiveValue::Set(Some(email.clone()));
-                updated_user.updated_at = sea_orm::ActiveValue::Set(chrono::Utc::now().naive_utc());
-                updated_user.update(&state.db).await?;
+                let mut tmp_updated_user: user::ActiveModel = user_info.clone().into();
+                tmp_updated_user.email = sea_orm::ActiveValue::Set(Some(email.clone()));
+                updated_user = Some(tmp_updated_user);
+            }
+        }
+
+        if let Some(username) = &username {
+            if user_info.username != Some(username.clone()) {
+                let mut tmp_updated_user: user::ActiveModel =
+                    updated_user.unwrap_or(user_info.clone().into());
+                tmp_updated_user.username = sea_orm::ActiveValue::Set(Some(username.clone()));
+                updated_user = Some(tmp_updated_user);
+            }
+        }
+
+        if let Some(preferred_username) = &preferred_username {
+            if user_info.preferred_username != Some(preferred_username.clone()) {
+                let mut tmp_updated_user: user::ActiveModel =
+                    updated_user.unwrap_or(user_info.clone().into());
+                tmp_updated_user.preferred_username =
+                    sea_orm::ActiveValue::Set(Some(preferred_username.clone()));
+                updated_user = Some(tmp_updated_user);
             }
         }
 
         if user_info.stripe_id.is_none() && state.platform_config.features.premium {
             let stripe_customer = generate_stripe_user(&state, &sub, email.clone()).await?;
-            let mut updated_user: user::ActiveModel = user_info.clone().into();
-            updated_user.stripe_id =
+            let mut tmp_updated_user: user::ActiveModel =
+                updated_user.unwrap_or(user_info.clone().into());
+            tmp_updated_user.stripe_id =
                 sea_orm::ActiveValue::Set(Some(stripe_customer.id.to_string()));
+            updated_user = Some(tmp_updated_user);
+        }
+
+        if let Some(mut updated_user) = updated_user {
             updated_user.updated_at = sea_orm::ActiveValue::Set(chrono::Utc::now().naive_utc());
-            updated_user.update(&state.db).await?;
+            let new_user = updated_user.update(&state.db).await?;
+            user_info = new_user;
+        }
+
+        if let Some(avatar) = &user_info.avatar {
+            let signed_avatar_url = sign_avatar(&user_info.id, avatar, &state).await?;
+            user_info.avatar = Some(signed_avatar_url);
         }
 
         return Ok(Json(user_info));
@@ -52,6 +86,7 @@ pub async fn user_info(
         email: sea_orm::ActiveValue::Set(email),
         stripe_id: sea_orm::ActiveValue::Set(stripe_customer),
         username: sea_orm::ActiveValue::Set(username),
+        preferred_username: sea_orm::ActiveValue::Set(preferred_username),
         created_at: sea_orm::ActiveValue::Set(chrono::Utc::now().naive_utc()),
         updated_at: sea_orm::ActiveValue::Set(chrono::Utc::now().naive_utc()),
         ..Default::default()

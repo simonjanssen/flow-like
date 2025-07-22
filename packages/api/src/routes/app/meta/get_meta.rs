@@ -34,7 +34,7 @@ pub async fn get_meta(
 
     let master_store = state.master_credentials().await?;
     let store = master_store.to_store(false).await?;
-    let prefix = FlowPath::from("media").child(app_id);
+    let prefix = FlowPath::from("media").child("apps").child(app_id);
     metadata.presign(prefix, &store).await;
     Ok(Json(metadata))
 }

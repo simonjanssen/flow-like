@@ -14,13 +14,14 @@ enum UserTier {
 model User {
     id String @id
 
-    stripeId String?
+    stripeId String? @unique
 
-    email       String?
-    username    String?
+    email       String? @unique
+    username    String? @unique
+    preferredUsername String? @unique
     name        String?
     description String?
-    avatarUrl   String?
+    avatar   String?
 
     additionalInformation Json?
 

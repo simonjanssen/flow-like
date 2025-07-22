@@ -22,7 +22,6 @@ import {
 export interface ProfileFormData {
   username: string;
   email: string;
-  name: string;
   previewName: string;
   description: string;
   avatar: string;
@@ -61,12 +60,11 @@ export function ProfilePage ({
   }, []);
 
   const handleInlineFieldUpdate = useCallback(async (field: keyof ProfileFormData, value: string) => {
-    const inlineFields = ['username', 'name', 'previewName', 'description'];
+    const inlineFields = ['username', 'previewName', 'description'];
     if (!inlineFields.includes(field)) return;
 
     const actionMap: Record<string, keyof ProfileActions> = {
       username: 'updateUsername',
-      name: 'updateName',
       previewName: 'updatePreviewName',
       description: 'updateDescription'
     };
@@ -103,10 +101,9 @@ export function ProfilePage ({
   }, []);
 
   const isInlineEditable = useCallback((field: keyof ProfileFormData) => {
-    const inlineFields = ['username', 'name', 'previewName', 'description'];
+    const inlineFields = ['username', 'previewName', 'description'];
     const actionMap: Record<string, keyof ProfileActions> = {
       username: 'updateUsername',
-      name: 'updateName',
       previewName: 'updatePreviewName',
       description: 'updateDescription'
     };
@@ -122,7 +119,6 @@ export function ProfilePage ({
         <div className="md:col-span-1">
           <AvatarCard
             avatar={formData.avatar}
-            name={formData.name}
             previewName={formData.previewName}
             getInitials={getInitials}
             onAvatarUpload={handleAvatarUpload}
@@ -164,7 +160,6 @@ const ProfileHeader: React.FC = () => (
 
 interface AvatarCardProps {
   avatar: string;
-  name: string;
   previewName: string;
   getInitials: (name: string) => string;
   onAvatarUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
@@ -173,7 +168,6 @@ interface AvatarCardProps {
 
 const AvatarCard: React.FC<AvatarCardProps> = ({
   avatar,
-  name,
   previewName,
   getInitials,
   onAvatarUpload,
@@ -189,17 +183,14 @@ const AvatarCard: React.FC<AvatarCardProps> = ({
     <CardContent className="space-y-4">
       <div className="flex flex-col items-center space-y-4">
         <Avatar className="h-24 w-24">
-          <AvatarImage src={avatar} alt={name} />
+          <AvatarImage src={avatar} alt={previewName} />
           <AvatarFallback className="text-lg">
-            {getInitials(name)}
+            {getInitials(previewName)}
           </AvatarFallback>
         </Avatar>
 
         <div className="text-center">
-          <p className="font-medium">{name}</p>
-          <Badge variant="secondary" className="text-xs">
-            {previewName}
-          </Badge>
+          <p className="font-medium">{previewName}</p>
         </div>
 
         {canEdit && (
@@ -254,47 +245,8 @@ const PersonalInfoCard: React.FC<PersonalInfoCardProps> = ({
             id="username"
             value={formData.username}
             onChange={(e) => onInputChange('username', e.target.value)}
-            onBlur={(e) => isInlineEditable('username') && onInlineFieldUpdate('username', e.target.value)}
             placeholder="Enter username"
             disabled={!isInlineEditable('username')}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <div className="flex gap-2">
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              placeholder="Enter email"
-              disabled
-              className="bg-muted"
-            />
-            {onEmailClick && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onEmailClick(formData.email)}
-                className="shrink-0"
-              >
-                <Edit2 className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="name">Full Name</Label>
-          <Input
-            id="name"
-            value={formData.name}
-            onChange={(e) => onInputChange('name', e.target.value)}
-            onBlur={(e) => isInlineEditable('name') && onInlineFieldUpdate('name', e.target.value)}
-            placeholder="Enter full name"
-            disabled={!isInlineEditable('name')}
           />
         </div>
 
@@ -304,10 +256,33 @@ const PersonalInfoCard: React.FC<PersonalInfoCardProps> = ({
             id="previewName"
             value={formData.previewName}
             onChange={(e) => onInputChange('previewName', e.target.value)}
-            onBlur={(e) => isInlineEditable('previewName') && onInlineFieldUpdate('previewName', e.target.value)}
             placeholder="Enter display name"
             disabled={!isInlineEditable('previewName')}
           />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="email">Email</Label>
+        <div className="flex gap-2">
+          <Input
+            id="email"
+            type="email"
+            value={formData.email}
+            placeholder="Enter email"
+            disabled
+            className="bg-muted"
+          />
+          {onEmailClick && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onEmailClick(formData.email)}
+              className="shrink-0"
+            >
+              <Edit2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
 
@@ -317,7 +292,6 @@ const PersonalInfoCard: React.FC<PersonalInfoCardProps> = ({
           id="description"
           value={formData.description}
           onChange={(e) => onInputChange('description', e.target.value)}
-          onBlur={(e) => isInlineEditable('description') && onInlineFieldUpdate('description', e.target.value)}
           placeholder="Tell us about yourself..."
           className="min-h-[100px] resize-none"
           maxLength={2000}

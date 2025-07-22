@@ -1,4 +1,7 @@
-use crate::{entity::user, error::ApiError, middleware::jwt::AppUser, state::AppState};
+use crate::{
+    entity::user, error::ApiError, middleware::jwt::AppUser, routes::user::sign_avatar,
+    state::AppState,
+};
 use axum::{
     Extension, Json,
     extract::{Path, State},
@@ -21,13 +24,24 @@ pub struct UserLookupResponse {
 }
 
 impl UserLookupResponse {
-    fn parse(user: user::Model, lookup_config: Lookup) -> Self {
+    pub async fn parse(user: user::Model, lookup_config: Lookup, state: &AppState) -> Self {
+        let avatar_url = match (lookup_config.avatar, user.avatar.as_ref()) {
+            (true, Some(avatar_id)) => match sign_avatar(&user.id, avatar_id, state).await {
+                Ok(url) => Some(url),
+                Err(err) => {
+                    tracing::error!("Failed to sign avatar URL: {:?}", err);
+                    None
+                }
+            },
+            _ => None,
+        };
+
         UserLookupResponse {
             id: user.id,
             email: lookup_config.email.then_some(user.email).flatten(),
             username: lookup_config.username.then_some(user.username).flatten(),
             name: lookup_config.name.then_some(user.name).flatten(),
-            avatar_url: lookup_config.avatar.then_some(user.avatar_url).flatten(),
+            avatar_url: avatar_url,
             additional_information: lookup_config
                 .additional_information
                 .then_some(user.additional_information)
@@ -55,7 +69,7 @@ pub async fn user_lookup(
         .await?;
 
     if let Some(user_info) = found_user {
-        let response = UserLookupResponse::parse(user_info, lookup_config);
+        let response = UserLookupResponse::parse(user_info, lookup_config, &state).await;
         return Ok(Json(response));
     }
 
@@ -83,10 +97,14 @@ pub async fn user_search(
         .await?;
 
     if !exact_matches.is_empty() {
-        let responses: Vec<UserLookupResponse> = exact_matches
-            .into_iter()
-            .map(|user_info| UserLookupResponse::parse(user_info, lookup_config.clone()))
-            .collect();
+        let mut responses: Vec<UserLookupResponse> = Vec::with_capacity(exact_matches.len());
+
+        for user_info in exact_matches {
+            let response =
+                UserLookupResponse::parse(user_info, lookup_config.clone(), &state).await;
+            responses.push(response);
+        }
+
         return Ok(Json(responses));
     }
 
@@ -107,10 +125,12 @@ pub async fn user_search(
         return Err(ApiError::NotFound);
     }
 
-    let responses: Vec<UserLookupResponse> = fuzzy_matches
-        .into_iter()
-        .map(|user_info| UserLookupResponse::parse(user_info, lookup_config.clone()))
-        .collect();
+    let mut responses: Vec<UserLookupResponse> = Vec::with_capacity(fuzzy_matches.len());
+
+    for user_info in fuzzy_matches {
+        let response = UserLookupResponse::parse(user_info, lookup_config.clone(), &state).await;
+        responses.push(response);
+    }
 
     Ok(Json(responses))
 }

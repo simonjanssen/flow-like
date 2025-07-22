@@ -10,6 +10,10 @@ import {
   decodeJWT,
   getCurrentUser,
   fetchUserAttributes,
+  fetchAuthSession,
+  fetchDevices,
+  fetchMFAPreference,
+
   type UpdateUserAttributesInput,
 } from 'aws-amplify/auth';
 import { uploadData, getUrl } from 'aws-amplify/storage';
@@ -51,7 +55,6 @@ const AccountPage: React.FC = () => {
   const [profileData, setProfileData] = useState<ProfileFormData>({
     username: "",
     email: "",
-    name: "",
     previewName: "",
     description: "",
     avatar: "/placeholder.webp"
@@ -59,6 +62,7 @@ const AccountPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [cognito, setCognito] = useState(false);
 
   const updateUserAttribute = useCallback(async (attributeKey: string, value: string) => {
     try {
@@ -110,18 +114,25 @@ const AccountPage: React.FC = () => {
           },
         });
 
-      const currentUser = await getCurrentUser();
-      const attributes = await fetchUserAttributes()
+        const currentUser = await getCurrentUser();
+        const attributes = await fetchUserAttributes()
+        const authSession = await fetchAuthSession()
+        const mfaPreferences = await fetchMFAPreference()
 
-      console.dir({
-        currentUser,
-        attributes
-      })
+        console.dir({
+          currentUser,
+          attributes,
+          authSession,
+          mfaPreferences
+        })
+
+      setCognito(true);
+      const isFederated = Array.isArray(authSession.tokens?.idToken?.payload?.identities);
 
       setProfileActions(prev => ({
         ...prev,
-        changePassword: handleChangePassword,
-        updateEmail: handleUpdateEmail
+        changePassword: isFederated ? undefined: handleChangePassword,
+        updateEmail: isFederated ? undefined: handleUpdateEmail,
       }));
     }
 
@@ -147,8 +158,7 @@ const AccountPage: React.FC = () => {
     setProfileData({
       username: auth.user?.profile?.preferred_username || "",
       email: auth.user?.profile?.email || "",
-      name: auth.user?.profile?.name || "",
-      previewName: auth.user?.profile?.given_name || "",
+      previewName: auth.user?.profile?.name || "",
       description: "",
       avatar: auth.user?.profile?.picture || "/placeholder.webp"
     });
@@ -161,23 +171,19 @@ const AccountPage: React.FC = () => {
 
   const handleUpdateUsername = useCallback(async (username: string) => {
     await updateUserAttribute('preferred_username', username);
+    auth.startSilentRenew()
     setProfileData(prev => ({ ...prev, username }));
   }, [updateUserAttribute]);
 
-
-
-  const handleUpdateName = useCallback(async (name: string) => {
-    await updateUserAttribute('name', name);
-    setProfileData(prev => ({ ...prev, name }));
-  }, [updateUserAttribute]);
-
   const handleUpdatePreviewName = useCallback(async (previewName: string) => {
-    await updateUserAttribute('given_name', previewName);
+    await updateUserAttribute('name', previewName);
+    auth.startSilentRenew()
     setProfileData(prev => ({ ...prev, previewName }));
   }, [updateUserAttribute]);
 
   const handleUpdateDescription = useCallback(async (description: string) => {
     await updateUserAttribute('custom:description', description);
+    auth.startSilentRenew()
     setProfileData(prev => ({ ...prev, description }));
   }, [updateUserAttribute]);
 
@@ -258,7 +264,6 @@ const AccountPage: React.FC = () => {
       const updates: UpdateUserAttributesInput = {
         userAttributes: {
           preferred_username: data.username,
-          name: data.name,
           given_name: data.previewName,
           'custom:description': data.description
         }
@@ -279,7 +284,6 @@ const AccountPage: React.FC = () => {
   const [profileActions, setProfileActions] = useState<ProfileActions>({
     updateUsername: handleUpdateUsername,
     updateEmail: undefined,
-    updateName: handleUpdateName,
     updatePreviewName: handleUpdatePreviewName,
     updateDescription: handleUpdateDescription,
     updateAvatar: handleUpdateAvatar,
