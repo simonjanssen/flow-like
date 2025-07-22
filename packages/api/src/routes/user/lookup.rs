@@ -16,6 +16,7 @@ pub struct UserLookupResponse {
     id: String,
     email: Option<String>,
     username: Option<String>,
+    preferred_username: Option<String>,
     name: Option<String>,
     avatar_url: Option<String>,
     additional_information: Option<Value>,
@@ -40,6 +41,10 @@ impl UserLookupResponse {
             id: user.id,
             email: lookup_config.email.then_some(user.email).flatten(),
             username: lookup_config.username.then_some(user.username).flatten(),
+            preferred_username: lookup_config
+                .preferred_username
+                .then_some(user.preferred_username)
+                .flatten(),
             name: lookup_config.name.then_some(user.name).flatten(),
             avatar_url: avatar_url,
             additional_information: lookup_config

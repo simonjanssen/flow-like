@@ -86,9 +86,10 @@
 	"environment": "Development",
 	"lookup": {
 		"email": false,
-		"username": true,
+		"username": false,
+		"name": true,
+		"preferred_username": true,
 		"avatar": true,
-		"name": false,
 		"additional_information": true,
 		"description": true,
 		"created_at": true

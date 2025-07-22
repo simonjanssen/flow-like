@@ -211,9 +211,9 @@ function Member({
 	}
 
 	const evaluatedName =
-		userData.username ??
 		userData.name ??
-		userData.email ??
+		userData.preferred_username ??
+		userData.username ??
 		userData.email ??
 		"Unknown User";
 
@@ -233,7 +233,7 @@ function Member({
 					<div className="flex items-center gap-2">
 						<h3 className="font-medium text-sm truncate">{evaluatedName}</h3>
 						<span className="text-xs text-muted-foreground">
-							@{userData.username ?? userData.email}
+							@{userData.preferred_username ?? userData.username ?? userData.email}
 						</span>
 					</div>
 					<div className="flex items-center gap-1">

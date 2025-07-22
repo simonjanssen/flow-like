@@ -25,6 +25,8 @@ import { ProfilePage, type ProfileFormData, type ProfileActions } from "./accoun
 import ChangePasswordDialog from "./change-password";
 import ChangeEmailDialog from "./change-email";
 import { toast } from "sonner";
+import { fetcher } from "../../lib/api";
+import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 
 class AuthTokenProvider implements TokenProvider {
   constructor(private readonly authContext: AuthContextProps) { }
@@ -65,6 +67,11 @@ const AccountPage: React.FC = () => {
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [cognito, setCognito] = useState(false);
   const info = useInvoke(backend.userState.getInfo, backend.userState, []);
+  const profile = useInvoke(
+		backend.userState.getProfile,
+		backend.userState,
+		[],
+	);
 
   const updateUserAttribute = useCallback(async (attributeKey: string, value: string) => {
     try {
@@ -116,25 +123,25 @@ const AccountPage: React.FC = () => {
           },
         });
 
-        const currentUser = await getCurrentUser();
-        const attributes = await fetchUserAttributes()
-        const authSession = await fetchAuthSession()
-        const mfaPreferences = await fetchMFAPreference()
+      const currentUser = await getCurrentUser();
+      const attributes = await fetchUserAttributes()
+      const authSession = await fetchAuthSession()
+      const mfaPreferences = await fetchMFAPreference()
 
-        console.dir({
-          currentUser,
-          attributes,
-          authSession,
-          mfaPreferences
-        })
+      console.dir({
+        currentUser,
+        attributes,
+        authSession,
+        mfaPreferences
+      })
 
-        const isFederated = Array.isArray(authSession.tokens?.idToken?.payload?.identities);
-        setCognito(!isFederated);
+      const isFederated = Array.isArray(authSession.tokens?.idToken?.payload?.identities);
+      setCognito(!isFederated);
 
       setProfileActions(prev => ({
         ...prev,
-        changePassword: isFederated ? undefined: handleChangePassword,
-        updateEmail: isFederated ? undefined: handleUpdateEmail,
+        changePassword: isFederated ? undefined : handleChangePassword,
+        updateEmail: isFederated ? undefined : handleUpdateEmail,
       }));
     }
 
@@ -225,8 +232,27 @@ const AccountPage: React.FC = () => {
   }, [toast]);
 
   const handleViewBilling = useCallback(async () => {
-    router.push('/billing');
-  }, [router]);
+    if(!profile.data) {
+      toast.error("Profile data not available");
+      return;
+    }
+
+    const urlRequest = await fetcher<{ url: string }>(
+      profile.data,
+      "user/billing",
+      { method: "GET" },
+      auth,
+    );
+
+    const _view = new WebviewWindow("billing", {
+      url: urlRequest.url,
+      title: "Billing",
+      focus: true,
+      resizable: true,
+      maximized: true,
+      contentProtected: true,
+    });
+  }, [router, profile]);
 
   const handlePreviewProfile = useCallback(async () => {
     router.push(`/profile/${auth.user?.profile?.sub}`);
@@ -236,7 +262,7 @@ const AccountPage: React.FC = () => {
     try {
       setIsLoading(true);
 
-      if(cognito && (data.username !== info.data?.preferred_username)) {
+      if (cognito && (data.username !== info.data?.preferred_username)) {
         const updates: UpdateUserAttributesInput = {
           userAttributes: {
             preferred_username: data.username,
@@ -254,7 +280,7 @@ const AccountPage: React.FC = () => {
       setProfileData(data);
 
       await info.refetch();
-      if(cognito && (data.username !== info.data?.preferred_username)) setTimeout(async () => {
+      if (cognito && (data.username !== info.data?.preferred_username)) setTimeout(async () => {
         window.location.reload();
       }, 1000);
 
