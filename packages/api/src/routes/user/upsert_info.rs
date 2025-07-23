@@ -4,7 +4,7 @@ use crate::{
     entity::{invitation, user},
     error::ApiError,
     middleware::jwt::AppUser,
-    state::AppState,
+    state::AppState, user_management::UserManagement,
 };
 use axum::{Extension, Json, extract::State};
 use flow_like_types::create_id;
@@ -35,6 +35,10 @@ pub async fn upsert_info(
 ) -> Result<Json<UpsertInfoResponse>, ApiError> {
     let sub = user.sub()?;
     let mut response = UpsertInfoResponse { signed_url: None };
+    let user_manager = UserManagement::new(&state).await;
+
+    let email = user_manager.get_attribute(&sub, "email").await?;
+    let preferred_username = user_manager.get_attribute(&sub, "preferred_username").await?;
 
     let current_user = user::Entity::find_by_id(&sub)
         .one(&state.db)
@@ -42,6 +46,18 @@ pub async fn upsert_info(
         .ok_or(ApiError::NotFound)?;
 
     let mut updated_user: user::ActiveModel = current_user.clone().into();
+
+    if let Some(email) = email {
+        if current_user.email != Some(email.clone()) {
+           updated_user.email = Set(Some(email));
+        }
+    }
+
+    if let Some(preferred_username) = preferred_username {
+        if current_user.preferred_username != Some(preferred_username.clone()) {
+            updated_user.preferred_username = Set(Some(preferred_username));
+        }
+    }
 
     if let Some(name) = payload.name {
         updated_user.name = Set(Some(name));

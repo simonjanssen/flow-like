@@ -14,6 +14,7 @@ import {
   Alert,
   AlertDescription
 } from "@tm9657/flow-like-ui";
+import { confirmUserAttribute, sendUserAttributeVerificationCode, updateUserAttribute } from "aws-amplify/auth";
 
 interface ChangeEmailDialogProps {
   open: boolean;
@@ -60,7 +61,24 @@ const ChangeEmailDialog: React.FC<ChangeEmailDialogProps> = ({
       return;
     }
 
-    setStep('verification');
+    const output = await updateUserAttribute({
+      userAttribute: {
+        attributeKey: "email",
+        value: formData.newEmail
+      }
+    });
+
+    switch (output.nextStep.updateAttributeStep) {
+      case "CONFIRM_ATTRIBUTE_WITH_CODE":
+        setStep('verification');
+        break;
+        case "DONE":
+          setFormData({ newEmail: "", confirmationCode: "" });
+          handleClose();
+        return;
+    }
+
+
   }, [formData.newEmail, currentEmail, validateEmail]);
 
   const handleVerificationSubmit = useCallback(async () => {
@@ -72,7 +90,10 @@ const ChangeEmailDialog: React.FC<ChangeEmailDialogProps> = ({
     try {
       setIsLoading(true);
       setError("");
-      await onEmailChange(formData.newEmail, formData.confirmationCode);
+      await confirmUserAttribute({
+        confirmationCode: formData.confirmationCode,
+        userAttributeKey: "email"
+      });
       handleClose();
     } catch (error) {
       setError("Invalid confirmation code. Please try again.");
@@ -174,6 +195,13 @@ const ChangeEmailDialog: React.FC<ChangeEmailDialogProps> = ({
               </div>
 
               <div className="flex gap-2 pt-4">
+                <Button variant="outline" onClick={async () => {
+                  await sendUserAttributeVerificationCode({
+                    userAttributeKey: "email"
+                  });
+                }} className="flex-1">
+                  Resend
+                </Button>
                 <Button variant="outline" onClick={handleBack} className="flex-1">
                   Back
                 </Button>

@@ -20,6 +20,7 @@ pub mod credentials;
 pub mod error;
 pub mod permission;
 pub mod state;
+pub mod user_management;
 
 pub use axum;
 pub mod auth {

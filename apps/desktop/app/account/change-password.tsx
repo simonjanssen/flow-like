@@ -14,6 +14,7 @@ import {
   Alert,
   AlertDescription
 } from "@tm9657/flow-like-ui";
+import { updatePassword } from "aws-amplify/auth";
 
 interface ChangePasswordDialogProps {
   open: boolean;
@@ -78,7 +79,10 @@ const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({
     try {
       setIsLoading(true);
       setError("");
-      await onPasswordChange(formData.currentPassword, formData.newPassword);
+      await updatePassword({
+        newPassword: formData.newPassword,
+        oldPassword: formData.currentPassword
+      })
       setFormData({ currentPassword: "", newPassword: "", confirmPassword: "" });
     } catch (error) {
       setError("Failed to change password. Please check your current password.");

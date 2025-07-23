@@ -4,16 +4,16 @@
 	"authentication": {
 		"variant": "openid",
 		"openid": {
-			"authority": "https://cognito-idp.eu-central-1.amazonaws.com/eu-central-1_UPKl2Zus6",
-			"client_id": "5me4lps5siu6gnbtgnpg1f3s7d",
+			"authority": "https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_0fYxn5Pn7",
+			"client_id": "11n85le4qjvimu22t65hj7okif",
 			"redirect_uri": "https://flow-like.com/callback",
 			"post_logout_redirect_uri": "https://flow-like.com/logout",
 			"response_type": "code",
 			"scope": "phone openid email profile aws.cognito.signin.user.admin",
-			"jwks_url": "https://cognito-idp.eu-central-1.amazonaws.com/eu-central-1_UPKl2Zus6/.well-known/jwks.json",
-			"discovery_url": "https://cognito-idp.eu-central-1.amazonaws.com/eu-central-1_UPKl2Zus6/.well-known/openid-configuration",
+			"jwks_url": "https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_0fYxn5Pn7/.well-known/jwks.json",
+			"discovery_url": "https://cognito-idp.eu-west-1.amazonaws.com/eu-west-1_0fYxn5Pn7/.well-known/openid-configuration",
 			"cognito": {
-				"user_pool_id": "eu-central-1_UPKl2Zus6"
+				"user_pool_id": "eu-west-1_0fYxn5Pn7"
 			},
 			"proxy": {
 				"enabled": false,

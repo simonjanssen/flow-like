@@ -2,11 +2,33 @@ use std::collections::HashMap;
 
 use crate::{
     entity::user, error::ApiError, middleware::jwt::AppUser, routes::user::sign_avatar,
-    state::AppState,
+    state::AppState, user_management::UserManagement,
 };
 use axum::{Extension, Json, extract::State};
 use flow_like_types::anyhow;
 use sea_orm::{ActiveModelTrait, EntityTrait, sqlx::types::chrono};
+
+/// Sometimes when the user still has an old jwt, the user info is not updated correctly.
+/// In these cases, we want to update the value correctly.
+#[tracing::instrument(name = "Should update user attribute", skip(state, sub, attribute, value))]
+async fn should_update(
+    state: &AppState,
+    sub: &str,
+    attribute: &str,
+    value: &Option<String>,
+) -> bool {
+    let user_manager = UserManagement::new(&state).await;
+    let actual_value = user_manager.get_attribute(&sub, &attribute).await;
+
+    let mut should_update = true;
+
+    if let Ok(Some(actual_value)) = actual_value {
+        if Some(actual_value) == *value {
+            should_update = false;
+        }
+    }
+    should_update
+}
 
 #[tracing::instrument(name = "GET /user/info", skip(state, user))]
 pub async fn user_info(
@@ -22,9 +44,18 @@ pub async fn user_info(
         let mut updated_user: Option<user::ActiveModel> = None;
         if let Some(email) = &email {
             if user_info.email != Some(email.clone()) {
-                let mut tmp_updated_user: user::ActiveModel = user_info.clone().into();
-                tmp_updated_user.email = sea_orm::ActiveValue::Set(Some(email.clone()));
-                updated_user = Some(tmp_updated_user);
+                if should_update(
+                    &state,
+                    &sub,
+                    "email",
+                    &user_info.email,
+                )
+                .await
+                {
+                    let mut tmp_updated_user: user::ActiveModel = user_info.clone().into();
+                    tmp_updated_user.email = sea_orm::ActiveValue::Set(Some(email.clone()));
+                    updated_user = Some(tmp_updated_user);
+                }
             }
         }
 
@@ -39,11 +70,20 @@ pub async fn user_info(
 
         if let Some(preferred_username) = &preferred_username {
             if user_info.preferred_username != Some(preferred_username.clone()) {
-                let mut tmp_updated_user: user::ActiveModel =
-                    updated_user.unwrap_or(user_info.clone().into());
-                tmp_updated_user.preferred_username =
-                    sea_orm::ActiveValue::Set(Some(preferred_username.clone()));
-                updated_user = Some(tmp_updated_user);
+                if should_update(
+                    &state,
+                    &sub,
+                    "preferred_username",
+                    &user_info.preferred_username,
+                )
+                .await
+                {
+                    let mut tmp_updated_user: user::ActiveModel =
+                        updated_user.unwrap_or(user_info.clone().into());
+                    tmp_updated_user.preferred_username =
+                        sea_orm::ActiveValue::Set(Some(preferred_username.clone()));
+                    updated_user = Some(tmp_updated_user);
+                }
             }
         }
 

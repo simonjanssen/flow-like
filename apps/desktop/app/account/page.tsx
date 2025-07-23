@@ -166,9 +166,9 @@ const AccountPage: React.FC = () => {
     if (!auth.isAuthenticated || !auth.user?.profile) return;
     setProfileData(old => ({
       ...old,
-      username: auth.user?.profile?.preferred_username ?? "",
-      email: auth.user?.profile?.email ?? "",
-      previewName: info.data?.name ?? auth.user?.profile?.preferred_username ?? "",
+      username: info.data?.preferred_username ?? "",
+      email: info.data?.email ?? "",
+      previewName: info.data?.name ?? info.data?.preferred_username ?? "",
       description: info.data?.description ?? "",
       avatar: info.data?.avatar ?? "/placeholder.webp"
     }));
@@ -269,9 +269,6 @@ const AccountPage: React.FC = () => {
           }
         };
         await updateUserAttributes(updates);
-        await auth.clearStaleState();
-        auth.signinRedirect();
-
       }
       await backend.userState.updateUser({
         name: data.previewName,
@@ -280,9 +277,6 @@ const AccountPage: React.FC = () => {
       setProfileData(data);
 
       await info.refetch();
-      if (cognito && (data.username !== info.data?.preferred_username)) setTimeout(async () => {
-        window.location.reload();
-      }, 1000);
 
       toast.success("Profile saved successfully");
     } catch (error) {
