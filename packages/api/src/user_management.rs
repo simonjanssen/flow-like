@@ -1,4 +1,4 @@
-use crate::state::AppState;
+use crate::{entity::user, state::AppState};
 
 #[cfg(feature = "cognito")]
 pub mod cognito;
@@ -20,11 +20,12 @@ impl UserManagement {
     pub async fn get_attribute(
         &self,
         sub: &str,
+        username: &Option<String>,
         attribute: &str,
     ) -> flow_like_types::Result<Option<String>> {
         match self {
             #[cfg(feature = "cognito")]
-            UserManagement::Cognito(cognito) => cognito.get_attribute(sub, attribute).await,
+            UserManagement::Cognito(cognito) => cognito.get_attribute(sub, username, attribute).await,
         }
     }
 }

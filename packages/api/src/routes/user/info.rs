@@ -14,11 +14,12 @@ use sea_orm::{ActiveModelTrait, EntityTrait, sqlx::types::chrono};
 async fn should_update(
     state: &AppState,
     sub: &str,
+    username: &Option<String>,
     attribute: &str,
     value: &Option<String>,
 ) -> bool {
     let user_manager = UserManagement::new(&state).await;
-    let actual_value = user_manager.get_attribute(&sub, &attribute).await;
+    let actual_value = user_manager.get_attribute(&sub, &username, &attribute).await;
 
     let mut should_update = true;
 
@@ -47,6 +48,7 @@ pub async fn user_info(
                 if should_update(
                     &state,
                     &sub,
+                    &username,
                     "email",
                     &user_info.email,
                 )
@@ -73,6 +75,7 @@ pub async fn user_info(
                 if should_update(
                     &state,
                     &sub,
+                    &username,
                     "preferred_username",
                     &user_info.preferred_username,
                 )

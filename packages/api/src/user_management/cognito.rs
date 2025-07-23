@@ -26,10 +26,15 @@ impl CognitoUserManagement {
         Ok(CognitoUserManagement { client, pool_id })
     }
 
-    pub async fn get_attribute(&self, sub: &str, attribute: &str) -> flow_like_types::Result<Option<String>> {
+    pub async fn get_attribute(&self, _sub: &str, username: &Option<String>, attribute: &str) -> flow_like_types::Result<Option<String>> {
+        let username = match username {
+            Some(name) => name.clone(),
+            None => return Ok(None),
+        };
+
         let user = self.client.admin_get_user()
             .user_pool_id(self.pool_id.clone())
-            .username(sub)
+            .username(username)
             .send()
             .await?;
 
