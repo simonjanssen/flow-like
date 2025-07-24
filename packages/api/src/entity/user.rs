@@ -10,16 +10,14 @@ use serde::{Deserialize, Serialize};
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false, column_type = "Text")]
     pub id: String,
-    #[sea_orm(column_type = "Text", nullable)]
+    #[sea_orm(column_type = "Text", nullable, unique)]
     pub email: Option<String>,
-    #[sea_orm(column_type = "Text", nullable)]
+    #[sea_orm(column_type = "Text", nullable, unique)]
     pub username: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub name: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub description: Option<String>,
-    #[sea_orm(column_name = "avatarUrl", column_type = "Text", nullable)]
-    pub avatar_url: Option<String>,
     #[sea_orm(
         column_name = "additionalInformation",
         column_type = "JsonBinary",
@@ -35,12 +33,21 @@ pub struct Model {
     pub created_at: DateTime,
     #[sea_orm(column_name = "updatedAt")]
     pub updated_at: DateTime,
-    #[sea_orm(column_name = "stripeId", column_type = "Text", nullable)]
+    #[sea_orm(column_name = "stripeId", column_type = "Text", nullable, unique)]
     pub stripe_id: Option<String>,
     pub status: UserStatus,
     pub tier: UserTier,
     #[sea_orm(column_name = "totalSize")]
     pub total_size: i64,
+    #[sea_orm(
+        column_name = "preferredUsername",
+        column_type = "Text",
+        nullable,
+        unique
+    )]
+    pub preferred_username: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub avatar: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

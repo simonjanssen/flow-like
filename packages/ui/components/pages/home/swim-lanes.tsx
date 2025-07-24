@@ -1,5 +1,6 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 import { ArrowRight, ExternalLink } from "lucide-react";
 import { useInvoke } from "../../../hooks";
 import type { IAppCategory } from "../../../lib";
@@ -407,14 +408,26 @@ function AppCardLoading({
 	const meta = app.data[0][1];
 	const data = app.data[0][0];
 
+	const itemVariants = {
+		hidden: { opacity: 0, y: 20 },
+		visible: { opacity: 1, y: 0 },
+	};
+
 	return (
-		<AppCard
-			app={data}
-			metadata={meta}
-			variant={variant}
-			className={
-				(fill ?? false) ? "w-full max-w-full h-full flex flex-grow" : ""
-			}
-		/>
+		<motion.div
+			key={data.id}
+			variants={itemVariants}
+			whileHover={{ scale: 1.02 }}
+			transition={{ type: "spring", stiffness: 300 }}
+		>
+			<AppCard
+				app={data}
+				metadata={meta}
+				variant={variant}
+				className={
+					(fill ?? false) ? "w-full max-w-full h-full flex flex-grow" : ""
+				}
+			/>
+		</motion.div>
 	);
 }

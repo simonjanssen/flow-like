@@ -12,14 +12,13 @@ use flow_like::{
         board::{Board, ExecutionStage},
         execution::LogLevel,
     },
-    flow_like_storage::{Path, arrow_schema::extension},
+    flow_like_storage::Path,
     profile::ProfileApp,
 };
-use flow_like_catalog::storage::path::dirs::upload_dir;
 use flow_like_types::anyhow;
 use flow_like_types::create_id;
 use futures::{StreamExt, TryStreamExt};
-use image::{GenericImageView, ImageReader};
+use image::ImageReader;
 use serde::Deserialize;
 use serde_json::Value;
 use tauri::AppHandle;
@@ -29,7 +28,7 @@ async fn presign_meta(
     app_id: String,
     metadata: &mut Metadata,
 ) -> Result<(), TauriFunctionError> {
-    let state = TauriFlowLikeState::construct(&app_handle).await?;
+    let state = TauriFlowLikeState::construct(app_handle).await?;
     let store = state
         .lock()
         .await

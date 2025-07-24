@@ -26,6 +26,7 @@ use crate::state::AppState;
 pub struct OpenIDUser {
     pub sub: String,
     pub username: String,
+    pub preferred_username: String,
     pub email: Option<String>,
 }
 
@@ -133,6 +134,15 @@ impl AppUser {
     pub fn username(&self) -> Option<String> {
         match self {
             AppUser::OpenID(user) => Some(user.username.clone()),
+            AppUser::PAT(_) => None,
+            AppUser::APIKey(_) => None,
+            AppUser::Unauthorized => None,
+        }
+    }
+
+    pub fn preferred_username(&self) -> Option<String> {
+        match self {
+            AppUser::OpenID(user) => Some(user.preferred_username.clone()),
             AppUser::PAT(_) => None,
             AppUser::APIKey(_) => None,
             AppUser::Unauthorized => None,
@@ -279,10 +289,16 @@ pub async fn jwt_middleware(
                         .map(String::from)
                 })
                 .unwrap_or_else(|| sub.to_string());
+            let preferred_username = claims
+                .get("preferred_username")
+                .and_then(|v| v.as_str())
+                .map(String::from)
+                .unwrap_or_else(|| username.clone());
             let user = AppUser::OpenID(OpenIDUser {
                 sub: sub.to_string(),
                 username,
                 email,
+                preferred_username,
             });
             request.extensions_mut().insert::<AppUser>(user);
             return Ok(next.run(request).await);

@@ -24,7 +24,6 @@ export async function fetcher<T>(
 	options?: RequestInit,
 	auth?: AuthContextProps,
 ): Promise<T> {
-	console.groupCollapsed(`API Request: ${path}`);
 	const headers: HeadersInit = {};
 	if (auth?.user?.id_token) {
 		headers["Authorization"] = `Bearer ${auth?.user?.id_token}`;
@@ -51,15 +50,16 @@ export async function fetcher<T>(
 				auth?.startSilentRenew();
 			}
 			console.error(`Error fetching ${path}:`, response);
-			console.groupEnd();
 			throw new Error(`Error fetching data: ${response.statusText}`);
 		}
 
 		const json = await response.json();
+		console.groupCollapsed(`API Request: ${path}`);
 		console.dir(json, { depth: null });
 		console.groupEnd();
 		return json as T;
 	} catch (error) {
+		console.groupCollapsed(`API Request: ${path}`);
 		console.error(`Error fetching ${path}:`, error);
 		console.groupEnd();
 		throw new Error(`Error fetching data: ${error}`);

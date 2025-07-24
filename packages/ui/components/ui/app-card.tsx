@@ -32,7 +32,7 @@ export function AppCard({
 			<button
 				type="button"
 				onClick={onClick}
-				className={`group relative flex items-center gap-3 p-2.5 flex-grow rounded-lg border border-border/40 bg-card hover:bg-accent/50 transition-all duration-200 w-full min-h-[60px] max-w-full overflow-hidden ${className}`}
+				className={`group relative flex flex-col transition-all duration-300 rounded-xl border border-border/40 bg-card shadow-sm hover:bg-card/95 w-72 h-[375px] overflow-hidden m-2 ${className}`}
 			>
 				{/* App Icon */}
 				<div className="relative shrink-0">
@@ -103,7 +103,7 @@ export function AppCard({
 		<button
 			type="button"
 			onClick={onClick}
-			className={`group relative flex flex-col transition-all duration-300 rounded-xl border border-border/40 bg-card shadow-sm hover:shadow-xl hover:border-primary/30 hover:bg-card/95 w-72 h-[375px] overflow-hidden ${className}`}
+			className={`group relative flex flex-col transition-all duration-300 rounded-xl border border-border/40 bg-card shadow-sm hover:bg-card/95 w-72 h-[375px] overflow-hidden ${className}`}
 		>
 			{/* Thumbnail Section - Fixed aspect ratio */}
 			<div className="relative w-full h-40 overflow-hidden">

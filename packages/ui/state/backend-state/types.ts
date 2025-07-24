@@ -61,6 +61,7 @@ export interface IUserLookup {
 	id: string;
 	email?: string;
 	username?: string;
+	preferred_username?: string;
 	name?: string;
 	avatar_url?: string;
 	additional_info?: string;

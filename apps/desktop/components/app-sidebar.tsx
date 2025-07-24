@@ -635,16 +635,11 @@ function NavMain({
 		}[];
 	}[];
 }>) {
+	const backend = useBackend();
 	const router = useRouter();
 	const pathname = usePathname();
 	const { open } = useSidebar();
-	const auth = useAuth();
-	const info = useApi<{ permission: number }>(
-		"GET",
-		"user/info",
-		undefined,
-		auth?.isAuthenticated ?? false,
-	);
+	const info = useInvoke(backend.userState.getInfo, backend.userState, []);
 
 	return (
 		<>
@@ -876,6 +871,7 @@ export function NavUser({
 		backend.userState,
 		[],
 	);
+	const info = useInvoke(backend.userState.getInfo, backend.userState, []);
 
 	const displayName: string = useMemo(() => {
 		const profile = auth?.user?.profile;
@@ -903,7 +899,10 @@ export function NavUser({
 							className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
 						>
 							<Avatar className="h-8 w-8 rounded-lg">
-								<AvatarImage src={user?.avatar} alt={user?.name ?? "Offline"} />
+								<AvatarImage
+									src={info.data?.avatar}
+									alt={user?.name ?? "Offline"}
+								/>
 								<AvatarFallback className="rounded-lg">
 									{displayName.slice(0, 2).toUpperCase()}
 								</AvatarFallback>
@@ -924,7 +923,7 @@ export function NavUser({
 						<DropdownMenuLabel className="p-0 font-normal">
 							<div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
 								<Avatar className="h-8 w-8 rounded-lg">
-									<AvatarImage src={user?.avatar} alt={email} />
+									<AvatarImage src={info.data?.avatar} alt={"User Avatar"} />
 									<AvatarFallback className="rounded-lg">
 										{displayName.slice(0, 2).toUpperCase()}
 									</AvatarFallback>
@@ -946,10 +945,12 @@ export function NavUser({
 								</DropdownMenuGroup>
 								<DropdownMenuSeparator />
 								<DropdownMenuGroup>
-									<DropdownMenuItem className="gap-2">
-										<BadgeCheck className="size-4" />
-										Account
-									</DropdownMenuItem>
+									<a href="/account">
+										<DropdownMenuItem className="gap-2">
+											<BadgeCheck className="size-4" />
+											Account
+										</DropdownMenuItem>
+									</a>
 									{profile.data && (
 										<DropdownMenuItem
 											className="gap-2"
