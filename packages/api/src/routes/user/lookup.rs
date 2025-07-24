@@ -46,7 +46,7 @@ impl UserLookupResponse {
                 .then_some(user.preferred_username)
                 .flatten(),
             name: lookup_config.name.then_some(user.name).flatten(),
-            avatar_url: avatar_url,
+            avatar_url,
             additional_information: lookup_config
                 .additional_information
                 .then_some(user.additional_information)

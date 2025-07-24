@@ -1,17 +1,12 @@
 use std::time::Duration;
 
 use crate::{
-    entity::{invitation, user},
-    error::ApiError,
-    middleware::jwt::AppUser,
-    state::AppState,
+    entity::user, error::ApiError, middleware::jwt::AppUser, state::AppState,
     user_management::UserManagement,
 };
 use axum::{Extension, Json, extract::State};
 use flow_like_types::create_id;
-use sea_orm::{
-    ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter,
-};
+use sea_orm::{ActiveModelTrait, ActiveValue::Set, EntityTrait};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]

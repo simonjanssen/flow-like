@@ -1,4 +1,4 @@
-use crate::{entity::user, state::AppState};
+use crate::state::AppState;
 
 #[cfg(feature = "cognito")]
 pub mod cognito;

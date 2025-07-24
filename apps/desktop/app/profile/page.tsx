@@ -283,7 +283,7 @@ const ProfileContent = ({
 									<div className="text-center py-12">
 										<Package className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
 										<p className="text-lg text-muted-foreground">
-											{displayName} hasn't published any apps yet.
+											{displayName} hasn&apos;t published any apps yet.
 										</p>
 									</div>
 								) : (
