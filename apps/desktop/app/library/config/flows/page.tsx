@@ -411,7 +411,7 @@ function BoardCard({
 				{
 					id: "open",
 					label: "Open Board",
-					icon: <ExternalLink className="h-4 w-4" />,
+					icon: <ExternalLink className="h-4 w-4 text-foreground" />,
 					onClick: () => {
 						handleBoardClick();
 					},
@@ -419,7 +419,7 @@ function BoardCard({
 				{
 					id: "delete",
 					label: "Delete Board",
-					icon: <Trash2 className="h-4 w-4" />,
+					icon: <Trash2 className="h-4 w-4 text-foreground" />,
 					variant: "destructive",
 					onClick: () => {
 						handleDeleteBoard();

@@ -18,6 +18,7 @@ import {
 	useInvoke,
 	useMiniSearch,
 } from "@tm9657/flow-like-ui";
+import { motion } from "framer-motion";
 import {
 	FilesIcon,
 	Grid3X3,
@@ -106,13 +107,22 @@ export default function YoursPage() {
 				<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 px-2">
 					{items.map((meta) => (
 						<div key={viewMode + meta.id} className="group w-full">
-							<AppCard
-								app={meta.app}
-								metadata={meta as IMetadata}
-								variant="extended"
-								onClick={() => router.push(`/use?id=${meta.id}`)}
-								className="w-full"
-							/>
+							<motion.div
+								variants={{
+									visible: { opacity: 1, y: 0 },
+								}}
+								key={meta.app.id}
+								whileHover={{ scale: 1.02 }}
+								transition={{ type: "spring", stiffness: 300 }}
+							>
+								<AppCard
+									app={meta.app}
+									metadata={meta as IMetadata}
+									variant="extended"
+									onClick={() => router.push(`/use?id=${meta.id}`)}
+									className="w-full"
+								/>
+							</motion.div>
 						</div>
 					))}
 				</div>
@@ -123,13 +133,22 @@ export default function YoursPage() {
 			<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 px-2">
 				{items.map((meta) => (
 					<div key={`left${meta.id}`} className="group">
-						<AppCard
-							app={meta.app}
-							metadata={meta as IMetadata}
-							variant="small"
-							onClick={() => router.push(`/use?id=${meta.id}`)}
-							className="w-full"
-						/>
+						<motion.div
+							variants={{
+								visible: { opacity: 1, y: 0 },
+							}}
+							key={meta.app.id}
+							whileHover={{ scale: 1.02 }}
+							transition={{ type: "spring", stiffness: 300 }}
+						>
+							<AppCard
+								app={meta.app}
+								metadata={meta as IMetadata}
+								variant="small"
+								onClick={() => router.push(`/use?id=${meta.id}`)}
+								className="w-full"
+							/>
+						</motion.div>
 					</div>
 				))}
 			</div>

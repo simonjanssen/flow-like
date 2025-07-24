@@ -22,7 +22,7 @@ import { AuthProvider, useAuth } from "react-oidc-context";
 import { get } from "../lib/api";
 import { TauriBackend } from "./tauri-provider";
 
-class OIDCTokenProvider implements TokenProvider {
+export class OIDCTokenProvider implements TokenProvider {
 	constructor(private readonly userManager: UserManager) {}
 	async getTokens(options?: {
 		forceRefresh?: boolean;

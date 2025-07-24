@@ -161,64 +161,57 @@ export class AppState implements IAppState {
 			return localApps;
 		}
 
-		const promise = injectDataFunction(
-			async () => {
-				const remoteData = await fetcher<[IApp, IMetadata | undefined][]>(
-					this.backend.profile!,
-					"apps",
-					undefined,
-					this.backend.auth,
-				);
+		const mergedData = new Map<string, [IApp, IMetadata | undefined]>();
 
-				const mergedData = new Map<string, [IApp, IMetadata | undefined]>();
+		try {
+			const remoteData = await fetcher<[IApp, IMetadata | undefined][]>(
+				this.backend.profile,
+				"apps",
+				undefined,
+				this.backend.auth,
+			);
 
-				for (const [app, meta] of remoteData) {
-					mergedData.set(app.id, [app, meta]);
-					await appsDB.visibility.put({
-						visibility: app.visibility ?? IAppVisibility.Private,
-						appId: app.id,
-					});
-
-					const exists = localApps.find(([localApp]) => localApp.id === app.id);
-					if (exists) {
-						await invoke("update_app", {
-							app: app,
-						});
-						if (meta)
-							await invoke("push_app_meta", {
-								appId: app.id,
-								metadata: meta,
-							});
-						continue;
-					}
-
-					if (meta)
-						await invoke("create_app", {
-							metadata: meta,
-							bits: app.bits,
-							template: "",
-							id: app.id,
-						});
-				}
-
-				localApps.forEach(([app, meta]) => {
-					if (!mergedData.has(app.id)) {
-						mergedData.set(app.id, [app, meta]);
-					}
+			for (const [app, meta] of remoteData) {
+				mergedData.set(app.id, [app, meta]);
+				await appsDB.visibility.put({
+					visibility: app.visibility ?? IAppVisibility.Private,
+					appId: app.id,
 				});
 
-				return Array.from(mergedData.values());
-			},
-			this,
-			this.backend.queryClient,
-			this.getApps,
-			[],
-			[],
-		);
-		this.backend.backgroundTaskHandler(promise);
+				const exists = localApps.find(([localApp]) => localApp.id === app.id);
+				if (exists) {
+					await invoke("update_app", {
+						app: app,
+					});
+					if (meta)
+						await invoke("push_app_meta", {
+							appId: app.id,
+							metadata: meta,
+						});
+					continue;
+				}
 
-		return localApps;
+				if (meta)
+					await invoke("create_app", {
+						metadata: meta,
+						bits: app.bits,
+						template: "",
+						id: app.id,
+					});
+			}
+		} catch (error) {
+			console.error("Failed to merge app data:", error);
+		}
+
+		localApps.forEach(([app, meta]) => {
+			if (!mergedData.has(app.id)) {
+				mergedData.set(app.id, [app, meta]);
+			}
+		});
+
+		return Array.from(mergedData.values());
 	}
+
 	async getApp(appId: string): Promise<IApp> {
 		const localApp: IApp = await invoke("get_app", {
 			appId: appId,
