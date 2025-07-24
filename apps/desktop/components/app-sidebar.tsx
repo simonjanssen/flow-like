@@ -871,11 +871,7 @@ export function NavUser({
 		backend.userState,
 		[],
 	);
-	const info = useInvoke(
-		backend.userState.getInfo,
-		backend.userState,
-		[],
-	);
+	const info = useInvoke(backend.userState.getInfo, backend.userState, []);
 
 	const displayName: string = useMemo(() => {
 		const profile = auth?.user?.profile;
@@ -903,7 +899,10 @@ export function NavUser({
 							className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
 						>
 							<Avatar className="h-8 w-8 rounded-lg">
-								<AvatarImage src={info.data?.avatar} alt={user?.name ?? "Offline"} />
+								<AvatarImage
+									src={info.data?.avatar}
+									alt={user?.name ?? "Offline"}
+								/>
 								<AvatarFallback className="rounded-lg">
 									{displayName.slice(0, 2).toUpperCase()}
 								</AvatarFallback>
@@ -946,10 +945,12 @@ export function NavUser({
 								</DropdownMenuGroup>
 								<DropdownMenuSeparator />
 								<DropdownMenuGroup>
-									<a href="/account"><DropdownMenuItem className="gap-2">
-										<BadgeCheck className="size-4" />
-										Account
-									</DropdownMenuItem></a>
+									<a href="/account">
+										<DropdownMenuItem className="gap-2">
+											<BadgeCheck className="size-4" />
+											Account
+										</DropdownMenuItem>
+									</a>
 									{profile.data && (
 										<DropdownMenuItem
 											className="gap-2"

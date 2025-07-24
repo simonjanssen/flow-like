@@ -8,9 +8,12 @@ import type {
 	INotificationsOverview,
 	IUserLookup,
 } from "@tm9657/flow-like-ui/state/backend-state/types";
+import type {
+	IUserInfo,
+	IUserUpdate,
+} from "@tm9657/flow-like-ui/state/backend-state/user-state";
 import { fetcher } from "../../lib/api";
 import type { TauriBackend } from "../tauri-provider";
-import { IUserInfo, IUserUpdate } from "@tm9657/flow-like-ui/state/backend-state/user-state";
 
 export class UserState implements IUserState {
 	constructor(private readonly backend: TauriBackend) {}
@@ -80,10 +83,10 @@ export class UserState implements IUserState {
 		}
 
 		if (avatar) {
-			data.avatar_extension = avatar.name.split('.').pop() || '';
+			data.avatar_extension = avatar.name.split(".").pop() || "";
 		}
 
-		const response = await fetcher<{signed_url?: string}>(
+		const response = await fetcher<{ signed_url?: string }>(
 			this.backend.profile,
 			`user/info`,
 			{
@@ -120,6 +123,4 @@ export class UserState implements IUserState {
 
 		return result;
 	}
-
-
 }

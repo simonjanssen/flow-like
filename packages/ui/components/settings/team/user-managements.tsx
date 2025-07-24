@@ -231,9 +231,16 @@ function Member({
 				</Avatar>
 				<div className="min-w-0 flex-1">
 					<div className="flex items-center gap-2">
-						<h3 className="font-medium text-sm truncate">{evaluatedName}</h3>
+						<a href={`/profile?sub=${userData.id}`}>
+							<h3 className="font-medium text-sm truncate hover:underline">
+								{evaluatedName}
+							</h3>
+						</a>
 						<span className="text-xs text-muted-foreground">
-							@{userData.preferred_username ?? userData.username ?? userData.email}
+							@
+							{userData.preferred_username ??
+								userData.username ??
+								userData.email}
 						</span>
 					</div>
 					<div className="flex items-center gap-1">

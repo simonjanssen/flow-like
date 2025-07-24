@@ -19,7 +19,7 @@ import { appsDB } from "../../lib/apps-db";
 import type { TauriBackend } from "../tauri-provider";
 
 export class AppState implements IAppState {
-	constructor(private readonly backend: TauriBackend) { }
+	constructor(private readonly backend: TauriBackend) {}
 
 	async createApp(
 		metadata: IMetadata,
@@ -199,7 +199,6 @@ export class AppState implements IAppState {
 						id: app.id,
 					});
 			}
-
 		} catch (error) {
 			console.error("Failed to merge app data:", error);
 		}
@@ -210,7 +209,7 @@ export class AppState implements IAppState {
 			}
 		});
 
-		return Array.from(mergedData.values())
+		return Array.from(mergedData.values());
 	}
 
 	async getApp(appId: string): Promise<IApp> {
@@ -493,7 +492,7 @@ export class AppState implements IAppState {
 				});
 			} else {
 				try {
-					await this.backend.uploadSignedUrl(uploadUrl, file, 0, 1, () => { });
+					await this.backend.uploadSignedUrl(uploadUrl, file, 0, 1, () => {});
 				} catch (error) {
 					console.error(`Failed to upload file ${uploadUrl}:`, error);
 					throw error;

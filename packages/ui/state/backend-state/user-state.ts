@@ -20,7 +20,7 @@ export interface IUserInfo {
 	description?: string;
 	avatar?: string;
 
-	permission?: number
+	permission?: number;
 	accepted_terms_version?: string;
 	tutorial_completed?: boolean;
 

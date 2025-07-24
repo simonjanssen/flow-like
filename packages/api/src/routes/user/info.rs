@@ -10,7 +10,10 @@ use sea_orm::{ActiveModelTrait, EntityTrait, sqlx::types::chrono};
 
 /// Sometimes when the user still has an old jwt, the user info is not updated correctly.
 /// In these cases, we want to update the value correctly.
-#[tracing::instrument(name = "Should update user attribute", skip(state, sub, attribute, value))]
+#[tracing::instrument(
+    name = "Should update user attribute",
+    skip(state, sub, attribute, value)
+)]
 async fn should_update(
     state: &AppState,
     sub: &str,
@@ -19,7 +22,9 @@ async fn should_update(
     value: &Option<String>,
 ) -> bool {
     let user_manager = UserManagement::new(&state).await;
-    let actual_value = user_manager.get_attribute(&sub, &username, &attribute).await;
+    let actual_value = user_manager
+        .get_attribute(&sub, &username, &attribute)
+        .await;
 
     let mut should_update = true;
 
@@ -45,15 +50,7 @@ pub async fn user_info(
         let mut updated_user: Option<user::ActiveModel> = None;
         if let Some(email) = &email {
             if user_info.email != Some(email.clone()) {
-                if should_update(
-                    &state,
-                    &sub,
-                    &username,
-                    "email",
-                    &user_info.email,
-                )
-                .await
-                {
+                if should_update(&state, &sub, &username, "email", &user_info.email).await {
                     let mut tmp_updated_user: user::ActiveModel = user_info.clone().into();
                     tmp_updated_user.email = sea_orm::ActiveValue::Set(Some(email.clone()));
                     updated_user = Some(tmp_updated_user);
