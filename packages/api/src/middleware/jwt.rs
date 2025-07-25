@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::{
     entity::{membership, pat, prelude::*, role, sea_orm_active_enums, technical_user, user},
     error::{ApiError, AuthorizationError},
-    permission::{global_permission::GlobalPermission, role_permission::RolePermissions},
+    permission::{global_permission::GlobalPermission, role_permission::{has_role_permission, RolePermissions}},
 };
 use axum::{
     body::Body,
@@ -61,9 +61,7 @@ pub struct AppPermissionResponse {
 
 impl AppPermissionResponse {
     pub fn has_permission(&self, permission: RolePermissions) -> bool {
-        self.permissions.contains(permission)
-            || self.permissions.contains(RolePermissions::Admin)
-            || self.permissions.contains(RolePermissions::Owner)
+        has_role_permission(&self.permissions, permission)
     }
 
     pub fn sub(&self) -> Result<String> {

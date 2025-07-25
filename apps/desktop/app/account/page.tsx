@@ -59,6 +59,7 @@ const AccountPage: React.FC = () => {
 	const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
 	const [emailDialogOpen, setEmailDialogOpen] = useState(false);
 	const [cognito, setCognito] = useState(false);
+	const [federated, setFederated] = useState(false);
 	const profile = useInvoke(
 		backend.userState.getProfile,
 		backend.userState,
@@ -67,7 +68,10 @@ const AccountPage: React.FC = () => {
 
 	const updateUserAttribute = useCallback(
 		async (attributeKey: string, value: string) => {
-			if (!cognito) return;
+			if (!cognito) {
+				console.warn("Cognito is not enabled, skipping attribute update ", cognito);
+				return;
+			}
 			try {
 				const updateInput: UpdateUserAttributesInput = {
 					userAttributes: {
@@ -76,16 +80,20 @@ const AccountPage: React.FC = () => {
 				};
 
 				await updateUserAttributes(updateInput);
-
-				toast.success("Profile updated successfully");
 			} catch (error) {
 				console.error(`Failed to update ${attributeKey}:`, error);
-				toast.error(`Failed to update ${attributeKey}`);
 				throw error;
 			}
 		},
-		[toast, cognito],
+		[cognito],
 	);
+
+	useEffect(() => {
+		setProfileActions((prev) => ({
+				...prev,
+				handleAttributeUpdate: cognito ? updateUserAttribute : undefined,
+			}));
+	}, [cognito]);
 
 	const handleChangePassword = useCallback(async () => {
 		setPasswordDialogOpen(true);
@@ -130,7 +138,8 @@ const AccountPage: React.FC = () => {
 			const isFederated = Array.isArray(
 				authSession.tokens?.idToken?.payload?.identities,
 			);
-			setCognito(!isFederated);
+			setFederated(isFederated);
+			setCognito(true);
 
 			setProfileActions((prev) => ({
 				...prev,
@@ -221,9 +230,10 @@ const AccountPage: React.FC = () => {
 
 	return (
 		<>
+		<p>{cognito ? <span>Cognito User</span> : <span>Non-Cognito User</span>}</p>
 			<ProfilePage actions={profileActions} />
 
-			{cognito && (
+			{!federated && (
 				<ChangePasswordDialog
 					key={auth.user?.profile?.sub + "password"}
 					open={passwordDialogOpen}
@@ -232,7 +242,7 @@ const AccountPage: React.FC = () => {
 				/>
 			)}
 
-			{cognito && (
+			{!federated && (
 				<ChangeEmailDialog
 					open={emailDialogOpen}
 					onOpenChange={setEmailDialogOpen}

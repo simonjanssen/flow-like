@@ -21,7 +21,7 @@ pub async fn get_apps(
 ) -> Result<Json<Vec<(App, Option<Metadata>)>>, ApiError> {
     let language = query.language.clone().unwrap_or_else(|| "en".to_string());
 
-    let limit = query.limit.unwrap_or(100).max(100);
+    let limit = query.limit.unwrap_or(100).min(100);
 
     let sub = user.sub()?;
 
@@ -35,7 +35,7 @@ pub async fn get_apps(
                 .or(meta::Column::Lang.eq("en")),
         )
         .filter(membership::Column::UserId.eq(sub))
-        .limit(Some(limit.max(100)))
+        .limit(Some(limit.min(100)))
         .offset(query.offset)
         .all(&state.db)
         .await?;
