@@ -126,7 +126,10 @@ export function ProfilePage({ actions = {} }: Readonly<ProfilePageProps>) {
 					"preferred_username",
 					formData.username,
 				);
+			} else {
+				console.log("No username change detected, skipping update", formData.username, info.data?.preferred_username, typeof actions.handleAttributeUpdate);
 			}
+
 			await backend.userState.updateUser({
 				name: formData.previewName,
 				description: formData.description,
@@ -142,7 +145,7 @@ export function ProfilePage({ actions = {} }: Readonly<ProfilePageProps>) {
 			setLoading(false);
 			toast.dismiss(ref);
 		}
-	}, [formData]);
+	}, [formData, info.data, backend.userState, actions.handleAttributeUpdate, info.refetch]);
 
 	const getInitials = useCallback((name: string) => {
 		return name
