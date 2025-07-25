@@ -2,7 +2,7 @@ use crate::{
     entity::{membership, meta, role, template},
     error::ApiError,
     middleware::jwt::AppUser,
-    permission::role_permission::RolePermissions,
+    permission::role_permission::{has_role_permission, RolePermissions},
     routes::LanguageParams,
     state::AppState,
 };
@@ -10,6 +10,7 @@ use axum::{
     Extension, Json,
     extract::{Query, State},
 };
+use bitflags::Flags;
 use flow_like::bit::Metadata;
 use sea_orm::{
     ColumnTrait, DatabaseTransaction, EntityTrait, JoinType, QueryFilter, QueryOrder, QuerySelect,
@@ -28,36 +29,32 @@ pub async fn get_templates(
     let txn = state.db.begin().await?;
     let app_ids = get_user_app_ids_with_template_access(&txn, user_id, &query).await?;
     let templates = get_templates_with_metadata(&txn, &app_ids, language).await?;
+    txn.commit().await?;
 
     Ok(Json(templates))
 }
-
 async fn get_user_app_ids_with_template_access(
     txn: &DatabaseTransaction,
     user_id: String,
     query: &LanguageParams,
 ) -> Result<Vec<String>, ApiError> {
-    let limit = query.limit.unwrap_or(100).max(100);
+    let limit = query.limit.unwrap_or(100).min(100);
 
-    let roles = role::Entity::find()
-        .order_by_desc(membership::Column::UpdatedAt)
-        .join(JoinType::InnerJoin, role::Relation::Membership.def())
+    let app_ids = membership::Entity::find()
+        .select_only()
+        .columns([role::Column::AppId, role::Column::Permissions])
+        .join(JoinType::InnerJoin, membership::Relation::Role.def())
         .filter(membership::Column::UserId.eq(user_id))
-        .filter(role::Column::AppId.is_not_null())
+        .order_by_desc(membership::Column::UpdatedAt)
         .limit(Some(limit))
         .offset(query.offset)
+        .into_tuple::<(String, i64)>()
         .all(txn)
-        .await?;
-
-    let app_ids = roles
+        .await?
         .into_iter()
-        .filter_map(|role| {
-            let permission = RolePermissions::from_bits(role.permissions)?;
-            if permission.contains(RolePermissions::ReadTemplates) {
-                role.app_id
-            } else {
-                None
-            }
+        .filter_map(|(app_id, permissions)| {
+            let permission = RolePermissions::from_bits(permissions)?;
+            has_role_permission(&permission, RolePermissions::ReadTemplates).then_some(app_id)
         })
         .collect();
 
@@ -104,4 +101,5 @@ fn find_best_metadata<'a>(
         .iter()
         .find(|meta| meta.lang == language)
         .or_else(|| metadata.iter().find(|meta| meta.lang == "en"))
+        .or_else(|| metadata.first())
 }
