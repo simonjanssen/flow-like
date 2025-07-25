@@ -42,7 +42,7 @@ export function AppCard({
 							src={metadata?.icon ?? "/app-logo.webp"}
 							alt={`${metadata?.name ?? app.id} icon`}
 						/>
-						<AvatarFallback className="text-xs font-medium bg-gradient-to-br from-primary/20 to-primary/10">
+						<AvatarFallback className="text-xs font-medium bg-linear-to-br from-primary/20 to-primary/10">
 							{(metadata?.name ?? app.id).substring(0, 2).toUpperCase()}
 						</AvatarFallback>
 					</Avatar>
@@ -117,7 +117,7 @@ export function AppCard({
 					decoding="async"
 					fetchPriority="low"
 				/>
-				<div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+				<div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/20 to-transparent" />
 
 				{/* Visibility Badge */}
 				<div className="absolute top-3 right-3 z-10">
@@ -139,11 +139,11 @@ export function AppCard({
 					{app.visibility === IAppVisibility.Public && (
 						<div className="mb-2">
 							{app.price && app.price > 0 ? (
-								<div className="bg-white/90 backdrop-blur-sm text-gray-900 rounded-full px-3 py-1 text-sm font-bold shadow-lg">
+								<div className="bg-white/90 backdrop-blur-xs text-gray-900 rounded-full px-3 py-1 text-sm font-bold shadow-lg">
 									€{(app.price / 100).toFixed(2)}
 								</div>
 							) : (
-								<div className="bg-white/20 backdrop-blur-sm text-white/90 rounded-full px-3 py-1 text-sm font-medium shadow-lg border border-white/30">
+								<div className="bg-white/20 backdrop-blur-xs text-white/90 rounded-full px-3 py-1 text-sm font-medium shadow-lg border border-white/30">
 									Free
 								</div>
 							)}
@@ -155,7 +155,7 @@ export function AppCard({
 			{/* Content Section */}
 			<div className="flex flex-col p-5 flex-1">
 				{/* App Name */}
-				<h3 className="font-bold text-lg text-foreground text-left leading-tight line-clamp-1 min-h-[1.5rem] mb-2">
+				<h3 className="font-bold text-lg text-foreground text-left leading-tight line-clamp-1 min-h-6 mb-2">
 					{metadata?.name ?? app.id}
 				</h3>
 
@@ -231,7 +231,7 @@ export function VisibilityIcon({
 			{isOpen &&
 				createPortal(
 					<div
-						className="fixed z-[9999] pointer-events-none"
+						className="fixed z-9999 pointer-events-none"
 						style={{
 							left: position.x,
 							top: position.y,
@@ -258,39 +258,39 @@ export function VisibilityIcon({
 				</div>,
 				<div className="relative bg-white/15 dark:bg-white/8 backdrop-blur-md rounded-full p-2 border border-white/25 dark:border-white/15 shadow-lg group-hover:shadow-xl transition-all duration-300">
 					<div className="absolute inset-0 bg-red-500/25 rounded-full group-hover:bg-red-500/35 transition-all duration-300" />
-					<LockIcon className="w-3 h-3 text-red-100 relative z-10 drop-shadow-sm group-hover:scale-110 group-hover:rotate-12 transition-all duration-300" />
+					<LockIcon className="w-3 h-3 text-red-100 relative z-10 drop-shadow-xs group-hover:scale-110 group-hover:rotate-12 transition-all duration-300" />
 				</div>,
 			);
 
 		case IAppVisibility.Private:
 			return renderTooltip(
 				<div className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
-					<div className="w-2 h-2 bg-gradient-to-r from-purple-500/70 to-pink-500/70 rounded-full shadow-sm" />
+					<div className="w-2 h-2 bg-linear-to-r from-purple-500/70 to-pink-500/70 rounded-full shadow-sm" />
 					<p className="text-xs font-medium whitespace-nowrap">
 						Private access only
 					</p>
 				</div>,
 				<div className="relative bg-white/15 dark:bg-white/8 backdrop-blur-md rounded-full p-2 border border-white/25 dark:border-white/15 shadow-lg group-hover:shadow-xl transition-all duration-300">
-					<div className="absolute inset-0 bg-gradient-to-br from-purple-500/30 to-pink-500/30 rounded-full group-hover:from-purple-500/40 group-hover:to-pink-500/40 transition-all duration-300" />
-					<CircleUserIcon className="w-3 h-3 text-purple-100 relative z-10 drop-shadow-sm group-hover:scale-110 group-hover:rotate-12 transition-all duration-300" />
+					<div className="absolute inset-0 bg-linear-to-br from-purple-500/30 to-pink-500/30 rounded-full group-hover:from-purple-500/40 group-hover:to-pink-500/40 transition-all duration-300" />
+					<CircleUserIcon className="w-3 h-3 text-purple-100 relative z-10 drop-shadow-xs group-hover:scale-110 group-hover:rotate-12 transition-all duration-300" />
 				</div>,
 			);
 
 		case IAppVisibility.Prototype:
 			return renderTooltip(
 				<div className="flex items-center gap-2 text-orange-700 dark:text-orange-300">
-					<div className="w-2 h-2 bg-gradient-to-r from-orange-500/70 to-yellow-500/70 rounded-full shadow-sm" />
+					<div className="w-2 h-2 bg-linear-to-r from-orange-500/70 to-yellow-500/70 rounded-full shadow-sm" />
 					<p className="text-xs font-medium whitespace-nowrap">
 						Experimental prototype
 					</p>
 				</div>,
 				<div className="relative group cursor-pointer">
 					<div className="relative bg-white/15 dark:bg-white/8 backdrop-blur-md rounded-full p-2 border border-white/25 dark:border-white/15 shadow-lg group-hover:shadow-xl transition-all duration-300">
-						<div className="absolute inset-0 bg-gradient-to-br from-orange-400/30 to-yellow-400/30 rounded-full group-hover:from-orange-400/45 group-hover:to-yellow-400/45 transition-all duration-300" />
-						<FlaskConicalIcon className="w-3 h-3 text-orange-100 relative z-10 drop-shadow-sm transition-all duration-300 group-hover:rotate-12 group-hover:scale-110" />
+						<div className="absolute inset-0 bg-linear-to-br from-orange-400/30 to-yellow-400/30 rounded-full group-hover:from-orange-400/45 group-hover:to-yellow-400/45 transition-all duration-300" />
+						<FlaskConicalIcon className="w-3 h-3 text-orange-100 relative z-10 drop-shadow-xs transition-all duration-300 group-hover:rotate-12 group-hover:scale-110" />
 					</div>
-					<div className="absolute top-0 left-1/2 w-1 h-1 bg-gradient-to-r from-orange-400/90 to-yellow-400/90 backdrop-blur-sm rounded-full -translate-x-1/2 shadow-sm group-hover:scale-125 group-hover:-translate-y-0.5 transition-all duration-300" />
-					<div className="absolute top-1 right-0 w-0.5 h-0.5 bg-yellow-400/90 backdrop-blur-sm rounded-full shadow-sm group-hover:scale-150 group-hover:-translate-y-0.5 transition-all duration-300" />
+					<div className="absolute top-0 left-1/2 w-1 h-1 bg-linear-to-r from-orange-400/90 to-yellow-400/90 backdrop-blur-xs rounded-full -translate-x-1/2 shadow-sm group-hover:scale-125 group-hover:-translate-y-0.5 transition-all duration-300" />
+					<div className="absolute top-1 right-0 w-0.5 h-0.5 bg-yellow-400/90 backdrop-blur-xs rounded-full shadow-sm group-hover:scale-150 group-hover:-translate-y-0.5 transition-all duration-300" />
 				</div>,
 			);
 
@@ -300,16 +300,16 @@ export function VisibilityIcon({
 		case IAppVisibility.PublicRequestAccess:
 			return renderTooltip(
 				<div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
-					<div className="w-2 h-2 bg-gradient-to-r from-blue-500/70 to-cyan-500/70 rounded-full shadow-sm" />
+					<div className="w-2 h-2 bg-linear-to-r from-blue-500/70 to-cyan-500/70 rounded-full shadow-sm" />
 					<p className="text-xs font-medium whitespace-nowrap">
 						Public with access request
 					</p>
 				</div>,
 				<div className="relative group cursor-pointer">
-					<div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 via-cyan-500/20 to-teal-500/20 rounded-full opacity-60 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500 backdrop-blur-sm" />
+					<div className="absolute -inset-1 bg-linear-to-r from-blue-500/20 via-cyan-500/20 to-teal-500/20 rounded-full opacity-60 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500 backdrop-blur-xs" />
 					<div className="relative bg-white/20 dark:bg-white/8 backdrop-blur-lg rounded-full p-2 border border-white/30 dark:border-white/20 shadow-xl group-hover:shadow-2xl transition-all duration-300">
-						<div className="absolute inset-0 bg-gradient-to-br from-blue-400/25 to-cyan-400/25 rounded-full group-hover:from-blue-400/35 group-hover:to-cyan-400/35 transition-all duration-300" />
-						<GlobeLockIcon className="w-3 h-3 text-blue-100 relative z-10 drop-shadow-sm transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6" />
+						<div className="absolute inset-0 bg-linear-to-br from-blue-400/25 to-cyan-400/25 rounded-full group-hover:from-blue-400/35 group-hover:to-cyan-400/35 transition-all duration-300" />
+						<GlobeLockIcon className="w-3 h-3 text-blue-100 relative z-10 drop-shadow-xs transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6" />
 					</div>
 				</div>,
 			);

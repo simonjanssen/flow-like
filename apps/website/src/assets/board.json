@@ -1604,7 +1604,7 @@
 			"reconnectable": true,
 			"target": "es9ogthal43izsacehkd2k5r",
 			"targetHandle": "v1vkmm6wz52uxdqtnyzwcwts",
-			"style": { "stroke": "hsl(var(--foreground))" },
+			"style": { "stroke": "var(--foreground)" },
 			"type": "simplebezier",
 			"data_type": "Execution"
 		},
@@ -1618,7 +1618,7 @@
 			"reconnectable": true,
 			"target": "gbi596usqgegra6iojxwpm97",
 			"targetHandle": "umldlzo9dkw5i59n7rq4dsun",
-			"style": { "stroke": "hsl(var(--foreground))" },
+			"style": { "stroke": "var(--foreground)" },
 			"type": "simplebezier",
 			"data_type": "Execution"
 		},
@@ -1646,7 +1646,7 @@
 			"reconnectable": true,
 			"target": "kwa31i0wpj2q8etl67bh7xr6",
 			"targetHandle": "ajsmg6v9fov1prtp8uxw6p3a",
-			"style": { "stroke": "hsl(var(--foreground))" },
+			"style": { "stroke": "var(--foreground)" },
 			"type": "simplebezier",
 			"data_type": "Execution"
 		},
@@ -1660,7 +1660,7 @@
 			"reconnectable": true,
 			"target": "ps8ftc1igq6tkv1e41np4bie",
 			"targetHandle": "lcxzcd1xy22qliar7f54hdte",
-			"style": { "stroke": "hsl(var(--foreground))" },
+			"style": { "stroke": "var(--foreground)" },
 			"type": "simplebezier",
 			"data_type": "Execution"
 		},
@@ -1702,7 +1702,7 @@
 			"reconnectable": true,
 			"target": "t0ksdlow3n0kh00pj3vthud3",
 			"targetHandle": "awo2g09rxm865xnvcq1gu03h",
-			"style": { "stroke": "hsl(var(--foreground))" },
+			"style": { "stroke": "var(--foreground)" },
 			"type": "simplebezier",
 			"data_type": "Execution"
 		},
@@ -1730,7 +1730,7 @@
 			"reconnectable": true,
 			"target": "h2hldwjc4xdzll134lop038x",
 			"targetHandle": "xjnodd5yror4itj4c374g0ry",
-			"style": { "stroke": "hsl(var(--foreground))" },
+			"style": { "stroke": "var(--foreground)" },
 			"type": "simplebezier",
 			"data_type": "Execution"
 		},
@@ -1744,7 +1744,7 @@
 			"reconnectable": true,
 			"target": "fpg323k8fdwrm328r3qnfw69",
 			"targetHandle": "nokqqodrqoy8h8awwrlkc03g",
-			"style": { "stroke": "hsl(var(--foreground))" },
+			"style": { "stroke": "var(--foreground)" },
 			"type": "simplebezier",
 			"data_type": "Execution"
 		},
@@ -1772,7 +1772,7 @@
 			"reconnectable": true,
 			"target": "qz42zqfuqug85zn5po09l4px",
 			"targetHandle": "z6o9npjhh2e8qimvrcg4lpd0",
-			"style": { "stroke": "hsl(var(--foreground))" },
+			"style": { "stroke": "var(--foreground)" },
 			"type": "simplebezier",
 			"data_type": "Execution"
 		},
@@ -1814,7 +1814,7 @@
 			"reconnectable": true,
 			"target": "v5t6lankzpkdauomqo7pmxb4",
 			"targetHandle": "ryj0everm1jfq2e5xks3lhct",
-			"style": { "stroke": "hsl(var(--foreground))" },
+			"style": { "stroke": "var(--foreground)" },
 			"type": "simplebezier",
 			"data_type": "Execution"
 		},
@@ -1828,7 +1828,7 @@
 			"reconnectable": true,
 			"target": "mec4gt47k8d6l0eo9q6ptei3",
 			"targetHandle": "o6wbav35opo6kz0yen91w4ay",
-			"style": { "stroke": "hsl(var(--foreground))" },
+			"style": { "stroke": "var(--foreground)" },
 			"type": "simplebezier",
 			"data_type": "Execution"
 		},
@@ -1870,7 +1870,7 @@
 			"reconnectable": true,
 			"target": "gbi596usqgegra6iojxwpm97",
 			"targetHandle": "umldlzo9dkw5i59n7rq4dsun",
-			"style": { "stroke": "hsl(var(--foreground))" },
+			"style": { "stroke": "var(--foreground)" },
 			"type": "simplebezier",
 			"data_type": "Execution"
 		}

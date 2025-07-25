@@ -212,8 +212,8 @@ export function Traces({
 				"transition-all top-0 bottom-0 right-0 h-[calc(100%)] z-10 bg-background border rounded-lg flex flex-col p-2 w-full"
 			}
 		>
-			<div className="flex flex-row items-stretch overflow-hidden flex-grow h-full">
-				<div className="ml-2 flex flex-col w-full gap-1 overflow-x-hidden max-h-full flex-grow h-full">
+			<div className="flex flex-row items-stretch overflow-hidden grow h-full">
+				<div className="ml-2 flex flex-col w-full gap-1 overflow-x-hidden max-h-full grow h-full">
 					<div className="w-full flex flex-row items-center justify-between my-1">
 						<div className="flex flex-row items-center gap-1">
 							<LogFilterBadge
@@ -256,7 +256,7 @@ export function Traces({
 							/>
 						</div>
 					</div>
-					<div className="flex flex-col w-full gap-1 overflow-x-auto max-h-full flex-grow h-full">
+					<div className="flex flex-col w-full gap-1 overflow-x-auto max-h-full grow h-full">
 						{(messages?.length ?? 0) === 0 && (
 							<EmptyState
 								className="h-full w-full max-w-full"
@@ -267,12 +267,12 @@ export function Traces({
 						)}
 						{(messages?.length ?? 0) > 0 && (
 							<AutoSizer
-								className="h-full flex-grow flex flex-col min-h-full"
+								className="h-full grow flex flex-col min-h-full"
 								disableWidth
 							>
 								{({ height, width }) => (
 									<List
-										className="log-container h-full flex-grow flex flex-col"
+										className="log-container h-full grow flex flex-col"
 										height={height}
 										itemCount={(messages?.length ?? 0) + (hasNextPage ? 1 : 0)}
 										itemSize={getRowHeight}
@@ -348,9 +348,9 @@ const LogMessage = memo(function LogMessage({
 					)}
 					<div className="flex flex-row items-center gap-1">
 						<Button
-							variant={"outline"}
+							variant={"outline-solid"}
 							size={"icon"}
-							className="!p-1 h-6 w-6"
+							className="p-1! h-6 w-6"
 							onClick={() => {
 								navigator.clipboard.writeText(log.message);
 								toast.success("Log message copied to clipboard");
@@ -360,9 +360,9 @@ const LogMessage = memo(function LogMessage({
 						</Button>
 						{log.node_id && (
 							<Button
-								variant={"outline"}
+								variant={"outline-solid"}
 								size={"icon"}
-								className="!p-1 h-6 w-6"
+								className="p-1! h-6 w-6"
 								onClick={() => onSelectNode(log.node_id!)}
 							>
 								<CornerRightUpIcon className="w-4 h-4" />
@@ -419,7 +419,7 @@ function LogFilterBadge({
 	return (
 		<Badge
 			className="cursor-pointer"
-			variant={logFilter.has(level) ? "default" : "outline"}
+			variant={logFilter.has(level) ? "default" : "outline-solid"}
 			onClick={() => toggleLogFilter(level)}
 		>
 			{label}

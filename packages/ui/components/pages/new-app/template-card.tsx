@@ -31,7 +31,7 @@ export function TemplateCard({
 				compact ? "hover:shadow-sm" : "hover:shadow-lg hover:-translate-y-1"
 			} ${
 				selected
-					? "ring-2 ring-primary shadow-lg shadow-primary/20 bg-gradient-to-br from-primary/5 to-transparent"
+					? "ring-2 ring-primary shadow-lg shadow-primary/20 bg-linear-to-br from-primary/5 to-transparent"
 					: "hover:border-primary/30"
 			}`}
 			onClick={onSelect}
@@ -40,7 +40,7 @@ export function TemplateCard({
 				<div className={`flex items-center gap-3 ${compact ? "mb-2" : "mb-3"}`}>
 					<Avatar className={`${compact ? "h-8 w-8" : "h-12 w-12"} shadow-sm`}>
 						<AvatarImage src={metadata.icon ?? ""} />
-						<AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20">
+						<AvatarFallback className="bg-linear-to-br from-primary/20 to-secondary/20">
 							<Copy className={compact ? "h-3 w-3" : "h-6 w-6"} />
 						</AvatarFallback>
 					</Avatar>

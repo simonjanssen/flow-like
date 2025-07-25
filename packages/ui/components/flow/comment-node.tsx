@@ -123,7 +123,7 @@ export function CommentNode(props: NodeProps<CommentNode>) {
 				<ContextMenuTrigger>
 					<div
 						key={`${props.id}__node`}
-						className={`bg-card p-1 md-wrapper react-flow__node-default selectable !w-full !h-full focus:ring-2 relative rounded-md !border-0 group opacity-80 ${props.selected && ""}`}
+						className={`bg-card p-1 md-wrapper react-flow__node-default selectable w-full! h-full! focus:ring-2 relative rounded-md border-0! group opacity-80 ${props.selected && ""}`}
 						style={{
 							backgroundColor: currentColor,
 						}}
@@ -148,14 +148,14 @@ export function CommentNode(props: NodeProps<CommentNode>) {
 								setEdit((old) => ({ ...old, open }));
 							}}
 						>
-							<DialogContent className="max-w-screen-xl w-full min-h-[90vh] max-h-[90vh] overflow-hidden flex flex-col">
+							<DialogContent className="max-w-(--breakpoint-xl) w-full min-h-[90vh] max-h-[90vh] overflow-hidden flex flex-col">
 								<DialogHeader>
 									<DialogTitle>Edit Comment</DialogTitle>
 									<DialogDescription>
 										Edit the text content of the comment.
 									</DialogDescription>
 								</DialogHeader>
-								<div className="flex flex-col flex-grow max-h-full overflow-auto relative">
+								<div className="flex flex-col grow max-h-full overflow-auto relative">
 									<TextEditor
 										initialContent={
 											props.data.comment.content === ""

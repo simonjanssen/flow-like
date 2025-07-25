@@ -3,7 +3,7 @@ import type { IVariableType } from "../../lib/schema/flow/variable";
 export function typeToColor(type: IVariableType): string {
 	switch (type) {
 		case "Execution":
-			return "hsl(var(--foreground))";
+			return "var(--foreground)";
 		case "String":
 			return "var(--pink-400)";
 		case "Integer":

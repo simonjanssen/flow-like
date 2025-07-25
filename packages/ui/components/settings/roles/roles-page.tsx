@@ -315,14 +315,14 @@ export function RolesPage() {
 			{/* Compact Header */}
 			<div className="flex items-center justify-between">
 				<div>
-					<h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-tertiary bg-clip-text text-transparent">
+					<h1 className="text-2xl font-bold bg-linear-to-r from-primary to-tertiary bg-clip-text text-transparent">
 						Role Management
 					</h1>
 				</div>
 				<Button
 					onClick={handleCreateRole}
 					size="sm"
-					className="bg-gradient-to-r from-primary to-tertiary hover:from-primary/50 hover:to-tertiary/50"
+					className="bg-linear-to-r from-primary to-tertiary hover:from-primary/50 hover:to-tertiary/50"
 				>
 					<Plus className="h-4 w-4 mr-2" />
 					Create Role

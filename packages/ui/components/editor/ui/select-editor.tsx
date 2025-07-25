@@ -128,10 +128,14 @@ export function SelectEditorContent({
 	);
 }
 
-export const SelectEditorInput = React.forwardRef<
-	HTMLDivElement,
-	React.ComponentPropsWithoutRef<typeof Editor>
->((props, ref) => {
+export const SelectEditorInput = (
+    {
+        ref,
+        ...props
+    }: React.ComponentPropsWithoutRef<typeof Editor> & {
+        ref: React.RefObject<HTMLDivElement>;
+    }
+) => {
 	const editor = useEditorRef();
 	const { setOpen } = useSelectEditorContext();
 	const { selectCurrentItem, selectFirstItem } = useCommandActions();
@@ -160,7 +164,7 @@ export const SelectEditorInput = React.forwardRef<
 			{...props}
 		/>
 	);
-});
+};
 
 export function SelectEditorCombobox() {
 	const editor = useEditorRef();

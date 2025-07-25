@@ -44,7 +44,7 @@
 //                 <div className="flex flex-row items-center gap-2">
 //                     <Button
 //                         id={name}
-//                         variant={"outline"}
+//                         variant={"outline-solid"}
 //                         className={cn(
 //                             "w-full justify-start text-left font-normal text-muted-foreground"
 //                         )}

@@ -62,13 +62,13 @@ export function TutorialDialog() {
 	const getBackgroundGradient = (variant: WelcomeStep) => {
 		switch (variant) {
 			case "discord":
-				return "bg-gradient-to-br from-[#5865F2]/50 via-[#7289DA]/12 to-[#5865F2]/36";
+				return "bg-linear-to-br from-[#5865F2]/50 via-[#7289DA]/12 to-[#5865F2]/36";
 			case "github":
-				return "bg-gradient-to-br from-foreground/20 via-foreground/10 to-foreground/8";
+				return "bg-linear-to-br from-foreground/20 via-foreground/10 to-foreground/8";
 			case "docs":
-				return "bg-gradient-to-br from-primary/20 via-blue-500/10 to-primary/15";
+				return "bg-linear-to-br from-primary/20 via-blue-500/10 to-primary/15";
 			default:
-				return "bg-gradient-to-br from-primary/18 via-purple-500/8 to-secondary/12";
+				return "bg-linear-to-br from-primary/18 via-purple-500/8 to-secondary/12";
 		}
 	};
 
@@ -97,11 +97,11 @@ export function TutorialDialog() {
 		<div className="relative min-h-screen flex items-center justify-center p-6">
 			<div className={`absolute inset-0 ${getBackgroundGradient(variant)}`} />
 			<div
-				className="absolute inset-0 bg-gradient-to-tr from-accent/10 via-transparent to-primary/10 animate-pulse"
+				className="absolute inset-0 bg-linear-to-tr from-accent/10 via-transparent to-primary/10 animate-pulse"
 				style={{ animationDuration: "8s" }}
 			/>
 			<div
-				className="absolute inset-0 bg-gradient-to-bl from-secondary/8 via-transparent to-accent/8 animate-pulse"
+				className="absolute inset-0 bg-linear-to-bl from-secondary/8 via-transparent to-accent/8 animate-pulse"
 				style={{ animationDuration: "12s", animationDelay: "4s" }}
 			/>
 
@@ -222,7 +222,7 @@ export function TutorialDialog() {
 					<BulletPoint text="Advanced Features" />
 				</div>
 				<Button
-					className="gap-2 w-fit bg-primary/90 backdrop-blur-sm hover:bg-primary"
+					className="gap-2 w-fit bg-primary/90 backdrop-blur-xs hover:bg-primary"
 					onClick={() => window.open("https://docs.flow-like.com", "_blank")}
 				>
 					<Book className="w-4 h-4" />
@@ -248,7 +248,7 @@ export function TutorialDialog() {
 					<BulletPoint text="Connect with Developers" color="[#5865F2]" />
 				</div>
 				<Button
-					className="gap-2 w-fit bg-[#5865F2]/90 backdrop-blur-sm hover:bg-[#5865F2] text-white"
+					className="gap-2 w-fit bg-[#5865F2]/90 backdrop-blur-xs hover:bg-[#5865F2] text-white"
 					onClick={() => window.open("https://discord.gg/mdBA9kMjFJ", "_blank")}
 				>
 					<MessageCircle className="w-4 h-4" />
@@ -275,7 +275,7 @@ export function TutorialDialog() {
 				</div>
 				<Button
 					variant="outline"
-					className="gap-2 w-fit border-foreground/40 hover:bg-foreground/10 bg-background/30 backdrop-blur-sm"
+					className="gap-2 w-fit border-foreground/40 hover:bg-foreground/10 bg-background/30 backdrop-blur-xs"
 					onClick={() =>
 						window.open("https://github.com/TM9657/flow-like", "_blank")
 					}
@@ -315,7 +315,7 @@ export function TutorialDialog() {
 							<Button
 								variant="ghost"
 								size="sm"
-								className="ml-6 hover:bg-background/40 backdrop-blur-sm rounded-xl"
+								className="ml-6 hover:bg-background/40 backdrop-blur-xs rounded-xl"
 								onClick={() => setShowTutorial(false)}
 							>
 								<X className="w-5 h-5" />
@@ -357,13 +357,13 @@ export function TutorialDialog() {
 								<Button
 									variant="ghost"
 									onClick={handleSkip}
-									className="hover:bg-background/40 backdrop-blur-sm rounded-xl"
+									className="hover:bg-background/40 backdrop-blur-xs rounded-xl"
 								>
 									Skip Tour
 								</Button>
 								<Button
 									onClick={handleNext}
-									className="bg-primary/90 backdrop-blur-sm hover:bg-primary rounded-xl"
+									className="bg-primary/90 backdrop-blur-xs hover:bg-primary rounded-xl"
 								>
 									{currentStep === "github" ? "Get Started" : "Next"}
 								</Button>

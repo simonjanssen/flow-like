@@ -147,7 +147,7 @@ function RequestCard({
 						<div className="relative">
 							<Avatar className="h-14 w-14 ring-2 ring-background shadow-sm transition-transform group-hover:scale-105">
 								<AvatarImage src={userData.avatar_url} alt={evaluatedName} />
-								<AvatarFallback className="bg-gradient-to-br from-secondary to-tertiary text-white font-semibold">
+								<AvatarFallback className="bg-linear-to-br from-secondary to-tertiary text-white font-semibold">
 									{evaluatedName
 										.split(" ")
 										.map((n) => n[0])

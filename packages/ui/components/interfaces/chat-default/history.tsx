@@ -128,7 +128,7 @@ export function ChatHistory({
 	const sessionGroups = groupSessionsByDate(filteredSessions);
 
 	return (
-		<div className="flex flex-col h-full flex-grow overflow-hidden max-h-full">
+		<div className="flex flex-col h-full grow overflow-hidden max-h-full">
 			<div className="relative border-b border-border/20 bg-background/95 backdrop-blur-md">
 				<div className="p-4">
 					<div className="flex items-center justify-between mb-4">
@@ -168,7 +168,7 @@ export function ChatHistory({
 				</div>
 			</div>
 
-			<div className="flex flex-col flex-1 bg-gradient-to-b from-background/50 to-background max-h-full overflow-auto">
+			<div className="flex flex-col flex-1 bg-linear-to-b from-background/50 to-background max-h-full overflow-auto">
 				<div className="p-6 space-y-8 w-full">
 					{Object.entries(sessionGroups).map(([groupName, groupSessions]) => (
 						<div key={groupName} className="space-y-4 w-full">
@@ -179,7 +179,7 @@ export function ChatHistory({
 								<h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
 									{groupName}
 								</h3>
-								<div className="flex-1 h-px bg-gradient-to-r from-border/50 to-transparent" />
+								<div className="flex-1 h-px bg-linear-to-r from-border/50 to-transparent" />
 								<Badge
 									variant="secondary"
 									className="text-xs px-2.5 py-1 bg-muted/60 text-muted-foreground border border-border/40"
@@ -244,7 +244,7 @@ export function ChatHistory({
 						<div className="flex flex-col items-center justify-center py-20 text-center w-full">
 							<div className="relative mb-6">
 								<div className="absolute inset-0 bg-muted/30 rounded-full blur-xl" />
-								<div className="relative p-6 rounded-full bg-gradient-to-br from-muted/60 to-muted/40 border border-border/40 shadow-lg">
+								<div className="relative p-6 rounded-full bg-linear-to-br from-muted/60 to-muted/40 border border-border/40 shadow-lg">
 									<MessageCircleIcon className="w-10 h-10 text-muted-foreground/60" />
 								</div>
 							</div>

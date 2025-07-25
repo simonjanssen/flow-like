@@ -103,7 +103,7 @@ function WithMenu({
 				</HoverCardTrigger>
 				<HoverCardContent
 					side="right"
-					className="w-fit z-[2000] p-1 text-extra-small leading-auto text-start max-w-screen-s absolute"
+					className="w-fit z-2000 p-1 text-extra-small leading-auto text-start max-w-screen-s absolute"
 				>
 					<small className="leading-auto mt-0 mb-0 p-0 text-wrap">
 						Default Value

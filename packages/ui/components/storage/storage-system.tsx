@@ -214,7 +214,7 @@ export function StorageSystem({
 	).length;
 
 	return (
-		<div className="flex flex-grow flex-col gap-4 min-h-full h-full max-h-full overflow-hidden w-full">
+		<div className="flex grow flex-col gap-4 min-h-full h-full max-h-full overflow-hidden w-full">
 			<input
 				ref={fileReference}
 				type="file"
@@ -452,7 +452,7 @@ export function StorageSystem({
 
 			{/* Content Section */}
 			{(files.data?.length ?? 0) === 0 && (
-				<div className="flex flex-col h-full w-full flex-grow relative px-4">
+				<div className="flex flex-col h-full w-full grow relative px-4">
 					<EmptyState
 						className="w-full h-full max-w-full border-2 border-dashed border-muted-foreground/25 rounded-lg"
 						title="No Files Found"
@@ -473,7 +473,7 @@ export function StorageSystem({
 			)}
 
 			{(files.data?.length ?? 0) > 0 && (
-				<div className="flex flex-col gap-4 flex-grow max-h-full h-full overflow-y-hidden px-4 pb-4">
+				<div className="flex flex-col gap-4 grow max-h-full h-full overflow-y-hidden px-4 pb-4">
 					{preview.url !== "" && (
 						<>
 							{isPreviewMaximized && (
@@ -492,7 +492,7 @@ export function StorageSystem({
 												<MinimizeIcon className="h-4 w-4" />
 											</Button>
 										</div>
-										<div className="flex-grow overflow-auto">
+										<div className="grow overflow-auto">
 											<FilePreviewer url={preview.url} page={2} />
 										</div>
 									</div>
@@ -504,15 +504,15 @@ export function StorageSystem({
 									autoSaveId={"file_viewer"}
 									className="border rounded-lg"
 								>
-									<ResizablePanel className="flex flex-col gap-2 flex-grow overflow-y-hidden max-h-full h-full p-4 bg-background">
+									<ResizablePanel className="flex flex-col gap-2 grow overflow-y-hidden max-h-full h-full p-4 bg-background">
 										<div
 											key={sortBy}
-											className="flex flex-col flex-grow max-h-full h-full overflow-hidden gap-2"
+											className="flex flex-col grow max-h-full h-full overflow-hidden gap-2"
 										>
 											<h3 className="font-medium text-sm text-muted-foreground mb-2">
 												Files & Folders
 											</h3>
-											<div className="flex flex-col gap-2 flex-grow max-h-full h-full overflow-auto">
+											<div className="flex flex-col gap-2 grow max-h-full h-full overflow-auto">
 												{sortedFiles.map((file) => (
 													<FileOrFolder
 														highlight={preview.file === file.location}
@@ -587,8 +587,8 @@ export function StorageSystem({
 										</div>
 									</ResizablePanel>
 									<ResizableHandle className="mx-2" />
-									<ResizablePanel className="flex flex-col gap-2 flex-grow overflow-y-hidden max-h-full h-full p-4 bg-background">
-										<div className="flex flex-col flex-grow overflow-auto max-h-full h-full bg-muted/50 rounded-md border">
+									<ResizablePanel className="flex flex-col gap-2 grow overflow-y-hidden max-h-full h-full p-4 bg-background">
+										<div className="flex flex-col grow overflow-auto max-h-full h-full bg-muted/50 rounded-md border">
 											<div className="p-2 border-b bg-background rounded-t-md flex items-center justify-between">
 												<h3 className="font-medium text-sm">Preview</h3>
 												<Button
@@ -600,7 +600,7 @@ export function StorageSystem({
 													<MaximizeIcon className="h-3 w-3" />
 												</Button>
 											</div>
-											<div className="flex-grow overflow-auto">
+											<div className="grow overflow-auto">
 												<FilePreviewer url={preview.url} page={2} />
 											</div>
 										</div>
@@ -610,7 +610,7 @@ export function StorageSystem({
 						</>
 					)}
 					{preview.url === "" && (
-						<div className="flex flex-col flex-grow max-h-full h-full overflow-auto gap-2 border rounded-lg p-4 bg-background">
+						<div className="flex flex-col grow max-h-full h-full overflow-auto gap-2 border rounded-lg p-4 bg-background">
 							<h3 className="font-medium text-sm text-muted-foreground mb-2">
 								Files & Folders
 							</h3>

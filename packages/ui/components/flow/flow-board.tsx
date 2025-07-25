@@ -1072,7 +1072,7 @@ export function FlowBoard({
 	);
 
 	return (
-		<div className="min-h-dvh h-dvh max-h-dvh w-full flex-1 flex-grow flex-col">
+		<div className="min-h-dvh h-dvh max-h-dvh w-full flex-1 grow flex-col">
 			<div className="flex items-center justify-center absolute translate-x-[-50%] mt-5 left-[50dvw] z-40">
 				{board.data && editBoard && (
 					<BoardMeta
@@ -1150,7 +1150,7 @@ export function FlowBoard({
 			</div>
 			<ResizablePanelGroup
 				direction="horizontal"
-				className="flex flex-grow min-h-dvh h-dvh"
+				className="flex grow min-h-dvh h-dvh"
 			>
 				<ResizablePanel
 					className="z-50 bg-background"
@@ -1168,7 +1168,7 @@ export function FlowBoard({
 				<ResizablePanel autoSave="flow-main-container">
 					<ResizablePanelGroup
 						direction="vertical"
-						className="h-full flex flex-grow"
+						className="h-full flex grow"
 					>
 						<ResizablePanel autoSave="flow-main" ref={flowPanelRef}>
 							<FlowContextMenu
@@ -1231,34 +1231,34 @@ export function FlowBoard({
 											zoomable
 											nodeColor={(node) => {
 												if (node.type === "layerNode")
-													return "hsl(var(--foreground) / 0.5)";
+													return "var(--foreground) / 0.5";
 
 												if (node.type === "node") {
 													const nodeData: INode = node.data.node as INode;
 													if (nodeData.event_callback)
-														return "hsl(var(--primary/ 0.8))";
-													if (nodeData.start) return "hsl(var(--primary/ 0.8))";
+														return "var(--primary/ 0.8)";
+													if (nodeData.start) return "var(--primary/ 0.8)";
 													if (
 														!Object.values(nodeData.pins).find(
 															(pin) =>
 																pin.data_type === IVariableType.Execution,
 														)
 													)
-														return "hsl(var(--tertiary)/ 0.8)";
-													return "hsl(var(--muted))";
+														return "var(--tertiary)/ 0.8";
+													return "var(--muted)";
 												}
 												if (node.type === "commentNode") {
 													const commentData: IComment = node.data
 														.comment as IComment;
 													let color =
-														commentData.color ?? "hsl(var(--muted)/ 0.3)";
+														commentData.color ?? "var(--muted)/ 0.3";
 
 													if (color.startsWith("#")) {
 														color = hexToRgba(color, 0.3);
 													}
 													return color;
 												}
-												return "hsl(var(--primary)/ 0.6)";
+												return "var(--primary)/ 0.6";
 											}}
 										/>
 										<Background
@@ -1267,9 +1267,8 @@ export function FlowBoard({
 													? BackgroundVariant.Lines
 													: BackgroundVariant.Dots
 											}
-											color={currentLayer && "hsl(var(--muted) / 0.3)"}
+											color={currentLayer && "var(--muted) / 0.3"}
 											gap={12}
-											// bgColor={currentLayer && "hsl(var(--background))"}
 											size={1}
 										/>
 									</ReactFlow>

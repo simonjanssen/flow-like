@@ -254,7 +254,7 @@ function ColorCustom({
 						className={cn(
 							buttonVariants({
 								size: "icon",
-								variant: "outline",
+								variant: "outline-solid",
 							}),
 							"absolute top-1 right-2 bottom-2 flex size-8 items-center justify-center rounded-full",
 						)}
@@ -330,7 +330,7 @@ function ColorDropdownMenuItem({
 			className={cn(
 				buttonVariants({
 					size: "icon",
-					variant: "outline",
+					variant: "outline-solid",
 				}),
 				"my-1 flex size-6 items-center justify-center rounded-full border border-solid border-muted p-0 transition-all hover:scale-125",
 				!isBrightColor && "border-transparent",

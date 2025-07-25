@@ -89,7 +89,7 @@ export function DateSetVariable({
 					<PopoverTrigger disabled={disabled} asChild>
 						<Button
 							disabled={disabled}
-							variant={"outline"}
+							variant={"outline-solid"}
 							className={cn(
 								"w-full pl-3 text-left font-normal",
 								!newDate && "text-muted-foreground",

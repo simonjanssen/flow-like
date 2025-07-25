@@ -16,7 +16,7 @@ const config = {
 			...preset.theme.extend,
 			colors: {
 				...preset.theme.extend.colors,
-				accent: "hsl(var(--primary))",
+				accent: "var(--primary)",
 			},
 		},
 	},
