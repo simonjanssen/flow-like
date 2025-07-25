@@ -11,7 +11,7 @@ import { fetcher } from "../../lib/api";
 import type { TauriBackend } from "../tauri-provider";
 
 export class TemplateState implements ITemplateState {
-	constructor(private readonly backend: TauriBackend) {}
+	constructor(private readonly backend: TauriBackend) { }
 	async getTemplates(
 		appId?: string,
 		language?: string,
@@ -85,57 +85,45 @@ export class TemplateState implements ITemplateState {
 			return templates;
 		}
 
-		const promise = injectDataFunction(
-			async () => {
-				const limit = 100;
-				let offset = 0;
-				let foundAmount = 0;
-				const mergedData = new Map<string, [string, string, IMetadata]>();
-				for (const [id, name, meta] of templates) {
-					if (!mergedData.has(id) && meta) {
-						mergedData.set(id, [id, name, meta]);
+		const limit = 100;
+		let offset = 0;
+		let foundAmount = 0;
+		const mergedData = new Map<string, [string, string, IMetadata]>();
+		for (const [id, name, meta] of templates) {
+			if (!mergedData.has(id) && meta) {
+				mergedData.set(id, [id, name, meta]);
+			}
+		}
+
+		do {
+			const remoteData = await fetcher<[string, string, IMetadata][]>(
+				this.backend.profile,
+				`user/templates?limit=${limit}&offset=${offset}`,
+				undefined,
+				this.backend.auth,
+			);
+
+			foundAmount = remoteData.length;
+			offset += 100;
+
+			for (const [appId, templateId, metadata] of remoteData) {
+				const found = mergedData.get(appId);
+				if (found) {
+					if (isEqual(found[2], metadata)) {
+						// If metadata is the same, skip adding it again
+						continue;
 					}
 				}
+				mergedData.set(appId, [appId, templateId, metadata]);
+				await invoke("push_template_meta", {
+					appId: appId,
+					templateId: templateId,
+					metadata: metadata,
+				});
+			}
+		} while (foundAmount > 0);
 
-				do {
-					const remoteData = await fetcher<[string, string, IMetadata][]>(
-						this.backend.profile!,
-						`user/templates?limit=${limit}&offset=${offset}`,
-						undefined,
-						this.backend.auth,
-					);
-
-					foundAmount = remoteData.length;
-					offset += 100;
-
-					for (const [appId, templateId, metadata] of remoteData) {
-						const found = mergedData.get(appId);
-						if (found) {
-							if (isEqual(found[2], metadata)) {
-								// If metadata is the same, skip adding it again
-								continue;
-							}
-						}
-						mergedData.set(appId, [appId, templateId, metadata]);
-						await invoke("push_template_meta", {
-							appId: appId,
-							templateId: templateId,
-							metadata: metadata,
-						});
-					}
-				} while (foundAmount > 0);
-
-				return Array.from(mergedData.values());
-			},
-			this,
-			this.backend.queryClient,
-			this.getTemplates,
-			[appId, language],
-			[],
-		);
-		this.backend.backgroundTaskHandler(promise);
-
-		return templates;
+		return Array.from(mergedData.values());
 	}
 
 	async getTemplate(
