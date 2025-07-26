@@ -128,14 +128,12 @@ export function SelectEditorContent({
 	);
 }
 
-export const SelectEditorInput = (
-    {
-        ref,
-        ...props
-    }: React.ComponentPropsWithoutRef<typeof Editor> & {
-        ref: React.RefObject<HTMLDivElement>;
-    }
-) => {
+export const SelectEditorInput = ({
+	ref,
+	...props
+}: React.ComponentPropsWithoutRef<typeof Editor> & {
+	ref: React.RefObject<HTMLDivElement>;
+}) => {
 	const editor = useEditorRef();
 	const { setOpen } = useSelectEditorContext();
 	const { selectCurrentItem, selectFirstItem } = useCommandActions();

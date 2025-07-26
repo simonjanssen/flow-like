@@ -7,11 +7,10 @@ import type { PlateContentProps, PlateViewProps } from "platejs/react";
 
 import { cva } from "class-variance-authority";
 import { PlateContainer, PlateContent, PlateView } from "platejs/react";
-
-import { cn } from "../../../lib/utils";
+import { cn } from "../../../lib";
 
 const editorContainerVariants = cva(
-	"relative w-full cursor-text overflow-y-auto caret-primary select-text selection:bg-brand/25 focus-visible:outline-hidden [&_.slate-selection-area]:z-50 [&_.slate-selection-area]:border [&_.slate-selection-area]:border-brand/25 [&_.slate-selection-area]:bg-brand/15",
+	"relative w-full cursor-text overflow-y-auto caret-primary select-text selection:bg-brand/25 focus-visible:outline-none [&_.slate-selection-area]:z-50 [&_.slate-selection-area]:border [&_.slate-selection-area]:border-brand/25 [&_.slate-selection-area]:bg-brand/15",
 	{
 		defaultVariants: {
 			variant: "default",
@@ -56,8 +55,8 @@ const editorVariants = cva(
 	cn(
 		"group/editor",
 		"relative w-full cursor-text overflow-x-hidden break-words whitespace-pre-wrap select-text",
-		"rounded-md ring-offset-background focus-visible:outline-hidden",
-		"placeholder:text-muted-foreground/80 data-slate-placeholder:**:top-1/2! data-slate-placeholder:**:-translate-y-1/2 data-slate-placeholder:**:text-muted-foreground/80 data-slate-placeholder:**:opacity-100!",
+		"rounded-md ring-offset-background focus-visible:outline-none",
+		"placeholder:text-muted-foreground/80 **:data-slate-placeholder:!top-1/2 **:data-slate-placeholder:-translate-y-1/2 **:data-slate-placeholder:text-muted-foreground/80 **:data-slate-placeholder:opacity-100!",
 		"[&_strong]:font-bold",
 	),
 	{
@@ -90,35 +89,26 @@ const editorVariants = cva(
 export type EditorProps = PlateContentProps &
 	VariantProps<typeof editorVariants>;
 
-export const Editor = (
-    {
-        ref,
-        className,
-        disabled,
-        focused,
-        variant,
-        ...props
-    }: EditorProps & {
-        ref: React.RefObject<HTMLDivElement>;
-    }
-) => {
-    return (
-        <PlateContent
-            ref={ref}
-            className={cn(
-                editorVariants({
-                    disabled,
-                    focused,
-                    variant,
-                }),
-                className,
-            )}
-            disabled={disabled}
-            disableDefaultStyles
-            {...props}
-        />
-    );
-};
+export const Editor = React.forwardRef<HTMLDivElement, EditorProps>(
+	({ className, disabled, focused, variant, ...props }, ref) => {
+		return (
+			<PlateContent
+				ref={ref}
+				className={cn(
+					editorVariants({
+						disabled,
+						focused,
+						variant,
+					}),
+					className,
+				)}
+				disabled={disabled}
+				disableDefaultStyles
+				{...props}
+			/>
+		);
+	},
+);
 
 Editor.displayName = "Editor";
 

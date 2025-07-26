@@ -25,8 +25,7 @@ import {
 } from "@platejs/combobox/react";
 import { cva } from "class-variance-authority";
 import { useComposedRef, useEditorRef } from "platejs/react";
-
-import { cn } from "../../../lib/utils";
+import { cn } from "../../../lib";
 
 type FilterFn = (
 	item: { value: string; group?: string; keywords?: string[]; label?: string },
@@ -199,15 +198,10 @@ const InlineCombobox = ({
 	);
 };
 
-const InlineComboboxInput = (
-    {
-        ref: propRef,
-        className,
-        ...props
-    }: React.HTMLAttributes<HTMLInputElement> & {
-        ref: React.RefObject<HTMLInputElement>;
-    }
-) => {
+const InlineComboboxInput = React.forwardRef<
+	HTMLInputElement,
+	React.HTMLAttributes<HTMLInputElement>
+>(({ className, ...props }, propRef) => {
 	const {
 		inputProps,
 		inputRef: contextRef,
@@ -231,7 +225,7 @@ const InlineComboboxInput = (
 		<>
 			{showTrigger && trigger}
 
-			<span className="relative min-h-lh">
+			<span className="relative min-h-[1lh]">
 				<span
 					className="invisible overflow-hidden text-nowrap"
 					aria-hidden="true"
@@ -242,7 +236,7 @@ const InlineComboboxInput = (
 				<Combobox
 					ref={ref}
 					className={cn(
-						"absolute top-0 left-0 size-full bg-transparent outline-hidden",
+						"absolute top-0 left-0 size-full bg-transparent outline-none",
 						className,
 					)}
 					value={value}
@@ -253,7 +247,7 @@ const InlineComboboxInput = (
 			</span>
 		</>
 	);
-};
+});
 
 InlineComboboxInput.displayName = "InlineComboboxInput";
 
@@ -276,7 +270,7 @@ const InlineComboboxContent: typeof ComboboxPopover = ({
 };
 
 const comboboxItemVariants = cva(
-	"relative mx-1 flex h-[28px] items-center rounded-sm px-2 text-sm text-foreground outline-hidden select-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+	"relative mx-1 flex h-[28px] items-center rounded-sm px-2 text-sm text-foreground outline-none select-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
 	{
 		defaultVariants: {
 			interactive: true,

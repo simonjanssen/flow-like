@@ -1250,8 +1250,7 @@ export function FlowBoard({
 												if (node.type === "commentNode") {
 													const commentData: IComment = node.data
 														.comment as IComment;
-													let color =
-														commentData.color ?? "var(--muted)/ 0.3";
+													let color = commentData.color ?? "var(--muted)/ 0.3";
 
 													if (color.startsWith("#")) {
 														color = hexToRgba(color, 0.3);

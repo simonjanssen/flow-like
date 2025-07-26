@@ -11,9 +11,10 @@ import {
 	DropdownMenuLabel,
 	DropdownMenuRadioGroup,
 	DropdownMenuSeparator,
+	Separator,
+	Tooltip,
+	TooltipTrigger,
 } from "../../..";
-import { Separator } from "../../..";
-import { Tooltip, TooltipTrigger } from "../../..";
 import { cn } from "../../../lib/utils";
 
 export function Toolbar({

@@ -69,7 +69,10 @@ const AccountPage: React.FC = () => {
 	const updateUserAttribute = useCallback(
 		async (attributeKey: string, value: string) => {
 			if (!cognito) {
-				console.warn("Cognito is not enabled, skipping attribute update ", cognito);
+				console.warn(
+					"Cognito is not enabled, skipping attribute update ",
+					cognito,
+				);
 				return;
 			}
 			try {
@@ -90,9 +93,9 @@ const AccountPage: React.FC = () => {
 
 	useEffect(() => {
 		setProfileActions((prev) => ({
-				...prev,
-				handleAttributeUpdate: cognito ? updateUserAttribute : undefined,
-			}));
+			...prev,
+			handleAttributeUpdate: cognito ? updateUserAttribute : undefined,
+		}));
 	}, [cognito]);
 
 	const handleChangePassword = useCallback(async () => {
@@ -230,7 +233,9 @@ const AccountPage: React.FC = () => {
 
 	return (
 		<>
-		<p>{cognito ? <span>Cognito User</span> : <span>Non-Cognito User</span>}</p>
+			<p>
+				{cognito ? <span>Cognito User</span> : <span>Non-Cognito User</span>}
+			</p>
 			<ProfilePage actions={profileActions} />
 
 			{!federated && (

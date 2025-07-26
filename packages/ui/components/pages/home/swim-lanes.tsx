@@ -424,9 +424,7 @@ function AppCardLoading({
 				app={data}
 				metadata={meta}
 				variant={variant}
-				className={
-					(fill ?? false) ? "w-full max-w-full h-full flex grow" : ""
-				}
+				className={(fill ?? false) ? "w-full max-w-full h-full flex grow" : ""}
 			/>
 		</motion.div>
 	);

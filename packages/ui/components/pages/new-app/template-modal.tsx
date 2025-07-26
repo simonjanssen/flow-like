@@ -81,7 +81,9 @@ export function TemplateModal({
 							{allTags.map((tag) => (
 								<Badge
 									key={tag}
-									variant={selectedTags.includes(tag) ? "default" : "outline-solid"}
+									variant={
+										selectedTags.includes(tag) ? "default" : "outline-solid"
+									}
 									className="cursor-pointer"
 									onClick={() => {
 										setSelectedTags((prev) =>
