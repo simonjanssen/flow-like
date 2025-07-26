@@ -273,12 +273,7 @@ function SwimlaneItem({
 
 	if (item.type === "app" && item.appId) {
 		return (
-			<AppCardLoading
-				appId={item.appId}
-				variant={variant}
-				backend={backend}
-				fill={size === "large"}
-			/>
+			<AppCardLoading appId={item.appId} variant={variant} backend={backend} />
 		);
 	}
 
@@ -388,12 +383,10 @@ function AppCardLoading({
 	appId,
 	variant,
 	backend,
-	fill,
 }: Readonly<{
 	appId: string;
 	backend: IBackendState;
 	variant: "small" | "extended";
-	fill?: boolean;
 }>) {
 	const app = useInvoke(backend.appState.searchApps, backend.appState, [appId]);
 
@@ -408,24 +401,12 @@ function AppCardLoading({
 	const meta = app.data[0][1];
 	const data = app.data[0][0];
 
-	const itemVariants = {
-		hidden: { opacity: 0, y: 20 },
-		visible: { opacity: 1, y: 0 },
-	};
-
 	return (
-		<motion.div
-			key={data.id}
-			variants={itemVariants}
-			whileHover={{ scale: 1.02 }}
-			transition={{ type: "spring", stiffness: 300 }}
-		>
-			<AppCard
-				app={data}
-				metadata={meta}
-				variant={variant}
-				className={(fill ?? false) ? "w-full max-w-full h-full flex grow" : ""}
-			/>
-		</motion.div>
+		<AppCard
+			app={data}
+			metadata={meta}
+			variant={variant}
+			className={"w-full max-w-full h-full flex grow"}
+		/>
 	);
 }

@@ -358,9 +358,9 @@ export function FileDialog({
 						<Separator />
 
 						{/* Content Section */}
-						<div className="flex flex-col gap-4 grow max-h-full h-full overflow-hidden">
+						<div className="flex flex-col gap-4 flex-grow max-h-full h-full overflow-hidden">
 							{isPreviewMaximized && selectedFile && (
-								<div className="fixed inset-0 z-50 bg-background flex grow flex-col h-full">
+								<div className="fixed inset-0 z-50 bg-background flex flex-grow flex-col h-full">
 									<div className="p-4 border-b bg-background flex items-center justify-between">
 										<h3 className="font-medium text-lg">
 											Preview - {selectedFile.name}
@@ -374,7 +374,7 @@ export function FileDialog({
 											<MinimizeIcon className="h-4 w-4" />
 										</Button>
 									</div>
-									<div className="flex flex-col grow overflow-auto h-full min-h-full">
+									<div className="flex flex-col flex-grow overflow-auto h-full min-h-full">
 										<FileDialogPreview file={selectedFile} maximized={true} />
 									</div>
 								</div>
@@ -384,17 +384,17 @@ export function FileDialog({
 								<ResizablePanelGroup
 									direction="horizontal"
 									autoSaveId="attachment_viewer"
-									className="border rounded-lg grow"
+									className="border rounded-lg flex-grow"
 								>
 									<ResizablePanel
 										defaultSize={75}
 										className="flex flex-col gap-2 overflow-hidden p-4 bg-background"
 									>
-										<div className="flex flex-col grow overflow-hidden gap-2">
+										<div className="flex flex-col flex-grow overflow-hidden gap-2">
 											<h3 className="font-medium text-sm text-muted-foreground mb-2">
 												Files & References
 											</h3>
-											<div className="flex flex-col gap-2 grow overflow-auto">
+											<div className="flex flex-col gap-2 flex-grow overflow-auto">
 												<FileList
 													files={sortedFiles}
 													viewMode={viewMode}
@@ -407,8 +407,8 @@ export function FileDialog({
 										</div>
 									</ResizablePanel>
 									<ResizableHandle className="mx-2" />
-									<ResizablePanel className="flex flex-col gap-2 grow overflow-y-hidden max-h-full h-full p-4 bg-background">
-										<div className="flex flex-col grow overflow-auto max-h-full h-full bg-muted/50 rounded-md border">
+									<ResizablePanel className="flex flex-col gap-2 flex-grow overflow-y-hidden max-h-full h-full p-4 bg-background">
+										<div className="flex flex-col flex-grow overflow-auto max-h-full h-full bg-muted/50 rounded-md border">
 											<div className="p-2 border-b bg-background rounded-t-md flex items-center justify-between">
 												<h3 className="font-medium text-sm">Preview</h3>
 												<Button
@@ -420,7 +420,7 @@ export function FileDialog({
 													<MaximizeIcon className="h-3 w-3" />
 												</Button>
 											</div>
-											<div className="grow overflow-auto h-full flex flex-row min-h-full">
+											<div className="flex-grow overflow-auto h-full flex flex-row min-h-full">
 												<FileDialogPreview
 													key={selectedFile.url}
 													file={selectedFile}
@@ -432,7 +432,7 @@ export function FileDialog({
 							)}
 
 							{!selectedFile && (
-								<div className="flex flex-col grow overflow-auto gap-2 border rounded-lg p-4 bg-background">
+								<div className="flex flex-col flex-grow overflow-auto gap-2 border rounded-lg p-4 bg-background">
 									<h3 className="font-medium text-sm text-muted-foreground mb-2">
 										Files & References
 									</h3>
@@ -510,7 +510,7 @@ function FileItem({
 	if (grid) {
 		return (
 			<div
-				className={`group relative rounded-lg border border-border/50 p-2 w-full transition-all duration-200 bg-linear-to-r from-background to-muted/10 ${
+				className={`group relative rounded-lg border border-border/50 p-2 w-full transition-all duration-200 bg-gradient-to-r from-background to-muted/10 ${
 					isSelected ? "border-primary bg-primary/5 shadow-sm" : ""
 				} ${
 					canPreview(file)
@@ -592,7 +592,7 @@ function FileItem({
 	// List mode (existing layout)
 	return (
 		<div
-			className={`group relative rounded-lg border border-border/50 p-3 w-full transition-all duration-200 bg-linear-to-r from-background to-muted/10 ${
+			className={`group relative rounded-lg border border-border/50 p-3 w-full transition-all duration-200 bg-gradient-to-r from-background to-muted/10 ${
 				isSelected ? "border-primary bg-primary/5 shadow-sm" : ""
 			} ${
 				canPreview(file)

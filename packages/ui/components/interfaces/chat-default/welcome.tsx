@@ -155,7 +155,7 @@ export function ChatWelcome({
 	};
 
 	return (
-		<div className="flex flex-col h-full grow bg-background">
+		<div className="flex flex-col h-full flex-grow bg-background">
 			{/* Welcome Content */}
 			<div className="flex-1 flex items-center justify-center p-8">
 				<div className="max-w-2xl w-full space-y-8">

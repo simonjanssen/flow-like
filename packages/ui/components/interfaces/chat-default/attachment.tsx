@@ -105,7 +105,7 @@ export function FilePreview({
 			return (
 				<div
 					key={file.url}
-					className="relative group rounded-md overflow-hidden border bg-muted/50 max-w-(--breakpoint-sm)"
+					className="relative group rounded-md overflow-hidden border bg-muted/50 max-w-screen-sm"
 				>
 					<img
 						src={file.thumbnailUrl || file.url}
@@ -136,7 +136,7 @@ export function FilePreview({
 							</Button>
 						</div>
 					)}
-					<div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/70 to-transparent text-white text-xs p-1 truncate">
+					<div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent text-white text-xs p-1 truncate">
 						{file.name}
 					</div>
 				</div>

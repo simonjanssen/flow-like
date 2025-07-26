@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import {
 	CircleUserIcon,
 	FlaskConicalIcon,
@@ -29,175 +30,22 @@ export function AppCard({
 }: Readonly<AppCardProps>) {
 	if (variant === "small") {
 		return (
-			<button
-				type="button"
+			<SmallAppCard
+				app={app}
+				metadata={metadata}
 				onClick={onClick}
-				className={`group relative flex flex-col transition-all duration-300 rounded-xl border border-border/40 bg-card shadow-sm hover:bg-card/95 w-72 h-[375px] overflow-hidden m-2 ${className}`}
-			>
-				{/* App Icon */}
-				<div className="relative shrink-0">
-					<Avatar className="w-10 h-10 shadow-sm">
-						<AvatarImage
-							className="scale-100 group-hover:scale-95 transition-transform duration-200"
-							src={metadata?.icon ?? "/app-logo.webp"}
-							alt={`${metadata?.name ?? app.id} icon`}
-						/>
-						<AvatarFallback className="text-xs font-medium bg-linear-to-br from-primary/20 to-primary/10">
-							{(metadata?.name ?? app.id).substring(0, 2).toUpperCase()}
-						</AvatarFallback>
-					</Avatar>
-					{/* Visibility indicator - only show if not public */}
-					{app.visibility !== IAppVisibility.Public &&
-						app.rating_count === 0 && (
-							<div className="absolute -top-1.5 -right-1.5 flex flex-row items-center scale-[0.7]">
-								<VisibilityIcon visibility={app.visibility} />
-							</div>
-						)}
-				</div>
-
-				{/* App Info */}
-				<div className="flex flex-col items-start text-left min-w-0 flex-1 gap-0.5 max-w-full">
-					{/* Title and Price Row */}
-					<div className="flex items-center justify-between w-full">
-						<h4 className="font-semibold text-sm text-foreground truncate leading-tight">
-							{metadata?.name ?? app.id}
-						</h4>
-						{app.visibility === IAppVisibility.Public && (
-							<div className="shrink-0">
-								{app.price && app.price > 0 ? (
-									<div className="bg-foreground/5 backdrop-blur-md text-foreground/80 rounded-full px-2.5 py-1 text-xs font-medium shadow-inner">
-										€{(app.price / 100).toFixed(2)}
-									</div>
-								) : (
-									<div className="bg-foreground/5 backdrop-blur-md text-foreground/80 rounded-full px-2.5 py-1 text-xs font-medium shadow-inner">
-										Free
-									</div>
-								)}
-							</div>
-						)}
-					</div>
-
-					{/* Description and Rating Row */}
-					<div className="flex items-center justify-between w-full max-w-full">
-						<p className="text-xs text-muted-foreground truncate flex-1 mr-2 max-w-64">
-							{metadata?.description ?? "No description available"}
-						</p>
-
-						<div className="flex items-center gap-1 shrink-0">
-							{app.rating_count > 0 && (
-								<>
-									<Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-									<span className="text-xs font-medium">
-										{(app.avg_rating ?? 0).toFixed(1)}
-									</span>
-								</>
-							)}
-						</div>
-					</div>
-				</div>
-			</button>
+				className={className}
+			/>
 		);
 	}
 
 	return (
-		<button
-			type="button"
+		<ExtendedAppCard
+			app={app}
+			metadata={metadata}
 			onClick={onClick}
-			className={`group relative flex flex-col transition-all duration-300 rounded-xl border border-border/40 bg-card shadow-sm hover:bg-card/95 w-72 h-[375px] overflow-hidden ${className}`}
-		>
-			{/* Thumbnail Section - Fixed aspect ratio */}
-			<div className="relative w-full h-40 overflow-hidden">
-				<img
-					className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-					src={metadata?.thumbnail ?? "/placeholder-thumbnail.webp"}
-					alt={metadata?.name ?? app.id}
-					width={1280}
-					height={640}
-					loading="lazy"
-					decoding="async"
-					fetchPriority="low"
-				/>
-				<div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/20 to-transparent" />
-
-				{/* Visibility Badge */}
-				<div className="absolute top-3 right-3 z-10">
-					<VisibilityIcon visibility={app.visibility} />
-				</div>
-
-				{/* App Icon and Price/Free Badge */}
-				<div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
-					<Avatar className="w-16 h-16 shadow-lg bg-white/10 backdrop-blur-md">
-						<AvatarImage
-							className="scale-100 group-hover:scale-90 transition-transform duration-300"
-							src={metadata?.icon ?? "/app-logo.webp"}
-							alt={`${metadata?.name ?? app.id} icon`}
-						/>
-						<AvatarFallback className="text-lg font-bold bg-white/20 backdrop-blur-md text-white border border-white/30">
-							{(metadata?.name ?? app.id).substring(0, 2).toUpperCase()}
-						</AvatarFallback>
-					</Avatar>
-					{app.visibility === IAppVisibility.Public && (
-						<div className="mb-2">
-							{app.price && app.price > 0 ? (
-								<div className="bg-white/90 backdrop-blur-xs text-gray-900 rounded-full px-3 py-1 text-sm font-bold shadow-lg">
-									€{(app.price / 100).toFixed(2)}
-								</div>
-							) : (
-								<div className="bg-white/20 backdrop-blur-xs text-white/90 rounded-full px-3 py-1 text-sm font-medium shadow-lg border border-white/30">
-									Free
-								</div>
-							)}
-						</div>
-					)}
-				</div>
-			</div>
-
-			{/* Content Section */}
-			<div className="flex flex-col p-5 flex-1">
-				{/* App Name */}
-				<h3 className="font-bold text-lg text-foreground text-left leading-tight line-clamp-1 min-h-6 mb-2">
-					{metadata?.name ?? app.id}
-				</h3>
-
-				{/* Category */}
-				<div className="flex items-center gap-2 mb-3">
-					<Badge variant="default" className="text-xs px-2 py-1">
-						{app.primary_category ?? "Other"}
-					</Badge>
-					<Badge variant="outline" className="text-xs px-2 py-1">
-						{metadata?.age_rating ?? 0}+
-					</Badge>
-				</div>
-
-				{/* Description */}
-				<p className="text-sm text-muted-foreground text-left line-clamp-3 leading-relaxed min-h-[4.4rem] mb-3 overflow-hidden">
-					{metadata?.description ?? "No description available"}
-				</p>
-
-				{/* Rating and Reviews */}
-				<div className="flex items-center justify-between mb-1">
-					<div className="flex items-center gap-2">
-						{app.rating_count > 0 ? (
-							<>
-								<div className="flex items-center gap-1">
-									<Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-									<span className="font-semibold text-sm">
-										{(app.avg_rating ?? 0).toFixed(1)}
-									</span>
-								</div>
-								<span className="text-xs text-muted-foreground">
-									({app.rating_count.toLocaleString()})
-								</span>
-							</>
-						) : (
-							<span className="text-xs text-muted-foreground">
-								No ratings yet
-							</span>
-						)}
-					</div>
-				</div>
-			</div>
-		</button>
+			className={className}
+		/>
 	);
 }
 
@@ -314,4 +162,225 @@ export function VisibilityIcon({
 				</div>,
 			);
 	}
+}
+
+function SmallAppCard({
+	app,
+	metadata,
+	onClick,
+	className,
+}: Readonly<Pick<AppCardProps, "app" | "metadata" | "onClick" | "className">>) {
+	const formatPrice = (price: number) => `€${(price / 100).toFixed(2)}`;
+
+	const itemVariants = {
+		hidden: { opacity: 0, y: 20 },
+		visible: { opacity: 1, y: 0 },
+		hover: {},
+	};
+
+	return (
+		<motion.div
+			variants={itemVariants}
+			whileHover="hover"
+			whileTap={{ scale: 0.98 }}
+			transition={{ type: "spring", stiffness: 300 }}
+		>
+			<button
+				type="button"
+				onClick={onClick}
+				className={`group cursor-pointer relative flex items-center gap-3 p-3 transition-all duration-200 rounded-xl border border-border/50 bg-card hover:bg-accent/50 w-full ${className}`}
+			>
+				<div className="relative shrink-0">
+					<Avatar className="w-12 h-12 rounded-xl shadow-sm">
+						<motion.div
+							variants={{
+								hover: { scale: 0.9 },
+							}}
+							transition={{ type: "spring", stiffness: 300 }}
+						>
+							<AvatarImage
+								src={metadata?.icon ?? "/app-logo.webp"}
+								alt={`${metadata?.name ?? app.id} icon`}
+								className="rounded-xl"
+							/>
+						</motion.div>
+						<AvatarFallback className="rounded-xl text-xs font-semibold bg-gradient-to-br from-primary/20 to-primary/10">
+							{(metadata?.name ?? app.id).substring(0, 2).toUpperCase()}
+						</AvatarFallback>
+					</Avatar>
+					{app.visibility !== IAppVisibility.Public && (
+						<div className="absolute -top-0.5 -right-0.5 scale-[0.6]">
+							<VisibilityIcon visibility={app.visibility} />
+						</div>
+					)}
+				</div>
+
+				<div className="flex-1 min-w-0 text-left">
+					<div className="flex items-start justify-between mb-1">
+						<h4 className="font-semibold text-sm text-foreground truncate pr-2">
+							{metadata?.name ?? app.id}
+						</h4>
+
+						{app.visibility === IAppVisibility.Public && (
+							<div className="shrink-0">
+								{app.price && app.price > 0 ? (
+									<div className="bg-primary text-primary-foreground rounded-full px-2.5 py-0.5 text-xs font-semibold">
+										{formatPrice(app.price)}
+									</div>
+								) : (
+									<div className="bg-muted text-muted-foreground rounded-full px-2.5 py-0.5 text-xs font-medium">
+										GET
+									</div>
+								)}
+							</div>
+						)}
+					</div>
+
+					<div className="flex items-center justify-between">
+						<p className="text-xs text-muted-foreground truncate flex-1 mr-2">
+							{metadata?.description ?? "No description available"}
+						</p>
+
+						{app.rating_count > 0 && (
+							<div className="flex items-center gap-1 shrink-0">
+								<Star className="w-2.5 h-2.5 fill-yellow-400 text-yellow-400" />
+								<span className="text-xs font-medium">
+									{(app.avg_rating ?? 0).toFixed(1)}
+								</span>
+							</div>
+						)}
+					</div>
+				</div>
+			</button>
+		</motion.div>
+	);
+}
+
+function ExtendedAppCard({
+	app,
+	metadata,
+	onClick,
+	className,
+}: Readonly<Pick<AppCardProps, "app" | "metadata" | "onClick" | "className">>) {
+	const formatPrice = (price: number) => `€${(price / 100).toFixed(2)}`;
+	const appName = metadata?.name ?? app.id;
+	const appIcon = metadata?.icon ?? "/app-logo.webp";
+	const hasRating = app.rating_count > 0;
+
+	const itemVariants = {
+		hidden: { opacity: 0, y: 20 },
+		visible: { opacity: 1, y: 0 },
+		hover: {},
+	};
+
+	return (
+		<motion.div
+			variants={itemVariants}
+			whileHover="hover"
+			whileTap={{ scale: 0.98 }}
+			transition={{ type: "spring", stiffness: 300 }}
+		>
+			<button
+				type="button"
+				onClick={onClick}
+				className={`group cursor-pointer relative flex flex-col transition-all duration-300 rounded-xl border border-border/40 bg-card shadow-sm hover:bg-card/95 w-72 h-[375px] overflow-hidden ${className}`}
+			>
+				<div className="relative w-full h-40 overflow-hidden">
+					<motion.img
+						className="absolute inset-0 w-full h-full object-cover "
+						src={metadata?.thumbnail ?? "/placeholder-thumbnail.webp"}
+						alt={appName}
+						width={1280}
+						height={640}
+						loading="lazy"
+						decoding="async"
+						fetchPriority="low"
+						variants={{
+							hover: { scale: 1.02 },
+						}}
+						transition={{ type: "spring", stiffness: 300 }}
+					/>
+					<div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+
+					<div className="absolute top-3 right-3 z-10">
+						<VisibilityIcon visibility={app.visibility} />
+					</div>
+
+					<div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
+						<Avatar className="w-16 h-16 shadow-lg bg-white/10 backdrop-blur-md">
+							<motion.div
+								variants={{
+									hover: { scale: 0.9 },
+								}}
+								transition={{ type: "spring", stiffness: 300 }}
+							>
+								<AvatarImage
+									className="scale-100"
+									src={appIcon}
+									alt={`${appName} icon`}
+								/>
+							</motion.div>
+							<AvatarFallback className="text-lg font-bold bg-white/20 backdrop-blur-md text-white border border-white/30">
+								{appName.substring(0, 2).toUpperCase()}
+							</AvatarFallback>
+						</Avatar>
+						{app.visibility === IAppVisibility.Public && (
+							<div className="mb-2">
+								{app.price && app.price > 0 ? (
+									<div className="bg-white/90 backdrop-blur-xs text-gray-900 rounded-full px-3 py-1 text-sm font-bold shadow-lg">
+										{formatPrice(app.price)}
+									</div>
+								) : (
+									<div className="bg-white/20 backdrop-blur-xs text-white/90 rounded-full px-3 py-1 text-sm font-medium shadow-lg border border-white/30">
+										GET
+									</div>
+								)}
+							</div>
+						)}
+					</div>
+				</div>
+
+				<div className="flex flex-col p-5 flex-1">
+					<h3 className="font-bold text-lg text-foreground text-left leading-tight line-clamp-1 min-h-6 mb-2">
+						{appName}
+					</h3>
+
+					<div className="flex items-center gap-2 mb-3">
+						<Badge variant="default" className="text-xs px-2 py-1">
+							{app.primary_category ?? "Other"}
+						</Badge>
+						<Badge variant="outline" className="text-xs px-2 py-1">
+							{metadata?.age_rating ?? 0}+
+						</Badge>
+					</div>
+
+					<p className="text-sm text-muted-foreground text-left line-clamp-3 leading-relaxed min-h-[4.4rem] mb-3 overflow-hidden">
+						{metadata?.description ?? "No description available"}
+					</p>
+
+					<div className="flex items-center justify-between mb-1">
+						<div className="flex items-center gap-2">
+							{hasRating ? (
+								<>
+									<div className="flex items-center gap-1">
+										<Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+										<span className="font-semibold text-sm">
+											{(app.avg_rating ?? 0).toFixed(1)}
+										</span>
+									</div>
+									<span className="text-xs text-muted-foreground">
+										({app.rating_count.toLocaleString()})
+									</span>
+								</>
+							) : (
+								<span className="text-xs text-muted-foreground">
+									No ratings yet
+								</span>
+							)}
+						</div>
+					</div>
+				</div>
+			</button>
+		</motion.div>
+	);
 }

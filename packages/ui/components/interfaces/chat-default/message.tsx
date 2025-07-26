@@ -310,7 +310,7 @@ const MessageActions = ({
 		{rating !== 0 && (
 			<button onClick={onFeedbackClick}>
 				<Badge
-					variant={gaveMoreFeedback ? "outline-solid" : "default"}
+					variant={gaveMoreFeedback ? "outline" : "default"}
 					className="h-6 rounded-full"
 				>
 					{gaveMoreFeedback ? "✅ Feedback provided" : "Provide feedback"}
@@ -561,7 +561,7 @@ export function MessageComponent({
 		<>
 			<div
 				className={cn(
-					"max-w-(--breakpoint-lg) flex gap-1 flex-col transition-all duration-300 ease-in-out",
+					"max-w-screen-lg flex gap-1 flex-col transition-all duration-300 ease-in-out",
 					isUser ? "items-end" : "items-start",
 				)}
 			>
@@ -569,7 +569,7 @@ export function MessageComponent({
 					className={cn(
 						"rounded-xl rounded-tr-sm p-4 pt-2 whitespace-break-spaces transition-all duration-300 ease-in-out",
 						isUser
-							? "bg-muted dark:bg-muted/30 text-foreground max-w-(--breakpoint-md)"
+							? "bg-muted dark:bg-muted/30 text-foreground max-w-screen-md"
 							: "bg-background text-foreground max-w-full w-full pb-0",
 					)}
 				>
