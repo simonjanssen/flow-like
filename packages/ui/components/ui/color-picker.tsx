@@ -28,7 +28,7 @@ function ColorPicker({
 	open,
 	onOpenChange,
 	...props
-}: ColorPickerProps) {
+}: Readonly<ColorPickerProps>) {
 	const parsedValue = useMemo(() => value || "#FFFFFFFF", [value]);
 
 	return (
