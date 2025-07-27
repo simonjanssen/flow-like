@@ -29,25 +29,7 @@ export default defineConfig({
 				"react-tweet",
 			],
 		},
-		define: {
-			// stub out `process.env` so next/dist/client code can import it without blowing up
-			"process.env": {},
-			// if any code reads process.env.NODE_ENV, you can explicitly set it:
-			"process.env.NODE_ENV": JSON.stringify(
-				process.env.NODE_ENV || "production",
-			),
-		},
 		plugins: [
-			{
-				name: "ignore-css-imports-ssr",
-				enforce: "pre",
-				load(id, { ssr }) {
-					if (ssr && id.endsWith(".css")) {
-						// pretend it was an empty module
-						return { code: "" };
-					}
-				},
-			},
 			tailwindcss(),
 		],
 	},
