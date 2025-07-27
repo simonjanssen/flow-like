@@ -105,7 +105,7 @@ export function LayerNode(props: NodeProps<LayerNode>) {
 					<div
 						ref={divRef}
 						key={`${props.id}__node`}
-						className={`p-1 flex flex-col justify-center items-center react-flow__node-default selectable focus:ring-2 relative bg-card! rounded-md group ${props.selected && "border-primary! border-2"}`}
+						className={`p-1 flex flex-col justify-center items-center react-flow__node-default selectable focus:ring-2 relative bg-card! border-border! rounded-md! group ${props.selected && "border-primary! border-2"}`}
 					>
 						{props.data.layer.comment && props.data.layer.comment !== "" && (
 							<div className="absolute top-0 translate-y-[calc(-100%-0.5rem)] left-3 right-3 mb-2 text-center bg-foreground/70 text-background p-1 rounded-md">

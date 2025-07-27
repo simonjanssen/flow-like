@@ -123,7 +123,7 @@ export function CommentNode(props: NodeProps<CommentNode>) {
 				<ContextMenuTrigger>
 					<div
 						key={`${props.id}__node`}
-						className={`bg-card p-1 md-wrapper react-flow__node-default selectable w-full! h-full! focus:ring-2 relative rounded-md border-0! group opacity-80 ${props.selected && ""}`}
+						className={`bg-card p-1 md-wrapper react-flow__node-default selectable w-full! h-full! focus:ring-2 relative rounded-md! border-0! group opacity-80 ${props.selected && ""}`}
 						style={{
 							backgroundColor: currentColor,
 						}}

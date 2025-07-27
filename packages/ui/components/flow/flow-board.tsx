@@ -1237,6 +1237,8 @@ export function FlowBoard({
 										<MiniMap
 											pannable
 											zoomable
+											bgColor="color-mix(in oklch, var(--background) 80%, transparent)"
+											maskColor="color-mix(in oklch, var(--foreground) 10%, transparent)"
 											nodeColor={(node) => {
 												if (node.type === "layerNode")
 													return "color-mix(in oklch, var(--foreground) 50%, transparent)";
@@ -1279,9 +1281,9 @@ export function FlowBoard({
 													: BackgroundVariant.Dots
 											}
 											color={
-												currentLayer &&
-												"color-mix(in oklch, var(--muted) 20%, transparent)"
+												currentLayer ? "color-mix(in oklch, var(--foreground) 5%, transparent)" : "color-mix(in oklch, var(--foreground) 20%, transparent)"
 											}
+											bgColor="color-mix(in oklch, var(--background) 80%, transparent)"
 											gap={12}
 											size={1}
 										/>

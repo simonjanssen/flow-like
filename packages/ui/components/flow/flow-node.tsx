@@ -475,7 +475,7 @@ const FlowNodeInner = memo(
 			<div
 				key={`${props.id}__node`}
 				ref={div}
-				className={`bg-card p-2 react-flow__node-default selectable focus:ring-2 relative rounded-md group ${props.selected && "border-primary! border-2"} ${executionState === "done" ? "opacity-60" : "opacity-100"} ${isReroute && "w-4 max-w-4 max-h-3! overflow-y rounded-lg! p-[0.4rem]!"}`}
+				className={`bg-card! p-2 react-flow__node-default rounded-md! selectable focus:ring-2 relative group ${props.selected && "border-primary! border-2"} ${executionState === "done" ? "opacity-60" : "opacity-100"} ${isReroute && "w-4 max-w-4 max-h-3! overflow-y rounded-lg! p-[0.4rem]!"} ${!isReroute && "border-border!"}`}
 				style={isReroute ? nodeStyle : {}}
 				onMouseEnter={() => onHover(true)}
 				onMouseLeave={() => onHover(false)}
