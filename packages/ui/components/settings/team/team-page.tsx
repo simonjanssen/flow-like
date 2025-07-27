@@ -23,11 +23,11 @@ export function TeamManagementPage() {
 	const [showRequestQueue] = useState(true); // This would be determined by project type
 
 	return (
-		<div className="container mx-auto p-6 space-y-8 flex flex-col overflow-hidden h-full flex-grow">
+		<div className="container mx-auto p-6 space-y-8 flex flex-col overflow-hidden h-full grow">
 			{/* Header */}
 			<div className="flex items-center justify-between">
 				<div>
-					<h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-tertiary bg-clip-text text-transparent">
+					<h1 className="text-4xl font-bold bg-linear-to-r from-primary to-tertiary bg-clip-text text-transparent">
 						Team Management
 					</h1>
 					<p className="text-muted-foreground mt-2">
@@ -45,7 +45,7 @@ export function TeamManagementPage() {
 				defaultValue="members"
 				className="space-y-6 flex flex-col flex-1 min-h-0"
 			>
-				<TabsList className="grid w-full grid-cols-3 flex-shrink-0">
+				<TabsList className="grid w-full grid-cols-3 shrink-0">
 					<TabsTrigger value="members" className="flex items-center gap-2">
 						<Users className="w-4 h-4" />
 						Team Members

@@ -182,7 +182,7 @@ export function FileOrFolder({
 	if (file.location.endsWith("._path")) {
 		return (
 			<div
-				className={`group relative rounded-lg border border-border/50 p-3 w-full transition-all duration-200 hover:border-primary/50 hover:shadow-md bg-gradient-to-r from-background to-muted/20 ${
+				className={`group relative rounded-lg border border-border/50 p-3 w-full transition-all duration-200 hover:border-primary/50 hover:shadow-md bg-linear-to-r from-background to-muted/20 ${
 					highlight ? "border-primary bg-primary/5 shadow-sm" : ""
 				}`}
 			>
@@ -261,7 +261,7 @@ export function FileOrFolder({
 
 	return (
 		<div
-			className={`group relative rounded-lg border border-border/50 p-3 w-full transition-all duration-200 bg-gradient-to-r from-background to-muted/10 ${
+			className={`group relative rounded-lg border border-border/50 p-3 w-full transition-all duration-200 bg-linear-to-r from-background to-muted/10 ${
 				highlight ? "border-primary bg-primary/5 shadow-sm" : ""
 			} ${
 				canPreview(file.location)

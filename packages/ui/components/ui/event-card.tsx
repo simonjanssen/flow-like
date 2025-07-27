@@ -55,7 +55,7 @@ export function EventCard({
 		<Card className="relative group transition-all duration-300 hover:scale-[1.03] bg-card">
 			{/* Gradient overlay for active events */}
 			{event.active && (
-				<div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+				<div className="absolute inset-0 bg-linear-to-r from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 			)}
 
 			<div className="relative">
@@ -90,7 +90,7 @@ export function EventCard({
 						)}
 					</div>
 
-					<CardTitle className="text-xl font-bold pt-2 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
+					<CardTitle className="text-xl font-bold pt-2 bg-linear-to-r from-foreground to-foreground/80 bg-clip-text">
 						{event.name}
 					</CardTitle>
 					<CardDescription className="leading-relaxed text-muted-foreground/90">

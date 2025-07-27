@@ -290,19 +290,13 @@ const ProfileContent = ({
 									<>
 										<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
 											{apps.map(([app, metadata]) => (
-												<motion.div
+												<AppCard
 													key={app.id}
-													variants={itemVariants}
-													whileHover={{ scale: 1.02 }}
-													transition={{ type: "spring", stiffness: 300 }}
-												>
-													<AppCard
-														app={app}
-														variant="extended"
-														metadata={metadata}
-														className="w-full"
-													/>
-												</motion.div>
+													app={app}
+													variant="extended"
+													metadata={metadata}
+													className="w-full"
+												/>
 											))}
 										</div>
 

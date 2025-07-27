@@ -202,6 +202,7 @@ function FlowPinInnerComponent({
 			{shouldRenderPinEdit && (
 				<div className={pinEditContainerClassName}>
 					<PinEdit
+						nodeId={node.id}
 						pin={pin}
 						appId={appId}
 						defaultValue={defaultValue}

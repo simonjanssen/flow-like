@@ -44,15 +44,12 @@ export function Board({
 						nodes: isMobile
 							? [
 									{
-										id: "sx4lrx3ejmxzb900z60pfw67",
-									},
-									{
-										id: "h2hldwjc4xdzll134lop038x",
+										id: "u7urfocffhjtbwdwlore8u4w",
 									},
 								]
 							: [
 									{
-										id: "sx4lrx3ejmxzb900z60pfw67",
+										id: "u7urfocffhjtbwdwlore8u4w",
 									},
 								],
 					});

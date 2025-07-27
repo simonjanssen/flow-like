@@ -46,7 +46,7 @@ export function TemplateModal({
 	];
 
 	return (
-		<div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
+		<div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-xs">
 			<div className="fixed inset-4 bg-background border rounded-lg shadow-2xl flex flex-col">
 				<div className="flex items-center justify-between p-6 border-b">
 					<div className="flex items-center gap-3">
@@ -81,7 +81,9 @@ export function TemplateModal({
 							{allTags.map((tag) => (
 								<Badge
 									key={tag}
-									variant={selectedTags.includes(tag) ? "default" : "outline"}
+									variant={
+										selectedTags.includes(tag) ? "default" : "outline-solid"
+									}
 									className="cursor-pointer"
 									onClick={() => {
 										setSelectedTags((prev) =>

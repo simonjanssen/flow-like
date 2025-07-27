@@ -83,7 +83,7 @@ export function UserManagement({ appId }: Readonly<{ appId: string }>) {
 
 	return (
 		<Card className="h-full flex flex-col">
-			<CardHeader className="flex-shrink-0">
+			<CardHeader className="shrink-0">
 				<CardTitle className="flex items-center gap-2">
 					<Users className="w-5 h-5" />
 					Team Members
@@ -220,7 +220,7 @@ function Member({
 	return (
 		<div className="flex items-center justify-between p-2 py-1.5 border rounded-md hover:bg-muted/50 transition-colors">
 			<div className="flex items-center gap-3 min-w-0 flex-1">
-				<Avatar className="w-8 h-8 flex-shrink-0">
+				<Avatar className="w-8 h-8 shrink-0">
 					<AvatarImage src={user.data.avatar_url} />
 					<AvatarFallback className={`text-foreground text-xs`}>
 						{evaluatedName
@@ -252,7 +252,7 @@ function Member({
 				</div>
 			</div>
 
-			<div className="flex items-center gap-2 flex-shrink-0">
+			<div className="flex items-center gap-2 shrink-0">
 				{!permission.contains(RolePermissions.Owner) && (
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>

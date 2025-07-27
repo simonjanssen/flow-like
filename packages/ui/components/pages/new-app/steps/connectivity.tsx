@@ -39,7 +39,7 @@ export function ConnectivityStep({
 			</div>
 			<ModeDescription isOffline={isOffline} />
 			<div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-				<Settings className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+				<Settings className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
 				<div className="text-sm text-amber-800 dark:text-amber-200">
 					<strong>Important:</strong> You cannot switch between Online and
 					Offline modes after creation.
@@ -66,7 +66,7 @@ function ConnectivityModeOption({
 		<Card
 			className={`cursor-pointer transition-all duration-200 relative h-32 ${
 				selected
-					? "ring-2 ring-primary bg-gradient-to-br from-primary/5 to-transparent"
+					? "ring-2 ring-primary bg-linear-to-br from-primary/5 to-transparent"
 					: "hover:border-primary/30"
 			}`}
 			onClick={onClick}

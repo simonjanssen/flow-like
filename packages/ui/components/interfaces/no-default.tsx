@@ -9,7 +9,7 @@ export function NoDefaultInterface({
 	eventId,
 }: Readonly<{ appId: string; eventId?: string }>) {
 	return (
-		<div className="flex flex-col h-full bg-muted/20 flex-grow">
+		<div className="flex flex-col h-full bg-muted/20 grow">
 			<div className="flex-1 flex items-center justify-center p-8">
 				<Card className="w-full max-w-md">
 					<CardContent className="pt-6">

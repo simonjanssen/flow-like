@@ -251,7 +251,7 @@ const BlockCommentContent = ({
 						<PopoverTrigger asChild>
 							<Button
 								variant="ghost"
-								className="mt-1 ml-1 flex h-6 gap-1 !px-1.5 py-0 text-muted-foreground/80 hover:text-muted-foreground/80 data-[active=true]:bg-muted"
+								className="mt-1 ml-1 flex h-6 gap-1 px-1.5! py-0 text-muted-foreground/80 hover:text-muted-foreground/80 data-[active=true]:bg-muted"
 								data-active={open}
 								contentEditable={false}
 							>

@@ -28,7 +28,7 @@ const AppHeader = ({
 		<div className="flex items-center gap-3">
 			<Avatar className="h-10 w-10 border border-border">
 				<AvatarImage src={appMeta.data?.icon ?? ""} />
-				<AvatarFallback className="bg-gradient-to-br from-primary/10 to-secondary/10">
+				<AvatarFallback className="bg-linear-to-br from-primary/10 to-secondary/10">
 					<Folder className="h-5 w-5" />
 				</AvatarFallback>
 			</Avatar>
@@ -106,7 +106,7 @@ export function AppTemplateFolder({
 			<Card
 				className={`cursor-pointer transition-all duration-300 hover:shadow-md ${
 					hasSelectedTemplate
-						? "ring-2 ring-primary shadow-md shadow-primary/10 bg-gradient-to-br from-primary/5 to-transparent"
+						? "ring-2 ring-primary shadow-md shadow-primary/10 bg-linear-to-br from-primary/5 to-transparent"
 						: "hover:border-primary/20"
 				}`}
 				onClick={() => setIsExploded(true)}
@@ -115,7 +115,7 @@ export function AppTemplateFolder({
 					<div className="flex items-center gap-3 mb-3">
 						<Avatar className="h-10 w-10 border border-border">
 							<AvatarImage src={appMeta.data?.icon ?? ""} />
-							<AvatarFallback className="bg-gradient-to-br from-primary/10 to-secondary/10">
+							<AvatarFallback className="bg-linear-to-br from-primary/10 to-secondary/10">
 								<Folder className="h-5 w-5" />
 							</AvatarFallback>
 						</Avatar>
@@ -161,7 +161,7 @@ export function AppTemplateFolder({
 			</Card>
 
 			{isExploded && (
-				<div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+				<div className="fixed inset-0 bg-background/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
 					<div className="w-full max-w-6xl max-h-[90vh] overflow-y-auto bg-background border rounded-lg shadow-lg">
 						<div className="p-6 space-y-6">
 							<AppHeader

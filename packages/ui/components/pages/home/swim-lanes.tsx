@@ -143,7 +143,7 @@ function SwimlaneSlot({
 	return (
 		<div className={scrollClass}>
 			{items.map((item) => (
-				<div key={item.id} className={isHorizontal ? "flex-grow w-full" : ""}>
+				<div key={item.id} className={isHorizontal ? "grow w-full" : ""}>
 					<SwimlaneItemOrSearch item={item} size={size} variant={variant} />
 				</div>
 			))}
@@ -228,7 +228,7 @@ function SearchResults({
 	return (
 		<div className={scrollClass}>
 			{searchItems.map((item) => (
-				<div key={item.id} className={isHorizontal ? "flex-grow w-full" : ""}>
+				<div key={item.id} className={isHorizontal ? "grow w-full" : ""}>
 					<SwimlaneItem item={item} size={size} variant={variant} />
 				</div>
 			))}
@@ -273,12 +273,7 @@ function SwimlaneItem({
 
 	if (item.type === "app" && item.appId) {
 		return (
-			<AppCardLoading
-				appId={item.appId}
-				variant={variant}
-				backend={backend}
-				fill={size === "large"}
-			/>
+			<AppCardLoading appId={item.appId} variant={variant} backend={backend} />
 		);
 	}
 
@@ -321,18 +316,18 @@ function StaticCard({
 					/>
 				) : (
 					<div
-						className={`w-full h-full bg-gradient-to-br ${
+						className={`w-full h-full bg-linear-to-br ${
 							item.gradient || "from-primary/20 to-primary/40"
 						}`}
 					/>
 				)}
-				<div className="absolute inset-0 bg-gradient-to-t from-black/20 via-black/5 dark:from-black/60 dark:via-black/20 to-transparent" />
+				<div className="absolute inset-0 bg-linear-to-t from-black/20 via-black/5 dark:from-black/60 dark:via-black/20 to-transparent" />
 			</div>
 
 			<div className="relative z-10 flex flex-col justify-between h-full p-6">
 				{item.badge && (
 					<div className="self-start">
-						<div className="bg-white/90 backdrop-blur-sm text-gray-900 rounded-full px-3 py-1 text-xs font-bold shadow-lg">
+						<div className="bg-white/90 backdrop-blur-xs text-gray-900 rounded-full px-3 py-1 text-xs font-bold shadow-lg">
 							{item.badge}
 						</div>
 					</div>
@@ -341,7 +336,7 @@ function StaticCard({
 				<div className="space-y-3">
 					<div className="flex items-center gap-2">
 						{item.icon && (
-							<div className="p-2 bg-white/20 backdrop-blur-sm rounded-full text-white">
+							<div className="p-2 bg-white/20 backdrop-blur-xs rounded-full text-white">
 								<DynamicImage url={item.icon} className="w-5 h-5 bg-white" />
 							</div>
 						)}
@@ -388,12 +383,10 @@ function AppCardLoading({
 	appId,
 	variant,
 	backend,
-	fill,
 }: Readonly<{
 	appId: string;
 	backend: IBackendState;
 	variant: "small" | "extended";
-	fill?: boolean;
 }>) {
 	const app = useInvoke(backend.appState.searchApps, backend.appState, [appId]);
 
@@ -408,26 +401,12 @@ function AppCardLoading({
 	const meta = app.data[0][1];
 	const data = app.data[0][0];
 
-	const itemVariants = {
-		hidden: { opacity: 0, y: 20 },
-		visible: { opacity: 1, y: 0 },
-	};
-
 	return (
-		<motion.div
-			key={data.id}
-			variants={itemVariants}
-			whileHover={{ scale: 1.02 }}
-			transition={{ type: "spring", stiffness: 300 }}
-		>
-			<AppCard
-				app={data}
-				metadata={meta}
-				variant={variant}
-				className={
-					(fill ?? false) ? "w-full max-w-full h-full flex flex-grow" : ""
-				}
-			/>
-		</motion.div>
+		<AppCard
+			app={data}
+			metadata={meta}
+			variant={variant}
+			className={"w-full max-w-full h-full flex grow"}
+		/>
 	);
 }

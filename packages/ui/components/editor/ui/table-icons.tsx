@@ -2,7 +2,7 @@
 
 import type { LucideProps } from "lucide-react";
 
-export function BorderAllIcon(props: LucideProps) {
+export function BorderAllIcon(props: Readonly<LucideProps>) {
 	return (
 		<svg
 			fill="none"

@@ -82,20 +82,20 @@ export function RoleCard({
 		<Card
 			className={`group flex flex-col relative overflow-hidden transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 ${
 				isOwner
-					? "bg-gradient-to-br from-amber-50/80 via-orange-50/60 to-yellow-50/40 border-amber-200/60 shadow-lg shadow-amber-100/20 dark:from-amber-950/20 dark:via-orange-950/15 dark:to-yellow-950/10 dark:border-amber-700/40"
+					? "bg-linear-to-br from-amber-50/80 via-orange-50/60 to-yellow-50/40 border-amber-200/60 shadow-lg shadow-amber-100/20 dark:from-amber-950/20 dark:via-orange-950/15 dark:to-yellow-950/10 dark:border-amber-700/40"
 					: isDefault
-						? "bg-gradient-to-br from-blue-50/80 via-indigo-50/60 to-violet-50/40 border-blue-200/60 shadow-lg shadow-blue-100/20 dark:from-blue-950/20 dark:via-indigo-950/15 dark:to-violet-950/10 dark:border-blue-700/40"
-						: "bg-white/80 backdrop-blur-sm border-slate-200/60 hover:border-slate-300/80 shadow-md dark:bg-slate-900/60 dark:border-slate-700/60"
+						? "bg-linear-to-br from-blue-50/80 via-indigo-50/60 to-violet-50/40 border-blue-200/60 shadow-lg shadow-blue-100/20 dark:from-blue-950/20 dark:via-indigo-950/15 dark:to-violet-950/10 dark:border-blue-700/40"
+						: "bg-white/80 backdrop-blur-xs border-slate-200/60 hover:border-slate-300/80 shadow-md dark:bg-slate-900/60 dark:border-slate-700/60"
 			} ${compact ? "h-[220px]" : "min-h-[280px]"}`}
 		>
 			{/* Enhanced accent line with glow */}
 			<div
 				className={`absolute top-0 left-0 right-0 h-0.5 ${
 					isOwner
-						? "bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 shadow-sm shadow-amber-300/50"
+						? "bg-linear-to-r from-amber-400 via-orange-400 to-amber-500 shadow-sm shadow-amber-300/50"
 						: isDefault
-							? "bg-gradient-to-r from-blue-400 via-indigo-400 to-blue-500 shadow-sm shadow-blue-300/50"
-							: "bg-gradient-to-r from-slate-300 to-gray-400 dark:from-slate-600 dark:to-slate-500"
+							? "bg-linear-to-r from-blue-400 via-indigo-400 to-blue-500 shadow-sm shadow-blue-300/50"
+							: "bg-linear-to-r from-slate-300 to-gray-400 dark:from-slate-600 dark:to-slate-500"
 				}`}
 			/>
 
@@ -104,12 +104,12 @@ export function RoleCard({
 					<div className="flex items-start gap-3 min-w-0 flex-1">
 						{/* Enhanced role icon with better shadows */}
 						<div
-							className={`flex-shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center shadow-sm ring-1 transition-all group-hover:scale-105 ${
+							className={`shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center shadow-sm ring-1 transition-all group-hover:scale-105 ${
 								isOwner
-									? "bg-gradient-to-br from-amber-100 to-amber-200 text-amber-700 ring-amber-200/50 dark:from-amber-900/30 dark:to-amber-800/20 dark:text-amber-300 dark:ring-amber-700/30"
+									? "bg-linear-to-br from-amber-100 to-amber-200 text-amber-700 ring-amber-200/50 dark:from-amber-900/30 dark:to-amber-800/20 dark:text-amber-300 dark:ring-amber-700/30"
 									: isDefault
-										? "bg-gradient-to-br from-blue-100 to-blue-200 text-blue-700 ring-blue-200/50 dark:from-blue-900/30 dark:to-blue-800/20 dark:text-blue-300 dark:ring-blue-700/30"
-										: "bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700 ring-slate-200/50 dark:from-slate-800 dark:to-slate-700 dark:text-slate-300 dark:ring-slate-600/30"
+										? "bg-linear-to-br from-blue-100 to-blue-200 text-blue-700 ring-blue-200/50 dark:from-blue-900/30 dark:to-blue-800/20 dark:text-blue-300 dark:ring-blue-700/30"
+										: "bg-linear-to-br from-slate-100 to-slate-200 text-slate-700 ring-slate-200/50 dark:from-slate-800 dark:to-slate-700 dark:text-slate-300 dark:ring-slate-600/30"
 							}`}
 						>
 							{isOwner ? (

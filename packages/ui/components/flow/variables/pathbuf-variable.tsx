@@ -42,7 +42,7 @@ export function PathbufVariable({
 				<Label htmlFor="is_folder">Folder</Label>
 			</div>
 			<Button
-				variant={"outline"}
+				variant={"outline-solid"}
 				disabled={disabled}
 				className={cn(
 					"w-full justify-start text-left font-normal max-w-full col-span-4",

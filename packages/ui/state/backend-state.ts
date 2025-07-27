@@ -12,6 +12,8 @@ import type { ITeamState } from "./backend-state/team-state";
 import type { ITemplateState } from "./backend-state/template-state";
 import type { IUserState } from "./backend-state/user-state";
 
+export * from "./backend-state/empty-states/index";
+
 export type {
 	IAppState,
 	IBitState,

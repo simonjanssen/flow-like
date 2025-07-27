@@ -31,11 +31,11 @@ import { useTauriInvoke } from "../../../components/useInvoke";
 const chartConfig = {
 	downloaded: {
 		label: "Speed (Mbit/s)",
-		color: "hsl(var(--chart-3))",
+		color: "var(--chart-3)",
 	},
 	total: {
 		label: "Total",
-		color: "hsl(var(--chart-4))",
+		color: "var(--chart-4)",
 	},
 } satisfies ChartConfig;
 

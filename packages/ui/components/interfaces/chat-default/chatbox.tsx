@@ -514,7 +514,7 @@ export const ChatBox = forwardRef<ChatBoxRef, ChatBoxProps>(
 								onKeyDown={handleKeyDown}
 								onPaste={handlePaste}
 								placeholder="Type your message... (Enter to send, Shift+Enter for new line)"
-								className="border-0 focus:ring-0 resize-none bg-transparent placeholder:text-muted-foreground text-sm leading-relaxed min-h-[48px] max-h-[180px] overflow-y-auto w-full"
+								className="border-0 focus:ring-0 resize-none bg-transparent! placeholder:text-muted-foreground text-sm leading-relaxed min-h-[48px] max-h-[180px] overflow-y-auto w-full"
 								rows={Math.min(5, Math.max(2, input.split("\n").length))}
 								style={{
 									boxShadow: "none",

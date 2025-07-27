@@ -59,7 +59,7 @@ const BubbleMenu = ({
 
 	return (
 		<div
-			className="fixed z-[9999] pointer-events-auto"
+			className="fixed z-9999 pointer-events-auto"
 			onMouseEnter={onMouseEnter}
 			onMouseLeave={onMouseLeave}
 			style={{
@@ -70,7 +70,7 @@ const BubbleMenu = ({
 		>
 			<div
 				className={cn(
-					"bg-background/95 backdrop-blur-sm border border-border/50 rounded-full shadow-xl",
+					"bg-background/95 backdrop-blur-xs border border-border/50 rounded-full shadow-xl",
 					"animate-in fade-in-0 zoom-in-95 duration-200",
 					"flex items-center gap-1 p-1",
 					isVertical ? "flex-col" : "flex-row",
@@ -87,7 +87,7 @@ const BubbleMenu = ({
 							"hover:scale-110 active:scale-95 transition-all duration-200",
 							"hover:bg-accent hover:text-accent-foreground",
 							"disabled:opacity-50 disabled:pointer-events-none",
-							"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+							"focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
 							action.variant === "destructive" &&
 								"text-destructive-foreground hover:bg-destructive",
 						)}
@@ -108,7 +108,7 @@ const BubbleMenu = ({
 const DefaultTrigger = () => (
 	<button
 		type="button"
-		className="w-8 h-8 rounded-full flex items-center justify-center bg-background/80 backdrop-blur-sm border border-border/50 hover:bg-accent hover:text-accent-foreground transition-all duration-200 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring shadow-sm"
+		className="w-8 h-8 rounded-full flex items-center justify-center bg-background/80 backdrop-blur-xs border border-border/50 hover:bg-accent hover:text-accent-foreground transition-all duration-200 hover:scale-105 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring shadow-sm"
 	>
 		<MoreHorizontal className="w-4 h-4" />
 	</button>

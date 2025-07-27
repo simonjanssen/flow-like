@@ -99,7 +99,7 @@ const ColumnDragHandle = React.memo(function ColumnDragHandle() {
 		<TooltipProvider>
 			<Tooltip>
 				<TooltipTrigger asChild>
-					<Button variant="ghost" className="h-5 !px-1">
+					<Button variant="ghost" className="h-5 px-1!">
 						<GripHorizontal
 							className="text-muted-foreground"
 							onClick={(event) => {

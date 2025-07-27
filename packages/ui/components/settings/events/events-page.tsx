@@ -151,7 +151,7 @@ export default function EventsPage({
 	}
 
 	return (
-		<div className="container mx-auto py-8 space-y-8 flex flex-col flex-grow max-h-full">
+		<div className="container mx-auto py-8 space-y-8 flex flex-col grow max-h-full">
 			{/* Header */}
 			<div className="flex items-center justify-between">
 				<div>
@@ -226,9 +226,9 @@ export default function EventsPage({
 			</div>
 
 			{/* Events List */}
-			<div className="space-y-4 flex flex-col flex-grow overflow-hidden max-h-full">
+			<div className="space-y-4 flex flex-col grow overflow-hidden max-h-full">
 				<h2 className="text-2xl font-semibold">Events</h2>
-				<div className="flex flex-col overflow-auto overflow-x-visible flex-grow h-full max-h-full p-1">
+				<div className="flex flex-col overflow-auto overflow-x-visible grow h-full max-h-full p-1">
 					{events.data?.length === 0 ? (
 						<Card>
 							<CardContent className="py-12 text-center">
@@ -331,7 +331,7 @@ function EventConfiguration({
 	};
 
 	return (
-		<div className="container mx-auto py-8 space-y-8 max-h-full flex flex-col flex-grow overflow-y-auto">
+		<div className="container mx-auto py-8 space-y-8 max-h-full flex flex-col grow overflow-y-auto">
 			{/* Breadcrumbs */}
 			<div className="flex items-center space-x-2 text-sm text-muted-foreground">
 				<Button
@@ -548,7 +548,7 @@ function EventConfiguration({
 											<Button
 												size={"icon"}
 												variant={"ghost"}
-												className="!p-0 w-4 h-4 ml-1 mb-[0.1rem]"
+												className="p-0! w-4 h-4 ml-1 mb-[0.1rem]"
 											>
 												<ExternalLinkIcon className="w-4 h-4 group-hover:text-primary" />
 											</Button>
@@ -752,7 +752,7 @@ function EventConfiguration({
 																</div>
 																<Button
 																	variant={
-																		isAlreadyAdded ? "outline" : "default"
+																		isAlreadyAdded ? "outline-solid" : "default"
 																	}
 																	size="sm"
 																	onClick={() => {
