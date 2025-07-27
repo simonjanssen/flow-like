@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { INode, IPin } from "../lib";
+import type { IPin } from "../lib";
 
 interface IEditPinState {
 	pin: IPin;

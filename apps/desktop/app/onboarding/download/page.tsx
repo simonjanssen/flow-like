@@ -200,7 +200,6 @@ export default function ProfileCreation() {
 							animateNewValues={false}
 							animationEasing="ease-in-out"
 							animationDuration={100}
-							animationId={1}
 							stroke="var(--color-downloaded)"
 							strokeWidth={2}
 							dot={false}

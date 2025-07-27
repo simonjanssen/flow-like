@@ -1,7 +1,6 @@
 import { HeartFilledIcon } from "@radix-ui/react-icons";
 import { motion } from "framer-motion";
 import {
-	CheckCircleIcon,
 	CircleUserIcon,
 	FlaskConicalIcon,
 	GlobeLockIcon,

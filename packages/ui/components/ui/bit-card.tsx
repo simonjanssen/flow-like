@@ -275,7 +275,7 @@ export function BitCard({
 								</Badge>
 
 								<Badge
-									variant={isInstalled.data ? "default" : "outline-solid"}
+									variant={isInstalled.data ? "default" : "outline"}
 									className={`text-xs font-medium transition-all ${
 										isInstalled.data
 											? "bg-emerald-500 hover:bg-emerald-600 text-white"

@@ -1,4 +1,4 @@
-import type { JSX, ReactElement, ReactNode, RefObject } from "react";
+import type { JSX, ReactElement, RefObject } from "react";
 import type { IEvent, IEventPayload, INode } from "../../lib";
 
 export interface IToolBarActions {

@@ -13,7 +13,6 @@ import {
 	humanFileSize,
 	useDownloadManager,
 } from "@tm9657/flow-like-ui";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { CartesianGrid, Line, LineChart, XAxis } from "recharts";
 

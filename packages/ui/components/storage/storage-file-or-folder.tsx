@@ -1,6 +1,5 @@
 import { IconBinary, IconPdf } from "@tabler/icons-react";
 import {
-	Archive,
 	BracesIcon,
 	Database,
 	EllipsisVerticalIcon,
@@ -12,22 +11,15 @@ import {
 	FileTextIcon,
 	FileVideoIcon,
 	FolderIcon,
-	HeadphonesIcon,
-	ImageIcon,
-	LetterTextIcon,
 	Music,
 	PresentationIcon,
 	Settings,
-	VideoIcon,
 	Zap,
 } from "lucide-react";
 import { useCallback } from "react";
 import { toast } from "sonner";
 import { type INode, type IStorageItem, humanFileSize } from "../../lib";
-import {
-	convertJsonToUint8Array,
-	parseUint8ArrayToJson,
-} from "../../lib/uint8";
+import { convertJsonToUint8Array } from "../../lib/uint8";
 import {
 	Badge,
 	Button,

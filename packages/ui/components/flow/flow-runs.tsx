@@ -139,7 +139,7 @@ const FlowRunsComponent = ({
 			<div className="flex flex-row items-center justify-between">
 				<h3>Runs</h3>
 				<Button
-					variant={"outline-solid"}
+					variant={"outline"}
 					size={"icon"}
 					onClick={() => refetchLogs(backend)}
 				>

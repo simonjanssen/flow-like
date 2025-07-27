@@ -2,7 +2,6 @@
 
 import { VariableIcon } from "lucide-react";
 import { memo, useEffect, useState } from "react";
-import { toast } from "sonner";
 import { Button } from "../../../components/ui/button";
 import { IValueType } from "../../../lib";
 import {

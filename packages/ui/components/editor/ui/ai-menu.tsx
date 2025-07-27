@@ -13,8 +13,6 @@ import { Command as CommandPrimitive } from "cmdk";
 import {
 	Album,
 	BadgeHelp,
-	BookIcon,
-	BookOpenCheck,
 	Check,
 	CornerUpLeft,
 	FeatherIcon,

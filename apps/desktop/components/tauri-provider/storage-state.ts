@@ -1,10 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { mkdir, open as openFile } from "@tauri-apps/plugin-fs";
-import {
-	type IStorageItem,
-	type IStorageState,
-	injectDataFunction,
-} from "@tm9657/flow-like-ui";
+import type { IStorageItem, IStorageState } from "@tm9657/flow-like-ui";
 import type { IStorageItemActionResult } from "@tm9657/flow-like-ui/state/backend-state/types";
 import { fetcher, put } from "../../lib/api";
 import type { TauriBackend } from "../tauri-provider";

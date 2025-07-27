@@ -7,7 +7,7 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import { isEqual } from "lodash-es";
-import { type IBackendState, useBackend } from "../state/backend-state";
+import { useBackend } from "../state/backend-state";
 
 type BackendFunction<T, Args extends any[]> = (...args: Args) => Promise<T>;
 

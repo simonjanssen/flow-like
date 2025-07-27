@@ -24,7 +24,6 @@ import {
 } from "../../components/ui/context-menu";
 import type { IComment } from "../../lib/schema/flow/board";
 import { TextEditor } from "../ui";
-import { Button } from "../ui/button";
 import { ColorPicker } from "../ui/color-picker";
 import {
 	Dialog,

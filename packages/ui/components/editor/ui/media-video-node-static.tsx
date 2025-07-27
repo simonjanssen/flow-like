@@ -7,9 +7,8 @@ import type {
 	TVideoElement,
 } from "platejs";
 
-import { parseTwitterUrl, parseVideoUrl } from "@platejs/media";
+import { parseVideoUrl } from "@platejs/media";
 import { NodeApi, SlateElement } from "platejs";
-import { useMemo } from "react";
 import LiteYouTubeEmbed from "react-lite-youtube-embed";
 import ReactPlayer from "react-player";
 import { cn } from "../../../lib";

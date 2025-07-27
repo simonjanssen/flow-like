@@ -1,10 +1,5 @@
-import markdoc from "@astrojs/markdoc";
 import react from "@astrojs/react";
-import sitemap from "@astrojs/sitemap";
-import tailwind from "@astrojs/tailwind";
-import playformCompress from "@playform/compress";
 import tailwindcss from "@tailwindcss/vite";
-import robotsTxt from "astro-robots-txt";
 import { defineConfig } from "astro/config";
 
 // https://astro.build/config

@@ -18,7 +18,6 @@ import {
 	useInvoke,
 	useMiniSearch,
 } from "@tm9657/flow-like-ui";
-import { motion } from "framer-motion";
 import {
 	FilesIcon,
 	Grid3X3,

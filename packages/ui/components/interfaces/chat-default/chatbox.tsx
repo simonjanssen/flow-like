@@ -2,13 +2,10 @@
 
 import {
 	FileIcon,
-	Image,
 	ImageIcon,
 	MicIcon,
-	MoreHorizontal,
 	Plus,
 	Send,
-	Settings,
 	SquareIcon,
 	WrenchIcon,
 	X,

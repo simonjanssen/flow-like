@@ -348,7 +348,7 @@ const LogMessage = memo(function LogMessage({
 					)}
 					<div className="flex flex-row items-center gap-1">
 						<Button
-							variant={"outline-solid"}
+							variant={"outline"}
 							size={"icon"}
 							className="p-1! h-6 w-6"
 							onClick={() => {
@@ -360,7 +360,7 @@ const LogMessage = memo(function LogMessage({
 						</Button>
 						{log.node_id && (
 							<Button
-								variant={"outline-solid"}
+								variant={"outline"}
 								size={"icon"}
 								className="p-1! h-6 w-6"
 								onClick={() => onSelectNode(log.node_id!)}
@@ -419,7 +419,7 @@ function LogFilterBadge({
 	return (
 		<Badge
 			className="cursor-pointer"
-			variant={logFilter.has(level) ? "default" : "outline-solid"}
+			variant={logFilter.has(level) ? "default" : "outline"}
 			onClick={() => toggleLogFilter(level)}
 		>
 			{label}

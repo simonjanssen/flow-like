@@ -79,14 +79,14 @@ export function FlowWrapper({
 					<div className="w-full flex items-center justify-start gap-2">
 						<Button
 							className="w-full"
-							variant={"outline-solid"}
+							variant={"outline"}
 							onClick={() => placeNode("get")}
 						>
 							Get
 						</Button>
 						<Button
 							className="w-full"
-							variant={"outline-solid"}
+							variant={"outline"}
 							onClick={() => placeNode("set")}
 						>
 							Set

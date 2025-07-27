@@ -15,7 +15,6 @@ import {
 } from "framer-motion";
 import { memo, useRef, useState } from "react";
 import { cn } from "../../lib/utils";
-import { Separator } from "../ui";
 
 type IFlowDockItem = {
 	title: string;

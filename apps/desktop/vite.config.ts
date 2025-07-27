@@ -1,4 +1,3 @@
-import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { internalIpV4 } from "internal-ip";
 import { defineConfig } from "vite";

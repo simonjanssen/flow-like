@@ -10,7 +10,7 @@ import { BitHover } from "@tm9657/flow-like-ui/components/ui/bit-hover";
 import type { IBit } from "@tm9657/flow-like-ui/lib/schema/bit/bit";
 import { humanFileSize } from "@tm9657/flow-like-ui/lib/utils";
 import type { ISettingsProfile } from "@tm9657/flow-like-ui/types";
-import { ArrowBigRight, Download } from "lucide-react";
+import { ArrowBigRight } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTauriInvoke } from "../../components/useInvoke";
 

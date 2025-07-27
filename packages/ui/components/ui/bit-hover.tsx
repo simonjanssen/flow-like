@@ -70,7 +70,7 @@ export function BitHover({
 				{"languages" in bitData.parameters && (
 					<div className="flex flex-row items-center gap-2 mb-2">
 						{bitData.parameters.languages.map((lang: string) => (
-							<Badge variant={"outline-solid"} key={lang}>
+							<Badge variant={"outline"} key={lang}>
 								{lang}
 							</Badge>
 						))}

@@ -752,7 +752,7 @@ function EventConfiguration({
 																</div>
 																<Button
 																	variant={
-																		isAlreadyAdded ? "outline-solid" : "default"
+																		isAlreadyAdded ? "outline" : "default"
 																	}
 																	size="sm"
 																	onClick={() => {

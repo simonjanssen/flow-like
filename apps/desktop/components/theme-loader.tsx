@@ -1,7 +1,6 @@
 "use client";
 
-import { loadTheme, useBackend, useInvoke } from "@tm9657/flow-like-ui";
-import { useEffect } from "react";
+import { useBackend, useInvoke } from "@tm9657/flow-like-ui";
 
 export function ThemeLoader() {
 	const backend = useBackend();

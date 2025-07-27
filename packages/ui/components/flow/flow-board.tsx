@@ -39,7 +39,6 @@ import {
 	VariableIcon,
 	XIcon,
 } from "lucide-react";
-import MiniSearch from "minisearch";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";

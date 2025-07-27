@@ -16,11 +16,7 @@ import {
 	HoverCardContent,
 	HoverCardTrigger,
 } from "../../../components/ui/hover-card";
-import {
-	type IPin,
-	IPinType,
-	IVariableType,
-} from "../../../lib/schema/flow/pin";
+import { type IPin, IPinType } from "../../../lib/schema/flow/pin";
 import { parseUint8ArrayToJson } from "../../../lib/uint8";
 import { VariableDescription } from "../flow-pin/variable-types/default-text";
 import { VariablesMenuEdit } from "../variables/variables-menu-edit";

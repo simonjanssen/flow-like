@@ -68,21 +68,21 @@ export function ModelModal({
 					<div className="flex items-center gap-2">
 						<Filter className="h-4 w-4 text-muted-foreground" />
 						<Badge
-							variant={typeFilter === "all" ? "default" : "outline-solid"}
+							variant={typeFilter === "all" ? "default" : "outline"}
 							className="cursor-pointer"
 							onClick={() => setTypeFilter("all")}
 						>
 							All Types
 						</Badge>
 						<Badge
-							variant={typeFilter === "embedding" ? "default" : "outline-solid"}
+							variant={typeFilter === "embedding" ? "default" : "outline"}
 							className="cursor-pointer"
 							onClick={() => setTypeFilter("embedding")}
 						>
 							Text Embedding
 						</Badge>
 						<Badge
-							variant={typeFilter === "image" ? "default" : "outline-solid"}
+							variant={typeFilter === "image" ? "default" : "outline"}
 							className="cursor-pointer"
 							onClick={() => setTypeFilter("image")}
 						>
