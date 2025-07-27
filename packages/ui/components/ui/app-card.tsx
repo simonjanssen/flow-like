@@ -251,12 +251,12 @@ function SmallAppCard({
 										{formatPrice(app.price)}
 									</div>
 								) : apps.find((a) => a.id === app.id) ? (
-									<div className="bg-emerald-500/20 backdrop-blur-xs rounded-full px-2.5 py-0.5 text-xs text-emerald-500/80 border-emerald-500/80 border font-medium flex flex-row items-center gap-1">
+									<div className="bg-emerald-500/20 rounded-full px-2.5 py-0.5 text-xs text-emerald-500/80 border-emerald-500/80 border font-medium flex flex-row items-center gap-1">
 										<HeartFilledIcon className="size-3" />
 										Yours
 									</div>
 								) : (
-									<div className="bg-muted/20 backdrop-blur-xs text-muted-foreground rounded-full px-2.5 py-0.5 text-xs font-medium">
+									<div className="bg-muted/20 text-muted-foreground rounded-full px-2.5 py-0.5 text-xs font-medium">
 										GET
 									</div>
 								)}
@@ -362,9 +362,9 @@ function ExtendedAppCard({
 										{formatPrice(app.price)}
 									</div>
 								) : apps.find((a) => a.id === app.id) ? (
-									<div className="bg-emerald-500/20 backdrop-blur-xs text-white/90 rounded-full px-3 py-1 text-sm font-medium shadow-lg border border-white/30 flex flex-row items-center gap-2">
-										<CheckCircleIcon className="size-4" />
-										Owned
+									<div className="bg-emerald-500/20 backdrop-blur-xs text-emerald-400/90 rounded-full px-3 py-1 text-sm font-medium shadow-lg border border-white/30 flex flex-row items-center gap-2">
+										<HeartFilledIcon className="size-4" />
+										Yours
 									</div>
 								) : (
 									<div className="bg-white/20 backdrop-blur-xs text-white/90 rounded-full px-3 py-1 text-sm font-medium shadow-lg border border-white/30">
