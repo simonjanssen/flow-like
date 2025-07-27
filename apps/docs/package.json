@@ -12,11 +12,16 @@
 		"astro": "astro"
 	},
 	"dependencies": {
-		"@astrojs/react": "^4.2.0",
-		"@astrojs/starlight": "^0.31.1",
-		"@astrojs/starlight-tailwind": "^3.0.0",
+		"@astrojs/react": "4.3.0",
+		"@astrojs/starlight": "0.35.1",
+		"@astrojs/starlight-tailwind": "4.0.1",
+		"@tailwindcss/vite": "^4.1.11",
 		"@tm9657/flow-like-ui": "workspace:*",
-		"astro": "^5.1.5",
-		"sharp": "^0.33.5"
+		"@types/lodash-es": "^4.17.12",
+		"astro": "5.12.3",
+		"lodash-es": "^4.17.21",
+		"sharp": "^0.34.3",
+		"tailwind-merge": "^3.3.1",
+		"tailwindcss": "^4.1.11"
 	}
 }

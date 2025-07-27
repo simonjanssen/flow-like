@@ -100,7 +100,7 @@ export type FlowNode = Node<
 const FlowNodeInner = memo(
 	({
 		props,
-		onHover
+		onHover,
 	}: {
 		props: NodeProps<FlowNode>;
 		onHover: (hovered: boolean) => void;

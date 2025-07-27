@@ -2,11 +2,11 @@ import {
 	Background,
 	BackgroundVariant,
 	Controls,
-	MiniMap,
 	ReactFlow,
 	useEdgesState,
 	useNodesState,
 } from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
 import { useTheme } from "next-themes";
 import { useEffect, useMemo } from "react";
 import {
@@ -18,9 +18,7 @@ import {
 } from "../../lib";
 import { CommentNode } from "./comment-node";
 import { FlowNode } from "./flow-node";
-import "@xyflow/react/dist/style.css";
 import { LayerNode } from "./layer-node";
-import { PreviewFlowNode } from "./preview/preview-node";
 
 export function FlowPreview({ nodes }: Readonly<{ nodes: INode[] }>) {
 	const [boardNodes, setNodes] = useNodesState<any>([]);

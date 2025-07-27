@@ -2,6 +2,7 @@
 
 import { VariableIcon } from "lucide-react";
 import { memo, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "../../../components/ui/button";
 import { IValueType } from "../../../lib";
 import {
@@ -14,7 +15,6 @@ import { BitVariable } from "./variable-types/bit-select";
 import { BooleanVariable } from "./variable-types/boolean-variable";
 import { VariableDescription } from "./variable-types/default-text";
 import { EnumVariable } from "./variable-types/enum-variable";
-import { toast } from "sonner";
 
 export function PinEdit({
 	nodeId,
@@ -74,11 +74,7 @@ export function PinEdit({
 	}
 
 	return (
-		<WithMenu
-			nodeId={nodeId}
-			pin={pin}
-			defaultValue={cachedDefaultValue}
-		/>
+		<WithMenu nodeId={nodeId} pin={pin} defaultValue={cachedDefaultValue} />
 	);
 }
 

@@ -1,9 +1,6 @@
-@import "@tm9657/flow-like-ui/globals.css";
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "@astrojs/starlight-tailwind";
 
-/* Dark mode colors. */
 :root {
 	--sl-color-accent-low: #111111;
 	--sl-color-accent: #ff4343;
@@ -17,7 +14,9 @@
 	--sl-color-gray-6: #111111;
 	--sl-color-black: #191919;
 	--sl-colo-bg-nav: #191919;
+	--sl-icon-color: #ffffff;
 }
+
 /* Light mode colors. */
 :root[data-theme="light"] {
 	--sl-color-accent-low: #f2f2f2;
@@ -33,6 +32,7 @@
 	--sl-color-gray-7: #f2f2f2;
 	--sl-color-black: #ffffff;
 	--sl-colo-bg-nav: #f2f2f2;
+	--sl-icon-color: #111111;
 }
 
 .flow-preview .sl-markdown,
@@ -41,6 +41,10 @@
 }
 
 .flow-preview [class*="sl-"] {
+	margin-top: 0 !important;
+}
+
+.no-starlight {
 	margin-top: 0 !important;
 }
 

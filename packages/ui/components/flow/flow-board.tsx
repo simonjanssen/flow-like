@@ -93,9 +93,9 @@ import { useFlowBoardParentState } from "../../state/flow-board-parent-state";
 import { useRunExecutionStore } from "../../state/run-execution-state";
 import { BoardMeta } from "./board-meta";
 import { useUndoRedo } from "./flow-history";
+import { PinEditModal } from "./flow-pin/edit-modal";
 import { FlowRuns } from "./flow-runs";
 import { LayerNode } from "./layer-node";
-import { PinEditModal } from "./flow-pin/edit-modal";
 
 function hexToRgba(hex: string, alpha = 0.3): string {
 	let c = hex.replace("#", "");
@@ -422,13 +422,13 @@ export function FlowBoard({
 	const shortcutHandler = useCallback(
 		async (event: KeyboardEvent) => {
 			const target = event.target as HTMLElement;
-            if (
-                target.tagName === "INPUT" ||
-                target.tagName === "TEXTAREA" ||
-                target.isContentEditable
-            ) {
-                return;
-            }
+			if (
+				target.tagName === "INPUT" ||
+				target.tagName === "TEXTAREA" ||
+				target.isContentEditable
+			) {
+				return;
+			}
 			// Undo
 			if (
 				(event.metaKey || event.ctrlKey) &&
@@ -1246,7 +1246,8 @@ export function FlowBoard({
 													const nodeData: INode = node.data.node as INode;
 													if (nodeData.event_callback)
 														return "color-mix(in oklch, var(--primary) 80%, transparent)";
-													if (nodeData.start) return "color-mix(in oklch, var(--primary) 80%, transparent)";
+													if (nodeData.start)
+														return "color-mix(in oklch, var(--primary) 80%, transparent)";
 													if (
 														!Object.values(nodeData.pins).find(
 															(pin) =>
@@ -1260,7 +1261,9 @@ export function FlowBoard({
 												if (node.type === "commentNode") {
 													const commentData: IComment = node.data
 														.comment as IComment;
-													let color = commentData.color ?? "color-mix(in oklch, var(--muted) 80%, transparent)";
+													let color =
+														commentData.color ??
+														"color-mix(in oklch, var(--muted) 80%, transparent)";
 
 													if (color.startsWith("#")) {
 														color = hexToRgba(color, 0.3);
@@ -1276,7 +1279,10 @@ export function FlowBoard({
 													? BackgroundVariant.Lines
 													: BackgroundVariant.Dots
 											}
-											color={currentLayer && "color-mix(in oklch, var(--muted) 20%, transparent)"}
+											color={
+												currentLayer &&
+												"color-mix(in oklch, var(--muted) 20%, transparent)"
+											}
 											gap={12}
 											size={1}
 										/>

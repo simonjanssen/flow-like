@@ -424,7 +424,7 @@ export function TemplatePreview({
 						{canEdit && (
 							<div className="flex gap-2">
 								<Button
-									variant={isEditing ? "default" : "outline-solid"}
+									variant={isEditing ? "default" : "outline"}
 									onClick={isEditing ? handleSave : handleEdit}
 								>
 									<Edit2 className="h-4 w-4 mr-2" />

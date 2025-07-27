@@ -8,7 +8,7 @@ import type {
 } from "@radix-ui/react-dropdown-menu";
 
 import { useComposedRef } from "@udecode/cn";
-import debounce from "lodash/debounce.js";
+
 import { EraserIcon, PlusIcon } from "lucide-react";
 import { useEditorRef, useEditorSelector } from "platejs/react";
 
@@ -27,6 +27,7 @@ import {
 } from "../../..";
 import { cn } from "../../../lib/utils";
 
+import { debounce } from "lodash-es";
 import { ToolbarButton, ToolbarMenuGroup } from "./toolbar";
 
 export function FontColorToolbarButton({

@@ -14,6 +14,7 @@ import {
 	SquarePenIcon,
 } from "lucide-react";
 import { useCallback, useState } from "react";
+import { toast } from "sonner";
 import {
 	ContextMenu,
 	ContextMenuContent,
@@ -32,7 +33,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "../ui/dialog";
-import { toast } from "sonner";
 
 export type CommentNode = Node<
 	{

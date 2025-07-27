@@ -1,3 +1,6 @@
+import "@tm9657/flow-like-ui/global.css";
+import "@xyflow/react/dist/style.css";
+
 import {
 	EmptyAIState,
 	EmptyAppState,
@@ -47,7 +50,8 @@ export class EmptyBackend implements IBackendState {
 }
 const persister = createIDBPersister();
 const queryClient = new QueryClient();
-export function EmptyBackendProvider({
+
+export default function EmptyBackendProvider({
 	nodes,
 	edges,
 }: Readonly<{ nodes: any[]; edges: any[] }>) {
@@ -67,20 +71,22 @@ export function EmptyBackendProvider({
 	}
 
 	return (
-		<ThemeProvider
-			attribute="class"
-			defaultTheme="dark"
-			enableSystem
-			disableTransitionOnChange
-		>
-			<PersistQueryClientProvider
-				client={queryClient}
-				persistOptions={{
-					persister,
-				}}
+		<div no-starlight className="not-content max-w-full h-fit overflow-hidden">
+			<ThemeProvider
+				attribute="class"
+				defaultTheme="dark"
+				enableSystem
+				disableTransitionOnChange
 			>
-				<Board nodes={nodes} edges={edges} />
-			</PersistQueryClientProvider>
-		</ThemeProvider>
+				<PersistQueryClientProvider
+					client={queryClient}
+					persistOptions={{
+						persister,
+					}}
+				>
+					<Board nodes={nodes} edges={edges} />
+				</PersistQueryClientProvider>
+			</ThemeProvider>
+		</div>
 	);
 }
