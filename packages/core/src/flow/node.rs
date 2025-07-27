@@ -1,4 +1,5 @@
 use flow_like_types::{async_trait, create_id};
+use highway::{HighwayHash, HighwayHasher, Key};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -57,6 +58,7 @@ pub struct Node {
     pub docs: Option<String>,
     pub event_callback: Option<bool>,
     pub layer: Option<String>,
+    pub hash: Option<u64>,
 }
 
 impl Node {
@@ -78,6 +80,7 @@ impl Node {
             docs: None,
             event_callback: None,
             layer: None,
+            hash: None,
         }
     }
 
@@ -284,6 +287,73 @@ impl Node {
         }
 
         Ok(found_type)
+    }
+
+    pub fn hash(&mut self) {
+        let mut hasher = HighwayHasher::new(highway::Key([
+            0x0123456789abcdef,
+            0xfedcba9876543210,
+            0x0011223344556677,
+            0x8899aabbccddeeff,
+        ]));
+
+        hasher.append(self.name.as_bytes());
+        hasher.append(self.friendly_name.as_bytes());
+        hasher.append(self.description.as_bytes());
+        hasher.append(self.category.as_bytes());
+
+        if let Some(coords) = &self.coordinates {
+            hasher.append(&coords.0.to_le_bytes());
+            hasher.append(&coords.1.to_le_bytes());
+            hasher.append(&coords.2.to_le_bytes());
+        }
+
+        if let Some(scores) = &self.scores {
+            hasher.append(&[
+                scores.privacy,
+                scores.security,
+                scores.performance,
+                scores.governance,
+            ]);
+        }
+
+        let mut pin_keys: Vec<_> = self.pins.keys().collect();
+        pin_keys.sort();
+        for key in pin_keys {
+            let pin = &self.pins[key];
+            hasher.append(pin.name.as_bytes());
+            hasher.append(pin.friendly_name.as_bytes());
+            hasher.append(pin.description.as_bytes());
+            hasher.append(&(pin.pin_type.clone() as u8).to_le_bytes());
+            hasher.append(&(pin.data_type.clone() as u8).to_le_bytes());
+            hasher.append(&pin.index.to_le_bytes());
+        }
+
+        if let Some(start) = &self.start {
+            hasher.append(&[*start as u8]);
+        }
+
+        if let Some(icon) = &self.icon {
+            hasher.append(icon.as_bytes());
+        }
+
+        if let Some(comment) = &self.comment {
+            hasher.append(comment.as_bytes());
+        }
+
+        if let Some(long_running) = &self.long_running {
+            hasher.append(&[*long_running as u8]);
+        }
+
+        if let Some(event_callback) = &self.event_callback {
+            hasher.append(&[*event_callback as u8]);
+        }
+
+        if let Some(layer) = &self.layer {
+            hasher.append(layer.as_bytes());
+        }
+
+        self.hash = Some(hasher.finalize64());
     }
 }
 

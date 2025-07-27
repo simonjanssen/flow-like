@@ -53,6 +53,7 @@ impl ToProto<flow_like_types::proto::Node> for Node {
             docs: self.docs.clone(),
             layer: self.layer.clone(),
             event_callback: self.event_callback.unwrap_or(false),
+            hash: self.hash,
         }
     }
 }
@@ -88,6 +89,7 @@ impl FromProto<flow_like_types::proto::Node> for Node {
                 None
             },
             layer: proto.layer,
+            hash: proto.hash,
         }
     }
 }

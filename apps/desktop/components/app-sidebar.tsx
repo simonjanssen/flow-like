@@ -90,7 +90,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "react-oidc-context";
 import { toast } from "sonner";
 import { fetcher } from "../lib/api";
-import { useApi } from "../lib/useApi";
 import { useTauriInvoke } from "./useInvoke";
 
 const data = {

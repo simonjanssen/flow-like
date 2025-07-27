@@ -42,6 +42,7 @@ export interface IVariable {
 	description?: null | string;
 	editable: boolean;
 	exposed: boolean;
+	hash?: number | null;
 	id: string;
 	name: string;
 	secret: boolean;

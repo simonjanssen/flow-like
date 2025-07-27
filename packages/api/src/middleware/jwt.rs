@@ -3,7 +3,10 @@ use std::sync::Arc;
 use crate::{
     entity::{membership, pat, prelude::*, role, sea_orm_active_enums, technical_user, user},
     error::{ApiError, AuthorizationError},
-    permission::{global_permission::GlobalPermission, role_permission::{has_role_permission, RolePermissions}},
+    permission::{
+        global_permission::GlobalPermission,
+        role_permission::{RolePermissions, has_role_permission},
+    },
 };
 use axum::{
     body::Body,

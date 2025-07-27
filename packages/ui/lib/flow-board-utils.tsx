@@ -196,12 +196,6 @@ export function doPinsMatch(
 	return true;
 }
 
-function hashNode(node: INode | IComment | ILayer) {
-	const hash = crypto.createHash("md5");
-	hash.update(JSON.stringify(node));
-	return hash.digest("hex");
-}
-
 export function parseBoard(
 	board: IBoard,
 	appId: string,
@@ -218,7 +212,7 @@ export function parseBoard(
 	const nodes: any[] = [];
 	const edges: any[] = [];
 	const cache = new Map<string, [IPin, INode, boolean]>();
-	const oldNodesMap = new Map<string, any>();
+	const oldNodesMap = new Map<number, any>();
 	const oldEdgesMap = new Map<string, any>();
 
 	for (const oldNode of oldNodes ?? []) {
@@ -235,8 +229,8 @@ export function parseBoard(
 			cache.set(pin.id, [pin, node, nodeLayer === currentLayer]);
 		}
 		if (nodeLayer !== currentLayer) continue;
-		const hash = hashNode(node);
-		const oldNode = oldNodesMap.get(hash);
+		const hash = node.hash ?? -1;
+		const oldNode = hash === -1 ? undefined : oldNodesMap.get(hash);
 		if (oldNode) {
 			nodes.push(oldNode);
 		} else {
@@ -461,8 +455,8 @@ export function parseBoard(
 		const commentLayer =
 			(comment.layer ?? "") === "" ? undefined : comment.layer;
 		if (commentLayer !== currentLayer) continue;
-		const hash = hashNode(comment);
-		const oldNode = oldNodesMap.get(hash);
+		const hash = comment.hash ?? -1;
+		const oldNode = hash === -1 ? undefined : oldNodesMap.get(hash);
 		if (oldNode) {
 			nodes.push(oldNode);
 			continue;
