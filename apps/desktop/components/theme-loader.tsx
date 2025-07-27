@@ -1,6 +1,7 @@
 "use client";
 
-import { useBackend, useInvoke } from "@tm9657/flow-like-ui";
+import { loadTheme, useBackend, useInvoke } from "@tm9657/flow-like-ui";
+import { useEffect } from "react";
 
 export function ThemeLoader() {
 	const backend = useBackend();
@@ -11,17 +12,17 @@ export function ThemeLoader() {
 		[],
 	);
 
-	// useEffect(() => {
-	// 	if (!profile.data?.theme) {
-	// 		loadTheme({
-	// 			light: {},
-	// 			dark: {},
-	// 		});
-	// 		return;
-	// 	}
+	useEffect(() => {
+		if (!profile.data?.theme) {
+			loadTheme({
+				light: {},
+				dark: {},
+			});
+			return;
+		}
 
-	// 	loadTheme(profile.data.theme);
-	// }, [profile.data]);
+		loadTheme(profile.data.theme);
+	}, [profile.data]);
 
 	return null;
 }

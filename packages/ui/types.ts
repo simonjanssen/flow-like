@@ -57,4 +57,7 @@ export enum IThemes {
 	STARRY_NIGHT = "Starry Night",
 	SUNSET_HORIZON = "Sunset Horizon",
 	VINTAGE_PAPER = "Vintage Paper",
+	VIOLET_BLOOM = "Violet Bloom",
+	SOFT_POP = "Soft Pop",
+	TANGERINE = "Tangerine",
 }
