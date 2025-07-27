@@ -1,5 +1,5 @@
 use flow_like_types::{async_trait, create_id};
-use highway::{HighwayHash, HighwayHasher, Key};
+use highway::{HighwayHash, HighwayHasher};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{

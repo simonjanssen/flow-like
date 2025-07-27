@@ -16,7 +16,7 @@ use commands::GenericCommand;
 use flow_like_storage::object_store::{ObjectStore, path::Path};
 use flow_like_types::{FromProto, ToProto, create_id, sync::Mutex};
 use futures::StreamExt;
-use highway::{HighwayHash, HighwayHasher, Key};
+use highway::{HighwayHash, HighwayHasher};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -99,40 +99,40 @@ impl Layer {
             0x8899aabbccddeeff,
         ]));
 
-        hasher.append(&self.id.as_bytes());
-        hasher.append(&self.name.as_bytes());
-        hasher.append(&format!("{:?}", self.r#type).as_bytes());
+        hasher.append(self.id.as_bytes());
+        hasher.append(self.name.as_bytes());
+        hasher.append(format!("{:?}", self.r#type).as_bytes());
 
         if let Some(parent_id) = &self.parent_id {
-            hasher.append(&parent_id.as_bytes());
+            hasher.append(parent_id.as_bytes());
         }
 
         let mut sorted_nodes: Vec<_> = self.nodes.iter().collect();
         sorted_nodes.sort_by_key(|(id, _)| *id);
         for (id, node) in sorted_nodes {
-            hasher.append(&id.as_bytes());
-            hasher.append(&node.id.as_bytes());
+            hasher.append(id.as_bytes());
+            hasher.append(node.id.as_bytes());
         }
 
         let mut sorted_variables: Vec<_> = self.variables.iter().collect();
         sorted_variables.sort_by_key(|(id, _)| *id);
         for (id, variable) in sorted_variables {
-            hasher.append(&id.as_bytes());
-            hasher.append(&variable.id.as_bytes());
+            hasher.append(id.as_bytes());
+            hasher.append(variable.id.as_bytes());
         }
 
         let mut sorted_comments: Vec<_> = self.comments.iter().collect();
         sorted_comments.sort_by_key(|(id, _)| *id);
         for (id, comment) in sorted_comments {
-            hasher.append(&id.as_bytes());
-            hasher.append(&comment.id.as_bytes());
+            hasher.append(id.as_bytes());
+            hasher.append(comment.id.as_bytes());
         }
 
         let mut sorted_pins: Vec<_> = self.pins.iter().collect();
         sorted_pins.sort_by_key(|(id, _)| *id);
         for (id, pin) in sorted_pins {
-            hasher.append(&id.as_bytes());
-            hasher.append(&pin.id.as_bytes());
+            hasher.append(id.as_bytes());
+            hasher.append(pin.id.as_bytes());
         }
 
         hasher.append(&self.coordinates.0.to_le_bytes());
@@ -140,11 +140,11 @@ impl Layer {
         hasher.append(&self.coordinates.2.to_le_bytes());
 
         if let Some(comment) = &self.comment {
-            hasher.append(&comment.as_bytes());
+            hasher.append(comment.as_bytes());
         }
 
         if let Some(color) = &self.color {
-            hasher.append(&color.as_bytes());
+            hasher.append(color.as_bytes());
         }
 
         self.hash = Some(hasher.finalize64());
@@ -993,12 +993,12 @@ impl Comment {
             0x8899aabbccddeeff,
         ]));
 
-        hasher.append(&self.id.as_bytes());
-        hasher.append(&self.content.as_bytes());
-        hasher.append(&format!("{:?}", self.comment_type).as_bytes());
+        hasher.append(self.id.as_bytes());
+        hasher.append(self.content.as_bytes());
+        hasher.append(format!("{:?}", self.comment_type).as_bytes());
 
         if let Some(author) = &self.author {
-            hasher.append(&author.as_bytes());
+            hasher.append(author.as_bytes());
         }
 
         hasher.append(&self.coordinates.0.to_le_bytes());
@@ -1014,11 +1014,11 @@ impl Comment {
         }
 
         if let Some(layer) = &self.layer {
-            hasher.append(&layer.as_bytes());
+            hasher.append(layer.as_bytes());
         }
 
         if let Some(color) = &self.color {
-            hasher.append(&color.as_bytes());
+            hasher.append(color.as_bytes());
         }
 
         if let Some(z_index) = self.z_index {

@@ -1,5 +1,5 @@
 use flow_like_types::{Value, create_id, sync::Mutex};
-use highway::{HighwayHash, HighwayHasher, Key};
+use highway::{HighwayHash, HighwayHasher};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -119,15 +119,15 @@ impl Variable {
             0x8899aabbccddeeff,
         ]));
 
-        hasher.append(&self.id.as_bytes());
-        hasher.append(&self.name.as_bytes());
+        hasher.append(self.id.as_bytes());
+        hasher.append(self.name.as_bytes());
 
         if let Some(category) = &self.category {
-            hasher.append(&category.as_bytes());
+            hasher.append(category.as_bytes());
         }
 
         if let Some(description) = &self.description {
-            hasher.append(&description.as_bytes());
+            hasher.append(description.as_bytes());
         }
 
         // We don´t leak secret values in the hash
@@ -137,8 +137,8 @@ impl Variable {
             }
         }
 
-        hasher.append(&format!("{:?}", self.data_type).as_bytes());
-        hasher.append(&format!("{:?}", self.value_type).as_bytes());
+        hasher.append(format!("{:?}", self.data_type).as_bytes());
+        hasher.append(format!("{:?}", self.value_type).as_bytes());
         hasher.append(&[self.exposed as u8]);
         hasher.append(&[self.secret as u8]);
         hasher.append(&[self.editable as u8]);
