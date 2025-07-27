@@ -108,6 +108,7 @@ export default function YoursPage() {
 					{items.map((meta) => (
 						<div key={viewMode + meta.id} className="group w-full">
 							<AppCard
+								apps={items}
 								app={meta.app}
 								metadata={meta as IMetadata}
 								variant="extended"
@@ -125,6 +126,7 @@ export default function YoursPage() {
 				{items.map((meta) => (
 					<div key={`left${meta.id}`} className="group">
 						<AppCard
+							apps={items}
 							app={meta.app}
 							metadata={meta as IMetadata}
 							variant="small"

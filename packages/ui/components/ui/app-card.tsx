@@ -1,5 +1,7 @@
+import { HeartFilledIcon } from "@radix-ui/react-icons";
 import { motion } from "framer-motion";
 import {
+	CheckCircleIcon,
 	CircleUserIcon,
 	FlaskConicalIcon,
 	GlobeLockIcon,
@@ -14,6 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "./avatar";
 import { Badge } from "./badge";
 
 interface AppCardProps {
+	apps: IApp[];
 	app: IApp;
 	metadata?: IMetadata;
 	variant: "extended" | "small";
@@ -22,6 +25,7 @@ interface AppCardProps {
 }
 
 export function AppCard({
+	apps,
 	app,
 	metadata,
 	variant = "extended",
@@ -31,6 +35,7 @@ export function AppCard({
 	if (variant === "small") {
 		return (
 			<SmallAppCard
+				apps={apps}
 				app={app}
 				metadata={metadata}
 				onClick={onClick}
@@ -41,6 +46,7 @@ export function AppCard({
 
 	return (
 		<ExtendedAppCard
+			apps={apps}
 			app={app}
 			metadata={metadata}
 			onClick={onClick}
@@ -165,11 +171,14 @@ export function VisibilityIcon({
 }
 
 function SmallAppCard({
+	apps,
 	app,
 	metadata,
 	onClick,
 	className,
-}: Readonly<Pick<AppCardProps, "app" | "metadata" | "onClick" | "className">>) {
+}: Readonly<
+	Pick<AppCardProps, "app" | "apps" | "metadata" | "onClick" | "className">
+>) {
 	const formatPrice = (price: number) => `€${(price / 100).toFixed(2)}`;
 
 	const itemVariants = {
@@ -188,9 +197,23 @@ function SmallAppCard({
 			<button
 				type="button"
 				onClick={onClick}
-				className={`group cursor-pointer relative flex items-center gap-3 p-3 transition-all duration-200 rounded-xl border border-border/50 bg-card hover:bg-accent/50 w-full ${className}`}
+				className={`group cursor-pointer relative flex items-center gap-3 p-3 transition-all duration-200 rounded-xl border border-border/50 bg-card  w-full overflow-hidden ${className}`}
 			>
-				<div className="relative shrink-0">
+				<div className="absolute left-0 top-0 bottom-0 w-32 opacity-20 group-hover:opacity-50 transition-all duration-300 overflow-hidden">
+					<img
+						src={metadata?.thumbnail ?? "/placeholder-thumbnail-small.jpg"}
+						alt={metadata?.name ?? app.id}
+						className="w-full h-full object-cover object-right"
+						width={1280}
+						height={640}
+						loading="lazy"
+						decoding="async"
+						fetchPriority="low"
+					/>
+					<div className="absolute inset-0 bg-gradient-to-r from-transparent to-card" />
+				</div>
+
+				<div className="relative shrink-0 z-10">
 					<Avatar className="w-12 h-12 rounded-xl shadow-sm">
 						<motion.div
 							variants={{
@@ -215,7 +238,7 @@ function SmallAppCard({
 					)}
 				</div>
 
-				<div className="flex-1 min-w-0 text-left">
+				<div className="flex-1 min-w-0 text-left relative z-10">
 					<div className="flex items-start justify-between mb-1">
 						<h4 className="font-semibold text-sm text-foreground truncate pr-2">
 							{metadata?.name ?? app.id}
@@ -227,8 +250,13 @@ function SmallAppCard({
 									<div className="bg-primary text-primary-foreground rounded-full px-2.5 py-0.5 text-xs font-semibold">
 										{formatPrice(app.price)}
 									</div>
+								) : apps.find((a) => a.id === app.id) ? (
+									<div className="bg-emerald-500/20 backdrop-blur-xs rounded-full px-2.5 py-0.5 text-xs text-emerald-500/80 border-emerald-500/80 border font-medium flex flex-row items-center gap-1">
+										<HeartFilledIcon className="size-3" />
+										Yours
+									</div>
 								) : (
-									<div className="bg-muted text-muted-foreground rounded-full px-2.5 py-0.5 text-xs font-medium">
+									<div className="bg-muted/20 backdrop-blur-xs text-muted-foreground rounded-full px-2.5 py-0.5 text-xs font-medium">
 										GET
 									</div>
 								)}
@@ -257,11 +285,14 @@ function SmallAppCard({
 }
 
 function ExtendedAppCard({
+	apps,
 	app,
 	metadata,
 	onClick,
 	className,
-}: Readonly<Pick<AppCardProps, "app" | "metadata" | "onClick" | "className">>) {
+}: Readonly<
+	Pick<AppCardProps, "app" | "apps" | "metadata" | "onClick" | "className">
+>) {
 	const formatPrice = (price: number) => `€${(price / 100).toFixed(2)}`;
 	const appName = metadata?.name ?? app.id;
 	const appIcon = metadata?.icon ?? "/app-logo.webp";
@@ -329,6 +360,11 @@ function ExtendedAppCard({
 								{app.price && app.price > 0 ? (
 									<div className="bg-white/90 backdrop-blur-xs text-gray-900 rounded-full px-3 py-1 text-sm font-bold shadow-lg">
 										{formatPrice(app.price)}
+									</div>
+								) : apps.find((a) => a.id === app.id) ? (
+									<div className="bg-emerald-500/20 backdrop-blur-xs text-white/90 rounded-full px-3 py-1 text-sm font-medium shadow-lg border border-white/30 flex flex-row items-center gap-2">
+										<CheckCircleIcon className="size-4" />
+										Owned
 									</div>
 								) : (
 									<div className="bg-white/20 backdrop-blur-xs text-white/90 rounded-full px-3 py-1 text-sm font-medium shadow-lg border border-white/30">

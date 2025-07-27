@@ -10,6 +10,7 @@ import {
 	EmptyTeamState,
 	EmptyTemplateState,
 	EmptyUserState,
+	type IAIState,
 	type IAppState,
 	type IBackendState,
 	type IBitState,
@@ -22,16 +23,11 @@ import {
 	type ITemplateState,
 	type IUserState,
 	LoadingScreen,
-	PersistQueryClientProvider,
-	QueryClient,
-	ThemeProvider,
-	createIDBPersister,
 	useBackendStore,
 } from "@tm9657/flow-like-ui";
-import type { IAIState } from "@tm9657/flow-like-ui/state/backend-state/ai-state";
-import { useEffect, useState } from "react";
-import { Board } from "./board";
+import { Suspense, lazy, useEffect, useState } from "react";
 
+const BoardWrapper = lazy(() => import("./board-wrapper"));
 export class EmptyBackend implements IBackendState {
 	aiState: IAIState = new EmptyAIState();
 	appState: IAppState = new EmptyAppState();
@@ -45,8 +41,7 @@ export class EmptyBackend implements IBackendState {
 	templateState: ITemplateState = new EmptyTemplateState();
 	userState: IUserState = new EmptyUserState();
 }
-const persister = createIDBPersister();
-const queryClient = new QueryClient();
+
 export function EmptyBackendProvider({
 	nodes,
 	edges,
@@ -67,20 +62,8 @@ export function EmptyBackendProvider({
 	}
 
 	return (
-		<ThemeProvider
-			attribute="class"
-			defaultTheme="dark"
-			enableSystem
-			disableTransitionOnChange
-		>
-			<PersistQueryClientProvider
-				client={queryClient}
-				persistOptions={{
-					persister,
-				}}
-			>
-				<Board nodes={nodes} edges={edges} />
-			</PersistQueryClientProvider>
-		</ThemeProvider>
+		<Suspense fallback={<LoadingScreen />}>
+			<BoardWrapper nodes={nodes} edges={edges} />
+		</Suspense>
 	);
 }

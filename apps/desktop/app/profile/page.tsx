@@ -292,6 +292,7 @@ const ProfileContent = ({
 											{apps.map(([app, metadata]) => (
 												<AppCard
 													key={app.id}
+													apps={apps.map(([a]) => a)}
 													app={app}
 													variant="extended"
 													metadata={metadata}

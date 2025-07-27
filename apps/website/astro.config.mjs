@@ -29,9 +29,7 @@ export default defineConfig({
 				"react-tweet",
 			],
 		},
-		plugins: [
-			tailwindcss(),
-		],
+		plugins: [tailwindcss()],
 	},
 	output: "static",
 	markdown: {

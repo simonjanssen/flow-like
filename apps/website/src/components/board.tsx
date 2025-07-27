@@ -4,7 +4,7 @@ import { FlowNode } from "@tm9657/flow-like-ui/components/flow/flow-node";
 import { LayerNode } from "@tm9657/flow-like-ui/components/flow/layer-node";
 import { useEffect, useMemo, useState } from "react";
 
-export function Board({
+export default function Board({
 	nodes,
 	edges,
 }: Readonly<{ nodes: any[]; edges: any[] }>) {

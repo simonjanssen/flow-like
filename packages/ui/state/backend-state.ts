@@ -15,6 +15,7 @@ import type { IUserState } from "./backend-state/user-state";
 export * from "./backend-state/empty-states/index";
 
 export type {
+	IAIState,
 	IAppState,
 	IBitState,
 	IBoardState,
