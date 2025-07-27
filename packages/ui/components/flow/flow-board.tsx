@@ -95,6 +95,7 @@ import { BoardMeta } from "./board-meta";
 import { useUndoRedo } from "./flow-history";
 import { FlowRuns } from "./flow-runs";
 import { LayerNode } from "./layer-node";
+import { PinEditModal } from "./flow-pin/edit-modal";
 
 function hexToRgba(hex: string, alpha = 0.3): string {
 	let c = hex.replace("#", "");
@@ -420,6 +421,14 @@ export function FlowBoard({
 
 	const shortcutHandler = useCallback(
 		async (event: KeyboardEvent) => {
+			const target = event.target as HTMLElement;
+            if (
+                target.tagName === "INPUT" ||
+                target.tagName === "TEXTAREA" ||
+                target.isContentEditable
+            ) {
+                return;
+            }
 			// Undo
 			if (
 				(event.metaKey || event.ctrlKey) &&
@@ -1231,33 +1240,34 @@ export function FlowBoard({
 											zoomable
 											nodeColor={(node) => {
 												if (node.type === "layerNode")
-													return "var(--foreground) / 0.5";
+													return "color-mix(in oklch, var(--foreground) 50%, transparent)";
 
 												if (node.type === "node") {
 													const nodeData: INode = node.data.node as INode;
 													if (nodeData.event_callback)
-														return "var(--primary/ 0.8)";
-													if (nodeData.start) return "var(--primary/ 0.8)";
+														return "color-mix(in oklch, var(--primary) 80%, transparent)";
+													if (nodeData.start) return "color-mix(in oklch, var(--primary) 80%, transparent)";
 													if (
 														!Object.values(nodeData.pins).find(
 															(pin) =>
 																pin.data_type === IVariableType.Execution,
 														)
-													)
-														return "var(--tertiary)/ 0.8";
-													return "var(--muted)";
+													) {
+														return "color-mix(in oklch, var(--tertiary) 80%, transparent)";
+													}
+													return "color-mix(in oklch, var(--muted) 80%, transparent)";
 												}
 												if (node.type === "commentNode") {
 													const commentData: IComment = node.data
 														.comment as IComment;
-													let color = commentData.color ?? "var(--muted)/ 0.3";
+													let color = commentData.color ?? "color-mix(in oklch, var(--muted) 80%, transparent)";
 
 													if (color.startsWith("#")) {
 														color = hexToRgba(color, 0.3);
 													}
 													return color;
 												}
-												return "var(--primary)/ 0.6";
+												return "color-mix(in oklch, var(--primary) 60%, transparent)";
 											}}
 										/>
 										<Background
@@ -1266,7 +1276,7 @@ export function FlowBoard({
 													? BackgroundVariant.Lines
 													: BackgroundVariant.Dots
 											}
-											color={currentLayer && "var(--muted) / 0.3"}
+											color={currentLayer && "color-mix(in oklch, var(--muted) 20%, transparent)"}
 											gap={12}
 											size={1}
 										/>
@@ -1324,6 +1334,7 @@ export function FlowBoard({
 					)}
 				</ResizablePanel>
 			</ResizablePanelGroup>
+			<PinEditModal appId={appId} boardId={boardId} />
 		</div>
 	);
 }

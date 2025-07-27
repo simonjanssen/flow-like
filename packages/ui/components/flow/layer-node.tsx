@@ -126,7 +126,7 @@ export function LayerNode(props: NodeProps<LayerNode>) {
 								/>
 							</div>
 						)}
-						<div className="header absolute top-0 left-0 right-0 h-4 gap-1 flex flex-row items-center border-b border-b-foreground bg-muted p-1 justify-start rounded-t-md">
+						<div className="header absolute top-0 left-0 right-0 h-4 gap-1 flex flex-row items-center border-b bg-muted p-1 justify-start rounded-t-md">
 							<FoldHorizontalIcon className="w-2 h-2" />
 							<small className="font-medium leading-none">
 								{props.data.layer.name}

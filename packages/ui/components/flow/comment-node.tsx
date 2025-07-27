@@ -32,6 +32,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "../ui/dialog";
+import { toast } from "sonner";
 
 export type CommentNode = Node<
 	{
@@ -144,11 +145,18 @@ export function CommentNode(props: NodeProps<CommentNode>) {
 						)}
 						<Dialog
 							open={edit.open}
-							onOpenChange={(open) => {
+							onOpenChange={async (open) => {
+								if (!open) {
+									await props.data.onUpsert({
+										...props.data.comment,
+										content: edit.content,
+									});
+									toast.success("Comment updated successfully");
+								}
 								setEdit((old) => ({ ...old, open }));
 							}}
 						>
-							<DialogContent className="max-w-(--breakpoint-xl) w-full min-h-[90vh] max-h-[90vh] overflow-hidden flex flex-col">
+							<DialogContent className="max-w-(--breakpoint-xl) min-w-[95dvw] w-full min-h-[90vh] max-h-[90vh] overflow-hidden flex flex-col">
 								<DialogHeader>
 									<DialogTitle>Edit Comment</DialogTitle>
 									<DialogDescription>
@@ -169,19 +177,6 @@ export function CommentNode(props: NodeProps<CommentNode>) {
 										editable={true}
 									/>
 								</div>
-
-								<Button
-									disabled={props.data.comment.content === edit.content}
-									onClick={async () => {
-										await props.data.onUpsert({
-											...props.data.comment,
-											content: edit.content,
-										});
-										setEdit((old) => ({ ...old, open: false }));
-									}}
-								>
-									Save
-								</Button>
 							</DialogContent>
 						</Dialog>
 						<div className="text-start relative">

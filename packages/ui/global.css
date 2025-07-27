@@ -52,18 +52,24 @@
 	--radius: 0.3rem;
 	--shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
 	--shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-	--shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px
-		hsl(0 0% 0% / 0.1);
+	--shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
 	--shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-	--shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px
-		hsl(0 0% 0% / 0.1);
-	--shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px
-		hsl(0 0% 0% / 0.1);
-	--shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px
-		hsl(0 0% 0% / 0.1);
+	--shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
+	--shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
+	--shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
 	--shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
 	--tracking-normal: 0em;
 	--spacing: 0.25rem;
+
+	--pin-string: oklch(71.8% 0.202 349.761);
+	--pin-integer: oklch(78.9% 0.154 211.53);
+	--pin-float: oklch(79.2% 0.209 151.711);
+	--pin-boolean: oklch(51.4% 0.222 16.935);
+	--pin-struct: oklch(55.8% 0.288 302.321);
+	--pin-byte: oklch(43.2% 0.095 166.913);
+	--pin-generic:oklch(55.4% 0.046 257.417);
+	--pin-date: oklch(82.8% 0.189 84.429);
+	--pin-pathbuf: oklch(44.4% 0.011 73.639);
 }
 
 .dark {
@@ -107,16 +113,22 @@
 	--radius: 0.3rem;
 	--shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
 	--shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-	--shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px
-		hsl(0 0% 0% / 0.1);
+	--shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
 	--shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-	--shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px
-		hsl(0 0% 0% / 0.1);
-	--shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px
-		hsl(0 0% 0% / 0.1);
-	--shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px
-		hsl(0 0% 0% / 0.1);
+	--shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
+	--shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
+	--shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
 	--shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+
+	--pin-string: oklch(71.8% 0.202 349.761);
+	--pin-integer: oklch(78.9% 0.154 211.53);
+	--pin-float: oklch(79.2% 0.209 151.711);
+	--pin-boolean: oklch(51.4% 0.222 16.935);
+	--pin-struct: oklch(55.8% 0.288 302.321);
+	--pin-byte: oklch(43.2% 0.095 166.913);
+	--pin-generic:oklch(55.4% 0.046 257.417);
+	--pin-date: oklch(82.8% 0.189 84.429);
+	--pin-pathbuf: oklch(44.4% 0.011 73.639);
 }
 
 @theme inline {
@@ -172,6 +184,16 @@
 	--shadow-lg: var(--shadow-lg);
 	--shadow-xl: var(--shadow-xl);
 	--shadow-2xl: var(--shadow-2xl);
+
+	--pin-string: var(--pin-string);
+	--pin-integer: var(--pin-integer);
+	--pin-float: var(--pin-float);
+	--pin-boolean: var(--pin-boolean);
+	--pin-struct: var(--pin-struct);
+	--pin-byte: var(--pin-byte);
+	--pin-generic: var(--pin-generic);
+	--pin-date: var(--pin-date);
+	--pin-pathbuf: var(--pin-pathbuf);
 }
 
 @layer base {
@@ -254,12 +276,10 @@
 
 	.highlight {
 		animation: highlight-anim 3s linear infinite;
-		background: linear-gradient(
-			90deg,
-			var(--primary) 50%,
-			var(--tertiary) 75%,
-			var(--primary) 100%
-		);
+		background: linear-gradient(90deg,
+				var(--primary) 50%,
+				var(--tertiary) 75%,
+				var(--primary) 100%);
 		background-size: 200%;
 		-webkit-background-clip: text;
 		-webkit-text-fill-color: transparent;

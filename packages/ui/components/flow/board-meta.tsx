@@ -231,7 +231,7 @@ export function BoardMeta({
 						</SelectContent>
 					</Select>
 				</div>
-				<div className="w-full flex flex-row gap-2">
+				<div className="w-full flex flex-row gap-2 overflow-hidden">
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button variant={"secondary"} className="w-1/3">
@@ -260,7 +260,7 @@ export function BoardMeta({
 					</DropdownMenu>
 
 					<Button
-						className="w-full"
+						className="flex-grow"
 						onClick={async () => {
 							await saveMeta();
 						}}

@@ -100,10 +100,10 @@ export type FlowNode = Node<
 const FlowNodeInner = memo(
 	({
 		props,
-		onHover,
+		onHover
 	}: {
 		props: NodeProps<FlowNode>;
-		onHover: (hover: boolean) => void;
+		onHover: (hovered: boolean) => void;
 	}) => {
 		const { pushCommand } = useUndoRedo(props.data.appId, props.data.boardId);
 		const { resolvedTheme } = useTheme();
@@ -392,7 +392,7 @@ const FlowNodeInner = memo(
 			if (executionState === "done" || executing)
 				return (
 					<button
-						className="bg-background hover:bg-card group/play transition-all rounded-md hover:rounded-lg border p-1 absolute left-0 bottom-50 top-50 translate-x-[calc(-120%)] opacity-200!"
+						className="bg-background hover:bg-card group/play transition-all rounded-md hover:rounded-lg border p-1 absolute left-0 top-0 translate-x-[calc(-120%)] opacity-200!"
 						onClick={async (e) => {
 							if (runId) await backend.eventState.cancelExecution(runId);
 						}}
@@ -403,7 +403,7 @@ const FlowNodeInner = memo(
 			if (Object.keys(props.data.node.pins).length <= 1)
 				return (
 					<button
-						className="bg-background hover:bg-card group/play transition-all rounded-md hover:rounded-lg border p-1 absolute left-0 bottom-50 top-50 translate-x-[calc(-120%)]"
+						className="bg-background hover:bg-card group/play transition-all rounded-md hover:rounded-lg border p-1 absolute left-0 top-0 translate-x-[calc(-120%)]"
 						onClick={async (e) => {
 							if (executing) return;
 							setExecuting(true);
@@ -421,7 +421,7 @@ const FlowNodeInner = memo(
 					onOpenChange={(open) => setPayload((old) => ({ ...old, open }))}
 				>
 					<DialogTrigger>
-						<button className="bg-background hover:bg-card group/play transition-all rounded-md hover:rounded-lg border p-1 absolute left-0 bottom-50 top-50 translate-y-[150%] translate-x-[calc(-120%)]">
+						<button className="bg-background hover:bg-card group/play transition-all rounded-md hover:rounded-lg border p-1 absolute left-0 top-0 translate-x-[calc(-120%)]">
 							<PlayCircleIcon className="w-3 h-3 group-hover/play:scale-110" />
 						</button>
 					</DialogTrigger>
@@ -559,7 +559,7 @@ const FlowNodeInner = memo(
 				)}
 				{!isReroute && (
 					<div
-						className={`header absolute top-0 left-0 right-0 h-4 gap-1 flex flex-row items-center border-b border-b-foreground p-1 justify-between rounded-md rounded-b-none bg-card ${props.data.node.event_callback && "bg-linear-to-l  from-card via-primary/50 to-primary"} ${!isExec && "bg-linear-to-r  from-card via-tertiary/50 to-tertiary"} ${props.data.node.start && "bg-linear-to-r  from-card via-primary/50 to-primary"} ${isReroute && "w-6"}`}
+						className={`header absolute top-0 left-0 right-0 h-4 gap-1 flex flex-row items-center border-b p-1 justify-between rounded-md rounded-b-none bg-card ${props.data.node.event_callback && "bg-linear-to-l  from-card via-primary/50 to-primary"} ${!isExec && "bg-linear-to-r  from-card via-tertiary/50 to-tertiary"} ${props.data.node.start && "bg-linear-to-r  from-card via-primary/50 to-primary"} ${isReroute && "w-6"}`}
 					>
 						<div className={"flex flex-row items-center gap-1"}>
 							{useMemo(
@@ -1074,7 +1074,7 @@ function FlowNode(props: NodeProps<FlowNode>) {
 					onOpenChange={(open) => setRenameMenu(open)}
 				/>
 			)}
-			<FlowNodeInner props={props} onHover={(hover) => setIsHovered(hover)} />
+			<FlowNodeInner props={props} onHover={setIsHovered} />
 		</>
 	);
 }
