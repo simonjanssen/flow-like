@@ -57,7 +57,7 @@ import { ILayerType } from "../../lib/schema/flow/board/commands/upsert-layer";
 import type { INode } from "../../lib/schema/flow/node";
 import { type IPin, IVariableType } from "../../lib/schema/flow/pin";
 import { convertJsonToUint8Array } from "../../lib/uint8";
-import { useBackend } from "../../state/backend-state";
+import { useBackend, useBackendStore } from "../../state/backend-state";
 import { useRunExecutionStore } from "../../state/run-execution-state";
 import {
 	Button,
@@ -107,7 +107,6 @@ const FlowNodeInner = memo(
 	}) => {
 		const { pushCommand } = useUndoRedo(props.data.appId, props.data.boardId);
 		const { resolvedTheme } = useTheme();
-		const backend = useBackend();
 		const invalidate = useInvalidateInvoke();
 		const { currentMetadata } = useLogAggregation();
 
@@ -222,6 +221,8 @@ const FlowNodeInner = memo(
 
 		const addPin = useCallback(
 			async (node: INode, pin: IPin, index: number) => {
+				const backend = useBackendStore.getState().backend;
+				if (!backend) return;
 				const nodeGuard = reactFlow
 					.getNodes()
 					.find((node) => node.id === props.id);
@@ -269,6 +270,9 @@ const FlowNodeInner = memo(
 
 		const pinRemoveCallback = useCallback(
 			async (pin: IPin) => {
+				const backend = useBackendStore.getState().backend;
+				if (!backend) return;
+
 				const nodeGuard = getNode(props.id);
 				if (!nodeGuard) return;
 
@@ -387,6 +391,61 @@ const FlowNodeInner = memo(
 			return typeof (pin as IPinAction).onAction === "function";
 		}
 
+		const renderInputPins = useMemo(
+            () =>
+                !(props.data.node.start ?? false) &&
+                inputPins
+                    .filter((pin) => isPinAction(pin) || pin.name !== "var_ref")
+                    .map((pin, arrayIndex) => {
+                        return isPinAction(pin) ? (
+                            <FlowPinAction
+                                key={`${pin.pin.id}__action`}
+                                action={pin}
+                                index={arrayIndex}
+                                input
+                            />
+                        ) : (
+                            <FlowPin
+                                appId={props.data.appId}
+                                key={pin.id}
+                                node={props.data.node}
+                                boardId={props.data.boardId}
+                                index={arrayIndex}
+                                pin={pin}
+                                onPinRemove={pinRemoveCallback}
+                                skipOffset={isReroute}
+                            />
+                        );
+                    }),
+            [inputPins, props.data.node, props.data.boardId, pinRemoveCallback, isReroute],
+        );
+
+        const renderOutputPins = useMemo(
+            () =>
+                outputPins.map((pin, arrayIndex) => {
+                    return isPinAction(pin) ? (
+                        <FlowPinAction
+                            action={pin}
+                            index={arrayIndex}
+                            input={false}
+                            key={`${pin.pin.id}__action`}
+                        />
+                    ) : (
+                        <FlowPin
+                            appId={props.data.appId}
+                            node={props.data.node}
+                            boardId={props.data.boardId}
+                            index={arrayIndex}
+                            pin={pin}
+                            key={pin.id}
+                            onPinRemove={pinRemoveCallback}
+                            skipOffset={isReroute}
+                        />
+                    );
+                }),
+            [outputPins, props.data.node, props.data.boardId, pinRemoveCallback, isReroute],
+        );
+
 		const playNode = useMemo(() => {
 			if (!props.data.node.start) return null;
 			if (executionState === "done" || executing)
@@ -394,6 +453,8 @@ const FlowNodeInner = memo(
 					<button
 						className="bg-background hover:bg-card group/play transition-all rounded-md hover:rounded-lg border p-1 absolute left-0 top-0 translate-x-[calc(-120%)] opacity-200!"
 						onClick={async (e) => {
+							const backend = useBackendStore.getState().backend;
+							if (!backend) return;
 							if (runId) await backend.eventState.cancelExecution(runId);
 						}}
 					>
@@ -530,33 +591,7 @@ const FlowNodeInner = memo(
 						</small>
 					</div>
 				)}
-				{useMemo(
-					() =>
-						!(props.data.node.start ?? false) &&
-						inputPins
-							.filter((pin) => isPinAction(pin) || pin.name !== "var_ref")
-							.map((pin, index) =>
-								isPinAction(pin) ? (
-									<FlowPinAction
-										key={`${pin.pin.id}__action`}
-										action={pin}
-										index={index}
-										input
-									/>
-								) : (
-									<FlowPin
-										appId={props.data.appId}
-										key={pin.id}
-										node={props.data.node}
-										boardId={props.data.boardId}
-										index={index}
-										pin={pin}
-										onPinRemove={pinRemoveCallback}
-									/>
-								),
-							),
-					[inputPins, props.data.node, props.data.boardId, pinRemoveCallback],
-				)}
+				{renderInputPins}
 				{!isReroute && (
 					<div
 						className={`header absolute top-0 left-0 right-0 h-4 gap-1 flex flex-row items-center border-b p-1 justify-between rounded-md rounded-b-none bg-card ${props.data.node.event_callback && "bg-linear-to-l  from-card via-primary/50 to-primary"} ${!isExec && "bg-linear-to-r  from-card via-tertiary/50 to-tertiary"} ${props.data.node.start && "bg-linear-to-r  from-card via-primary/50 to-primary"} ${isReroute && "w-6"}`}
@@ -612,37 +647,13 @@ const FlowNodeInner = memo(
 						</div>
 					</div>
 				)}
-				{useMemo(
-					() =>
-						outputPins.map((pin, index) =>
-							isPinAction(pin) ? (
-								<FlowPinAction
-									action={pin}
-									index={index}
-									input={false}
-									key={`${pin.pin.id}__action`}
-								/>
-							) : (
-								<FlowPin
-									appId={props.data.appId}
-									node={props.data.node}
-									boardId={props.data.boardId}
-									index={index}
-									pin={pin}
-									key={pin.id}
-									onPinRemove={pinRemoveCallback}
-								/>
-							),
-						),
-					[outputPins, props.data.node, props.data.boardId, pinRemoveCallback],
-				)}
+				{renderOutputPins}
 			</div>
 		);
 	},
 );
 
 function FlowNode(props: NodeProps<FlowNode>) {
-	const backend = useBackend();
 	const [isHovered, setIsHovered] = useState(false);
 	const [isOpen, setIsOpen] = useState(false);
 	const [commentMenu, setCommentMenu] = useState(false);
@@ -682,6 +693,8 @@ function FlowNode(props: NodeProps<FlowNode>) {
 		);
 
 		if (handleErrorPin) {
+			const backend = useBackendStore.getState().backend;
+				if (!backend) return;
 			const filteredPins = Object.values(innerNode.pins).filter(
 				(pin) =>
 					pin.name !== "auto_handle_error" &&
@@ -750,6 +763,9 @@ function FlowNode(props: NodeProps<FlowNode>) {
 			pin: stringPin,
 		});
 
+		const backend = useBackendStore.getState().backend;
+				if (!backend) return;
+
 		const commands = await backend.boardState.executeCommands(
 			props.data.appId,
 			props.data.boardId,
@@ -762,7 +778,7 @@ function FlowNode(props: NodeProps<FlowNode>) {
 			props.data.appId,
 			props.data.boardId,
 		]);
-	}, [backend, props.data.node, props.data.appId, props.data.boardId, flow]);
+	}, [props.data.node, props.data.appId, props.data.boardId, flow]);
 
 	const handleCollapse = useCallback(
 		async (x: number, y: number) => {
@@ -798,6 +814,9 @@ function FlowNode(props: NodeProps<FlowNode>) {
 				current_layer: (selectedNodes[0].data.node as INode).layer,
 			});
 
+			const backend = useBackendStore.getState().backend;
+				if (!backend) return;
+
 			const result = await backend.boardState.executeCommand(
 				props.data.appId,
 				props.data.boardId,
@@ -809,7 +828,7 @@ function FlowNode(props: NodeProps<FlowNode>) {
 				props.data.boardId,
 			]);
 		},
-		[props.data.node, invalidate, pushCommands, flow, backend],
+		[props.data.node, invalidate, pushCommands, flow],
 	);
 
 	const deleteNodes = useCallback(async () => {
@@ -822,7 +841,8 @@ function FlowNode(props: NodeProps<FlowNode>) {
 				connected_nodes: [],
 			});
 		});
-
+const backend = useBackendStore.getState().backend;
+				if (!backend) return;
 		const result = await backend.boardState.executeCommands(
 			props.data.appId,
 			props.data.boardId,
@@ -834,7 +854,7 @@ function FlowNode(props: NodeProps<FlowNode>) {
 			props.data.appId,
 			props.data.boardId,
 		]);
-	}, [props.data.node, invalidate, pushCommands, flow, backend]);
+	}, [props.data.node, invalidate, pushCommands, flow]);
 
 	const orderNodes = useCallback(
 		async (type: "align" | "justify", dir: "start" | "end" | "center") => {
@@ -893,6 +913,9 @@ function FlowNode(props: NodeProps<FlowNode>) {
 				});
 			});
 
+			const backend = useBackendStore.getState().backend;
+				if (!backend) return;
+
 			const result = await backend.boardState.executeCommands(
 				props.data.appId,
 				props.data.boardId,
@@ -905,7 +928,7 @@ function FlowNode(props: NodeProps<FlowNode>) {
 				props.data.boardId,
 			]);
 		},
-		[props.data.node, invalidate, pushCommands, flow, backend],
+		[props.data.node, invalidate, pushCommands, flow],
 	);
 
 	if (isOpen || isHovered) {

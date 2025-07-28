@@ -27,9 +27,9 @@ export async function fetcher<T>(
 	const headers: HeadersInit = {};
 	if (auth?.user?.id_token) {
 		headers["Authorization"] = `Bearer ${auth?.user?.id_token}`;
-		if (auth?.user?.expired) {
-			auth?.startSilentRenew();
-		}
+		// if (auth?.user?.expired) {
+		// 	auth?.startSilentRenew();
+		// }
 	}
 
 	const url = constructUrl(profile, path);

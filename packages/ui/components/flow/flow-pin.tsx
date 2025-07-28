@@ -18,7 +18,7 @@ import { useInvalidateInvoke } from "../../hooks";
 import { updateNodeCommand } from "../../lib";
 import type { INode } from "../../lib/schema/flow/node";
 import { type IPin, IValueType } from "../../lib/schema/flow/pin";
-import { useBackend } from "../../state/backend-state";
+import { useBackend, useBackendStore } from "../../state/backend-state";
 import { DynamicImage } from "../ui/dynamic-image";
 import { useUndoRedo } from "./flow-history";
 import { PinEdit } from "./flow-pin/pin-edit";
@@ -41,7 +41,6 @@ function FlowPinInnerComponent({
 }>) {
 	const { pushCommand } = useUndoRedo(appId, boardId);
 	const invalidate = useInvalidateInvoke();
-	const backend = useBackend();
 	const currentNode = useInternalNode(node?.id);
 
 	const [defaultValue, setDefaultValue] = useState(pin.default_value);
@@ -101,17 +100,22 @@ function FlowPinInnerComponent({
 	);
 
 	const refetchBoard = useCallback(async () => {
+		const backend = useBackendStore.getState().backend;
+		if (!backend) return;
 		invalidate(backend.boardState.getBoard, [appId, boardId]);
-	}, [appId, boardId, backend, invalidate]);
+	}, [appId, boardId, invalidate]);
 
 	const updateNode = useCallback(async () => {
 		if (defaultValue === undefined) return;
 		if (defaultValue === null) return;
 		if (defaultValue === pin.default_value) return;
 		if (!currentNode) return;
+		const backend = useBackendStore.getState().backend;
+		if (!backend) return;
 		const command = updateNodeCommand({
 			node: {
 				...node,
+				hash: undefined,
 				coordinates: [currentNode.position.x, currentNode.position.y, 0],
 				pins: {
 					...node.pins,
@@ -132,7 +136,6 @@ function FlowPinInnerComponent({
 		defaultValue,
 		currentNode,
 		refetchBoard,
-		backend,
 		boardId,
 		node,
 		pushCommand,
@@ -191,7 +194,7 @@ function FlowPinInnerComponent({
 	);
 
 	return (
-		<Handle
+		<MemoizedHandle
 			type={pinTypeProps.type as HandleType}
 			position={pinTypeProps.position}
 			id={pin.id}
@@ -210,13 +213,15 @@ function FlowPinInnerComponent({
 					/>
 				</div>
 			)}
-		</Handle>
+		</MemoizedHandle>
 	);
 }
 
+const MemoizedHandle = memo(Handle)
+
 function pinPropsAreEqual(prevProps: any, nextProps: any) {
 	return (
-		prevProps.index === nextProps.index &&
+		// prevProps.index === nextProps.index &&
 		prevProps.boardId === nextProps.boardId &&
 		prevProps.node?.id === nextProps.node?.id &&
 		prevProps.pin.id === nextProps.pin.id &&

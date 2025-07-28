@@ -5,7 +5,7 @@ import { useInvoke } from "../../../hooks";
 import type { IApp, IAppCategory } from "../../../lib";
 import type { IAppSearchSort } from "../../../lib/schema/app/app-search-query";
 import { type IBackendState, useBackend } from "../../../state/backend-state";
-import { BitCard, DynamicImage, Skeleton } from "../../ui";
+import { Alert, AlertDescription, AlertTitle, BitCard, DynamicImage, Skeleton } from "../../ui";
 import { AppCard } from "../../ui/app-card";
 
 export interface ISwimlaneItem {
@@ -60,16 +60,55 @@ function useSwimlanes() {
 		staleTime: 5 * 60 * 1000,
 		gcTime: Number.POSITIVE_INFINITY,
 		placeholderData: (previousData) => previousData,
-		networkMode: "offlineFirst",
+		networkMode: "offlineFirst"
 	});
 }
 
 export function HomeSwimlanes() {
 	const backend = useBackend();
 	const apps = useInvoke(backend.appState.getApps, backend.appState, []);
-	const { data } = useSwimlanes();
+	const { data, error} = useSwimlanes();
 
-	if (!data) return null;
+	if (error) {
+		return (
+			<main className="min-h-screen items-center w-full max-h-dvh overflow-auto p-4 grid grid-cols-6 justify-start gap-2">
+                <div className="col-span-6">
+                    <Alert variant="destructive">
+                        <ExternalLink className="h-4 w-4" />
+                        <AlertTitle>Connection Error</AlertTitle>
+                        <AlertDescription>
+                            Failed to load swimlanes. Please check your internet connection or try again later.
+                            {error.message && (
+                                <details className="mt-2">
+                                    <summary className="cursor-pointer text-sm opacity-80 hover:opacity-100">
+                                        Technical details
+                                    </summary>
+                                    <code className="text-xs bg-background/50 px-2 py-1 rounded mt-1 block">
+                                        {error.message}
+                                    </code>
+                                </details>
+                            )}
+                        </AlertDescription>
+                    </Alert>
+                </div>
+                <Skeleton className="col-span-6 h-full min-h-[30dvh]" />
+                <Skeleton className="col-span-3 h-full min-h-[20dvh]" />
+                <Skeleton className="col-span-3 h-full" />
+                <Skeleton className="col-span-2 h-full" />
+                <Skeleton className="col-span-2 h-full" />
+                <Skeleton className="col-span-2 h-full" />
+            </main>
+		);
+	}
+
+	if (!data) return <main className="min-h-screen items-center w-full max-h-dvh overflow-auto p-4 grid grid-cols-6 justify-start gap-2">
+		<Skeleton className="col-span-6 h-full min-h-[30dvh]" />
+		<Skeleton className="col-span-3 h-full min-h-[20dvh]" />
+		<Skeleton className="col-span-3 h-full" />
+		<Skeleton className="col-span-2 h-full" />
+		<Skeleton className="col-span-2 h-full" />
+		<Skeleton className="col-span-2 h-full" />
+	</main>
 
 	return (
 		<main className="min-h-screen w-full max-h-dvh overflow-auto bg-background flex flex-col items-center">
@@ -358,9 +397,8 @@ function StaticCard({
 					/>
 				) : (
 					<div
-						className={`w-full h-full bg-linear-to-br ${
-							item.gradient || "from-primary/20 to-primary/40"
-						}`}
+						className={`w-full h-full bg-linear-to-br ${item.gradient || "from-primary/20 to-primary/40"
+							}`}
 					/>
 				)}
 				<div className="absolute inset-0 bg-linear-to-t from-black/20 via-black/5 dark:from-black/60 dark:via-black/20 to-transparent" />

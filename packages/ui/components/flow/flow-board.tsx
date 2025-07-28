@@ -87,7 +87,7 @@ import { type INode, IVariableType } from "../../lib/schema/flow/node";
 import type { IPin } from "../../lib/schema/flow/pin";
 import type { ILayer } from "../../lib/schema/flow/run";
 import { convertJsonToUint8Array } from "../../lib/uint8";
-import { useBackend } from "../../state/backend-state";
+import { useBackend, useBackendStore } from "../../state/backend-state";
 import { useFlowBoardParentState } from "../../state/flow-board-parent-state";
 import { useRunExecutionStore } from "../../state/run-execution-state";
 import { BoardMeta } from "./board-meta";
@@ -185,6 +185,8 @@ export function FlowBoard({
 
 	const executeCommand = useCallback(
 		async (command: IGenericCommand, append = false): Promise<any> => {
+			const backend = useBackendStore.getState().backend;
+			if (!backend) return;
 			if (typeof version !== "undefined") {
 				toastError("Cannot change old version", <XIcon />);
 				return;
@@ -198,11 +200,13 @@ export function FlowBoard({
 			await board.refetch();
 			return result;
 		},
-		[board.refetch, appId, boardId, backend, pushCommand, version],
+		[board.refetch, appId, boardId, pushCommand, version],
 	);
 
 	const executeCommands = useCallback(
 		async (commands: IGenericCommand[]) => {
+			const backend = useBackendStore.getState().backend;
+			if (!backend) return;
 			if (typeof version !== "undefined") {
 				toastError("Cannot change old version", <XIcon />);
 				return;
@@ -217,7 +221,7 @@ export function FlowBoard({
 			await board.refetch();
 			return result;
 		},
-		[board.refetch, appId, boardId, backend, pushCommands, version],
+		[board.refetch, appId, boardId, pushCommands, version],
 	);
 
 	useEffect(() => {
@@ -936,7 +940,7 @@ export function FlowBoard({
 			edgeReconnectSuccessful.current = true;
 			setEdges((els) => reconnectEdge(oldEdge, newConnection, els));
 		},
-		[boardId, setEdges, pinToNode, executeCommands],
+		[setEdges, pinToNode, executeCommands],
 	);
 
 	const onReconnectEnd = useCallback(
@@ -958,7 +962,7 @@ export function FlowBoard({
 
 			edgeReconnectSuccessful.current = true;
 		},
-		[boardId, setEdges, pinToNode],
+		[setEdges, pinToNode],
 	);
 
 	const onContextMenuCB = useCallback((event: any) => {

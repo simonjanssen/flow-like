@@ -215,7 +215,7 @@ export function parseBoard(
 	const oldEdgesMap = new Map<string, any>();
 
 	for (const oldNode of oldNodes ?? []) {
-		oldNodesMap.set(oldNode.data?.hash, oldNode);
+		if (oldNode.data?.hash) oldNodesMap.set(oldNode.data?.hash, oldNode);
 	}
 
 	for (const edge of oldEdges ?? []) {
@@ -351,6 +351,7 @@ export function parseBoard(
 						data: {
 							label: node.name,
 							node: node,
+							hash: node.hash ?? -1,
 							boardId: board.id,
 							appId: appId,
 							ghost: true,
@@ -390,6 +391,7 @@ export function parseBoard(
 							node: connectedNode,
 							boardId: board.id,
 							appId: appId,
+							hash: connectedNode.hash ?? -1,
 							ghost: true,
 							onExecute: async (node: INode, payload?: object) => {
 								await executeBoard(node, payload);
@@ -484,7 +486,6 @@ export function parseBoard(
 			selected: selected.has(comment.id),
 		});
 	}
-
 	return { nodes, edges, cache };
 }
 
@@ -620,7 +621,7 @@ export async function handlePaste(
 		});
 		await executeCommand(command);
 		return;
-	} catch (error) {}
+	} catch (error) { }
 
 	try {
 		const clipboard = await navigator.clipboard.readText();
@@ -642,5 +643,5 @@ export async function handlePaste(
 
 		await executeCommand(command);
 		return;
-	} catch (error) {}
+	} catch (error) { }
 }
