@@ -84,6 +84,11 @@
 		},
 		"layer": {
 			"type": ["string", "null"]
+		},
+		"hash": {
+			"type": ["integer", "null"],
+			"format": "uint64",
+			"minimum": 0.0
 		}
 	},
 	"definitions": {

@@ -1,17 +1,12 @@
 "use client";
 
-import type { TElement } from "platejs";
-
 import { faker } from "@faker-js/faker";
 import { CopilotPlugin } from "@platejs/ai/react";
 import { serializeMd, stripMarkdown } from "@platejs/markdown";
-
-import { GhostText } from "../ui/ghost-text";
-
-import { request } from "http";
-import { init } from "@paralleldrive/cuid2";
+import type { TElement } from "platejs";
 import { IRole } from "../../../lib";
-import { useBackend, useBackendStore } from "../../../state/backend-state";
+import { useBackendStore } from "../../../state/backend-state";
+import { GhostText } from "../ui/ghost-text";
 import { MarkdownKit } from "./markdown-kit";
 
 const SYSTEM_PROMPT = `You are an advanced AI writing assistant, similar to VSCode Copilot but for general text. Your task is to predict and generate the next part of the text based on the given context.

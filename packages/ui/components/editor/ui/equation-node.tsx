@@ -21,8 +21,7 @@ import {
 	useSelected,
 } from "platejs/react";
 
-import { Button } from "../../..";
-import { Popover, PopoverContent, PopoverTrigger } from "../../..";
+import { Button, Popover, PopoverContent, PopoverTrigger } from "../../..";
 import { cn } from "../../../lib/utils";
 
 export function EquationElement(props: PlateElementProps<TEquationElement>) {

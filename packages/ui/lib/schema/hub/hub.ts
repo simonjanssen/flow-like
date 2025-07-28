@@ -96,6 +96,7 @@ export interface ILookup {
 	description: boolean;
 	email: boolean;
 	name: boolean;
+	preferred_username: boolean;
 	username: boolean;
 	[property: string]: any;
 }

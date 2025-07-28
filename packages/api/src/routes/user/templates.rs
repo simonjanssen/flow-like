@@ -2,7 +2,7 @@ use crate::{
     entity::{membership, meta, role, template},
     error::ApiError,
     middleware::jwt::AppUser,
-    permission::role_permission::{has_role_permission, RolePermissions},
+    permission::role_permission::{RolePermissions, has_role_permission},
     routes::LanguageParams,
     state::AppState,
 };

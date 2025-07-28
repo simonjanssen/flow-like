@@ -232,7 +232,7 @@ export function WebhookConfig({
 											newMessages.splice(index, 1);
 											setValue("example_messages", newMessages);
 										}}
-										className="text-secondary-foreground/70 hover:text-secondary-foreground flex-shrink-0"
+										className="text-secondary-foreground/70 hover:text-secondary-foreground shrink-0"
 									>
 										×
 									</button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, ExternalLink, FileText, Music, ZoomIn } from "lucide-react";
+import { Download, FileText, Music, ZoomIn } from "lucide-react";
 import type { IBackendState } from "../../../state/backend-state";
 import { Button } from "../../ui";
 import type { IAttachment } from "./chat-db";

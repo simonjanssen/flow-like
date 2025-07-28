@@ -11,7 +11,7 @@ import { fetcher } from "../../lib/api";
 import type { TauriBackend } from "../tauri-provider";
 
 export class TemplateState implements ITemplateState {
-	constructor(private readonly backend: TauriBackend) { }
+	constructor(private readonly backend: TauriBackend) {}
 	async getTemplates(
 		appId?: string,
 		language?: string,

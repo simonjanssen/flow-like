@@ -25,8 +25,7 @@ import {
 } from "@platejs/combobox/react";
 import { cva } from "class-variance-authority";
 import { useComposedRef, useEditorRef } from "platejs/react";
-
-import { cn } from "../../../lib/utils";
+import { cn } from "../../../lib";
 
 type FilterFn = (
 	item: { value: string; group?: string; keywords?: string[]; label?: string },

@@ -1,5 +1,5 @@
 import { PlusCircleIcon, Trash2Icon } from "lucide-react";
-import React, { useState, useMemo, useCallback } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Input } from "../../../components/ui/input";
 import type { IVariable } from "../../../lib/schema/flow/variable";
 import {

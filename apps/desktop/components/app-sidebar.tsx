@@ -90,7 +90,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "react-oidc-context";
 import { toast } from "sonner";
 import { fetcher } from "../lib/api";
-import { useApi } from "../lib/useApi";
 import { useTauriInvoke } from "./useInvoke";
 
 const data = {
@@ -311,21 +310,22 @@ function InnerSidebar() {
 			</SidebarContent>
 			<SidebarFooter>
 				<div className="flex flex-col gap-1">
-					{stats.max > 0 && (
-						<div>
-							<SidebarMenuButton
-								onClick={() => {
-									router.push("/download");
-								}}
-							>
-								<DownloadIcon />
-								<span>
-									Download:{" "}
-									<b className="highlight">{stats.progress.toFixed(2)} %</b>
-								</span>
-							</SidebarMenuButton>
-						</div>
-					)}
+					{stats.max > 0 ||
+						(true && (
+							<div>
+								<SidebarMenuButton
+									onClick={() => {
+										router.push("/download");
+									}}
+								>
+									<DownloadIcon />
+									<span>
+										Download:{" "}
+										<b className="highlight">{stats.progress.toFixed(2)} %</b>
+									</span>
+								</SidebarMenuButton>
+							</div>
+						))}
 					<Dialog>
 						<DialogTrigger asChild>
 							<SidebarMenuButton>

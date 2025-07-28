@@ -15,7 +15,6 @@ import {
 } from "framer-motion";
 import { memo, useRef, useState } from "react";
 import { cn } from "../../lib/utils";
-import { Separator } from "../ui";
 
 type IFlowDockItem = {
 	title: string;
@@ -199,7 +198,7 @@ function IconContainer({
 				style={{ width, height }}
 				onMouseEnter={() => setHovered(true)}
 				onMouseLeave={() => setHovered(false)}
-				className={`aspect-square rounded-full bg-gray-200 dark:bg-neutral-800 flex items-center justify-center relative ${highlight ? "!bg-primary !text-primary-foreground" : ""}`}
+				className={`aspect-square rounded-full bg-gray-200 dark:bg-neutral-800 flex items-center justify-center relative ${highlight ? "bg-primary! text-primary-foreground!" : ""}`}
 			>
 				<motion.div
 					style={{ width: widthIcon, height: heightIcon }}

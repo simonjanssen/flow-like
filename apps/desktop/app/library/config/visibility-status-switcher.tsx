@@ -18,7 +18,6 @@ import {
 	CardTitle,
 	type IApp,
 	IAppVisibility,
-	VerificationDialog,
 	useBackend,
 	useInvalidateInvoke,
 } from "@tm9657/flow-like-ui";
@@ -32,7 +31,7 @@ import {
 	ShieldIcon,
 	UsersIcon,
 } from "lucide-react";
-import { type ReactNode, useCallback, useState } from "react";
+import { type ReactNode, useCallback } from "react";
 import { toast } from "sonner";
 
 interface VisibilityStatusSwitcherProps {

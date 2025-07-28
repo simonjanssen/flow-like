@@ -125,7 +125,7 @@ export function InviteManagement({ appId }: Readonly<{ appId: string }>) {
 				<CardContent>
 					<Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
 						<DialogTrigger asChild>
-							<Button className="w-full bg-gradient-to-r from-primary to-tertiary hover:from-primary/50 hover:to-tertiary/50">
+							<Button className="w-full bg-linear-to-r from-primary to-tertiary hover:from-primary/50 hover:to-tertiary/50">
 								<UserPlus2Icon className="w-4 h-4 mr-2" />
 								Invite User
 							</Button>
@@ -402,7 +402,7 @@ export function InviteManagement({ appId }: Readonly<{ appId: string }>) {
 				<CardContent className="space-y-4">
 					{(links.data?.length ?? 0) === 0 && (
 						<EmptyState
-							className="w-full flex flex-grow min-w-fill flex-col max-w-full"
+							className="w-full flex grow min-w-fill flex-col max-w-full"
 							title="No Invite Links"
 							description="Create Invite Links to share your project"
 							icons={[UsersIcon, LinkIcon, MailIcon]}

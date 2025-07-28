@@ -4,7 +4,7 @@ import { FlowNode } from "@tm9657/flow-like-ui/components/flow/flow-node";
 import { LayerNode } from "@tm9657/flow-like-ui/components/flow/layer-node";
 import { useEffect, useMemo, useState } from "react";
 
-export function Board({
+export default function Board({
 	nodes,
 	edges,
 }: Readonly<{ nodes: any[]; edges: any[] }>) {
@@ -44,15 +44,12 @@ export function Board({
 						nodes: isMobile
 							? [
 									{
-										id: "sx4lrx3ejmxzb900z60pfw67",
-									},
-									{
-										id: "h2hldwjc4xdzll134lop038x",
+										id: "u7urfocffhjtbwdwlore8u4w",
 									},
 								]
 							: [
 									{
-										id: "sx4lrx3ejmxzb900z60pfw67",
+										id: "u7urfocffhjtbwdwlore8u4w",
 									},
 								],
 					});

@@ -97,8 +97,9 @@
 				"created_at": true,
 				"description": true,
 				"email": false,
-				"name": false,
-				"username": true
+				"name": true,
+				"preferred_username": true,
+				"username": false
 			},
 			"allOf": [
 				{
@@ -333,6 +334,7 @@
 				"description",
 				"email",
 				"name",
+				"preferred_username",
 				"username"
 			],
 			"properties": {
@@ -343,6 +345,9 @@
 					"type": "boolean"
 				},
 				"username": {
+					"type": "boolean"
+				},
+				"preferred_username": {
 					"type": "boolean"
 				},
 				"avatar": {

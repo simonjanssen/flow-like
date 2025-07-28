@@ -1,5 +1,4 @@
 "use client";
-import { withSentryConfig } from "@sentry/nextjs";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
 	output: "export",
@@ -19,14 +18,17 @@ const nextConfig = {
 	devIndicators: {
 		appIsrStatus: false,
 	},
+	transpilePackages: ["@tm9657/flow-like-ui"],
 };
 
-export default withSentryConfig(nextConfig, {
-	org: "good-code",
-	project: "flow-like-desktop",
+export default nextConfig;
 
-	// An auth token is required for uploading source maps.
-	authToken: process.env.SENTRY_AUTH_TOKEN,
+// export default withSentryConfig(nextConfig, {
+// 	org: "good-code",
+// 	project: "flow-like-desktop",
 
-	silent: false, // Can be used to suppress logs
-});
+// 	// An auth token is required for uploading source maps.
+// 	authToken: process.env.SENTRY_AUTH_TOKEN,
+
+// 	silent: false, // Can be used to suppress logs
+// });

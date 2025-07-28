@@ -3,26 +3,26 @@ import type { IVariableType } from "../../lib/schema/flow/variable";
 export function typeToColor(type: IVariableType): string {
 	switch (type) {
 		case "Execution":
-			return "hsl(var(--foreground))";
+			return "var(--foreground)";
 		case "String":
-			return "var(--pink-400)";
+			return "var(--pin-string)";
 		case "Integer":
-			return "var(--blue-500)";
+			return "var(--pin-integer)";
 		case "Float":
-			return "var(--lime-400)";
+			return "var(--pin-float)";
 		case "Boolean":
-			return "var(--red-600)";
+			return "var(--pin-boolean)";
 		case "Date":
-			return "var(--amber-500)";
+			return "var(--pin-date)";
 		case "PathBuf":
-			return "var(--cyan-500)";
+			return "var(--pin-pathbuf)";
 		case "Generic":
-			return "var(--stone-500)";
+			return "var(--pin-generic)";
 		case "Struct":
-			return "var(--indigo-500)";
+			return "var(--pin-struct)";
 		case "Byte":
-			return "var(--teal-400)";
+			return "var(--pin-byte)";
 	}
 
-	return "LightSkyBlue";
+	return "var(--pin-byte)";
 }

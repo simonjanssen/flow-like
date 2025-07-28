@@ -8,14 +8,12 @@ import {
 	FileText,
 	Globe,
 	Lock,
-	Plus,
 	Shield,
 	Star,
 	Tag,
 	X,
 	Zap,
 } from "lucide-react";
-import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { useInvoke } from "../../../hooks";
 import { formatRelativeTime, useSetQueryParams } from "../../../lib";

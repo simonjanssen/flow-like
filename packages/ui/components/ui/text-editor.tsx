@@ -1,6 +1,6 @@
 "use client";
 
-import { MarkdownPlugin, remarkMdx, remarkMention } from "@platejs/markdown";
+import { remarkMdx, remarkMention } from "@platejs/markdown";
 import { PlateStatic, type Value, createSlateEditor } from "platejs";
 import { Plate, usePlateEditor } from "platejs/react";
 import { memo, useMemo } from "react";

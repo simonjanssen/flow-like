@@ -1,6 +1,5 @@
 use flow_like::{
-    flow::board::Board, flow_like_storage::object_store::ObjectStore, state::FlowLikeState,
-    utils::http::HTTPClient,
+    flow_like_storage::object_store::ObjectStore, state::FlowLikeState, utils::http::HTTPClient,
 };
 use flow_like_types::sync::Mutex;
 use std::sync::Arc;
@@ -23,16 +22,6 @@ impl TauriFlowLikeState {
         let flow_like_state = TauriFlowLikeState::construct(app_handle).await?;
         let http_client = flow_like_state.lock().await.http_client.clone();
         Ok(http_client)
-    }
-
-    #[inline]
-    pub async fn get_board_and_state(
-        app_handle: &AppHandle,
-        board_id: &str,
-    ) -> anyhow::Result<(Arc<Mutex<Board>>, Arc<Mutex<FlowLikeState>>)> {
-        let flow_like_state = TauriFlowLikeState::construct(app_handle).await?;
-        let board = flow_like_state.lock().await.get_board(board_id, None)?;
-        Ok((board, flow_like_state))
     }
 
     #[inline]

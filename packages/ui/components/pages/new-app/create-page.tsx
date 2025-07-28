@@ -179,7 +179,7 @@ export function CreateAppPage() {
 	const progressPercentage = ((currentStepIndex + 1) / STEPS.length) * 100;
 
 	return (
-		<main className="relative min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-6">
+		<main className="relative min-h-screen bg-linear-to-br from-background via-background to-muted/20 p-6">
 			{showConfetti && (
 				<div className="absolute z-50 pointer-events-none top-0 left-0 right-0 bottom-0">
 					<Crossfire className="" autorun={{ speed: 1 }} />
@@ -260,7 +260,7 @@ function PageHeader() {
 	return (
 		<div className="text-center space-y-4">
 			<div className="flex items-center justify-center gap-3 mb-4">
-				<div className="p-3 bg-gradient-to-br from-primary to-primary/80 rounded-xl shadow-lg">
+				<div className="p-3 bg-linear-to-br from-primary to-primary/80 rounded-xl shadow-lg">
 					<Rocket className="h-8 w-8 text-primary-foreground" />
 				</div>
 				<h1 className="text-4xl font-bold">
