@@ -310,22 +310,21 @@ function InnerSidebar() {
 			</SidebarContent>
 			<SidebarFooter>
 				<div className="flex flex-col gap-1">
-					{stats.max > 0 ||
-						(true && (
-							<div>
-								<SidebarMenuButton
-									onClick={() => {
-										router.push("/download");
-									}}
-								>
-									<DownloadIcon />
-									<span>
-										Download:{" "}
-										<b className="highlight">{stats.progress.toFixed(2)} %</b>
-									</span>
-								</SidebarMenuButton>
-							</div>
-						))}
+					{stats.max > 0 && (
+						<div>
+							<SidebarMenuButton
+								onClick={() => {
+									router.push("/download");
+								}}
+							>
+								<DownloadIcon />
+								<span>
+									Download:{" "}
+									<b className="highlight">{stats.progress.toFixed(2)} %</b>
+								</span>
+							</SidebarMenuButton>
+						</div>
+					)}
 					<Dialog>
 						<DialogTrigger asChild>
 							<SidebarMenuButton>

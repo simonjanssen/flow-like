@@ -4,18 +4,12 @@ import {
 	Skeleton,
 	TutorialDialog,
 	useBackend,
-	useInvoke,
 } from "@tm9657/flow-like-ui";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export default function Home() {
 	const backend = useBackend();
-	const profile = useInvoke(
-		backend.userState.getSettingsProfile,
-		backend.userState,
-		[],
-	);
 	const router = useRouter();
 
 	function checkOnboarding() {
@@ -32,12 +26,7 @@ export default function Home() {
 		if (checkOnboarding()) return;
 	}, []);
 
-	useEffect(() => {
-		if (checkOnboarding()) return;
-		if (!profile.data) return;
-	}, [profile.data]);
-
-	if (checkOnboarding() || !profile.data) {
+	if (checkOnboarding()) {
 		return (
 			<main className="min-h-screen items-center w-full max-h-dvh overflow-auto p-4 grid grid-cols-6 justify-start gap-2">
 				<TutorialDialog />

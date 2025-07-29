@@ -53,7 +53,7 @@ import CATPPUCHIN from "./themes/catppuccin.json";
 import CLAYMORPHISM from "./themes/claymorphism.json";
 import CLEAN_SLATE from "./themes/clean-slate.json";
 import COSMIC_NIGHT from "./themes/cosmic-night.json";
-import CYBER_PUNK from "./themes/cyber-punk.json"
+import CYBER_PUNK from "./themes/cyber-punk.json";
 import DOOM from "./themes/doom.json";
 import GRAPHITE from "./themes/graphite.json";
 import KODAMA_GROVE from "./themes/kodama-grove.json";
@@ -62,6 +62,7 @@ import MIDNIGHT_BLOOM from "./themes/midnight-bloom.json";
 import MOCHA_MOUSSE from "./themes/mocha-mousse.json";
 import MODERN_MINIMAL from "./themes/modern-minimal.json";
 
+import MONO from "./themes/mono.json";
 import NATURE from "./themes/nature.json";
 import NEO_BRUTALISM from "./themes/neo-brutalism.json";
 import NORTHERN_LIGHTS from "./themes/northern-lights.json";
@@ -74,7 +75,6 @@ import RETRO_ARCADE from "./themes/retro-arcade.json";
 import SOFT_POP from "./themes/soft-pop.json";
 import SOLAR_DUSK from "./themes/solar-dusk.json";
 import STARRY_NIGHT from "./themes/starry-night.json";
-import MONO from "./themes/mono.json";
 import SUNSET_HORIZON from "./themes/sunset-horizon.json";
 import TANGERINE from "./themes/tangerine.json";
 import VINTAGE_PAPER from "./themes/vintage-paper.json";

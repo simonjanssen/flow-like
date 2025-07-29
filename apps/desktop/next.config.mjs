@@ -14,6 +14,7 @@ const nextConfig = {
 		webpackMemoryOptimizations: true,
 		webpackBuildWorkers: true,
 		preloadEntriesOnStart: false,
+		reactCompiler: true,
 	},
 	devIndicators: {
 		appIsrStatus: false,
