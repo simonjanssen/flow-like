@@ -269,179 +269,175 @@ export function StorageSystem({
 			)}
 
 			{/* Header Section */}
-            <div className="flex flex-col gap-4 px-4 pt-4">
-                <div className="flex flex-row items-center justify-between">
-                    <h2 className="text-2xl font-semibold tracking-tight">Storage</h2>
-                    <div className="flex items-center gap-2">
-
-
-                        <div className="flex items-center gap-2">
-                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                <span>Sort by:</span>
-                                <span className="font-medium text-foreground capitalize">
-                                    {sortBy === "date" ? "Date modified" : sortBy}
-                                </span>
-                                <span className="text-xs">
-                                    {sortOrder === "asc" ? "↑" : "↓"}
-                                </span>
-                            </div>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="icon">
-                                        <SortAscIcon className="h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem
-                                        onClick={() => {
-                                            setSortBy("name");
-                                            setSortOrder(
-                                                sortBy === "name" && sortOrder === "asc"
-                                                    ? "desc"
-                                                    : "asc",
-                                            );
-                                        }}
-                                        className="flex items-center justify-between"
-                                    >
-                                        Name
-                                        {sortBy === "name" && (
-                                            <span className="text-xs text-muted-foreground">
-                                                {sortOrder === "asc" ? " ↑" : " ↓"}
-                                            </span>
-                                        )}
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={() => {
-                                            setSortBy("date");
-                                            setSortOrder(
-                                                sortBy === "date" && sortOrder === "asc"
-                                                    ? "desc"
-                                                    : "asc",
-                                            );
-                                        }}
-                                        className="flex items-center justify-between"
-                                    >
-                                        Date modified
-                                        {sortBy === "date" && (
-                                            <span className="text-xs text-muted-foreground">
-                                                {sortOrder === "asc" ? " ↑" : " ↓"}
-                                            </span>
-                                        )}
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={() => {
-                                            setSortBy("size");
-                                            setSortOrder(
-                                                sortBy === "size" && sortOrder === "asc"
-                                                    ? "desc"
-                                                    : "asc",
-                                            );
-                                        }}
-                                        className="flex items-center justify-between"
-                                    >
-                                        Size
-                                        {sortBy === "size" && (
-                                            <span className="text-xs text-muted-foreground">
-                                                {sortOrder === "asc" ? " ↑" : " ↓"}
-                                            </span>
-                                        )}
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={() => {
-                                            setSortBy("type");
-                                            setSortOrder(
-                                                sortBy === "type" && sortOrder === "asc"
-                                                    ? "desc"
-                                                    : "asc",
-                                            );
-                                        }}
-                                        className="flex items-center justify-between"
-                                    >
-                                        Type
-                                        {sortBy === "type" && (
-                                            <span className="text-xs text-muted-foreground">
-                                                {sortOrder === "asc" ? " ↑" : " ↓"}
-                                            </span>
-                                        )}
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() =>
-                                        setViewMode(viewMode === "grid" ? "list" : "grid")
-                                    }
-                                >
-                                    {viewMode === "grid" ? (
-                                        <ListIcon className="h-4 w-4" />
-                                    ) : (
-                                        <GridIcon className="h-4 w-4" />
-                                    )}
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                Switch to {viewMode === "grid" ? "list" : "grid"} view
-                            </TooltipContent>
-                        </Tooltip>
-                        <Separator orientation="vertical" className="h-6" />
-
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    className="gap-2"
-                                    onClick={() => fileReference.current?.click()}
-                                >
-                                    <UploadIcon className="h-4 w-4" />
-                                    Upload Files
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Upload files to current folder</TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    className="gap-2"
-                                    onClick={() => folderReference.current?.click()}
-                                >
-                                    <FolderPlusIcon className="h-4 w-4" />
-                                    Upload Folder
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Upload entire folder</TooltipContent>
-                        </Tooltip>
-					</div>
-
-                </div>
-<div className="flex items-end gap-2 mt-2 justify-between">
-
-                {(files.data?.length ?? 0) > 0 && (
-					<StorageBreadcrumbs
-					appId={appId}
-					prefix={prefix}
-					updatePrefix={(prefix) => updatePrefix(prefix)}
-                    />
-                )}
-				{(files.data?.length ?? 0) > 0 && (
-					<div className="relative">
-                                <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    placeholder="Search files and folders..."
-                                    className="pl-10"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-									/>
-                            </div>
-                        )}
+			<div className="flex flex-col gap-4 px-4 pt-4">
+				<div className="flex flex-row items-center justify-between">
+					<h2 className="text-2xl font-semibold tracking-tight">Storage</h2>
+					<div className="flex items-center gap-2">
+						<div className="flex items-center gap-2">
+							<div className="flex items-center gap-1 text-sm text-muted-foreground">
+								<span>Sort by:</span>
+								<span className="font-medium text-foreground capitalize">
+									{sortBy === "date" ? "Date modified" : sortBy}
+								</span>
+								<span className="text-xs">
+									{sortOrder === "asc" ? "↑" : "↓"}
+								</span>
+							</div>
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Button variant="outline" size="icon">
+										<SortAscIcon className="h-4 w-4" />
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent align="end">
+									<DropdownMenuItem
+										onClick={() => {
+											setSortBy("name");
+											setSortOrder(
+												sortBy === "name" && sortOrder === "asc"
+													? "desc"
+													: "asc",
+											);
+										}}
+										className="flex items-center justify-between"
+									>
+										Name
+										{sortBy === "name" && (
+											<span className="text-xs text-muted-foreground">
+												{sortOrder === "asc" ? " ↑" : " ↓"}
+											</span>
+										)}
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										onClick={() => {
+											setSortBy("date");
+											setSortOrder(
+												sortBy === "date" && sortOrder === "asc"
+													? "desc"
+													: "asc",
+											);
+										}}
+										className="flex items-center justify-between"
+									>
+										Date modified
+										{sortBy === "date" && (
+											<span className="text-xs text-muted-foreground">
+												{sortOrder === "asc" ? " ↑" : " ↓"}
+											</span>
+										)}
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										onClick={() => {
+											setSortBy("size");
+											setSortOrder(
+												sortBy === "size" && sortOrder === "asc"
+													? "desc"
+													: "asc",
+											);
+										}}
+										className="flex items-center justify-between"
+									>
+										Size
+										{sortBy === "size" && (
+											<span className="text-xs text-muted-foreground">
+												{sortOrder === "asc" ? " ↑" : " ↓"}
+											</span>
+										)}
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										onClick={() => {
+											setSortBy("type");
+											setSortOrder(
+												sortBy === "type" && sortOrder === "asc"
+													? "desc"
+													: "asc",
+											);
+										}}
+										className="flex items-center justify-between"
+									>
+										Type
+										{sortBy === "type" && (
+											<span className="text-xs text-muted-foreground">
+												{sortOrder === "asc" ? " ↑" : " ↓"}
+											</span>
+										)}
+									</DropdownMenuItem>
+								</DropdownMenuContent>
+							</DropdownMenu>
 						</div>
-            </div>
+
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									variant="outline"
+									size="icon"
+									onClick={() =>
+										setViewMode(viewMode === "grid" ? "list" : "grid")
+									}
+								>
+									{viewMode === "grid" ? (
+										<ListIcon className="h-4 w-4" />
+									) : (
+										<GridIcon className="h-4 w-4" />
+									)}
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>
+								Switch to {viewMode === "grid" ? "list" : "grid"} view
+							</TooltipContent>
+						</Tooltip>
+						<Separator orientation="vertical" className="h-6" />
+
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									variant="outline"
+									className="gap-2"
+									onClick={() => fileReference.current?.click()}
+								>
+									<UploadIcon className="h-4 w-4" />
+									Upload Files
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Upload files to current folder</TooltipContent>
+						</Tooltip>
+
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Button
+									variant="outline"
+									className="gap-2"
+									onClick={() => folderReference.current?.click()}
+								>
+									<FolderPlusIcon className="h-4 w-4" />
+									Upload Folder
+								</Button>
+							</TooltipTrigger>
+							<TooltipContent>Upload entire folder</TooltipContent>
+						</Tooltip>
+					</div>
+				</div>
+				<div className="flex items-end gap-2 mt-2 justify-between">
+					{(files.data?.length ?? 0) > 0 && (
+						<StorageBreadcrumbs
+							appId={appId}
+							prefix={prefix}
+							updatePrefix={(prefix) => updatePrefix(prefix)}
+						/>
+					)}
+					{(files.data?.length ?? 0) > 0 && (
+						<div className="relative">
+							<SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+							<Input
+								placeholder="Search files and folders..."
+								className="pl-10"
+								value={searchQuery}
+								onChange={(e) => setSearchQuery(e.target.value)}
+							/>
+						</div>
+					)}
+				</div>
+			</div>
 
 			<Separator />
 
@@ -500,21 +496,27 @@ export function StorageSystem({
 									className="border rounded-lg"
 								>
 									<ResizablePanel className="flex flex-col gap-2 grow overflow-y-hidden max-h-full h-full p-4 bg-background">
-                                        <div
-                                            key={sortBy}
-                                            className="flex flex-col grow max-h-full h-full overflow-hidden gap-2"
-                                        >
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <h3 className="font-medium text-sm text-muted-foreground">
-                                                    Files & Folders
-                                                </h3>
-                                                <Badge variant="secondary" className="px-2 py-1 text-xs">
-                                                    {fileCount} files
-                                                </Badge>
-                                                <Badge variant="secondary" className="px-2 py-1 text-xs">
-                                                    {folderCount} folders
-                                                </Badge>
-                                            </div>
+										<div
+											key={sortBy}
+											className="flex flex-col grow max-h-full h-full overflow-hidden gap-2"
+										>
+											<div className="flex items-center gap-2 mb-2">
+												<h3 className="font-medium text-sm text-muted-foreground">
+													Files & Folders
+												</h3>
+												<Badge
+													variant="secondary"
+													className="px-2 py-1 text-xs"
+												>
+													{fileCount} files
+												</Badge>
+												<Badge
+													variant="secondary"
+													className="px-2 py-1 text-xs"
+												>
+													{folderCount} folders
+												</Badge>
+											</div>
 											<div className="flex flex-col gap-2 grow max-h-full h-full overflow-auto">
 												{sortedFiles.map((file) => (
 													<FileOrFolder
@@ -613,18 +615,18 @@ export function StorageSystem({
 						</>
 					)}
 					{preview.url === "" && (
-                        <div className="flex flex-col grow max-h-full h-full overflow-auto gap-2 border rounded-lg p-4 bg-background">
-                            <div className="flex items-center gap-2 mb-2">
-                                <h3 className="font-medium text-sm text-muted-foreground">
-                                    Files & Folders
-                                </h3>
-                                <Badge variant="secondary" className="px-2 py-1 text-xs">
-                                    {fileCount} files
-                                </Badge>
-                                <Badge variant="secondary" className="px-2 py-1 text-xs">
-                                    {folderCount} folders
-                                </Badge>
-                            </div>
+						<div className="flex flex-col grow max-h-full h-full overflow-auto gap-2 border rounded-lg p-4 bg-background">
+							<div className="flex items-center gap-2 mb-2">
+								<h3 className="font-medium text-sm text-muted-foreground">
+									Files & Folders
+								</h3>
+								<Badge variant="secondary" className="px-2 py-1 text-xs">
+									{fileCount} files
+								</Badge>
+								<Badge variant="secondary" className="px-2 py-1 text-xs">
+									{folderCount} folders
+								</Badge>
+							</div>
 							<div
 								className={`grid gap-2 ${viewMode === "grid" ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-1"}`}
 							>

@@ -636,7 +636,7 @@ export async function handlePaste(
 		});
 		await executeCommand(command);
 		return;
-	} catch (error) { }
+	} catch (error) {}
 
 	try {
 		const clipboard = await navigator.clipboard.readText();
@@ -658,5 +658,5 @@ export async function handlePaste(
 
 		await executeCommand(command);
 		return;
-	} catch (error) { }
+	} catch (error) {}
 }

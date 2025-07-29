@@ -257,7 +257,7 @@ interface IUser {
 export function AppSidebar({
 	children,
 }: Readonly<{ children: React.ReactNode }>) {
-  	const defaultOpen = localStorage.getItem("sidebar_state") === "true"
+	const defaultOpen = localStorage.getItem("sidebar_state") === "true";
 
 	return (
 		<SidebarProvider defaultOpen={defaultOpen}>
@@ -877,11 +877,7 @@ export function NavUser({
 	const displayName: string = useMemo(() => {
 		if (!info.data) return "Offline";
 
-		return (
-			info.data?.name ??
-			info.data?.preferred_username ??
-			"Offline"
-		);
+		return info.data?.name ?? info.data?.preferred_username ?? "Offline";
 	}, [info.data]);
 
 	const email: string = useMemo(() => {

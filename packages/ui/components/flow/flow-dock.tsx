@@ -6,254 +6,277 @@
 
 import { IconLayoutNavbarCollapse } from "@tabler/icons-react";
 import {
-    AnimatePresence,
-    type MotionValue,
-    motion,
-    useMotionValue,
-    useSpring,
-    useTransform,
+	AnimatePresence,
+	type MotionValue,
+	motion,
+	useMotionValue,
+	useSpring,
+	useTransform,
 } from "framer-motion";
 import { memo, useCallback, useMemo, useRef, useState } from "react";
 import { cn } from "../../lib/utils";
 
 type IFlowDockItem = {
-    title: string;
-    icon: React.ReactNode;
-    onClick: () => Promise<void>;
-    separator?: string;
-    highlight?: boolean;
+	title: string;
+	icon: React.ReactNode;
+	onClick: () => Promise<void>;
+	separator?: string;
+	highlight?: boolean;
 };
 
 export const FlowDock = memo(
-    ({
-        items,
-        desktopClassName,
-        mobileClassName,
-    }: {
-        items: IFlowDockItem[];
-        desktopClassName?: string;
-        mobileClassName?: string;
-    }) => {
-        return (
-            <>
-                <FlowDockDesktop items={items} className={desktopClassName} />
-                <FlowDockMobile items={items} className={mobileClassName} />
-            </>
-        );
-    },
+	({
+		items,
+		desktopClassName,
+		mobileClassName,
+	}: {
+		items: IFlowDockItem[];
+		desktopClassName?: string;
+		mobileClassName?: string;
+	}) => {
+		return (
+			<>
+				<FlowDockDesktop items={items} className={desktopClassName} />
+				<FlowDockMobile items={items} className={mobileClassName} />
+			</>
+		);
+	},
 );
 
-const FlowDockMobile = memo(({
-    items,
-    className,
-}: {
-    items: IFlowDockItem[];
-    className?: string;
-}) => {
-    const [open, setOpen] = useState(false);
+const FlowDockMobile = memo(
+	({
+		items,
+		className,
+	}: {
+		items: IFlowDockItem[];
+		className?: string;
+	}) => {
+		const [open, setOpen] = useState(false);
 
-    const handleToggle = useCallback(() => {
-        setOpen(prev => !prev);
-    }, []);
+		const handleToggle = useCallback(() => {
+			setOpen((prev) => !prev);
+		}, []);
 
-    const mobileItems = useMemo(() =>
-        items.map((item, idx) => (
-            <MobileItem
-                key={item.title}
-                item={item}
-                index={idx}
-                totalItems={items.length}
-            />
-        )), [items]
-    );
+		const mobileItems = useMemo(
+			() =>
+				items.map((item, idx) => (
+					<MobileItem
+						key={item.title}
+						item={item}
+						index={idx}
+						totalItems={items.length}
+					/>
+				)),
+			[items],
+		);
 
-    return (
-        <div className={cn("relative block md:hidden", className)}>
-            <AnimatePresence>
-                {open && (
-                    <motion.div
-                        layoutId="nav"
-                        className="absolute bottom-full mb-2 inset-x-0 flex flex-col gap-2"
-                    >
-                        {mobileItems}
-                    </motion.div>
-                )}
-            </AnimatePresence>
-            <button
-                onClick={handleToggle}
-                className="h-10 w-10 rounded-full bg-secondary hover:bg-secondary/80 flex items-center justify-center transition-colors"
-            >
-                <IconLayoutNavbarCollapse className="h-5 w-5 text-muted-foreground" />
-            </button>
-        </div>
-    );
-});
+		return (
+			<div className={cn("relative block md:hidden", className)}>
+				<AnimatePresence>
+					{open && (
+						<motion.div
+							layoutId="nav"
+							className="absolute bottom-full mb-2 inset-x-0 flex flex-col gap-2"
+						>
+							{mobileItems}
+						</motion.div>
+					)}
+				</AnimatePresence>
+				<button
+					onClick={handleToggle}
+					className="h-10 w-10 rounded-full bg-secondary hover:bg-secondary/80 flex items-center justify-center transition-colors"
+				>
+					<IconLayoutNavbarCollapse className="h-5 w-5 text-muted-foreground" />
+				</button>
+			</div>
+		);
+	},
+);
 
-const MobileItem = memo(({
-    item,
-    index,
-    totalItems
-}: {
-    item: IFlowDockItem;
-    index: number;
-    totalItems: number;
-}) => {
-    const handleClick = useCallback(async () => {
-        await item.onClick();
-    }, [item.onClick]);
+const MobileItem = memo(
+	({
+		item,
+		index,
+		totalItems,
+	}: {
+		item: IFlowDockItem;
+		index: number;
+		totalItems: number;
+	}) => {
+		const handleClick = useCallback(async () => {
+			await item.onClick();
+		}, [item.onClick]);
 
-    return (
-        <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{
-                opacity: 1,
-                y: 0,
-            }}
-            exit={{
-                opacity: 0,
-                y: 10,
-                transition: {
-                    delay: index * 0.05,
-                },
-            }}
-            transition={{ delay: (totalItems - 1 - index) * 0.05 }}
-        >
-            <button
-                onClick={handleClick}
-                className="h-10 w-10 rounded-full bg-secondary hover:bg-secondary/80 flex items-center justify-center transition-colors"
-            >
-                <div className="h-4 w-4">{item.icon}</div>
-            </button>
-        </motion.div>
-    );
-});
+		return (
+			<motion.div
+				initial={{ opacity: 0, y: 10 }}
+				animate={{
+					opacity: 1,
+					y: 0,
+				}}
+				exit={{
+					opacity: 0,
+					y: 10,
+					transition: {
+						delay: index * 0.05,
+					},
+				}}
+				transition={{ delay: (totalItems - 1 - index) * 0.05 }}
+			>
+				<button
+					onClick={handleClick}
+					className="h-10 w-10 rounded-full bg-secondary hover:bg-secondary/80 flex items-center justify-center transition-colors"
+				>
+					<div className="h-4 w-4">{item.icon}</div>
+				</button>
+			</motion.div>
+		);
+	},
+);
 
-const FlowDockDesktop = memo(({
-    items,
-    className,
-}: {
-    items: IFlowDockItem[];
-    className?: string;
-}) => {
-    const mouseX = useMotionValue(Number.POSITIVE_INFINITY);
+const FlowDockDesktop = memo(
+	({
+		items,
+		className,
+	}: {
+		items: IFlowDockItem[];
+		className?: string;
+	}) => {
+		const mouseX = useMotionValue(Number.POSITIVE_INFINITY);
 
-    const handleMouseMove = useCallback((e: React.MouseEvent) => {
-        mouseX.set(e.pageX);
-    }, [mouseX]);
+		const handleMouseMove = useCallback(
+			(e: React.MouseEvent) => {
+				mouseX.set(e.pageX);
+			},
+			[mouseX],
+		);
 
-    const handleMouseLeave = useCallback(() => {
-        mouseX.set(Number.POSITIVE_INFINITY);
-    }, [mouseX]);
+		const handleMouseLeave = useCallback(() => {
+			mouseX.set(Number.POSITIVE_INFINITY);
+		}, [mouseX]);
 
-    const desktopItems = useMemo(() =>
-        items.map((item) => (
-            <div key={item.title} className="flex items-center gap-4">
-                {item.separator === "left" && (
-                    <div className="h-10 w-[2px] rounded-full bg-border" />
-                )}
-                <IconContainer mouseX={mouseX} {...item} />
-                {item.separator === "right" && (
-                    <div className="h-10 w-[2px] rounded-full bg-border" />
-                )}
-            </div>
-        )), [items, mouseX]
-    );
+		const desktopItems = useMemo(
+			() =>
+				items.map((item) => (
+					<div key={item.title} className="flex items-center gap-4">
+						{item.separator === "left" && (
+							<div className="h-10 w-[2px] rounded-full bg-border" />
+						)}
+						<IconContainer mouseX={mouseX} {...item} />
+						{item.separator === "right" && (
+							<div className="h-10 w-[2px] rounded-full bg-border" />
+						)}
+					</div>
+				)),
+			[items, mouseX],
+		);
 
-    return (
-        <motion.div
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
-            className={cn(
-                "mx-auto hidden md:flex h-16 gap-4 items-end rounded-2xl bg-card border px-4 pb-3",
-                className,
-            )}
-        >
-            {desktopItems}
-        </motion.div>
-    );
-});
+		return (
+			<motion.div
+				onMouseMove={handleMouseMove}
+				onMouseLeave={handleMouseLeave}
+				className={cn(
+					"mx-auto hidden md:flex h-16 gap-4 items-end rounded-2xl bg-card border px-4 pb-3",
+					className,
+				)}
+			>
+				{desktopItems}
+			</motion.div>
+		);
+	},
+);
 
-const IconContainer = memo(({
-    mouseX,
-    title,
-    icon,
-    highlight,
-    onClick,
-}: Readonly<{
-    mouseX: MotionValue;
-    title: string;
-    highlight?: boolean;
-    icon: React.ReactNode;
-    onClick: () => Promise<void>;
-}>) => {
-    const ref = useRef<HTMLDivElement>(null);
+const IconContainer = memo(
+	({
+		mouseX,
+		title,
+		icon,
+		highlight,
+		onClick,
+	}: Readonly<{
+		mouseX: MotionValue;
+		title: string;
+		highlight?: boolean;
+		icon: React.ReactNode;
+		onClick: () => Promise<void>;
+	}>) => {
+		const ref = useRef<HTMLDivElement>(null);
 
-    const distance = useTransform(mouseX, (val) => {
-        const bounds = ref.current?.getBoundingClientRect() ?? { x: 0, width: 0 };
-        return val - bounds.x - bounds.width / 2;
-    });
+		const distance = useTransform(mouseX, (val) => {
+			const bounds = ref.current?.getBoundingClientRect() ?? { x: 0, width: 0 };
+			return val - bounds.x - bounds.width / 2;
+		});
 
-    const widthTransform = useTransform(distance, [-150, 0, 150], [40, 80, 40]);
-    const heightTransform = useTransform(distance, [-150, 0, 150], [40, 80, 40]);
+		const widthTransform = useTransform(distance, [-150, 0, 150], [40, 80, 40]);
+		const heightTransform = useTransform(
+			distance,
+			[-150, 0, 150],
+			[40, 80, 40],
+		);
 
-    const widthTransformIcon = useTransform(
-        distance,
-        [-150, 0, 150],
-        [20, 40, 20],
-    );
-    const heightTransformIcon = useTransform(
-        distance,
-        [-150, 0, 150],
-        [20, 40, 20],
-    );
+		const widthTransformIcon = useTransform(
+			distance,
+			[-150, 0, 150],
+			[20, 40, 20],
+		);
+		const heightTransformIcon = useTransform(
+			distance,
+			[-150, 0, 150],
+			[20, 40, 20],
+		);
 
-    const springConfig = useMemo(() => ({
-        mass: 0.1,
-        stiffness: 150,
-        damping: 12,
-    }), []);
+		const springConfig = useMemo(
+			() => ({
+				mass: 0.1,
+				stiffness: 150,
+				damping: 12,
+			}),
+			[],
+		);
 
-    const width = useSpring(widthTransform, springConfig);
-    const height = useSpring(heightTransform, springConfig);
-    const widthIcon = useSpring(widthTransformIcon, springConfig);
-    const heightIcon = useSpring(heightTransformIcon, springConfig);
+		const width = useSpring(widthTransform, springConfig);
+		const height = useSpring(heightTransform, springConfig);
+		const widthIcon = useSpring(widthTransformIcon, springConfig);
+		const heightIcon = useSpring(heightTransformIcon, springConfig);
 
-    const [hovered, setHovered] = useState(false);
+		const [hovered, setHovered] = useState(false);
 
-    const handleMouseEnter = useCallback(() => setHovered(true), []);
-    const handleMouseLeave = useCallback(() => setHovered(false), []);
+		const handleMouseEnter = useCallback(() => setHovered(true), []);
+		const handleMouseLeave = useCallback(() => setHovered(false), []);
 
-    return (
-        <button onClick={onClick}>
-            <motion.div
-                ref={ref}
-                style={{ width, height }}
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
-                className={cn(
-                    "aspect-square rounded-full bg-secondary hover:bg-secondary/80 text-secondary-foreground flex items-center justify-center relative transition-colors",
-                    highlight && "bg-primary hover:bg-primary/90 text-primary-foreground"
-                )}
-            >
-                <motion.div
-                    style={{ width: widthIcon, height: heightIcon }}
-                    className="flex items-center justify-center"
-                >
-                    {icon}
-                </motion.div>
-                <AnimatePresence>
-                    {hovered && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 10, x: "-50%" }}
-                            animate={{ opacity: 1, y: 0, x: "-50%" }}
-                            exit={{ opacity: 0, y: 2, x: "-50%" }}
-                            className="px-2 py-0.5 whitespace-pre rounded-md bg-popover text-popover-foreground border absolute left-1/2  -bottom-8 w-fit text-xs"
-                        >
-                            {title}
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </motion.div>
-        </button>
-    );
-});
+		return (
+			<button onClick={onClick}>
+				<motion.div
+					ref={ref}
+					style={{ width, height }}
+					onMouseEnter={handleMouseEnter}
+					onMouseLeave={handleMouseLeave}
+					className={cn(
+						"aspect-square rounded-full bg-secondary hover:bg-secondary/80 text-secondary-foreground flex items-center justify-center relative transition-colors",
+						highlight &&
+							"bg-primary hover:bg-primary/90 text-primary-foreground",
+					)}
+				>
+					<motion.div
+						style={{ width: widthIcon, height: heightIcon }}
+						className="flex items-center justify-center"
+					>
+						{icon}
+					</motion.div>
+					<AnimatePresence>
+						{hovered && (
+							<motion.div
+								initial={{ opacity: 0, y: 10, x: "-50%" }}
+								animate={{ opacity: 1, y: 0, x: "-50%" }}
+								exit={{ opacity: 0, y: 2, x: "-50%" }}
+								className="px-2 py-0.5 whitespace-pre rounded-md bg-popover text-popover-foreground border absolute left-1/2  -bottom-8 w-fit text-xs"
+							>
+								{title}
+							</motion.div>
+						)}
+					</AnimatePresence>
+				</motion.div>
+			</button>
+		);
+	},
+);
