@@ -231,7 +231,7 @@ const IconContainer = memo(({
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
                 className={cn(
-                    "aspect-square rounded-full bg-secondary hover:bg-secondary/80 flex items-center justify-center relative transition-colors",
+                    "aspect-square rounded-full bg-secondary hover:bg-secondary/80 text-secondary-foreground flex items-center justify-center relative transition-colors",
                     highlight && "bg-primary hover:bg-primary/90 text-primary-foreground"
                 )}
             >
@@ -247,7 +247,7 @@ const IconContainer = memo(({
                             initial={{ opacity: 0, y: 10, x: "-50%" }}
                             animate={{ opacity: 1, y: 0, x: "-50%" }}
                             exit={{ opacity: 0, y: 2, x: "-50%" }}
-                            className="px-2 py-0.5 whitespace-pre rounded-md bg-popover border text-popover-foreground absolute left-1/2 -translate-x-1/2 -bottom-8 w-fit text-xs"
+                            className="px-2 py-0.5 whitespace-pre rounded-md bg-popover text-popover-foreground border absolute left-1/2  -bottom-8 w-fit text-xs"
                         >
                             {title}
                         </motion.div>

@@ -1099,17 +1099,17 @@ export function FlowBoard({
 				<FlowDock
 					items={[
 						...(typeof parentRegister.boardParents[boardId] === "string" &&
-						!currentLayer
+							!currentLayer
 							? [
-									{
-										icon: <ArrowBigLeftDashIcon />,
-										title: "Back",
-										onClick: async () => {
-											const urlWithQuery = parentRegister.boardParents[boardId];
-											router.push(urlWithQuery);
-										},
+								{
+									icon: <ArrowBigLeftDashIcon />,
+									title: "Back",
+									onClick: async () => {
+										const urlWithQuery = parentRegister.boardParents[boardId];
+										router.push(urlWithQuery);
 									},
-								]
+								},
+							]
 							: []),
 						{
 							icon: <VariableIcon />,
@@ -1135,27 +1135,27 @@ export function FlowBoard({
 						},
 						...(currentMetadata
 							? [
-									{
-										icon: <ScrollIcon />,
-										title: "Logs",
-										onClick: async () => {
-											toggleLogs();
-										},
+								{
+									icon: <ScrollIcon />,
+									title: "Logs",
+									onClick: async () => {
+										toggleLogs();
 									},
-								]
+								},
+							]
 							: ([] as any)),
 						...(currentLayer
 							? [
-									{
-										icon: <SquareChevronUpIcon />,
-										title: "Layer Up",
-										separator: "left",
-										highlight: true,
-										onClick: async () => {
-											popLayer();
-										},
+								{
+									icon: <SquareChevronUpIcon />,
+									title: "Layer Up",
+									separator: "left",
+									highlight: true,
+									onClick: async () => {
+										popLayer();
 									},
-								]
+								},
+							]
 							: []),
 					]}
 				/>
@@ -1302,8 +1302,8 @@ export function FlowBoard({
 											<Variable
 												variable={active?.data?.current as IVariable}
 												preview
-												onVariableChange={() => {}}
-												onVariableDeleted={() => {}}
+												onVariableChange={() => { }}
+												onVariableDeleted={() => { }}
 											/>
 										)}
 									</DragOverlay>

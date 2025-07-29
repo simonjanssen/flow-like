@@ -11,14 +11,21 @@ import {
 	DialogHeader,
 	DialogTitle,
 	EmptyState,
+	IApp,
 	type IMetadata,
 	Input,
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
 	Separator,
 	useBackend,
 	useInvoke,
 	useMiniSearch,
 } from "@tm9657/flow-like-ui";
 import {
+	ArrowUpDown,
 	FilesIcon,
 	Grid3X3,
 	LayoutGridIcon,
@@ -42,14 +49,34 @@ export default function YoursPage() {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [joinDialogOpen, setJoinDialogOpen] = useState(false);
 	const [inviteLink, setInviteLink] = useState("");
+    const [sortBy, setSortBy] = useState<"created" | "updated" | "visibility" | "name">("created");
 
 	const allItems = useMemo(() => {
-		const map = new Map();
+		const map = new Map<string, IMetadata & { id: string; app: IApp }>();
 		apps.data?.forEach(([app, meta]) => {
 			if (meta) map.set(app.id, { ...meta, id: app.id, app });
 		});
 		return Array.from(map.values());
 	}, [apps.data]);
+
+	const sortItems = useCallback((items: Array<IMetadata & { id: string; app: IApp }>) => {
+        return items.toSorted((a, b) => {
+            switch (sortBy) {
+                case "created":
+                    return (b?.created_at?.nanos_since_epoch ?? 0) - (a?.created_at?.nanos_since_epoch ?? 0);
+                case "updated":
+                    return (b?.updated_at?.nanos_since_epoch ?? 0) - (a?.updated_at?.nanos_since_epoch ?? 0);
+                case "visibility":
+                    const aVisibility = a?.app.visibility
+                    const bVisibility = b?.app.visibility
+                    return aVisibility.localeCompare(bVisibility);
+                case "name":
+                    return (a?.name ?? "").localeCompare(b?.name ?? "");
+                default:
+                    return 0;
+            }
+        });
+    }, [sortBy]);
 
 	const handleJoin = useCallback(async () => {
 		const url = new URL(inviteLink);
@@ -210,36 +237,48 @@ export default function YoursPage() {
 					</DialogContent>
 				</Dialog>
 
-				{/* Search and Filter Bar */}
-				<div className="flex items-center justify-between space-x-4">
-					<div className="relative flex-1 max-w-md">
-						<SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-foreground h-4 w-4 z-10" />
-						<Input
-							placeholder="Search apps..."
-							value={searchQuery}
-							onChange={(e) => {
-								search(e.target.value);
-								setSearchQuery(e.target.value);
-							}}
-							className="pl-10 bg-background/50 backdrop-blur-sm border-border/50"
-						/>
-					</div>
-					<div className="flex items-center space-x-2">
-						<Button
-							variant={"outline"}
-							size="sm"
-							onClick={() =>
-								setViewMode((old) => (old === "grid" ? "list" : "grid"))
-							}
-						>
-							{viewMode === "grid" ? (
-								<List className="h-4 w-4" />
-							) : (
-								<Grid3X3 className="h-4 w-4" />
-							)}
-						</Button>
-					</div>
-				</div>
+				 {/* Search and Filter Bar */}
+                <div className="flex items-center justify-between space-x-4">
+                    <div className="relative flex-1 max-w-md">
+                        <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-foreground h-4 w-4 z-10" />
+                        <Input
+                            placeholder="Search apps..."
+                            value={searchQuery}
+                            onChange={(e) => {
+                                search(e.target.value);
+                                setSearchQuery(e.target.value);
+                            }}
+                            className="pl-10 bg-background/50 backdrop-blur-sm border-border/50"
+                        />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Select value={sortBy} onValueChange={(value: typeof sortBy) => setSortBy(value)}>
+                            <SelectTrigger className="w-[140px]">
+                                <ArrowUpDown className="h-4 w-4 mr-2" />
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="created">Created</SelectItem>
+                                <SelectItem value="updated">Updated</SelectItem>
+                                <SelectItem value="visibility">Visibility</SelectItem>
+                                <SelectItem value="name">Name</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Button
+                            variant={"outline"}
+                            size="sm"
+                            onClick={() =>
+                                setViewMode((old) => (old === "grid" ? "list" : "grid"))
+                            }
+                        >
+                            {viewMode === "grid" ? (
+                                <List className="h-4 w-4" />
+                            ) : (
+                                <Grid3X3 className="h-4 w-4" />
+                            )}
+                        </Button>
+                    </div>
+                </div>
 			</div>
 
 			<Separator className="mb-8" />
@@ -262,24 +301,12 @@ export default function YoursPage() {
 				)}
 
 				{searchQuery === "" &&
-					allItems.length > 0 &&
-					renderAppCards(
-						allItems.toSorted(
-							(a, b) =>
-								(b?.updated_at?.nanos_since_epoch ?? 0) -
-								(a?.updated_at?.nanos_since_epoch ?? 0),
-						),
-					)}
+                    allItems.length > 0 &&
+                    renderAppCards(sortItems(allItems))}
 
-				{searchQuery !== "" &&
-					(searchResults?.length ?? 0) > 0 &&
-					renderAppCards(
-						(searchResults ?? []).toSorted(
-							(a, b) =>
-								(b?.updated_at?.nanos_since_epoch ?? 0) -
-								(a?.updated_at?.nanos_since_epoch ?? 0),
-						),
-					)}
+                {searchQuery !== "" &&
+                    (searchResults?.length ?? 0) > 0 &&
+                    renderAppCards(sortItems(searchResults ?? []))}
 
 				{searchResults && searchResults.length === 0 && searchQuery && (
 					<div className="flex flex-col items-center justify-center h-64 text-center">
