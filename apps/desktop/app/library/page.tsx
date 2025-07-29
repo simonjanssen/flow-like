@@ -149,15 +149,6 @@ export default function YoursPage() {
 						</div>
 					</div>
 					<div className="flex items-center space-x-2">
-						<Link href={"/library/new"}>
-							<Button
-								size="lg"
-								className="shadow-lg hover:shadow-xl transition-all duration-200"
-							>
-								<Sparkles className="mr-2 h-4 w-4" />
-								Create App
-							</Button>
-						</Link>
 						<Button
 							size="lg"
 							variant="outline"
@@ -167,6 +158,15 @@ export default function YoursPage() {
 							<Link2 className="mr-2 h-4 w-4" />
 							Join Project
 						</Button>
+						<Link href={"/library/new"}>
+							<Button
+								size="lg"
+								className="shadow-lg hover:shadow-xl transition-all duration-200"
+							>
+								<Sparkles className="mr-2 h-4 w-4" />
+								Create App
+							</Button>
+						</Link>
 					</div>
 				</div>
 
