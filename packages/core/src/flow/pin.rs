@@ -1,5 +1,6 @@
 use super::variable::VariableType;
-use flow_like_types::{Value, json::to_string_pretty, sync::Mutex};
+use canonical_json::ser::to_string;
+use flow_like_types::{Value, json::to_value, sync::Mutex};
 use schemars::{JsonSchema, schema_for};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashSet, sync::Arc};
@@ -108,7 +109,7 @@ impl Pin {
 
     pub fn set_schema<T: Serialize + JsonSchema>(&mut self) -> &mut Self {
         let schema = schema_for!(T);
-        let schema_str = to_string_pretty(&schema).ok();
+        let schema_str = to_value(&schema).ok().and_then(|v| to_string(&v).ok());
         self.schema = schema_str;
         self
     }

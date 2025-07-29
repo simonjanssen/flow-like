@@ -439,3 +439,38 @@
 		@apply relative touch-manipulation after:absolute after:-inset-2;
 	}
 }
+
+@layer utilities {
+  .backdrop-blur-fallback {
+    @supports (backdrop-filter: blur(1px)) {
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    @supports not (backdrop-filter: blur(1px)) {
+      background-color: oklch(from var(--background) l c h / 0.8);
+    }
+  }
+
+  .backdrop-blur-fallback-sm {
+    @supports (backdrop-filter: blur(1px)) {
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+
+    @supports not (backdrop-filter: blur(1px)) {
+      background-color: oklch(from var(--background) l c h / 0.7);
+    }
+  }
+
+  .backdrop-blur-fallback-lg {
+    @supports (backdrop-filter: blur(1px)) {
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    @supports not (backdrop-filter: blur(1px)) {
+      background-color: oklch(from var(--background) l c h / 0.9);
+    }
+  }
+}
