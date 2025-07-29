@@ -115,7 +115,7 @@ export function loadTheme(theme: ITheme) {
 		.join("\n");
 
 	// Create the CSS (removed @layer for better compatibility)
-	const css = `
+    const css = `
 :root {
 ${lightVars}
 }
@@ -123,6 +123,23 @@ ${lightVars}
 .dark,
 :root[data-theme="dark"] {
 ${darkVars}
+}
+
+/* Apply theme fonts to body and font classes */
+body {
+    font-family: var(--font-sans, inherit) !important;
+}
+
+.font-sans {
+    font-family: var(--font-sans, inherit) !important;
+}
+
+.font-serif {
+    font-family: var(--font-serif, inherit) !important;
+}
+
+.font-mono {
+    font-family: var(--font-mono, inherit) !important;
 }`;
 
 	// Inject the CSS
