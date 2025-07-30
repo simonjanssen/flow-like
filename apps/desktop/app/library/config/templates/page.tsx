@@ -135,33 +135,25 @@ export default function TemplatesPage() {
 		);
 
 	return (
-		<main className="flex-col flex flex-grow max-h-full overflow-hidden p-6 space-y-8">
+		<main className="flex-col flex flex-grow max-h-full overflow-hidden p-6 pt-0 space-y-8">
 			{/* Header Section */}
-			<div className="relative">
-				<div className="absolute inset-0 bg-primary rounded-3xl opacity-10" />
-				<div className="relative bg-card/80 backdrop-blur-sm rounded-3xl p-8 border shadow-xl">
-					<div className="flex items-center justify-between">
-						<div className="space-y-2">
-							<h1 className="text-4xl font-bold text-primary">
-								Flow Templates
-							</h1>
-							<p className="text-muted-foreground text-lg">
-								Create, manage, and organize your workflow templates
-							</p>
-						</div>
-						<Dialog
-							open={isCreateDialogOpen}
-							onOpenChange={setIsCreateDialogOpen}
-						>
-							<DialogTrigger asChild>
-								<Button
-									size="lg"
-									className="shadow-lg hover:shadow-xl transition-all duration-200"
-								>
-									<Plus className="w-5 h-5 mr-2" />
-									Create Template
-								</Button>
-							</DialogTrigger>
+            <div className="flex items-center justify-between py-4">
+                <div className="space-y-1">
+                    <h1 className="text-2xl font-bold">Flow Templates</h1>
+                    <p className="text-muted-foreground text-sm">
+                        Create, manage, and organize your workflow templates
+                    </p>
+                </div>
+                <Dialog
+                    open={isCreateDialogOpen}
+                    onOpenChange={setIsCreateDialogOpen}
+                >
+                    <DialogTrigger asChild>
+                        <Button className="shadow-sm">
+                            <Plus className="w-4 h-4 mr-2" />
+                            Create Template
+                        </Button>
+                    </DialogTrigger>
 							<DialogContent className="sm:max-w-md">
 								<DialogHeader className="space-y-3">
 									<div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
@@ -316,8 +308,6 @@ export default function TemplatesPage() {
 								</div>
 							</DialogContent>
 						</Dialog>
-					</div>
-				</div>
 			</div>
 
 			{/* Search and Filter Bar */}
@@ -342,14 +332,15 @@ export default function TemplatesPage() {
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 					{filteredTemplates.map(([appId, templateId, meta]) => (
 						<button
-							key={templateId}
-							onClick={(e) => {
-								e.preventDefault();
-								setQueryParams("templateId", templateId);
-							}}
-						>
-							<Card className="group hover:shadow-xl transition-all duration-300">
-								<CardHeader className="space-y-4">
+                            key={templateId}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                setQueryParams("templateId", templateId);
+                            }}
+                            className="h-full"
+                        >
+                            <Card className="group hover:shadow-xl transition-all duration-300 h-full flex flex-col">
+                                <CardHeader className="space-y-4">
 									<div className="flex items-start justify-between">
 										<div className="flex items-center gap-3">
 											<div className="p-2 bg-primary/10 group-hover:bg-primary/30 rounded-lg">
@@ -385,20 +376,20 @@ export default function TemplatesPage() {
 										</DropdownMenu>
 									</div>
 								</CardHeader>
-								<CardContent className="space-y-4">
-									<p className="text-muted-foreground text-sm leading-relaxed line-clamp-2 text-start">
-										{meta?.description}
-									</p>
+                                <CardContent className="space-y-4 flex-1 flex flex-col">
+                                    <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2 text-start flex-1">
+                                        {meta?.description}
+                                    </p>
 
-									<div className="flex flex-wrap gap-1">
-										{meta?.tags.map((tag) => (
-											<Badge key={tag} variant="outline" className="text-xs">
-												{tag}
-											</Badge>
-										))}
-									</div>
+                                    <div className="flex flex-wrap gap-1">
+                                        {meta?.tags.map((tag) => (
+                                            <Badge key={tag} variant="outline" className="text-xs">
+                                                {tag}
+                                            </Badge>
+                                        ))}
+                                    </div>
 
-									<div className="pt-4 border-t">
+                                    <div className="pt-4 border-t mt-auto">
 										<div className="flex items-center justify-between text-xs text-muted-foreground">
 											<div className="flex items-center gap-1">
 												<Calendar className="w-3 h-3" />

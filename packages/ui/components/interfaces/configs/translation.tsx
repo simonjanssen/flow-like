@@ -27,12 +27,12 @@ export function EventTypeConfiguration({
 	event: IEvent;
 	onUpdate: (type: string, config: Partial<IEventPayload>) => void;
 }>) {
-	const foundConfig = eventConfig[node.name];
+	const foundConfig = eventConfig[node?.name];
 
 	useEffect(() => {
-		const eventTypes = eventConfig[node.name];
+		const eventTypes = eventConfig[node?.name];
 		if (!eventTypes) {
-			console.warn(`No event types configured for node: ${node.name}`);
+			console.warn(`No event types configured for node: ${node?.name}`);
 			return;
 		}
 
@@ -42,7 +42,7 @@ export function EventTypeConfiguration({
 				eventTypes.configs[eventTypes.defaultEventType] ?? {},
 			);
 		}
-	}, [node.name, event.event_type]);
+	}, [node?.name, event.event_type]);
 
 	if (foundConfig?.eventTypes.length <= 1) return null;
 	return (
@@ -92,8 +92,8 @@ export function EventTranslation({
 	const node: INode | undefined = board.nodes[nodeId ?? ""];
 
 	const foundEventConfig = useMemo(() => {
-		return eventConfig[node.name];
-	}, [node.name]);
+		return eventConfig[node?.name];
+	}, [node?.name]);
 
 	const eventConfigComponent = useMemo(() => {
 		if (!foundEventConfig) return null;

@@ -605,7 +605,7 @@ function EventConfiguration({
 														.filter((node) => node.start)
 														.map((node) => (
 															<SelectItem key={node.id} value={node.id}>
-																{node.friendly_name || node.name}
+																{node?.friendly_name || node?.name}
 															</SelectItem>
 														))}
 												</SelectContent>
