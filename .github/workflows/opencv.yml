@@ -109,7 +109,8 @@ jobs:
   windows-build:
     strategy:
       matrix:
-        target: [x86_64-pc-windows-msvc, aarch64-pc-windows-msvc]
+        target: [x86_64-pc-windows-msvc]
+        # target: [x86_64-pc-windows-msvc, aarch64-pc-windows-msvc]
     runs-on: windows-latest
 
     steps:
