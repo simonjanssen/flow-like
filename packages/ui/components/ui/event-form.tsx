@@ -179,8 +179,9 @@ export function EventForm({
 							onValueChange={(value) => {
 								handleInputChange("node_id", value);
 								const node = board.data.nodes[value];
+								if (!node) return;
 								if (node) {
-									const eventType = eventConfig[node.name];
+									const eventType = eventConfig[node?.name];
 									if (eventType) {
 										handleInputChange("event_type", eventType.defaultEventType);
 										handleInputChange(
@@ -201,7 +202,7 @@ export function EventForm({
 									.filter((node) => node.start)
 									.map((node) => (
 										<SelectItem key={node.id} value={node.id}>
-											{node.friendly_name || node.name}
+											{node?.friendly_name || node?.name}
 										</SelectItem>
 									))}
 							</SelectContent>

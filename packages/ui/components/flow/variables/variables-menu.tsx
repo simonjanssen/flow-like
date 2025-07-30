@@ -430,7 +430,7 @@ export function Variable({
 				<div className="flex grow h-full flex-col max-h-full overflow-auto">
 					{!localVariable.exposed && (
 						<VariablesMenuEdit
-							key={`${localVariable.value_type} - ${localVariable.data_type}`}
+							key={`${localVariable.value_type} - ${localVariable.data_type}-${localVariable.secret}`}
 							variable={localVariable}
 							updateVariable={async (variable) =>
 								setLocalVariable((old) => ({
