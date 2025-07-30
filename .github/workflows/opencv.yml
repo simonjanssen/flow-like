@@ -75,7 +75,7 @@ jobs:
 
       # Upload artifact: https://github.com/actions/upload-artifact
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: opencv-x86_64-unknown-linux-gnu
           path: opencv-x86_64-unknown-linux-gnu-*.tar.gz
@@ -148,7 +148,7 @@ jobs:
 
       # Upload artifact: https://github.com/actions/upload-artifact
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: opencv-x86_64-apple-darwin
           path: opencv-x86_64-apple-darwin-*.zip
@@ -246,7 +246,7 @@ jobs:
 
       # Upload artifact: https://github.com/actions/upload-artifact
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: opencv-x86_64-pc-windows-gnu
           path: opencv-x86_64-pc-windows-gnu-*.zip
