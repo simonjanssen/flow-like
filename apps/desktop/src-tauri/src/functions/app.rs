@@ -259,10 +259,22 @@ pub async fn update_app(app_handle: AppHandle, app: App) -> Result<(), TauriFunc
 pub async fn push_app_meta(
     app_handle: AppHandle,
     app_id: String,
-    metadata: Metadata,
+    mut metadata: Metadata,
     language: Option<String>,
 ) -> Result<(), TauriFunctionError> {
     let state = TauriFlowLikeState::construct(&app_handle).await?;
+    let old_meta = App::get_meta(app_id.clone(), state.clone(), language.clone(), None)
+        .await
+        .ok();
+
+    if let Some(old_meta) = old_meta {
+        metadata.icon = old_meta.icon;
+        metadata.thumbnail = old_meta.thumbnail;
+        metadata.preview_media = old_meta.preview_media;
+        metadata.created_at = old_meta.created_at;
+        metadata.updated_at = SystemTime::now();
+    }
+
     App::push_meta(app_id, metadata, state, language, None).await?;
     Ok(())
 }

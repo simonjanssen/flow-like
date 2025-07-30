@@ -23,7 +23,6 @@ import {
 	ILogLevel,
 	Input,
 	Label,
-	Separator,
 	Skeleton,
 	Textarea,
 	type UseQueryResult,
@@ -36,7 +35,6 @@ import {
 	Calendar,
 	Database,
 	ExternalLink,
-	Layers3,
 	PlusCircleIcon,
 	Settings,
 	Trash2,
@@ -100,16 +98,12 @@ export default function Page() {
 
 	return (
 		<main className="h-full flex flex-col overflow-hidden max-h-full">
-			<div className="container mx-auto px-6 py-4 flex flex-col h-full">
+			<div className="container mx-auto px-6 pb-4 flex flex-col h-full gap-4">
 				<PageHeader
 					boardCreation={boardCreation}
 					setBoardCreation={setBoardCreation}
 					onCreateBoard={handleCreateBoard}
 				/>
-
-				{app.data && boards.data && <StatsOverview boards={boards.data} />}
-
-				<Separator className="my-8" />
 
 				<BoardsSection
 					boards={boards}
@@ -234,53 +228,6 @@ function CreateFlowDialog({
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>
-	);
-}
-
-function StatsOverview({ boards }: Readonly<{ boards: IBoard[] }>) {
-	const totalNodes = boards.reduce(
-		(acc, board) => acc + Object.keys(board.nodes).length,
-		0,
-	);
-	const totalVariables = boards.reduce(
-		(acc, board) => acc + Object.keys(board.variables).length,
-		0,
-	);
-
-	return (
-		<div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-			<StatCard icon={Layers3} label="Total Boards" value={boards.length} />
-			<StatCard icon={Database} label="Total Nodes" value={totalNodes} />
-			<StatCard
-				icon={Settings}
-				label="Total Variables"
-				value={totalVariables}
-			/>
-		</div>
-	);
-}
-
-function StatCard({
-	icon: Icon,
-	label,
-	value,
-}: Readonly<{
-	icon: React.ComponentType<{ className?: string }>;
-	label: string;
-	value: number;
-}>) {
-	return (
-		<Card className="border-0 shadow-sm bg-gradient-to-br from-card to-card/50">
-			<CardContent className="p-4">
-				<div className="flex items-center space-x-3">
-					<Icon className="h-4 w-4 text-primary" />
-					<div>
-						<p className="text-xs font-medium text-muted-foreground">{label}</p>
-						<p className="text-xl font-bold">{value}</p>
-					</div>
-				</div>
-			</CardContent>
-		</Card>
 	);
 }
 

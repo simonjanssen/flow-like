@@ -34,12 +34,12 @@ export function TutorialDialog() {
 	const [currentStep, setCurrentStep] = useState<WelcomeStep>("welcome");
 
 	useEffect(() => {
-		const hasFinishedTutorial = localStorage.getItem("tutorial-done");
+		const hasFinishedTutorial = localStorage.getItem("tutorial-finished");
 		setShowTutorial(hasFinishedTutorial !== "true");
 	}, []);
 
 	const handleSkip = () => {
-		localStorage.setItem("tutorial-done", "true");
+		localStorage.setItem("tutorial-finished", "true");
 		setShowTutorial(false);
 	};
 

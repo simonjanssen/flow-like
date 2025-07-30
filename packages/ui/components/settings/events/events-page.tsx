@@ -13,7 +13,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
-	EventCard,
 	EventForm,
 	EventTranslation,
 	EventTypeConfiguration,
@@ -26,6 +25,12 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
 	Textarea,
 	VariableConfigCard,
 	VariableTypeIndicator,
@@ -51,10 +56,12 @@ import {
 	SaveIcon,
 	Settings,
 	StickyNote,
+	Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+type ViewMode = "cards" | "table";
 
 export default function EventsPage({
 	eventMapping,
@@ -74,6 +81,19 @@ export default function EventsPage({
 		[id ?? ""],
 		(id ?? "") !== "",
 	);
+
+	const boards = useInvoke(
+		backend.boardState.getBoards,
+		backend.boardState,
+		[id ?? ""],
+		(id ?? "") !== "",
+	);
+
+	const boardsMap = useMemo(() => {
+		const map = new Map<string, string>();
+		boards.data?.forEach((board) => map.set(board.id, board.name));
+		return map;
+	}, [boards.data]);
 
 	useEffect(() => {
 		setEditingEvent(events.data?.find((event) => event.id === eventId) ?? null);
@@ -151,84 +171,9 @@ export default function EventsPage({
 	}
 
 	return (
-		<div className="container mx-auto py-8 space-y-8 flex flex-col grow max-h-full">
-			{/* Header */}
-			<div className="flex items-center justify-between">
-				<div>
-					<h1 className="text-3xl font-bold tracking-tight">
-						Event Configuration
-					</h1>
-					<p className="text-muted-foreground">
-						Create and manage events for your flows
-					</p>
-				</div>
-				<Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-					<DialogTrigger asChild>
-						<Button className="gap-2">
-							<Plus className="h-4 w-4" />
-							Create Event
-						</Button>
-					</DialogTrigger>
-					<DialogContent className="max-w-2xl">
-						<DialogHeader>
-							<DialogTitle>Create New Event</DialogTitle>
-							<DialogDescription>
-								Configure a new event with its properties and settings
-							</DialogDescription>
-						</DialogHeader>
-						{id && (
-							<EventForm
-								eventConfig={eventMapping}
-								appId={id}
-								onSubmit={handleCreateEvent}
-								onCancel={() => setIsCreateDialogOpen(false)}
-							/>
-						)}
-					</DialogContent>
-				</Dialog>
-			</div>
-
-			{/* Stats Cards */}
-			<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-				<Card className="h-24">
-					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-						<CardTitle className="text-sm font-medium">Total Events</CardTitle>
-						<Settings className="h-4 w-4 text-muted-foreground" />
-					</CardHeader>
-					<CardContent>
-						<div className="text-xl font-bold">{events.data?.length ?? 0}</div>
-					</CardContent>
-				</Card>
-				<Card className="h-24">
-					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-						<CardTitle className="text-sm font-medium">Active Events</CardTitle>
-						<Play className="h-4 w-4 text-green-600" />
-					</CardHeader>
-					<CardContent>
-						<div className="text-xl font-bold">
-							{events.data?.filter((e) => e.active).length}
-						</div>
-					</CardContent>
-				</Card>
-				<Card className="h-24">
-					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-						<CardTitle className="text-sm font-medium">
-							Inactive Events
-						</CardTitle>
-						<Pause className="h-4 w-4 text-orange-600" />
-					</CardHeader>
-					<CardContent>
-						<div className="text-xl font-bold">
-							{events.data?.filter((e) => !e.active).length}
-						</div>
-					</CardContent>
-				</Card>
-			</div>
-
-			{/* Events List */}
-			<div className="space-y-4 flex flex-col grow overflow-hidden max-h-full">
-				<h2 className="text-2xl font-semibold">Events</h2>
-				<div className="flex flex-col overflow-auto overflow-x-visible grow h-full max-h-full p-1">
+		<div className="container mx-auto flex flex-col grow max-h-full">
+			<div className="flex flex-col grow overflow-hidden max-h-full">
+				<div className="flex flex-col overflow-auto overflow-x-visible grow h-full max-h-full">
 					{events.data?.length === 0 ? (
 						<Card>
 							<CardContent className="py-12 text-center">
@@ -249,24 +194,40 @@ export default function EventsPage({
 							</CardContent>
 						</Card>
 					) : (
-						<div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-6 p-2">
-							{events.data?.map((event) => (
-								<EventCard
-									key={event.id}
-									event={event}
-									onEdit={() => handleEditingEvent(event)}
-									onDelete={() => handleDeleteEvent(event.id)}
-									navigateToNode={(nodeId) => {
-										router.push(
-											`/flow?id=${event.board_id}&app=${id}&node=${nodeId}${event.board_version ? `&version=${event.board_version.join("_")}` : ""}`,
-										);
-									}}
-								/>
-							))}
-						</div>
+						<EventsTable
+							events={events.data ?? []}
+							boardsMap={boardsMap}
+							onEdit={handleEditingEvent}
+							onDelete={handleDeleteEvent}
+							onNavigateToNode={(event, nodeId) => {
+								router.push(
+									`/flow?id=${event.board_id}&app=${id}&node=${nodeId}${event.board_version ? `&version=${event.board_version.join("_")}` : ""}`,
+								);
+							}}
+							onCreateEvent={() => setIsCreateDialogOpen(true)}
+						/>
 					)}
 				</div>
 			</div>
+
+			<Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+				<DialogContent className="max-w-2xl">
+					<DialogHeader>
+						<DialogTitle>Create New Event</DialogTitle>
+						<DialogDescription>
+							Configure a new event with its properties and settings
+						</DialogDescription>
+					</DialogHeader>
+					{id && (
+						<EventForm
+							eventConfig={eventMapping}
+							appId={id}
+							onSubmit={handleCreateEvent}
+							onCancel={() => setIsCreateDialogOpen(false)}
+						/>
+					)}
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }
@@ -868,6 +829,269 @@ function EventConfiguration({
 							)}
 						</CardContent>
 					</Card>
+				)}
+			</div>
+		</div>
+	);
+}
+
+interface IEventsTableProps {
+	events: IEvent[];
+	boardsMap: Map<string, string>;
+	onEdit: (event: IEvent) => void;
+	onDelete: (eventId: string) => void;
+	onNavigateToNode: (event: IEvent, nodeId: string) => void;
+	onCreateEvent: () => void;
+}
+
+function EventsTable({
+	events,
+	boardsMap,
+	onEdit,
+	onDelete,
+	onNavigateToNode,
+	onCreateEvent,
+}: Readonly<IEventsTableProps>) {
+	const [currentPage, setCurrentPage] = useState(1);
+	const [pageSize, setPageSize] = useState(50);
+	const [searchTerm, setSearchTerm] = useState("");
+
+	const filteredEvents = useMemo(() => {
+		if (!searchTerm) return events;
+		return events.filter(
+			(event) =>
+				event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+				event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+				event.event_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+				(boardsMap.get(event.board_id) ?? "")
+					.toLowerCase()
+					.includes(searchTerm.toLowerCase()),
+		);
+	}, [events, searchTerm, boardsMap]);
+
+	const totalPages = Math.ceil(filteredEvents.length / pageSize);
+	const startIndex = (currentPage - 1) * pageSize;
+	const paginatedEvents = filteredEvents.slice(
+		startIndex,
+		startIndex + pageSize,
+	);
+
+	const formatRelativeTime = (timestamp: number) => {
+		const now = Date.now();
+		const eventTime = timestamp * 1000;
+		const diffMs = now - eventTime;
+		const diffHours = diffMs / (1000 * 60 * 60);
+		const diffDays = diffMs / (1000 * 60 * 60 * 24);
+
+		if (diffHours < 24) {
+			return `${Math.floor(diffHours)}h ago`;
+		}
+		if (diffDays < 7) {
+			return `${Math.floor(diffDays)}d ago`;
+		}
+		return new Date(eventTime).toLocaleDateString();
+	};
+
+	const truncateText = (text: string, maxLength = 50) => {
+		return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+	};
+
+	useEffect(() => {
+		setCurrentPage(1);
+	}, [searchTerm]);
+
+	return (
+		<div className="flex flex-col h-full min-h-0">
+			<div className="flex items-center justify-between gap-4 mb-4 flex-shrink-0">
+				<div className="flex items-center gap-2">
+					<Input
+						placeholder="Search events..."
+						value={searchTerm}
+						onChange={(e) => setSearchTerm(e.target.value)}
+						className="w-64"
+					/>
+					<div className="text-sm text-muted-foreground">
+						{filteredEvents.length} of {events.length} events
+					</div>
+				</div>
+				<div className="flex items-center gap-2">
+					<Button onClick={onCreateEvent} className="gap-2">
+						<Plus className="h-4 w-4" />
+						Create Event
+					</Button>
+					<Label htmlFor="pageSize" className="text-sm">
+						Show:
+					</Label>
+					<Select
+						value={pageSize.toString()}
+						onValueChange={(value) => setPageSize(Number(value))}
+					>
+						<SelectTrigger className="w-20">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="25">25</SelectItem>
+							<SelectItem value="50">50</SelectItem>
+							<SelectItem value="100">100</SelectItem>
+							<SelectItem value="200">200</SelectItem>
+						</SelectContent>
+					</Select>
+				</div>
+			</div>
+
+			<div className="flex-1 min-h-0 rounded-md overflow-hidden flex flex-col">
+				<div className="flex-1 min-h-0 overflow-auto">
+					<Table>
+						<TableHeader className="sticky top-0 bg-background z-10 border-b">
+							<TableRow>
+								<TableHead className="w-12">Status</TableHead>
+								<TableHead className="min-w-[200px]">Name</TableHead>
+								<TableHead className="min-w-[300px]">Description</TableHead>
+								<TableHead className="min-w-[150px]">Flow</TableHead>
+								<TableHead className="w-32">Event Type</TableHead>
+								<TableHead className="w-32">Last Updated</TableHead>
+								<TableHead className="w-24">Actions</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{paginatedEvents.map((event) => (
+								<TableRow key={event.id} className="hover:bg-muted/50">
+									<TableCell>
+										<div className="flex items-center">
+											<div
+												className={`w-2 h-2 rounded-full ${
+													event.active ? "bg-green-500" : "bg-orange-500"
+												}`}
+											/>
+										</div>
+									</TableCell>
+									<TableCell>
+										<div className="font-medium">{event.name}</div>
+										<div className="text-xs text-muted-foreground font-mono">
+											{event.id.slice(0, 8)}...
+										</div>
+									</TableCell>
+									<TableCell>
+										<div className="text-sm text-muted-foreground">
+											{event.description
+												? truncateText(event.description, 80)
+												: "No description"}
+										</div>
+									</TableCell>
+									<TableCell>
+										<div className="text-sm">
+											{boardsMap.get(event.board_id) ?? "Unknown"}
+										</div>
+										<div className="text-xs text-muted-foreground">
+											{event.board_version
+												? `v${event.board_version.join(".")}`
+												: "Latest"}
+										</div>
+									</TableCell>
+									<TableCell>
+										<div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
+											{event.event_type}
+										</div>
+									</TableCell>
+									<TableCell>
+										<div className="text-sm text-muted-foreground">
+											{formatRelativeTime(event.updated_at.secs_since_epoch)}
+										</div>
+									</TableCell>
+									<TableCell>
+										<div className="flex items-center gap-1">
+											<Button
+												variant="ghost"
+												size="sm"
+												onClick={() => onEdit(event)}
+												className="h-8 w-8 p-0"
+											>
+												<EditIcon className="h-4 w-4" />
+											</Button>
+											<Button
+												variant="ghost"
+												size="sm"
+												onClick={() => onNavigateToNode(event, event.node_id)}
+												className="h-8 w-8 p-0"
+											>
+												<ExternalLinkIcon className="h-4 w-4" />
+											</Button>
+											<Button
+												variant="ghost"
+												size="sm"
+												onClick={() => onDelete(event.id)}
+												className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+											>
+												<Trash2 className="h-4 w-4" />
+											</Button>
+										</div>
+									</TableCell>
+								</TableRow>
+							))}
+						</TableBody>
+					</Table>
+				</div>
+
+				{totalPages > 1 && (
+					<div className="border-t bg-background p-4 flex-shrink-0">
+						<div className="flex items-center justify-between">
+							<div className="text-sm text-muted-foreground">
+								Showing {startIndex + 1} to{" "}
+								{Math.min(startIndex + pageSize, filteredEvents.length)} of{" "}
+								{filteredEvents.length} results
+							</div>
+							<div className="flex items-center gap-2">
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() =>
+										setCurrentPage((prev) => Math.max(1, prev - 1))
+									}
+									disabled={currentPage === 1}
+								>
+									Previous
+								</Button>
+								<div className="flex items-center gap-1">
+									{Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+										let pageNum: number;
+										if (totalPages <= 5) {
+											pageNum = i + 1;
+										} else if (currentPage <= 3) {
+											pageNum = i + 1;
+										} else if (currentPage >= totalPages - 2) {
+											pageNum = totalPages - 4 + i;
+										} else {
+											pageNum = currentPage - 2 + i;
+										}
+
+										return (
+											<Button
+												key={pageNum}
+												variant={
+													currentPage === pageNum ? "default" : "outline"
+												}
+												size="sm"
+												onClick={() => setCurrentPage(pageNum)}
+												className="w-8 h-8 p-0"
+											>
+												{pageNum}
+											</Button>
+										);
+									})}
+								</div>
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() =>
+										setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+									}
+									disabled={currentPage === totalPages}
+								>
+									Next
+								</Button>
+							</div>
+						</div>
+					</div>
 				)}
 			</div>
 		</div>

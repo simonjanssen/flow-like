@@ -271,17 +271,7 @@ export function StorageSystem({
 			{/* Header Section */}
 			<div className="flex flex-col gap-4 px-4 pt-4">
 				<div className="flex flex-row items-center justify-between">
-					<div className="flex flex-col gap-1">
-						<h2 className="text-2xl font-semibold tracking-tight">Storage</h2>
-						<div className="flex items-center gap-2 text-sm text-muted-foreground">
-							<Badge variant="secondary" className="px-2 py-1">
-								{fileCount} files
-							</Badge>
-							<Badge variant="secondary" className="px-2 py-1">
-								{folderCount} folders
-							</Badge>
-						</div>
-					</div>
+					<h2 className="text-2xl font-semibold tracking-tight">Storage</h2>
 					<div className="flex items-center gap-2">
 						<div className="flex items-center gap-2">
 							<div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -427,14 +417,15 @@ export function StorageSystem({
 						</Tooltip>
 					</div>
 				</div>
-
-				{(files.data?.length ?? 0) > 0 && (
-					<div className="flex flex-row items-end justify-between gap-4 w-full">
+				<div className="flex items-end gap-2 mt-2 justify-between">
+					{(files.data?.length ?? 0) > 0 && (
 						<StorageBreadcrumbs
 							appId={appId}
 							prefix={prefix}
 							updatePrefix={(prefix) => updatePrefix(prefix)}
 						/>
+					)}
+					{(files.data?.length ?? 0) > 0 && (
 						<div className="relative">
 							<SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 							<Input
@@ -444,8 +435,8 @@ export function StorageSystem({
 								onChange={(e) => setSearchQuery(e.target.value)}
 							/>
 						</div>
-					</div>
-				)}
+					)}
+				</div>
 			</div>
 
 			<Separator />
@@ -509,9 +500,23 @@ export function StorageSystem({
 											key={sortBy}
 											className="flex flex-col grow max-h-full h-full overflow-hidden gap-2"
 										>
-											<h3 className="font-medium text-sm text-muted-foreground mb-2">
-												Files & Folders
-											</h3>
+											<div className="flex items-center gap-2 mb-2">
+												<h3 className="font-medium text-sm text-muted-foreground">
+													Files & Folders
+												</h3>
+												<Badge
+													variant="secondary"
+													className="px-2 py-1 text-xs"
+												>
+													{fileCount} files
+												</Badge>
+												<Badge
+													variant="secondary"
+													className="px-2 py-1 text-xs"
+												>
+													{folderCount} folders
+												</Badge>
+											</div>
 											<div className="flex flex-col gap-2 grow max-h-full h-full overflow-auto">
 												{sortedFiles.map((file) => (
 													<FileOrFolder
@@ -611,9 +616,17 @@ export function StorageSystem({
 					)}
 					{preview.url === "" && (
 						<div className="flex flex-col grow max-h-full h-full overflow-auto gap-2 border rounded-lg p-4 bg-background">
-							<h3 className="font-medium text-sm text-muted-foreground mb-2">
-								Files & Folders
-							</h3>
+							<div className="flex items-center gap-2 mb-2">
+								<h3 className="font-medium text-sm text-muted-foreground">
+									Files & Folders
+								</h3>
+								<Badge variant="secondary" className="px-2 py-1 text-xs">
+									{fileCount} files
+								</Badge>
+								<Badge variant="secondary" className="px-2 py-1 text-xs">
+									{folderCount} folders
+								</Badge>
+							</div>
 							<div
 								className={`grid gap-2 ${viewMode === "grid" ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-1"}`}
 							>

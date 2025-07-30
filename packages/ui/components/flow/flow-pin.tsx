@@ -18,7 +18,7 @@ import { useInvalidateInvoke } from "../../hooks";
 import { updateNodeCommand } from "../../lib";
 import type { INode } from "../../lib/schema/flow/node";
 import { type IPin, IValueType } from "../../lib/schema/flow/pin";
-import { useBackend, useBackendStore } from "../../state/backend-state";
+import { useBackendStore } from "../../state/backend-state";
 import { DynamicImage } from "../ui/dynamic-image";
 import { useUndoRedo } from "./flow-history";
 import { PinEdit } from "./flow-pin/pin-edit";
@@ -217,7 +217,7 @@ function FlowPinInnerComponent({
 	);
 }
 
-const MemoizedHandle = memo(Handle)
+const MemoizedHandle = memo(Handle);
 
 function pinPropsAreEqual(prevProps: any, nextProps: any) {
 	return (

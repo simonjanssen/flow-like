@@ -1285,7 +1285,9 @@ export function FlowBoard({
 													: BackgroundVariant.Dots
 											}
 											color={
-												currentLayer ? "color-mix(in oklch, var(--foreground) 5%, transparent)" : "color-mix(in oklch, var(--foreground) 20%, transparent)"
+												currentLayer
+													? "color-mix(in oklch, var(--foreground) 5%, transparent)"
+													: "color-mix(in oklch, var(--foreground) 20%, transparent)"
 											}
 											bgColor="color-mix(in oklch, var(--background) 80%, transparent)"
 											gap={12}

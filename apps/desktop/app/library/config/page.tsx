@@ -364,12 +364,12 @@ export default function Id() {
 	}
 
 	return (
-		<div className="w-full max-w-6xl mx-auto p-6 space-y-6 flex flex-col flex-grow max-h-full overflow-auto">
+		<div className="w-full max-w-6xl mx-auto p-6 pt-0 space-y-6 flex flex-col flex-grow max-h-full overflow-auto">
 			{/* Header with Save Button - Made Sticky */}
 			{hasChanges && canEdit && (
 				<div className="sticky top-0 z-10 mb-6">
 					<Card className="border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950">
-						<CardContent className="pt-6">
+						<CardContent>
 							<div className="flex items-center justify-between">
 								<div className="flex items-center gap-2">
 									<InfoIcon className="w-5 h-5 text-orange-600" />

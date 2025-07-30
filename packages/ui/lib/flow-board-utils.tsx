@@ -118,10 +118,25 @@ export function isValidConnection(
 	const [sourcePin, sourceNode] = cache.get(connection.sourceHandle) || [];
 	const [targetPin, targetNode] = cache.get(connection.targetHandle) || [];
 
-	if (!sourcePin || !targetPin) return false;
-	if (!sourceNode || !targetNode) return false;
+	if (!sourcePin || !targetPin) {
+		console.warn(
+			`Invalid connection: source or target pin not found for ${connection.sourceHandle} or ${connection.targetHandle}`,
+		);
+		return false;
+	}
+	if (!sourceNode || !targetNode) {
+		console.warn(
+			`Invalid connection: source or target node not found for ${connection.sourceHandle} or ${connection.targetHandle}`,
+		);
+		return false;
+	}
 
-	if (sourceNode.id === targetNode.id) return false;
+	if (sourceNode.id === targetNode.id) {
+		console.warn(
+			`Invalid connection: source and target nodes are the same (${sourceNode.id})`,
+		);
+		return false;
+	}
 
 	return doPinsMatch(sourcePin, targetPin, refs);
 }
@@ -621,7 +636,7 @@ export async function handlePaste(
 		});
 		await executeCommand(command);
 		return;
-	} catch (error) { }
+	} catch (error) {}
 
 	try {
 		const clipboard = await navigator.clipboard.readText();
@@ -643,5 +658,5 @@ export async function handlePaste(
 
 		await executeCommand(command);
 		return;
-	} catch (error) { }
+	} catch (error) {}
 }

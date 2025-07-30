@@ -257,8 +257,10 @@ interface IUser {
 export function AppSidebar({
 	children,
 }: Readonly<{ children: React.ReactNode }>) {
+	const defaultOpen = localStorage.getItem("sidebar_state") === "true";
+
 	return (
-		<SidebarProvider defaultOpen={false}>
+		<SidebarProvider defaultOpen={defaultOpen}>
 			<InnerSidebar />
 			<main className="w-full h-full">
 				<SidebarInset className="bg-gradient-to-br from-background via-background to-muted/20">
@@ -873,20 +875,14 @@ export function NavUser({
 	const info = useInvoke(backend.userState.getInfo, backend.userState, []);
 
 	const displayName: string = useMemo(() => {
-		const profile = auth?.user?.profile;
-		if (!profile) return "Offline";
+		if (!info.data) return "Offline";
 
-		return (
-			profile?.name ??
-			profile?.preferred_username ??
-			(profile as Record<string, any>)["cognito:username"] ??
-			"Offline"
-		);
-	}, [auth?.user?.profile]);
+		return info.data?.name ?? info.data?.preferred_username ?? "Offline";
+	}, [info.data]);
 
 	const email: string = useMemo(() => {
-		return auth?.user?.profile?.email ?? "Anonymous";
-	}, [auth?.user?.profile]);
+		return info.data?.email ?? "Anonymous";
+	}, [info.data]);
 
 	return (
 		<SidebarMenu>

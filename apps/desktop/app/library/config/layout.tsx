@@ -548,7 +548,7 @@ export default function Id({
 								</Tooltip>
 							</div>
 						</CardHeader>
-						<CardContent className="flex-1 p-6 pt-0 overflow-hidden">
+						<CardContent className="flex-1 p-6 pb-0 pt-0 overflow-hidden">
 							<Suspense
 								fallback={
 									<div className="space-y-4">
