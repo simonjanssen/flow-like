@@ -85,6 +85,23 @@ pub async fn pathbuf_to_data_url(path: &std::path::PathBuf) -> anyhow::Result<St
     Ok(data_url)
 }
 
+pub async fn image_to_data_url(
+    image: &image::DynamicImage,
+    format: image::ImageFormat,
+) -> anyhow::Result<String> {
+    let mut buffer = Cursor::new(Vec::new()); // Use Cursor to wrap the Vec<u8>
+    image.write_to(&mut buffer, format)?;
+    let base64 = STANDARD.encode(buffer.into_inner());
+    let mime = match format {
+        image::ImageFormat::Png => "image/png",
+        image::ImageFormat::Jpeg => "image/jpeg",
+        image::ImageFormat::Gif => "image/gif",
+        image::ImageFormat::WebP => "image/webp",
+        _ => "application/octet-stream",
+    };
+    Ok(format!("data:{};base64,{}", mime, base64))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

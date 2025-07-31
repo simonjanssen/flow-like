@@ -46,7 +46,13 @@ import PostHogPageView from "./PostHogPageView";
 import { PHProvider } from "./provider";
 
 const persister = createIDBPersister();
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+	defaultOptions: {
+		queries: {
+			networkMode: "offlineFirst"
+		}
+	}
+});
 
 const inter = Inter({ subsets: ["latin"], preload: true });
 const dmSans = DM_Sans({ subsets: ["latin"], preload: true });

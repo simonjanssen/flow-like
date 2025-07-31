@@ -19,7 +19,7 @@ import { useBackend } from "../../state/backend-state";
 import { Button, HoverCard, HoverCardContent, HoverCardTrigger } from "../ui";
 import { fileToAttachment } from "./chat-default/attachment";
 import { Chat, type IChatRef } from "./chat-default/chat";
-import { type IMessage, chatDb } from "./chat-default/chat-db";
+import { type IAttachment, type IMessage, chatDb } from "./chat-default/chat-db";
 import type { ISendMessageFunction } from "./chat-default/chatbox";
 import { ChatHistory } from "./chat-default/history";
 import { ChatWelcome } from "./chat-default/welcome";
@@ -302,6 +302,8 @@ export const ChatInterfaceMemoized = memo(function ChatInterface({
 			let tmpLocalState = localState;
 			let tmpGlobalState = globalState;
 
+			const attachments: IAttachment[] = [];
+
 			await backend.eventState.executeEvent(
 				appId,
 				event.id,
@@ -350,6 +352,11 @@ export const ChatInterfaceMemoized = memo(function ChatInterface({
 							done = true;
 							if (ev.payload.response) {
 								intermediateResponse = Response.fromObject(ev.payload.response);
+							}
+
+							if (ev.payload.attachments) {
+								attachments.push(...ev.payload.attachments);
+								responseMessage.files.push(...ev.payload.attachments);
 							}
 						}
 

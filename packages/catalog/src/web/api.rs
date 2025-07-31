@@ -133,6 +133,15 @@ impl HttpRequest {
         })
     }
 
+    pub async fn raw_request(
+        &self,
+        client: &reqwest::Client,
+    ) -> flow_like_types::Result<reqwest::Response> {
+        let request = self.to_request(client).await?;
+        let response = request.send().await?;
+        Ok(response)
+    }
+
     pub async fn streaming_trigger(
         &self,
         client: &reqwest::Client,

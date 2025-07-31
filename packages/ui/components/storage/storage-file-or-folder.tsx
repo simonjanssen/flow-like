@@ -323,7 +323,7 @@ export function FileOrFolder({
 								onClick={(e) => {
 									e.preventDefault();
 									e.stopPropagation();
-									downloadFile?.(file.location.split("/").pop() ?? "");
+									downloadFile?.(file.location);
 								}}
 							>
 								Download

@@ -155,6 +155,40 @@ export function StorageSystem({
 		[appId, preview],
 	);
 
+	const downloadFile = useCallback(
+		async (file: string) => {
+			if (preview.file === file) {
+				setPreview((old) => ({ ...old, file: "", url: "" }));
+				return;
+			}
+
+			const signedUrl = await backend.storageState.downloadStorageItems(appId, [
+				file,
+			]);
+
+
+			if (signedUrl.length === 0 || !signedUrl[0]?.url) {
+				toast.error("Failed to load file preview");
+				return;
+			}
+			console.log(signedUrl[0].url)
+
+			const fileUrl = signedUrl[0].url;
+			const fileName = fileUrl.split("/").pop()?.split("?")[0] || "downloaded_file";
+            const fileContent = await fetch(fileUrl).then((res) => res.blob());
+			const blob = new Blob([fileContent], { type: "application/octet-stream" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+		},
+		[appId, preview],
+	);
+
 	const filteredFiles = useMemo(
 		() =>
 			files.data?.filter((file) =>
@@ -570,21 +604,7 @@ export function StorageSystem({
 															}
 														}}
 														downloadFile={async (file) => {
-															const downloadLinks =
-																await backend.storageState.downloadStorageItems(
-																	appId,
-																	[file],
-																);
-															if (downloadLinks.length === 0) {
-																return;
-															}
-
-															const firstItem: any = downloadLinks[0];
-															if (!firstItem?.url) {
-																return;
-															}
-
-															window.open(firstItem.url, "_blank");
+															downloadFile(file);
 														}}
 													/>
 												))}
@@ -674,18 +694,7 @@ export function StorageSystem({
 											}
 										}}
 										downloadFile={async (file) => {
-											const downloadLinks =
-												await backend.storageState.downloadStorageItems(appId, [
-													file,
-												]);
-											if (downloadLinks.length === 0) {
-												return;
-											}
-											const firstItem: any = downloadLinks[0];
-											if (!firstItem?.url) {
-												return;
-											}
-											window.open(firstItem.url, "_blank");
+											downloadFile(file);
 										}}
 									/>
 								))}
