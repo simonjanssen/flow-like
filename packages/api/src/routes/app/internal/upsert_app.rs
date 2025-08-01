@@ -59,7 +59,14 @@ pub async fn upsert_app(
         }
 
         {
-            let mut bucket_app = state.scoped_app(&sub.sub()?, &app_id, &state).await?;
+            let mut bucket_app = state
+                .scoped_app(
+                    &sub.sub()?,
+                    &app_id,
+                    &state,
+                    crate::credentials::CredentialsAccess::EditApp,
+                )
+                .await?;
 
             bucket_app.changelog = app_updates.changelog.clone();
             bucket_app.primary_category = app_updates.primary_category.clone();
@@ -122,7 +129,13 @@ pub async fn upsert_app(
 
     let new_id = create_id();
     let drive_app = {
-        let credentials = state.scoped_credentials(&sub, &new_id).await?;
+        let credentials = state
+            .scoped_credentials(
+                &sub,
+                &new_id,
+                crate::credentials::CredentialsAccess::EditApp,
+            )
+            .await?;
         let flow_like_state = Arc::new(Mutex::new(credentials.to_state(state.clone()).await?));
         let new_app = App::new(
             Some(new_id.clone()),
@@ -135,7 +148,7 @@ pub async fn upsert_app(
         new_app
     };
 
-    let app = state
+    let _app = state
         .db
         .transaction::<_, app::Model, DbErr>(|txn| {
             Box::pin(async move {

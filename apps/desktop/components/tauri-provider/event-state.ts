@@ -336,6 +336,24 @@ export class EventState implements IEventState {
 		let closed = false;
 		let foundRunId = false;
 
+		const isOffline = await this.backend.isOffline(appId);
+		let credentials = undefined;
+
+		if(!isOffline && this.backend.auth && this.backend.profile) {
+			try {
+				credentials = await fetcher(
+					this.backend.profile,
+					`apps/${appId}/invoke/presign`,
+					{
+						method: "GET"
+					},
+					this.backend.auth
+				)
+			} catch(e) {
+				console.warn(e)
+			}
+		}
+
 		channel.onmessage = (events: IIntercomEvent[]) => {
 			if (closed) {
 				console.warn("Channel closed, ignoring events");
@@ -363,6 +381,7 @@ export class EventState implements IEventState {
 			payload: payload,
 			events: channel,
 			streamState: streamState,
+			credentials
 		});
 
 		closed = true;

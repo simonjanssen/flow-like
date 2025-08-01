@@ -1,6 +1,7 @@
 use super::board::ExecutionStage;
 use super::event::Event;
 use super::{board::Board, node::NodeState, variable::Variable};
+use crate::credentials::SharedCredentials;
 use crate::profile::Profile;
 use crate::state::FlowLikeState;
 use ahash::AHasher;
@@ -409,6 +410,7 @@ impl InternalRun {
         sub: Option<String>,
         stream_state: bool,
         callback: InterComCallback,
+        credentials: Option<SharedCredentials>,
     ) -> flow_like_types::Result<Self> {
         let before = Instant::now();
         let run_id = create_id();

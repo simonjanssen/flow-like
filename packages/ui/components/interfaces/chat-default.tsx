@@ -302,7 +302,27 @@ export const ChatInterfaceMemoized = memo(function ChatInterface({
 			let tmpLocalState = localState;
 			let tmpGlobalState = globalState;
 
-			const attachments: IAttachment[] = [];
+			const attachments: Map<String, IAttachment> = new Map();
+
+			const addAttachments = (newAttachments: IAttachment[]) => {
+				for (const attachment of newAttachments) {
+					if (typeof attachment === "string" && !attachments.has(attachment)) {
+						attachments.set(attachment, attachment);
+					}
+
+					if (typeof attachment !== "string" && !attachments.has(attachment.url)) {
+						attachments.set(attachment.url, attachment);
+					}
+				}
+
+				responseMessage.files = Array.from(attachments.values());
+
+				chatRef.current?.pushCurrentMessageUpdate({
+						...responseMessage,
+				});
+
+				chatRef.current?.scrollToBottom();
+			};
 
 			await backend.eventState.executeEvent(
 				appId,
@@ -329,6 +349,9 @@ export const ChatInterfaceMemoized = memo(function ChatInterface({
 								});
 								chatRef.current?.scrollToBottom();
 							}
+							if(ev.payload.attachments) {
+								addAttachments(ev.payload.attachments);
+							}
 							continue;
 						}
 						if (ev.event_type === "chat_stream") {
@@ -354,9 +377,8 @@ export const ChatInterfaceMemoized = memo(function ChatInterface({
 								intermediateResponse = Response.fromObject(ev.payload.response);
 							}
 
-							if (ev.payload.attachments) {
-								attachments.push(...ev.payload.attachments);
-								responseMessage.files.push(...ev.payload.attachments);
+							if(ev.payload.attachments) {
+								addAttachments(ev.payload.attachments);
 							}
 						}
 

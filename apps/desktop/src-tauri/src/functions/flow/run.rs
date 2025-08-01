@@ -1,4 +1,5 @@
 use flow_like::app::App;
+use flow_like::credentials::SharedCredentials;
 use flow_like::flow::execution::InternalRun;
 use flow_like::flow::execution::log::LogMessage;
 use flow_like::flow::execution::{LogLevel, LogMeta, RunPayload};
@@ -6,6 +7,7 @@ use flow_like::flow_like_storage::lancedb::query::{ExecutableQuery, QueryBase};
 use flow_like::flow_like_storage::{Path, serde_arrow};
 use flow_like::state::RunData;
 use flow_like_types::intercom::{BufferedInterComHandler, InterComEvent};
+use flow_like_types::tokio::task;
 use flow_like_types::tokio_util::sync::CancellationToken;
 use flow_like_types::{json, tokio};
 use futures::TryStreamExt;
@@ -26,6 +28,7 @@ async fn execute_internal(
     events: tauri::ipc::Channel<Vec<InterComEvent>>,
     event_id: Option<String>,
     stream_state: bool,
+    credentials: Option<SharedCredentials>,
 ) -> Result<Option<LogMeta>, TauriFunctionError> {
     let mut event = None;
     let flow_like_state = TauriFlowLikeState::construct(&app_handle).await?;
@@ -51,6 +54,7 @@ async fn execute_internal(
     let profile = TauriSettingsState::current_profile(&app_handle).await?;
 
     println!("Executing board: {:?}", payload);
+    println!("Credentials: {:?}", credentials);
 
     let buffered_sender = Arc::new(BufferedInterComHandler::new(
         Arc::new(move |event| {
@@ -88,6 +92,7 @@ async fn execute_internal(
         None,
         stream_state,
         buffered_sender.into_callback(),
+        credentials,
     )
     .await?;
     let run_id = internal_run.run.lock().await.id.clone();
@@ -164,6 +169,7 @@ pub async fn execute_board(
     payload: RunPayload,
     stream_state: Option<bool>,
     events: tauri::ipc::Channel<Vec<InterComEvent>>,
+    credentials: Option<SharedCredentials>,
 ) -> Result<Option<LogMeta>, TauriFunctionError> {
     let stream_state = stream_state.unwrap_or(true);
     execute_internal(
@@ -174,6 +180,7 @@ pub async fn execute_board(
         events,
         None,
         stream_state,
+        credentials,
     )
     .await
 }
@@ -186,6 +193,7 @@ pub async fn execute_event(
     payload: RunPayload,
     stream_state: Option<bool>,
     events: tauri::ipc::Channel<Vec<InterComEvent>>,
+    credentials: Option<SharedCredentials>,
 ) -> Result<Option<LogMeta>, TauriFunctionError> {
     let stream_state = stream_state.unwrap_or(false);
     execute_internal(
@@ -196,6 +204,7 @@ pub async fn execute_event(
         events,
         Some(event_id),
         stream_state,
+        credentials,
     )
     .await
 }

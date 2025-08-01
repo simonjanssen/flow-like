@@ -171,7 +171,11 @@ export function StorageSystem({
 				toast.error("Failed to load file preview");
 				return;
 			}
-			console.log(signedUrl[0].url)
+
+			if(backend.storageState.writeStorageItems) {
+				await backend.storageState.writeStorageItems(signedUrl)
+				return;
+			}
 
 			const fileUrl = signedUrl[0].url;
 			const fileName = fileUrl.split("/").pop()?.split("?")[0] || "downloaded_file";
