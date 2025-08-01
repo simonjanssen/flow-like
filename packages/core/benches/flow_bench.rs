@@ -63,6 +63,7 @@ async fn run_board(id: &str, start_ids: Vec<String>) {
             None,
             false,
             None,
+            None,
         )
         .await
         .unwrap();
@@ -90,6 +91,7 @@ async fn run_shared_board(
             &payload,
             None,
             false,
+            None,
             None,
         )
         .await

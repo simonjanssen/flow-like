@@ -7,7 +7,6 @@ use flow_like::flow_like_storage::lancedb::query::{ExecutableQuery, QueryBase};
 use flow_like::flow_like_storage::{Path, serde_arrow};
 use flow_like::state::RunData;
 use flow_like_types::intercom::{BufferedInterComHandler, InterComEvent};
-use flow_like_types::tokio::task;
 use flow_like_types::tokio_util::sync::CancellationToken;
 use flow_like_types::{json, tokio};
 use futures::TryStreamExt;

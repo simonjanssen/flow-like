@@ -3,6 +3,7 @@ use super::{
     log::LogMessage, trace::Trace,
 };
 use crate::{
+    credentials::SharedCredentials,
     flow::{
         board::ExecutionStage,
         node::{Node, NodeState},
@@ -31,6 +32,7 @@ use std::{
 #[derive(Clone)]
 pub struct ExecutionContextCache {
     pub stores: FlowLikeStores,
+    pub credentials: Option<Arc<SharedCredentials>>,
     pub app_id: String,
     pub board_dir: Path,
     pub board_id: String,
@@ -43,6 +45,7 @@ impl ExecutionContextCache {
         run: &Weak<Mutex<Run>>,
         state: &Arc<Mutex<FlowLikeState>>,
         node_id: &str,
+        credentials: Option<Arc<SharedCredentials>>,
     ) -> Option<Self> {
         let (app_id, board_dir, board_id, sub) = match run.upgrade() {
             Some(run) => {
@@ -64,6 +67,7 @@ impl ExecutionContextCache {
             board_id,
             node_id: node_id.to_string(),
             sub,
+            credentials,
         })
     }
 
@@ -144,6 +148,7 @@ pub struct ExecutionContext {
     pub execution_cache: Option<ExecutionContextCache>,
     pub completion_callbacks: Arc<RwLock<Vec<EventTrigger>>>,
     pub stream_state: bool,
+    pub credentials: Option<Arc<SharedCredentials>>,
     run_id: String,
     state: NodeState,
     callback: InterComCallback,
@@ -161,10 +166,12 @@ impl ExecutionContext {
         profile: Arc<Profile>,
         callback: InterComCallback,
         completion_callbacks: Arc<RwLock<Vec<EventTrigger>>>,
+        credentials: Option<Arc<SharedCredentials>>,
     ) -> Self {
         let (id, execution_cache) = {
             let node_id = node.node.lock().await.id.clone();
-            let execution_cache = ExecutionContextCache::new(run, state, &node_id).await;
+            let execution_cache =
+                ExecutionContextCache::new(run, state, &node_id, credentials.clone()).await;
             (node_id, execution_cache)
         };
 
@@ -199,6 +206,7 @@ impl ExecutionContext {
             stream_state,
             state: NodeState::Idle,
             completion_callbacks,
+            credentials,
         }
     }
 
@@ -214,6 +222,7 @@ impl ExecutionContext {
             self.profile.clone(),
             self.callback.clone(),
             self.completion_callbacks.clone(),
+            self.credentials.clone(),
         )
         .await
     }

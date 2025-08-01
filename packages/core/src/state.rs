@@ -11,6 +11,7 @@ use std::sync::{Arc, Weak};
 #[cfg(feature = "flow-runtime")]
 use std::time::Instant;
 
+use crate::credentials::SharedCredentials;
 use crate::flow::event::Event;
 #[cfg(feature = "flow-runtime")]
 use crate::flow::execution::{LogMeta, log::LogMessage};
