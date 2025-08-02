@@ -62,7 +62,7 @@ pub async fn storage_rename(
     prefix: String,
 ) -> Result<(), TauriFunctionError> {
     let state = TauriFlowLikeState::construct(&app_handle).await?;
-    let (store, path) = construct_storage(&state, &app_id, &prefix, true).await?;
+    let (_store, _path) = construct_storage(&state, &app_id, &prefix, true).await?;
 
     Ok(())
 }

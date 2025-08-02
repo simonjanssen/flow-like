@@ -1,7 +1,7 @@
 use super::board::ExecutionStage;
 use super::event::Event;
 use super::{board::Board, node::NodeState, variable::Variable};
-use crate::credentials::{self, SharedCredentials};
+use crate::credentials::SharedCredentials;
 use crate::profile::Profile;
 use crate::state::FlowLikeState;
 use ahash::AHasher;

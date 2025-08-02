@@ -52,9 +52,6 @@ async fn execute_internal(
 
     let profile = TauriSettingsState::current_profile(&app_handle).await?;
 
-    println!("Executing board: {:?}", payload);
-    println!("Credentials: {:?}", credentials);
-
     let buffered_sender = Arc::new(BufferedInterComHandler::new(
         Arc::new(move |event| {
             let events_cb = events.clone();

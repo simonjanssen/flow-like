@@ -32,7 +32,6 @@ use std::{
 #[derive(Clone)]
 pub struct ExecutionContextCache {
     pub stores: FlowLikeStores,
-    pub credentials: Option<Arc<SharedCredentials>>,
     pub app_id: String,
     pub board_dir: Path,
     pub board_id: String,
@@ -45,7 +44,6 @@ impl ExecutionContextCache {
         run: &Weak<Mutex<Run>>,
         state: &Arc<Mutex<FlowLikeState>>,
         node_id: &str,
-        credentials: Option<Arc<SharedCredentials>>,
     ) -> Option<Self> {
         let (app_id, board_dir, board_id, sub) = match run.upgrade() {
             Some(run) => {
@@ -67,7 +65,6 @@ impl ExecutionContextCache {
             board_id,
             node_id: node_id.to_string(),
             sub,
-            credentials,
         })
     }
 
@@ -170,8 +167,7 @@ impl ExecutionContext {
     ) -> Self {
         let (id, execution_cache) = {
             let node_id = node.node.lock().await.id.clone();
-            let execution_cache =
-                ExecutionContextCache::new(run, state, &node_id, credentials.clone()).await;
+            let execution_cache = ExecutionContextCache::new(run, state, &node_id).await;
             (node_id, execution_cache)
         };
 
@@ -286,6 +282,11 @@ impl ExecutionContext {
         }
 
         None
+    }
+
+    pub async fn has_cache(&self, key: &str) -> bool {
+        let cache = self.cache.read().await;
+        cache.contains_key(key)
     }
 
     pub async fn set_cache(&self, key: &str, value: Arc<dyn Cacheable>) {

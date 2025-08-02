@@ -58,13 +58,9 @@ impl NodeLogic for GetNode {
         context.deactivate_exec_pin("exec_out").await?;
         let path: FlowPath = context.evaluate_pin("path").await?;
 
-        let path = path.to_runtime(context).await?;
-        let generic = path.store.as_generic();
-        let bytes = generic.get(&path.path).await?;
-        let bytes = bytes.bytes().await?;
-        let bytes = bytes.to_vec();
-        context.set_pin_value("bytes", json!(bytes)).await?;
+        let bytes = path.get(context, false).await?;
 
+        context.set_pin_value("bytes", json!(bytes)).await?;
         context.activate_exec_pin("exec_out").await?;
 
         Ok(())
