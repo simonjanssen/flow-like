@@ -8,18 +8,13 @@ use flow_like::{
     state::FlowLikeState,
 };
 use flow_like_types::{
-    Bytes, async_trait,
-    image::{self, DynamicImage},
+    async_trait,
+    image::{self},
     json::json,
-    reqwest,
     utils::data_url::image_to_data_url,
 };
-use futures::StreamExt;
 
-use crate::{
-    image::NodeImage,
-    web::api::{HttpRequest, HttpResponse},
-};
+use crate::image::NodeImage;
 
 #[derive(Default)]
 pub struct WriteImageDataUrlNode {}
