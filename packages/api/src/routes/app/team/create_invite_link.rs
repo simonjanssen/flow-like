@@ -7,7 +7,7 @@ use axum::{
     extract::{Path, State},
 };
 use flow_like_types::create_id;
-use sea_orm::{ActiveModelTrait, EntityTrait};
+use sea_orm::ActiveModelTrait;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -19,7 +19,11 @@ import { useBackend } from "../../state/backend-state";
 import { Button, HoverCard, HoverCardContent, HoverCardTrigger } from "../ui";
 import { fileToAttachment } from "./chat-default/attachment";
 import { Chat, type IChatRef } from "./chat-default/chat";
-import { type IAttachment, type IMessage, chatDb } from "./chat-default/chat-db";
+import {
+	type IAttachment,
+	type IMessage,
+	chatDb,
+} from "./chat-default/chat-db";
 import type { ISendMessageFunction } from "./chat-default/chatbox";
 import { ChatHistory } from "./chat-default/history";
 import { ChatWelcome } from "./chat-default/welcome";
@@ -302,7 +306,30 @@ export const ChatInterfaceMemoized = memo(function ChatInterface({
 			let tmpLocalState = localState;
 			let tmpGlobalState = globalState;
 
-			const attachments: IAttachment[] = [];
+			const attachments: Map<string, IAttachment> = new Map();
+
+			const addAttachments = (newAttachments: IAttachment[]) => {
+				for (const attachment of newAttachments) {
+					if (typeof attachment === "string" && !attachments.has(attachment)) {
+						attachments.set(attachment, attachment);
+					}
+
+					if (
+						typeof attachment !== "string" &&
+						!attachments.has(attachment.url)
+					) {
+						attachments.set(attachment.url, attachment);
+					}
+				}
+
+				responseMessage.files = Array.from(attachments.values());
+
+				chatRef.current?.pushCurrentMessageUpdate({
+					...responseMessage,
+				});
+
+				chatRef.current?.scrollToBottom();
+			};
 
 			await backend.eventState.executeEvent(
 				appId,
@@ -328,6 +355,9 @@ export const ChatInterfaceMemoized = memo(function ChatInterface({
 									...responseMessage,
 								});
 								chatRef.current?.scrollToBottom();
+							}
+							if (ev.payload.attachments) {
+								addAttachments(ev.payload.attachments);
 							}
 							continue;
 						}
@@ -355,8 +385,7 @@ export const ChatInterfaceMemoized = memo(function ChatInterface({
 							}
 
 							if (ev.payload.attachments) {
-								attachments.push(...ev.payload.attachments);
-								responseMessage.files.push(...ev.payload.attachments);
+								addAttachments(ev.payload.attachments);
 							}
 						}
 

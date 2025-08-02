@@ -38,6 +38,7 @@ lz4_flex = "0.11.3"
 url = {version = "2.5.4", features = ["serde"]}
 json5 = "0.4.1"
 schemars.workspace = true
+chrono.workspace = true
 futures.workspace = true
 serde = { workspace = true, features = ["derive", "rc"] }
 once_cell = "1.21.3"
@@ -63,7 +64,6 @@ model = ["bit"]
 app = ["bit", "model", "hub"]
 full = ["schema-gen", "flow-runtime", "flow", "hub", "bit", "model", "app"]
 default = ["schema-gen", "flow-runtime", "flow", "hub", "bit", "model", "app"]
-
 [profile.release]
 lto = "fat"
 codegen-units = 1

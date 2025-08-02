@@ -1,3 +1,4 @@
+pub mod credentials;
 #[cfg(feature = "flow")]
 pub mod flow;
 pub mod protobuf;

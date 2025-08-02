@@ -1,13 +1,14 @@
+#[cfg(feature = "aws")]
+use crate::credentials::CredentialsAccess;
 use crate::state::{AppState, State};
+#[cfg(feature = "aws")]
+use flow_like::credentials::{SharedCredentials, aws_credentials::AwsSharedCredentials};
 use flow_like::{
-    flow_like_storage::{
-        files::store::FlowLikeStore,
-        lancedb::{connect, connection::ConnectBuilder},
-        object_store::{self, aws::AmazonS3Builder},
-    },
+    flow_like_storage::lancedb::{connect, connection::ConnectBuilder},
     state::{FlowLikeConfig, FlowLikeState},
     utils::http::HTTPClient,
 };
+use flow_like_storage::object_store;
 use flow_like_types::{Result, anyhow, async_trait};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, to_string};
@@ -24,6 +25,7 @@ pub struct AwsRuntimeCredentials {
     pub meta_bucket: String,
     pub content_bucket: String,
     pub region: String,
+    pub expiration: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 #[cfg(feature = "aws")]
@@ -36,6 +38,7 @@ impl From<aws_sdk_sts::types::Credentials> for AwsRuntimeCredentials {
             meta_bucket: std::env::var("META_BUCKET_NAME").unwrap_or_default(),
             content_bucket: std::env::var("CONTENT_BUCKET_NAME").unwrap_or_default(),
             region: std::env::var("AWS_REGION").unwrap_or_else(|_| "us-east-1".to_string()),
+            expiration: None,
         }
     }
 }
@@ -50,6 +53,7 @@ impl AwsRuntimeCredentials {
             meta_bucket: meta_bucket.to_string(),
             content_bucket: content_bucket.to_string(),
             region: region.to_string(),
+            expiration: None,
         }
     }
 
@@ -61,6 +65,7 @@ impl AwsRuntimeCredentials {
             meta_bucket: std::env::var("META_BUCKET_NAME").unwrap_or_default(),
             content_bucket: std::env::var("CONTENT_BUCKET_NAME").unwrap_or_default(),
             region: std::env::var("AWS_REGION").unwrap_or_else(|_| "us-east-1".to_string()),
+            expiration: None,
         }
     }
 
@@ -72,10 +77,22 @@ impl AwsRuntimeCredentials {
             meta_bucket: self.meta_bucket.clone(),
             content_bucket: self.content_bucket.clone(),
             region: self.region.clone(),
+            expiration: None,
         }
     }
 
-    pub async fn scoped_credentials(&self, sub: &str, app_id: &str, state: &State) -> Result<Self> {
+    #[tracing::instrument(
+        name = "AwsRuntimeCredentials::scoped_credentials",
+        skip(self, state),
+        level = "debug"
+    )]
+    pub async fn scoped_credentials(
+        &self,
+        sub: &str,
+        app_id: &str,
+        state: &State,
+        mode: CredentialsAccess,
+    ) -> Result<Self> {
         if sub.is_empty() || app_id.is_empty() {
             return Err(flow_like_types::anyhow!("Sub or App ID cannot be empty"));
         }
@@ -92,57 +109,34 @@ impl AwsRuntimeCredentials {
         let temporary_user_prefix = format!("tmp/user/{}/apps/{}", sub, app_id);
         let temporary_global_prefix = format!("tmp/global/apps/{}", app_id);
 
-        let policy = json!({
-            "Version": "2012-10-17",
-            "Statement": [
-              {
-                "Effect": "Allow",
-                "Action": [
-                    "s3:ListBucket"
-                ],
-                "Resource": [
-                    format!("arn:aws:s3:::{}", self.meta_bucket),
-                    format!("arn:aws:s3:::{}", self.content_bucket)
-                ],
-                "Condition": {
-                    "StringLike": {
-                        "s3:prefix": [
-                            format!("{}/*", apps_prefix),
-                            format!("{}/*", user_prefix),
-                            format!("{}/*", log_prefix),
-                            format!("{}/*", temporary_user_prefix),
-                            format!("{}/*", temporary_global_prefix)
-                        ]
-                    }
-                }
-              },
-              {
-                "Effect": "Allow",
-                "Action": [
-                    "s3:GetObject",
-                    "s3:PutObject",
-                    "s3:DeleteObject"
-                ],
-                "Resource": [
-                    format!("arn:aws:s3:::{}/{}/*", self.content_bucket, apps_prefix),
-                    format!("arn:aws:s3:::{}/{}/*", self.content_bucket, user_prefix),
-                    format!("arn:aws:s3:::{}/{}/*", self.content_bucket, log_prefix),
-                    format!("arn:aws:s3:::{}/{}/*", self.content_bucket, temporary_user_prefix),
-                    format!("arn:aws:s3:::{}/{}/*", self.content_bucket, temporary_global_prefix),
-                    format!("arn:aws:s3express:::{}/{}/*", self.meta_bucket, apps_prefix),
-                ],
-              },
-              {
-                "Effect": "Allow",
-                "Action": [
-                    "s3express:CreateSession",
-                ],
-                "Resource": [
-                    "*"
-                ]
-              }
-            ],
-        });
+        let policy = match mode {
+            CredentialsAccess::EditApp => edit_app_policy(self, &apps_prefix),
+            CredentialsAccess::ReadApp => read_app_policy(self, &apps_prefix),
+            CredentialsAccess::InvokeNone => invoke_none_policy(
+                self,
+                &apps_prefix,
+                &user_prefix,
+                &log_prefix,
+                &temporary_user_prefix,
+            ),
+            CredentialsAccess::InvokeRead => invoke_read_policy(
+                self,
+                &apps_prefix,
+                &user_prefix,
+                &log_prefix,
+                &temporary_user_prefix,
+                &temporary_global_prefix,
+            ),
+            CredentialsAccess::InvokeWrite => invoke_read_write_policy(
+                self,
+                &apps_prefix,
+                &user_prefix,
+                &log_prefix,
+                &temporary_user_prefix,
+                &temporary_global_prefix,
+            ),
+            CredentialsAccess::ReadLogs => read_logs_policy(self, &log_prefix),
+        };
 
         let policy = to_string(&policy)
             .map_err(|e| flow_like_types::anyhow!("Failed to serialize policy: {}", e))?;
@@ -155,6 +149,8 @@ impl AwsRuntimeCredentials {
             .duration_seconds(3600) // 1 hour
             .send()
             .await?;
+
+        let chrono_expiration = chrono::Utc::now() + chrono::Duration::hours(1);
 
         Ok(Self {
             access_key_id: credentials
@@ -169,6 +165,7 @@ impl AwsRuntimeCredentials {
             meta_bucket: self.meta_bucket.clone(),
             content_bucket: self.content_bucket.clone(),
             region: self.region.clone(),
+            expiration: Some(chrono_expiration),
         })
     }
 }
@@ -176,44 +173,16 @@ impl AwsRuntimeCredentials {
 #[cfg(feature = "aws")]
 #[async_trait]
 impl RuntimeCredentialsTrait for AwsRuntimeCredentials {
-    #[tracing::instrument(name = "AwsRuntimeCredentials::to_store", skip(self, meta), fields(meta = meta), level="debug")]
-    async fn to_store(&self, meta: bool) -> Result<FlowLikeStore> {
-        use flow_like_types::tokio;
-
-        let builder = {
-            let mut builder = AmazonS3Builder::new()
-                .with_access_key_id(
-                    self.access_key_id
-                        .clone()
-                        .ok_or(anyhow!("AWS_ACCESS_KEY_ID is not set"))?,
-                )
-                .with_secret_access_key(
-                    self.secret_access_key
-                        .clone()
-                        .ok_or(anyhow!("AWS_SECRET_ACCESS_KEY is not set"))?,
-                )
-                .with_token(
-                    self.session_token
-                        .clone()
-                        .ok_or(anyhow!("SESSION TOKEN is not set"))?,
-                )
-                .with_bucket_name(if meta {
-                    &self.meta_bucket
-                } else {
-                    &self.content_bucket
-                })
-                .with_region(&self.region);
-
-            if meta {
-                builder = builder.with_s3_express(true);
-            }
-            builder
-        };
-
-        let store = tokio::task::spawn_blocking(move || builder.build())
-            .await
-            .map_err(|e| anyhow!("Failed to spawn blocking task: {}", e))??;
-        Ok(FlowLikeStore::AWS(Arc::new(store)))
+    fn into_shared_credentials(&self) -> SharedCredentials {
+        SharedCredentials::Aws(AwsSharedCredentials {
+            access_key_id: self.access_key_id.clone(),
+            secret_access_key: self.secret_access_key.clone(),
+            session_token: self.session_token.clone(),
+            meta_bucket: self.meta_bucket.clone(),
+            content_bucket: self.content_bucket.clone(),
+            region: self.region.clone(),
+            expiration: self.expiration,
+        })
     }
 
     #[tracing::instrument(
@@ -226,8 +195,8 @@ impl RuntimeCredentialsTrait for AwsRuntimeCredentials {
             use flow_like_types::tokio;
 
             tokio::join!(
-                async { self.to_store(true).await },
-                async { self.to_store(false).await },
+                async { self.into_shared_credentials().to_store(true).await },
+                async { self.into_shared_credentials().to_store(false).await },
                 async { HTTPClient::new() }
             )
         };
@@ -284,4 +253,375 @@ fn make_s3_builder(
             .storage_option("aws_secret_access_key".to_string(), secret_key.clone())
             .storage_option("aws_session_token".to_string(), session_token.clone())
     }
+}
+
+fn invoke_read_write_policy(
+    credentials: &AwsRuntimeCredentials,
+    apps_prefix: &str,
+    user_prefix: &str,
+    log_prefix: &str,
+    temporary_user_prefix: &str,
+    temporary_global_prefix: &str,
+) -> flow_like_types::Value {
+    let policy = json!({
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket"
+            ],
+            "Resource": [
+                format!("arn:aws:s3:::{}", credentials.meta_bucket),
+                format!("arn:aws:s3:::{}", credentials.content_bucket)
+            ],
+            "Condition": {
+                "StringLike": {
+                    "s3:prefix": [
+                        format!("{}/*", apps_prefix),
+                        format!("{}/*", user_prefix),
+                        format!("{}/*", log_prefix),
+                        format!("{}/*", temporary_user_prefix),
+                        format!("{}/*", temporary_global_prefix)
+                    ]
+                }
+            }
+          },
+          {
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:DeleteObject"
+            ],
+            "Resource": [
+                format!("arn:aws:s3:::{}/{}/*", credentials.content_bucket, apps_prefix),
+                format!("arn:aws:s3:::{}/{}/*", credentials.content_bucket, user_prefix),
+                format!("arn:aws:s3:::{}/{}/*", credentials.content_bucket, temporary_user_prefix),
+                format!("arn:aws:s3:::{}/{}/*", credentials.content_bucket, temporary_global_prefix),
+            ],
+          },
+          {
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+            ],
+            "Resource": [
+                format!("arn:aws:s3express:::{}/{}/*", credentials.meta_bucket, apps_prefix),
+            ],
+          },
+          {
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+                "s3:PutObject",
+            ],
+            "Resource": [
+                format!("arn:aws:s3:::{}/{}/*", credentials.content_bucket, log_prefix),
+            ],
+          },
+          {
+            "Effect": "Allow",
+            "Action": [
+                "s3express:CreateSession",
+            ],
+            "Resource": [
+                "*"
+            ]
+          }
+        ],
+    });
+
+    policy
+}
+
+fn invoke_read_policy(
+    credentials: &AwsRuntimeCredentials,
+    apps_prefix: &str,
+    user_prefix: &str,
+    log_prefix: &str,
+    temporary_user_prefix: &str,
+    temporary_global_prefix: &str,
+) -> flow_like_types::Value {
+    let policy = json!({
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket"
+            ],
+            "Resource": [
+                format!("arn:aws:s3:::{}", credentials.meta_bucket),
+                format!("arn:aws:s3:::{}", credentials.content_bucket)
+            ],
+            "Condition": {
+                "StringLike": {
+                    "s3:prefix": [
+                        format!("{}/*", apps_prefix),
+                        format!("{}/*", user_prefix),
+                        format!("{}/*", log_prefix),
+                        format!("{}/*", temporary_user_prefix),
+                        format!("{}/*", temporary_global_prefix)
+                    ]
+                }
+            }
+          },
+          {
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+            ],
+            "Resource": [
+                format!("arn:aws:s3:::{}/{}/*", credentials.content_bucket, apps_prefix),
+                format!("arn:aws:s3:::{}/{}/*", credentials.content_bucket, temporary_global_prefix),
+                format!("arn:aws:s3express:::{}/{}/*", credentials.meta_bucket, apps_prefix),
+            ],
+          },
+          {
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:DeleteObject"
+            ],
+            "Resource": [
+                format!("arn:aws:s3:::{}/{}/*", credentials.content_bucket, user_prefix),
+                format!("arn:aws:s3:::{}/{}/*", credentials.content_bucket, temporary_user_prefix),
+            ],
+          },
+          {
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+                "s3:PutObject",
+            ],
+            "Resource": [
+                format!("arn:aws:s3:::{}/{}/*", credentials.content_bucket, log_prefix),
+            ],
+          },
+          {
+            "Effect": "Allow",
+            "Action": [
+                "s3express:CreateSession",
+            ],
+            "Resource": [
+                "*"
+            ]
+          }
+        ],
+    });
+
+    policy
+}
+
+fn invoke_none_policy(
+    credentials: &AwsRuntimeCredentials,
+    apps_prefix: &str,
+    user_prefix: &str,
+    log_prefix: &str,
+    temporary_user_prefix: &str,
+) -> flow_like_types::Value {
+    let policy = json!({
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket"
+            ],
+            "Resource": [
+                format!("arn:aws:s3:::{}", credentials.meta_bucket),
+            ],
+            "Condition": {
+                "StringLike": {
+                    "s3:prefix": [
+                        format!("{}/*", user_prefix),
+                        format!("{}/*", temporary_user_prefix),
+                    ]
+                }
+            }
+          },
+          {
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:DeleteObject"
+            ],
+            "Resource": [
+                format!("arn:aws:s3:::{}/{}/*", credentials.content_bucket, user_prefix),
+                format!("arn:aws:s3:::{}/{}/*", credentials.content_bucket, temporary_user_prefix),
+            ],
+          },
+          {
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+            ],
+            "Resource": [
+                format!("arn:aws:s3express:::{}/{}/*", credentials.meta_bucket, apps_prefix),
+            ],
+          },
+          {
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+                "s3:PutObject",
+            ],
+            "Resource": [
+                format!("arn:aws:s3:::{}/{}/*", credentials.content_bucket, log_prefix),
+            ],
+          },
+          {
+            "Effect": "Allow",
+            "Action": [
+                "s3express:CreateSession",
+            ],
+            "Resource": [
+                "*"
+            ]
+          }
+        ],
+    });
+
+    policy
+}
+
+fn edit_app_policy(
+    credentials: &AwsRuntimeCredentials,
+    apps_prefix: &str,
+) -> flow_like_types::Value {
+    let policy = json!({
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket"
+            ],
+            "Resource": [
+                format!("arn:aws:s3:::{}", credentials.meta_bucket),
+                format!("arn:aws:s3:::{}", credentials.content_bucket)
+            ],
+            "Condition": {
+                "StringLike": {
+                    "s3:prefix": [
+                        format!("{}/*", apps_prefix),
+                    ]
+                }
+            }
+          },
+          {
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:DeleteObject"
+            ],
+            "Resource": [
+                format!("arn:aws:s3:::{}/{}/*", credentials.content_bucket, apps_prefix),
+                format!("arn:aws:s3express:::{}/{}/*", credentials.meta_bucket, apps_prefix),
+            ],
+          },
+          {
+            "Effect": "Allow",
+            "Action": [
+                "s3express:CreateSession",
+            ],
+            "Resource": [
+                "*"
+            ]
+          }
+        ],
+    });
+
+    policy
+}
+
+fn read_app_policy(
+    credentials: &AwsRuntimeCredentials,
+    apps_prefix: &str,
+) -> flow_like_types::Value {
+    let policy = json!({
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket"
+            ],
+            "Resource": [
+                format!("arn:aws:s3:::{}", credentials.meta_bucket),
+                format!("arn:aws:s3:::{}", credentials.content_bucket)
+            ],
+            "Condition": {
+                "StringLike": {
+                    "s3:prefix": [
+                        format!("{}/*", apps_prefix),
+                    ]
+                }
+            }
+          },
+          {
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject"
+            ],
+            "Resource": [
+                format!("arn:aws:s3:::{}/{}/*", credentials.content_bucket, apps_prefix),
+                format!("arn:aws:s3express:::{}/{}/*", credentials.meta_bucket, apps_prefix),
+            ],
+          },
+          {
+            "Effect": "Allow",
+            "Action": [
+                "s3express:CreateSession",
+            ],
+            "Resource": [
+                "*"
+            ]
+          }
+        ],
+    });
+
+    policy
+}
+
+fn read_logs_policy(
+    credentials: &AwsRuntimeCredentials,
+    log_prefix: &str,
+) -> flow_like_types::Value {
+    let policy = json!({
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket"
+            ],
+            "Resource": [
+                format!("arn:aws:s3:::{}", credentials.content_bucket),
+            ],
+            "Condition": {
+                "StringLike": {
+                    "s3:prefix": [
+                        format!("{}/*", log_prefix),
+                    ]
+                }
+            }
+          },
+          {
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+            ],
+            "Resource": [
+                format!("arn:aws:s3:::{}/{}/*", credentials.content_bucket, log_prefix),
+            ],
+          }
+        ],
+    });
+
+    policy
 }

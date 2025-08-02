@@ -133,15 +133,7 @@ impl NodeLogic for LoadOnnxNode {
 
         // fetch inputs
         let path: FlowPath = context.evaluate_pin("path").await?;
-        let path_runtime = path.to_runtime(context).await?;
-        let bytes = path_runtime
-            .store
-            .as_generic()
-            .get(&path_runtime.path)
-            .await?
-            .bytes()
-            .await?
-            .to_vec();
+        let bytes = path.get(context, false).await?;
 
         // init ONNX session
         let session = Session::builder()?.commit_from_memory(&bytes)?;

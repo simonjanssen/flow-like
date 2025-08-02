@@ -7,13 +7,10 @@ use flow_like::{
     },
     state::FlowLikeState,
 };
-use flow_like_types::{Bytes, async_trait, image::DynamicImage, json::json, reqwest};
+use flow_like_types::{Bytes, async_trait, json::json, reqwest};
 use futures::StreamExt;
 
-use crate::{
-    image::NodeImage,
-    web::api::{HttpRequest, HttpResponse},
-};
+use crate::{image::NodeImage, web::api::HttpRequest};
 
 #[derive(Default)]
 pub struct GrabFrameNode {}
@@ -124,7 +121,7 @@ impl NodeLogic for GrabFrameNode {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use flow_like::{flow::execution::context::ExecutionContext, state::FlowLikeState};
+
     use flow_like_types::{Bytes, tokio};
     use futures::StreamExt;
 

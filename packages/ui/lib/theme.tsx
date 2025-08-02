@@ -115,7 +115,7 @@ export function loadTheme(theme: ITheme) {
 		.join("\n");
 
 	// Create the CSS (removed @layer for better compatibility)
-    const css = `
+	const css = `
 :root {
 ${lightVars}
 }

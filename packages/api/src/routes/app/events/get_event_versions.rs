@@ -19,7 +19,14 @@ pub async fn get_event_versions(
     let permission = ensure_permission!(user, &app_id, &state, RolePermissions::WriteEvents);
     let sub = permission.sub()?;
 
-    let app = state.scoped_app(&sub, &app_id, &state).await?;
+    let app = state
+        .scoped_app(
+            &sub,
+            &app_id,
+            &state,
+            crate::credentials::CredentialsAccess::EditApp,
+        )
+        .await?;
     let versions = app.get_event_versions(&event_id).await?;
 
     Ok(Json(versions))
