@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { save } from '@tauri-apps/plugin-dialog';
+import { save } from "@tauri-apps/plugin-dialog";
 import { mkdir, open, open as openFile } from "@tauri-apps/plugin-fs";
 import type { IStorageItem, IStorageState } from "@tm9657/flow-like-ui";
 import type { IStorageItemActionResult } from "@tm9657/flow-like-ui/state/backend-state/types";
@@ -7,7 +7,7 @@ import { fetcher, put } from "../../lib/api";
 import type { TauriBackend } from "../tauri-provider";
 
 export class StorageState implements IStorageState {
-	constructor(private readonly backend: TauriBackend) { }
+	constructor(private readonly backend: TauriBackend) {}
 	async listStorageItems(
 		appId: string,
 		prefix: string,
@@ -333,8 +333,8 @@ export class StorageState implements IStorageState {
 			const path = await save({
 				canCreateDirectories: true,
 				title: file.prefix.split("/").pop() || "Download File",
-				defaultPath: file.prefix.split("/").pop()
-			})
+				defaultPath: file.prefix.split("/").pop(),
+			});
 
 			if (path && file.url) {
 				const fileHandle = await open(path, {

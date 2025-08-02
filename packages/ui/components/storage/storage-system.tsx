@@ -166,29 +166,31 @@ export function StorageSystem({
 				file,
 			]);
 
-
 			if (signedUrl.length === 0 || !signedUrl[0]?.url) {
 				toast.error("Failed to load file preview");
 				return;
 			}
 
-			if(backend.storageState.writeStorageItems) {
-				await backend.storageState.writeStorageItems(signedUrl)
+			if (backend.storageState.writeStorageItems) {
+				await backend.storageState.writeStorageItems(signedUrl);
 				return;
 			}
 
 			const fileUrl = signedUrl[0].url;
-			const fileName = fileUrl.split("/").pop()?.split("?")[0] || "downloaded_file";
-            const fileContent = await fetch(fileUrl).then((res) => res.blob());
-			const blob = new Blob([fileContent], { type: "application/octet-stream" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+			const fileName =
+				fileUrl.split("/").pop()?.split("?")[0] || "downloaded_file";
+			const fileContent = await fetch(fileUrl).then((res) => res.blob());
+			const blob = new Blob([fileContent], {
+				type: "application/octet-stream",
+			});
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = fileName;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
 		},
 		[appId, preview],
 	);

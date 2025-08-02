@@ -352,18 +352,18 @@ export class BoardState implements IBoardState {
 		const isOffline = await this.backend.isOffline(appId);
 		let credentials = undefined;
 
-		if(!isOffline && this.backend.auth && this.backend.profile) {
+		if (!isOffline && this.backend.auth && this.backend.profile) {
 			try {
 				credentials = await fetcher(
 					this.backend.profile,
 					`apps/${appId}/invoke/presign`,
 					{
-						method: "GET"
+						method: "GET",
 					},
-					this.backend.auth
-				)
-			} catch(e) {
-				console.warn(e)
+					this.backend.auth,
+				);
+			} catch (e) {
+				console.warn(e);
 			}
 		}
 
@@ -394,7 +394,7 @@ export class BoardState implements IBoardState {
 			payload: payload,
 			events: channel,
 			streamState: streamState,
-			credentials
+			credentials,
 		});
 
 		closed = true;
