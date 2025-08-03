@@ -3,6 +3,7 @@ use super::{
     log::LogMessage, trace::Trace,
 };
 use crate::{
+    credentials::SharedCredentials,
     flow::{
         board::ExecutionStage,
         node::{Node, NodeState},
@@ -144,6 +145,7 @@ pub struct ExecutionContext {
     pub execution_cache: Option<ExecutionContextCache>,
     pub completion_callbacks: Arc<RwLock<Vec<EventTrigger>>>,
     pub stream_state: bool,
+    pub credentials: Option<Arc<SharedCredentials>>,
     run_id: String,
     state: NodeState,
     callback: InterComCallback,
@@ -161,6 +163,7 @@ impl ExecutionContext {
         profile: Arc<Profile>,
         callback: InterComCallback,
         completion_callbacks: Arc<RwLock<Vec<EventTrigger>>>,
+        credentials: Option<Arc<SharedCredentials>>,
     ) -> Self {
         let (id, execution_cache) = {
             let node_id = node.node.lock().await.id.clone();
@@ -199,6 +202,7 @@ impl ExecutionContext {
             stream_state,
             state: NodeState::Idle,
             completion_callbacks,
+            credentials,
         }
     }
 
@@ -214,6 +218,7 @@ impl ExecutionContext {
             self.profile.clone(),
             self.callback.clone(),
             self.completion_callbacks.clone(),
+            self.credentials.clone(),
         )
         .await
     }
@@ -277,6 +282,11 @@ impl ExecutionContext {
         }
 
         None
+    }
+
+    pub async fn has_cache(&self, key: &str) -> bool {
+        let cache = self.cache.read().await;
+        cache.contains_key(key)
     }
 
     pub async fn set_cache(&self, key: &str, value: Arc<dyn Cacheable>) {

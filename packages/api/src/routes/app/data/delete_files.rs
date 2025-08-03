@@ -8,7 +8,6 @@ use axum::{
 };
 use flow_like_types::anyhow;
 use futures_util::{StreamExt, TryStreamExt};
-use sea_orm::EntityTrait;
 
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct DeleteFilesPayload {
@@ -25,7 +24,13 @@ pub async fn delete_files(
     ensure_permission!(user, &app_id, &state, RolePermissions::WriteFiles);
     let sub = user.sub()?;
 
-    let project_dir = state.scoped_credentials(&sub, &app_id).await?;
+    let project_dir = state
+        .scoped_credentials(
+            &sub,
+            &app_id,
+            crate::credentials::CredentialsAccess::EditApp,
+        )
+        .await?;
     let project_dir = project_dir.to_store(false).await?;
     let generic = project_dir.as_generic();
 

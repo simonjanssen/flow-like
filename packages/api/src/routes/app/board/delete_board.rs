@@ -16,7 +16,14 @@ pub async fn delete_board(
     let permission = ensure_permission!(user, &app_id, &state, RolePermissions::WriteBoards);
     let sub = permission.sub()?;
 
-    let mut app = state.scoped_app(&sub, &app_id, &state).await?;
+    let mut app = state
+        .scoped_app(
+            &sub,
+            &app_id,
+            &state,
+            crate::credentials::CredentialsAccess::EditApp,
+        )
+        .await?;
     app.delete_board(&board_id).await?;
     app.save().await?;
 

@@ -64,7 +64,7 @@ pub async fn upsert_bit(
     new_bit.updated_at = Set(chrono::Utc::now().naive_utc());
     match new_bit.insert(&state.db).await {
         Ok(bit) => Ok(Json(Bit::from(bit))),
-        Err(e) => {
+        Err(_e) => {
             let existing_bit = bit::Entity::find()
                 .filter(bit::Column::DependencyTreeHash.eq(dependency_tree_hash))
                 .one(&state.db)

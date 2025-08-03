@@ -1,6 +1,7 @@
 use super::board::ExecutionStage;
 use super::event::Event;
 use super::{board::Board, node::NodeState, variable::Variable};
+use crate::credentials::SharedCredentials;
 use crate::profile::Profile;
 use crate::state::FlowLikeState;
 use ahash::AHasher;
@@ -383,6 +384,7 @@ pub struct InternalRun {
     pub cache: Arc<RwLock<HashMap<String, Arc<dyn Cacheable>>>>,
     pub profile: Arc<Profile>,
     pub callback: InterComCallback,
+    pub credentials: Option<Arc<SharedCredentials>>,
 
     stack: Arc<RunStack>,
     concurrency_limit: u64,
@@ -409,6 +411,7 @@ impl InternalRun {
         sub: Option<String>,
         stream_state: bool,
         callback: InterComCallback,
+        credentials: Option<SharedCredentials>,
     ) -> flow_like_types::Result<Self> {
         let before = Instant::now();
         let run_id = create_id();
@@ -610,6 +613,7 @@ impl InternalRun {
             concurrency_map: Arc::new(DashMap::with_capacity(board.nodes.len())),
             cpus: num_cpus::get(),
             callback,
+            credentials: credentials.map(Arc::new),
             dependencies,
             log_level: board.log_level,
             profile: Arc::new(profile.clone()),
@@ -675,6 +679,7 @@ impl InternalRun {
                 let log_level = log_level;
                 let concurrency_map = self.concurrency_map.clone();
                 let completion_callbacks = self.completion_callbacks.clone();
+                let credentials = self.credentials.clone();
 
                 async move {
                     step_core(
@@ -691,6 +696,7 @@ impl InternalRun {
                         &callback,
                         concurrency_map,
                         &completion_callbacks,
+                        credentials,
                     )
                     .await
                 }
@@ -738,6 +744,7 @@ impl InternalRun {
             &self.callback,
             self.concurrency_map.clone(),
             &self.completion_callbacks,
+            self.credentials.clone(),
         )
         .await;
 
@@ -967,6 +974,7 @@ async fn step_core(
     callback: &InterComCallback,
     concurrency_map: Arc<DashMap<String, u64>>,
     completion_callbacks: &Arc<RwLock<Vec<EventTrigger>>>,
+    credentials: Option<Arc<SharedCredentials>>,
 ) -> flow_like_types::Result<Vec<(String, Arc<InternalNode>)>> {
     // Check Node State and Validate Execution Count (to stop infinite loops)
     {
@@ -992,6 +1000,7 @@ async fn step_core(
         profile.clone(),
         callback.clone(),
         completion_callbacks.clone(),
+        credentials,
     )
     .await;
 

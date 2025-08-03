@@ -31,7 +31,14 @@ pub async fn upsert_event(
     let mut event = params.event;
     event.id = event_id.clone();
 
-    let mut app = state.scoped_app(&sub, &app_id, &state).await?;
+    let mut app = state
+        .scoped_app(
+            &sub,
+            &app_id,
+            &state,
+            crate::credentials::CredentialsAccess::EditApp,
+        )
+        .await?;
     let event = app.upsert_event(event, params.version_type, None).await?;
     app.save().await?;
 

@@ -41,7 +41,7 @@ pub async fn get_board(
         .master_board(&sub, &app_id, &board_id, &state, version_opt)
         .await?;
 
-    board.variables.iter_mut().for_each(|(id, var)| {
+    board.variables.iter_mut().for_each(|(_id, var)| {
         if var.secret {
             var.default_value = None;
         }

@@ -35,7 +35,14 @@ async fn create_template(
     }
     let template_id = create_id();
     let sub = user.sub()?;
-    let mut app = state.scoped_app(&sub, app_id, &state).await?;
+    let mut app = state
+        .scoped_app(
+            &sub,
+            app_id,
+            &state,
+            crate::credentials::CredentialsAccess::EditApp,
+        )
+        .await?;
     let board_id = template_data.board_id.clone();
     let (template_id, version) = app
         .upsert_template(
@@ -123,7 +130,14 @@ pub async fn upsert_template(
 
     // Let´s create a new template version
     let sub = user.sub()?;
-    let mut app = state.scoped_app(&sub, &app_id, &state).await?;
+    let mut app = state
+        .scoped_app(
+            &sub,
+            &app_id,
+            &state,
+            crate::credentials::CredentialsAccess::EditApp,
+        )
+        .await?;
     let app_upsert = app
         .upsert_template(
             Some(template_id),

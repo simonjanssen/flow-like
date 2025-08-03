@@ -11,9 +11,8 @@ use flow_like::{
     },
     state::FlowLikeState,
 };
-use flow_like_storage::object_store::PutPayload;
 use flow_like_types::{
-    Bytes, anyhow, async_trait,
+    anyhow, async_trait,
     image::{
         DynamicImage,
         codecs::{
@@ -140,7 +139,6 @@ impl NodeLogic for WriteImageNode {
         }
         .await?;
 
-        let path = path.to_runtime(context).await?;
         let node_image: NodeImage = context.evaluate_pin("image_in").await?;
 
         let image = node_image.get_image(context).await?;
@@ -234,9 +232,7 @@ impl NodeLogic for WriteImageNode {
             _ => return Err(anyhow!("Unsupported image type")),
         };
 
-        let store = path.store.as_generic();
-        let payload = PutPayload::from_bytes(Bytes::from(encoded));
-        store.put(&path.path, payload).await?;
+        path.put(context, encoded, false).await?;
 
         context.activate_exec_pin("exec_out").await?;
         Ok(())

@@ -28,7 +28,14 @@ pub async fn delete_template(
         .exec_with_returning(&state.db)
         .await?;
 
-    let mut app = state.scoped_app(&user.sub()?, &app_id, &state).await?;
+    let mut app = state
+        .scoped_app(
+            &user.sub()?,
+            &app_id,
+            &state,
+            crate::credentials::CredentialsAccess::EditApp,
+        )
+        .await?;
 
     app.delete_template(&template_id).await?;
 

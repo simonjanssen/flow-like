@@ -8,8 +8,7 @@ use flow_like::{
     },
     state::FlowLikeState,
 };
-use flow_like_storage::object_store::PutPayload;
-use flow_like_types::{Bytes, async_trait};
+use flow_like_types::async_trait;
 
 #[derive(Default)]
 pub struct WriteBytesNode {}
@@ -66,12 +65,7 @@ impl NodeLogic for WriteBytesNode {
         let path: FlowPath = context.evaluate_pin("path").await?;
         let content: Vec<u8> = context.evaluate_pin("content").await?;
 
-        let path = path.to_runtime(context).await?;
-        let store = path.store.as_generic();
-        let bytes = Bytes::from(content);
-        let payload = PutPayload::from_bytes(bytes);
-
-        store.put(&path.path, payload).await?;
+        path.put(context, content, false).await?;
 
         context.activate_exec_pin("exec_out").await?;
 

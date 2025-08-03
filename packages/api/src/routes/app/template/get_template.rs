@@ -44,7 +44,14 @@ pub async fn get_template(
     };
 
     let template = state
-        .scoped_template(&sub, &app_id, &template_id, &state, version_opt)
+        .scoped_template(
+            &sub,
+            &app_id,
+            &template_id,
+            &state,
+            version_opt,
+            crate::credentials::CredentialsAccess::ReadApp,
+        )
         .await?;
 
     Ok(Json(template))

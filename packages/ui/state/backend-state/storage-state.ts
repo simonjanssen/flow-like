@@ -14,4 +14,5 @@ export interface IStorageState {
 		files: File[],
 		onProgress?: (progress: number) => void,
 	): Promise<void>;
+	writeStorageItems?(items: IStorageItemActionResult[]): Promise<void>;
 }

@@ -63,13 +63,9 @@ impl NodeLogic for ReadToStringNode {
 
         let path: FlowPath = context.evaluate_pin("path").await?;
 
-        let path = path.to_runtime(context).await?;
-        let store = path.store.as_generic();
-        let content = store.get(&path.path).await?;
+        let bytes = path.get(context, false).await?;
 
-        let content = content.bytes().await?;
-
-        let content = String::from_utf8_lossy(&content);
+        let content = String::from_utf8_lossy(&bytes);
         let content = content.to_string();
 
         context.set_pin_value("content", json!(content)).await?;

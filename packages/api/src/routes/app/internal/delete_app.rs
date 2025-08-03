@@ -29,7 +29,13 @@ pub async fn delete_app(
 
     app.delete(&txn).await?;
 
-    let scoped_permissions = state.scoped_credentials(&sub.sub()?, &app_id).await?;
+    let scoped_permissions = state
+        .scoped_credentials(
+            &sub.sub()?,
+            &app_id,
+            crate::credentials::CredentialsAccess::EditApp,
+        )
+        .await?;
     let path = flow_like_storage::Path::from("apps").child(app_id);
 
     let meta_bucket = scoped_permissions.to_store(true).await?.as_generic();

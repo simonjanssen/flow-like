@@ -518,7 +518,6 @@ impl FlowLikeState {
         let db = db_fn(base_path.clone()).execute().await?;
 
         let db = db.open_table(meta.run_id.clone()).execute().await?;
-        let rows_cnt = db.count_rows(None).await?;
         let mut q = db.query();
 
         if !query.is_empty() {

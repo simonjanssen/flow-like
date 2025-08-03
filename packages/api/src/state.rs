@@ -23,7 +23,7 @@ use jsonwebtoken::{
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
-use crate::credentials::RuntimeCredentials;
+use crate::credentials::{CredentialsAccess, RuntimeCredentials};
 use crate::entity::role;
 
 pub type AppState = Arc<State>;
@@ -162,12 +162,13 @@ impl State {
         &self,
         sub: &str,
         app_id: &str,
+        mode: CredentialsAccess,
     ) -> flow_like_types::Result<Arc<RuntimeCredentials>> {
-        let key = format!("{}:{}", sub, app_id);
+        let key = format!("{}:{}:{}", sub, app_id, mode);
         if let Some(credentials) = self.credentials_cache.get(&key) {
             return Ok(credentials);
         }
-        let credentials = RuntimeCredentials::scoped(sub, app_id, self).await?;
+        let credentials = RuntimeCredentials::scoped(sub, app_id, self, mode).await?;
         self.credentials_cache
             .insert(key, Arc::new(credentials.clone()));
         Ok(Arc::new(credentials))
@@ -183,8 +184,9 @@ impl State {
         sub: &str,
         app_id: &str,
         state: &AppState,
+        mode: CredentialsAccess,
     ) -> flow_like_types::Result<App> {
-        let credentials = self.scoped_credentials(sub, app_id).await?;
+        let credentials = self.scoped_credentials(sub, app_id, mode).await?;
         let app_state = Arc::new(Mutex::new(credentials.to_state(state.clone()).await?));
 
         let app = App::load(app_id.to_string(), app_state.clone()).await?;
@@ -199,7 +201,7 @@ impl State {
     )]
     pub async fn master_app(
         &self,
-        sub: &str,
+        _sub: &str,
         app_id: &str,
         state: &AppState,
     ) -> flow_like_types::Result<App> {
@@ -234,8 +236,9 @@ impl State {
         board_id: &str,
         state: &AppState,
         version: Option<(u32, u32, u32)>,
+        mode: CredentialsAccess,
     ) -> flow_like_types::Result<Board> {
-        let credentials = self.scoped_credentials(sub, app_id).await?;
+        let credentials = self.scoped_credentials(sub, app_id, mode).await?;
         let app_state = Arc::new(Mutex::new(credentials.to_state(state.clone()).await?));
         let storage_root = Path::from("apps").child(app_id.to_string());
         let board = Board::load(storage_root, board_id, app_state, version).await?;
@@ -250,7 +253,7 @@ impl State {
     )]
     pub async fn master_board(
         &self,
-        sub: &str,
+        _sub: &str,
         app_id: &str,
         board_id: &str,
         state: &AppState,
@@ -282,8 +285,9 @@ impl State {
         template_id: &str,
         state: &AppState,
         version: Option<(u32, u32, u32)>,
+        mode: CredentialsAccess,
     ) -> flow_like_types::Result<Board> {
-        let credentials = self.scoped_credentials(sub, app_id).await?;
+        let credentials = self.scoped_credentials(sub, app_id, mode).await?;
         let app_state = Arc::new(Mutex::new(credentials.to_state(state.clone()).await?));
 
         let storage_root = Path::from("apps").child(app_id.to_string());

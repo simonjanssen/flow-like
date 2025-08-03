@@ -45,7 +45,14 @@ pub async fn validate_event(
         None
     };
 
-    let app = state.scoped_app(&sub, &app_id, &state).await?;
+    let app = state
+        .scoped_app(
+            &sub,
+            &app_id,
+            &state,
+            crate::credentials::CredentialsAccess::EditApp,
+        )
+        .await?;
     app.validate_event(&event_id, version_opt).await?;
 
     Ok(Json(()))

@@ -10,7 +10,7 @@ use axum::{
     extract::{Path, Query, State},
 };
 use flow_like_types::create_id;
-use sea_orm::{ActiveModelTrait, EntityTrait, TransactionTrait};
+use sea_orm::{ActiveModelTrait, TransactionTrait};
 
 #[tracing::instrument(name = "PUT /apps/{app_id}/meta", skip(state, user))]
 pub async fn upsert_meta(
