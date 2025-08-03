@@ -416,7 +416,7 @@ const FlowNodeInner = memo(
 			() =>
 				!(props.data.node.start ?? false) &&
 				inputPins
-					.filter((pin) => isPinAction(pin) || pin.name !== "var_ref")
+					.filter((pin) => isPinAction(pin) || pin.pin_type === "Input")
 					.map((pin, arrayIndex) => {
 						return isPinAction(pin) ? (
 							<FlowPinAction

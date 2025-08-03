@@ -13,6 +13,7 @@ import {
 	convertJsonToUint8Array,
 	parseUint8ArrayToJson,
 } from "../../../../lib/uint8";
+import { ChevronDown } from "lucide-react";
 
 export function FnVariable({
 	pin,
@@ -40,11 +41,12 @@ export function FnVariable({
 					// const nodes = flow.getNodes();
 				}}
 			>
-				<SelectTrigger className="w-full p-0 border-0 text-xs text-nowrap text-start max-h-fit h-4">
-					<small className="text-nowrap text-start m-0">
+				<SelectTrigger noChevron size="sm" className="!w-fit !max-w-fit p-0 border-0 text-xs !bg-card text-nowrap text-start max-h-fit h-4 gap-0.5 flex-row items-center">
+					<small className="text-nowrap text-start text-[10px] !m-0 w-fit">
 						{!board.data && "Loading..."}
 						{board.data && (board?.data?.nodes?.[parseUint8ArrayToJson(value)]?.friendly_name ?? "No Function Selected")}
 					</small>
+					<ChevronDown className="size-2 min-w-2 min-h-2 text-card-foreground" />
 				</SelectTrigger>
 				<SelectContent>
 					<SelectGroup>

@@ -86,7 +86,6 @@ function FlowPinInnerComponent({
 		() =>
 			pin.name !== "exec_in" &&
 			pin.name !== "exec_out" &&
-			pin.name !== "var_ref" &&
 			node?.name !== "reroute",
 		[pin.name, node?.name],
 	);

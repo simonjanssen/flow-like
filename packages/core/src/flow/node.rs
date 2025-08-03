@@ -327,6 +327,50 @@ impl Node {
             hasher.append(&(pin.pin_type.clone() as u8).to_le_bytes());
             hasher.append(&(pin.data_type.clone() as u8).to_le_bytes());
             hasher.append(&pin.index.to_le_bytes());
+            hasher.append(&(pin.value_type.clone() as u8).to_le_bytes());
+            if let Some(schema) = &pin.schema {
+                hasher.append(schema.as_bytes());
+            }
+            if let Some(default_value) = &pin.default_value {
+                hasher.append(default_value);
+            }
+            if let Some(options) = &pin.options {
+                if let Some(valid_values) = &options.valid_values {
+                    for value in valid_values {
+                        hasher.append(value.as_bytes());
+                    }
+                }
+
+                if let Some(range) = &options.range {
+                    hasher.append(&range.0.to_le_bytes());
+                    hasher.append(&range.1.to_le_bytes());
+                }
+
+                if let Some(step) = &options.step {
+                    hasher.append(&step.to_le_bytes());
+                }
+
+                if let Some(enforce_schema) = &options.enforce_schema {
+                    hasher.append(&[*enforce_schema as u8]);
+                }
+
+                if let Some(enforce_generic_value_type) = &options.enforce_generic_value_type {
+                    hasher.append(&[*enforce_generic_value_type as u8]);
+                }
+            }
+            let mut sorted_depends_on: Vec<_> = pin.depends_on.iter().collect();
+            sorted_depends_on.sort();
+
+            for dep in sorted_depends_on {
+                hasher.append(dep.as_bytes());
+            }
+
+            let mut sorted_connected_to: Vec<_> = pin.connected_to.iter().collect();
+            sorted_connected_to.sort();
+
+            for conn in sorted_connected_to {
+                hasher.append(conn.as_bytes());
+            }
         }
 
         if let Some(start) = &self.start {
