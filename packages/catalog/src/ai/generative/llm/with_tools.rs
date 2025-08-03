@@ -31,24 +31,76 @@ You are a helpful assistant with access to the tools below.
 # Tools
 Here are the tools you *can* use:
 
-```json
 TOOLS_STR
-```
 
 # Output Format
 You have *two* options to answer:
-- Use a tool: <tooluse>{"name": "name of the tool", "args": ...}</tooluse>
-- Reply back to user: <replytouser>...</replytouser>
+- Use a tool wrapping it in <tooluse></tooluse> tags like this: <tooluse>{"name": "name of the tool", "args": ...}</tooluse>
+- Reply back to user wrapping it in <replytouser></replytouser> tags like this: <replytouser>...</replytouser>
 "#;
 
 /// Extract tagged substrings, e.g. Hello, <tool>extract this</tool> and <tool>this</tool>, good bye.
-pub fn extract_tagged(text: &str, tag: &str) -> Result<Vec<String>, Error> {
-    let pattern = format!(r"<{tag}>(.*?)</{tag}>", tag = regex::escape(tag));
+pub fn extract_tagged_simple(text: &str, tag: &str) -> Result<Vec<String>, Error> {
+    let pattern = format!(r"(?s)<{tag}>(.*?)</{tag}>", tag = regex::escape(tag));
     let re = Regex::new(&pattern)?;
     Ok(re
         .captures_iter(text)
         .filter_map(|caps| caps.get(1).map(|m| m.as_str().to_string()))
         .collect())
+}
+
+/// Extract tagged substrings, e.g. Hello, <tool>extract this</tool> and <tool>this</tool>, good bye.
+/// This is a more robust version that ignores tags not being closed.
+pub fn extract_tagged(text: &str, tag: &str) -> Result<Vec<String>, Error> {
+    let open_tag  = format!("<{}>", tag);
+    let close_tag = format!("</{}>", tag);
+
+    // 1) Find all open-tag positions
+    let mut starts = Vec::new();
+    let mut pos = 0;
+    while let Some(idx) = text[pos..].find(&open_tag) {
+        let real = pos + idx;
+        starts.push(real);
+        pos = real + open_tag.len();
+    }
+
+    // 2) Find all close-tag positions
+    let mut ends = Vec::new();
+    let mut pos = 0;
+    while let Some(idx) = text[pos..].find(&close_tag) {
+        let real = pos + idx;
+        ends.push(real);
+        pos = real + close_tag.len();
+    }
+
+    // 3) For each opener, match to the first unused closer that comes after it,
+    //    but only if there’s no *other* opener in between them.
+    let mut used_ends = vec![false; ends.len()];
+    let mut out = Vec::new();
+
+    for &start in &starts {
+        let content_start = start + open_tag.len();
+        // find the first unused closing tag after this opener
+        if let Some((ei, &end_pos)) = ends.iter().enumerate()
+            .find(|&(i,&e)| !used_ends[i] && e > content_start)
+        {
+            // check for any *other* opener nested between this opener and that closer:
+            let has_inner_opener = starts.iter()
+                .any(|&other| other > start && other < end_pos);
+
+            if has_inner_opener {
+                // this opener is “orphaned” by an inner start—skip it
+                continue;
+            }
+
+            // otherwise, we have a proper pair: extract, mark this closer used
+            let slice = &text[content_start..end_pos];
+            out.push(slice.to_string());
+            used_ends[ei] = true;
+        }
+    }
+
+    Ok(out)
 }
 
 #[derive(Default)]
@@ -146,14 +198,14 @@ impl NodeLogic for LLMWithTools {
                 .build(&model_bit, context.app_state.clone())
                 .await?;
             model.invoke(&history, None).await?
-        };
+        };  // drop model
+
+        // parse response
         let mut response_string = "".to_string();
         if let Some(response) = response.last_message() {
             response_string = response.content.clone().unwrap_or("".to_string());
         }
         context.log_message(&response_string, LogLevel::Debug);
-
-        // parse response
         if response_string.contains("<tooluse>") {
             let tool_calls_str = extract_tagged(&response_string, "tooluse")?;
             let tool_calls: Result<Vec<OpenAIToolCall>, Error> = tool_calls_str
