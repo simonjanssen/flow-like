@@ -158,7 +158,7 @@ impl NodeLogic for CallReferenceNode {
             })
             .map(|pin| {
                 let mut pin = pin.1.clone();
-                pin.index = pin.index + 1;
+                pin.index += 1;
                 pin
             })
             .collect::<Vec<_>>();
