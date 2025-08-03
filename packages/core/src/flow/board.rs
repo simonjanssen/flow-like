@@ -400,7 +400,8 @@ impl Board {
                                                     .iter()
                                                     .filter(|(_, p)| p.pin_type == new_pin.pin_type)
                                                     .count()
-                                                    as u16;
+                                                    as u16
+                                                    + 1;
                                                 layer.pins.insert(pin.id.clone(), new_pin);
                                             }
                                         }
@@ -445,7 +446,8 @@ impl Board {
                                                     .iter()
                                                     .filter(|(_, p)| p.pin_type == new_pin.pin_type)
                                                     .count()
-                                                    as u16;
+                                                    as u16
+                                                    + 1;
                                                 layer.pins.insert(pin.id.clone(), new_pin);
                                             }
                                         }

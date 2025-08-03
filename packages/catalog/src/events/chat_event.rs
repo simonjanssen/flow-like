@@ -105,6 +105,12 @@ impl NodeLogic for ChatEventNode {
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
         let exec_out_pin = context.get_pin_by_name("exec_out").await?;
+
+        if context.delegated {
+            context.activate_exec_pin_ref(&exec_out_pin).await?;
+            return Ok(());
+        }
+
         let payload = context.get_payload().await?;
         let chat = payload
             .payload
