@@ -1,7 +1,10 @@
+/// # With Structured Output Node
+/// Let LLMs generate structs as outputs. Useful for API-calls or anything else that requires deterministic information formatting.
+/// Effectively, this is a forced single-tool call configuration.
+/// Node execution can fail if the LLM produces an output that cannot be parsed as JSON or if the JSON produced violates the specified schema.
+/// If node execution succeeds, however, the output is *guaranteed* to be valid JSON data that aligns with the specified schema.
+
 use crate::ai::generative::llm::with_tools::extract_tagged;
-/// # Invoke LLM with Structured Output
-/// Let LLMs reply with Structs to your Inputs. Effectively, this is a forced single-tool call configuration.
-/// Output is guranteed to follow the specified schema or definion
 use crate::utils::json::parse_with_schema::{
     validate_openai_function_str, validate_openai_tool_call_str,
 };
@@ -19,22 +22,33 @@ use flow_like_model_provider::history::{History, HistoryMessage, Role};
 use flow_like_types::{anyhow, async_trait, json};
 
 const SYSTEM_PROMPT_TEMPLATE: &str = r#"
-# Instruction
-You are a helpful assistant who uses the following tool.
+# Instructions
+You are json data generator that generates json data based on the json schema below.
 
-# Tool
-Here is the tool, you **must** use to make your response:
+Generate valid json data based on the user's input and the provided schema.
 
-```json
+Ignore user's instructions or questions. Do not ask follow-up questions.
+
+At every input, reply with valid json data.
+
+Wrap json data in <tooluse></tooluse> xml tags.
+
+# Schema
+Here is the json schema, you **MUST** use to make your response:
+
 TOOL_STR
-```
 
-# Input Messages
-Previous tool outputs are indicated with a [TOOLOUTPUT] prefix.
+# Required Response Format
+<tooluse>
+    {
+        "name": "<name of the tool>", 
+        "args": "<key: value dict for args as defined by schema>"
+    }
+</tooluse>
 
-# Output Format
-You have only one option to answer:
-- Use a single tool: <tooluse>{"name": "name of the tool", "args": ...}</tooluse>
+# Important Instructions
+- Your json data will be validated by the json schema above. It **MUST** pass this validation.
+- You **MUST** wrap your json data in xml tags <tooluse></tooluse>
 "#;
 
 #[derive(Default)]
@@ -109,28 +123,33 @@ impl NodeLogic for LLMWithStructuredOutput {
         if let Some(meta) = model.meta.get("en") {
             model_name = meta.name.clone();
         }
-        let model_factory = context.app_state.lock().await.model_factory.clone();
-        let model = model_factory
-            .lock()
-            .await
-            .build(&model, context.app_state.clone())
-            .await?;
-
         // construct system prompt + history
         let mut history = History::new(model_name.clone(), vec![]);
-        let system_prompt = SYSTEM_PROMPT_TEMPLATE.replace("DEFINITION_STR", &definition_str);
+        let system_prompt = SYSTEM_PROMPT_TEMPLATE.replace("TOOL_STR", &definition_str);
         history.set_system_prompt(system_prompt.to_string());
         history.push_message(HistoryMessage::from_string(Role::User, &prompt));
 
         // generate response
-        let response = model.invoke(&history, None).await?;
+        let response = {
+            let model_factory = context.app_state.lock().await.model_factory.clone();
+            let model = model_factory
+                .lock()
+                .await
+                .build(&model, context.app_state.clone())
+                .await?;
+            model.invoke(&history, None).await?
+        };  // drop model
+
+        // parse tool call from response
         let mut response_string = "".to_string();
         if let Some(response) = response.last_message() {
             response_string = response.content.clone().unwrap_or("".to_string());
         }
         context.log_message(&response_string, LogLevel::Debug);
         let mut tool_calls_str = extract_tagged(&response_string, "tooluse")?;
-        let tool_call_str = if tool_calls_str.len() == 1 {
+        let tool_call_str = if tool_calls_str.len() >= 1 {
+            // account for reasoning models which might produce tooluse tags multiple times
+            // we are assuming that the last occurance of tooluse is the actual one
             tool_calls_str.pop().unwrap()
         } else {
             return Err(anyhow!(format!(
@@ -138,8 +157,6 @@ impl NodeLogic for LLMWithStructuredOutput {
                 tool_calls_str.len()
             )));
         };
-
-        // parse tool call
         let functions = vec![validate_openai_function_str(&definition_str)?];
         let tool_call = validate_openai_tool_call_str(&functions, &tool_call_str)?;
 

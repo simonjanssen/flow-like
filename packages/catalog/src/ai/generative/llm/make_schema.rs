@@ -1,6 +1,8 @@
-/// # Invoke LLMs to generate a Function Call Definition
-/// Function call definitions or JSON Schemas are tidious to write by hand so this is an utility node to help you out.
-/// Output is guaranteed to be a valid OpenAI-like Function Call Definition
+/// # Make OpenAI Function Node
+/// Function call definitions or JSON Schemas are tedious to write by hand so this is an utility node to help you out.
+/// Node execution can fail if the LLM produces an output that cannot be parsed as JSON schema.
+/// If node execution succeeds, however, the output is *guaranteed* to be a valid OpenAI-like Function Call Definition with valid JSON schema in the "parameters" section.
+
 use crate::utils::json::parse_with_schema::validate_openai_function_str;
 use crate::ai::generative::llm::with_tools::extract_tagged;
 use flow_like::{
@@ -18,17 +20,45 @@ use flow_like_types::{anyhow, async_trait, json};
 
 const SYSTEM_PROMPT: &str = r#"
 # Instructions
+You are a function call json schema generator.
 
-You are a function call schema generator.
+Given the user's input, infer a matching function call json schema. 
 
-Given the user's input, infer a matching json schema. 
+At every input, reply with valid function call json schema.
+
+Do not ask follow-up questions.
+
+Wrap function call json schema in <schema></schema> xml tags.
+
+# Required Response Format
+<schema>
+{
+  "type": "function",
+  "name": "<name of the function>",
+  "description": "<description of the function>",
+  "parameters": {
+    "type": "object",
+    "properties": {
+        "<property name>": {
+            "type": "<property type>",
+            "description": "<property description>"
+        },
+        ...
+    },
+    "required": [<list of required property args>],
+    "additionalProperties": false
+  },
+  "strict": true
+}
+</schema>
 
 # Example
 user: 
 call a weather api, with location arg for city or country and units temperature
 
 output:
-<schema>{
+<schema>
+{
   "type": "function",
   "name": "get_weather",
   "description": "Retrieves current weather for the given location.",
@@ -58,9 +88,8 @@ output:
 }
 </schema>
 
-# Output Format
-You have only one option to answer:
-- Generate a schema: <schema>{"type": "function", "name": ..., "description": ..., "parameters": ..., "strict": true }</schema>
+# Important Instructions
+- You **MUST** wrap your json data in xml tags <schema></schema>
 "#;
 
 #[derive(Default)]
@@ -139,7 +168,7 @@ impl NodeLogic for LLMMakeSchema {
                 .build(&model, context.app_state.clone())
                 .await?;
             model.invoke(&history, None).await?
-        };
+        };  // drop model
         
         // parse response
         let mut response_string = "".to_string();
@@ -150,7 +179,9 @@ impl NodeLogic for LLMMakeSchema {
 
         // parse + validate function defintion
         let mut schema_str= extract_tagged(&response_string, "schema")?;
-        let schema_str = if schema_str.len() == 1 {
+        let schema_str = if schema_str.len() >= 1 {
+            // account for reasoning models which might produce schema tags multiple times
+            // we are assuming that the last occurance of schema is the actual one
             schema_str.pop().unwrap()
         } else {
             return Err(anyhow!(format!("Invalid number of schemas: Expected 1, got {}", schema_str.len())))

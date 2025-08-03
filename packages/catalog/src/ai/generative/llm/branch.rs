@@ -1,3 +1,8 @@
+/// # LLM Branch Node
+/// Like the Control > Branch Node but with integrated decision making about the input being either True or False
+/// Useful to route a execution flow between two possible downstream branches.
+/// Node execution might fail if the LLM-output cannot be parsed according to the decision data schema.
+
 use crate::ai::generative::llm::with_tools::extract_tagged;
 use flow_like::{
     bit::Bit,
@@ -16,24 +21,38 @@ use serde::Deserialize;
 // todo: refactor / align with tool use node
 const SYSTEM_PROMPT: &str = r#"
 # Instruction
-You are a binary decision maker. Rate the user's input whether it evaluates to true/yes or false/no.
+You are a binary decision maker that generates decisions as json data.
 
-# Tools
-Here is the tool, you **must** use to make your response:
+Rate the user's input whether it evaluates to true/yes or false/no.
 
-```json
+Use the tool schema below to generate valid json data.
+
+Do not ask follow-up questions.
+
+At every input, reply with valid json data.
+
+Wrap json data in <tooluse></tooluse> xml tags.
+
+# Schema
+Here is the tool schema, you **must** use to make your response:
+
 {
   "description": "Your decision represented with a boolean value. Choose true if the decision is yes, choose false if the decision is no.",
   "name": "submit_decision",
   "parameters": {
     "additionalProperties": false,
     "properties": {
+      "reason": {
+        "description": "Short explanation for the decision made.",
+        "type": "string"
+      },
       "decision": {
         "description": "The decision made.",
         "type": "boolean"
       }
     },
     "required": [
+      "reason",
       "decision"
     ],
     "type": "object"
@@ -41,16 +60,27 @@ Here is the tool, you **must** use to make your response:
   "strict": true,
   "type": "function"
 }
-```
 
-# Output Format
-You have only one option to answer:
-- Use a single tool: <tooluse>{"name": "submit_decision", "args": ...}</tooluse>
+# Required Response Format
+<tooluse>
+    {
+        "name": "name", 
+        "args": {
+            "reason": ...,
+            "decision": ...
+        }
+    }
+</tooluse>
+
+# Important Instructions
+- Your json data will be validated by the json schema above. It **MUST** pass this validation.
+- You **MUST** wrap your json data in xml tags <tooluse></tooluse>
 "#;
 
 // refactor / share between llm nodes with tool use
 #[derive(Debug, Deserialize)]
 struct BranchToolCallArgs {
+    reason: String,
     decision: bool,
 }
 
@@ -90,7 +120,7 @@ impl NodeLogic for LLMBranchNode {
         node.add_input_pin(
             "prompt",
             "Prompt",
-            "Input Message that can be answered with yes or no.",
+            "A statement that can be answered with yes or no.",
             VariableType::String,
         );
 
@@ -138,9 +168,9 @@ impl NodeLogic for LLMBranchNode {
                 .build(&model, context.app_state.clone())
                 .await?;
             model.invoke(&history, None).await?
-        };
+        };  // drop model
 
-        // todo: callback (?)
+        // parase tool call from response
         let mut response_string = "".to_string();
         if let Some(response) = response.last_message() {
             response_string = response.content.clone().unwrap_or("".to_string());
@@ -148,7 +178,9 @@ impl NodeLogic for LLMBranchNode {
         context.log_message(&response_string, LogLevel::Debug);
 
         let mut tool_calls_str = extract_tagged(&response_string, "tooluse")?;
-        let tool_call: BranchToolCall = if tool_calls_str.len() == 1 {
+        let tool_call: BranchToolCall = if tool_calls_str.len() >= 1 {
+            // account for reasoning models which might produce tooluse tags multiple times
+            // we are assuming that the last occurance of tooluse is the actual one
             let tool_call_str = tool_calls_str.pop().unwrap();
             json::from_str(&tool_call_str)?
         } else {
@@ -157,7 +189,9 @@ impl NodeLogic for LLMBranchNode {
                 tool_calls_str.len()
             )));
         };
+        context.log_message(&tool_call.args.reason, LogLevel::Debug);
 
+        // set outputs
         if tool_call.args.decision {
             context.activate_exec_pin("true").await?;
             context.deactivate_exec_pin("false").await?;
