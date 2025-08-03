@@ -55,7 +55,7 @@ function FlowPinInnerComponent({
 		if (skipOffset) {
 			return {
 				marginTop: "1.75rem",
-				top: (pin.index-1) * 15,
+				top: (pin.index - 1) * 15,
 				background:
 					pin.data_type === "Execution" || pin.value_type !== IValueType.Normal
 						? "transparent"
@@ -65,7 +65,7 @@ function FlowPinInnerComponent({
 
 		return {
 			marginTop: "1.75rem",
-			top: (pin.index-1) * 15,
+			top: (pin.index - 1) * 15,
 			background:
 				pin.data_type === "Execution" || pin.value_type !== IValueType.Normal
 					? "transparent"

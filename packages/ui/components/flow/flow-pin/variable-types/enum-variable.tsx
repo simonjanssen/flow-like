@@ -29,7 +29,11 @@ export function EnumVariable({
 				value={parseUint8ArrayToJson(value)}
 				onValueChange={(value) => setValue(convertJsonToUint8Array(value))}
 			>
-				<SelectTrigger noChevron size="sm" className="!w-fit !max-w-fit p-0 border-0 text-xs !bg-card text-nowrap text-start max-h-fit h-4 gap-0.5 flex-row items-center">
+				<SelectTrigger
+					noChevron
+					size="sm"
+					className="!w-fit !max-w-fit p-0 border-0 text-xs !bg-card text-nowrap text-start max-h-fit h-4 gap-0.5 flex-row items-center"
+				>
 					<small className="text-nowrap text-start text-[10px] !m-0 w-fit">
 						{parseUint8ArrayToJson(value)}
 					</small>

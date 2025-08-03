@@ -240,8 +240,12 @@ const FlowNodeInner = memo(
 				};
 
 				const allPins = Object.values(node.pins);
-				const inputPins = allPins.filter(p => p.pin_type === "Input").sort(sortPins);
-				const outputPins = allPins.filter(p => p.pin_type === "Output").sort(sortPins);
+				const inputPins = allPins
+					.filter((p) => p.pin_type === "Input")
+					.sort(sortPins);
+				const outputPins = allPins
+					.filter((p) => p.pin_type === "Output")
+					.sort(sortPins);
 
 				if (newPin.pin_type === "Input") {
 					// Insert the new input pin at the specified index
@@ -263,7 +267,7 @@ const FlowNodeInner = memo(
 
 				// Rebuild the pins object with updated pins
 				node.pins = {};
-				[...inputPins, ...outputPins].forEach(pin => {
+				[...inputPins, ...outputPins].forEach((pin) => {
 					node.pins[pin.id] = pin;
 				});
 
