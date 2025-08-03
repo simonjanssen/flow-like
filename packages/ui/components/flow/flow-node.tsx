@@ -230,6 +230,7 @@ const FlowNodeInner = memo(
 
 				node = nodeGuard.data.node as INode;
 				if (!node.pins) return;
+
 				const newPin: IPin = {
 					...pin,
 					depends_on: [],
@@ -238,12 +239,33 @@ const FlowNodeInner = memo(
 					index: index,
 				};
 
-				const pins = Object.values(node.pins).sort(sortPins);
-				pins.splice(index, 0, newPin);
+				const allPins = Object.values(node.pins);
+				const inputPins = allPins.filter(p => p.pin_type === "Input").sort(sortPins);
+				const outputPins = allPins.filter(p => p.pin_type === "Output").sort(sortPins);
+
+				if (newPin.pin_type === "Input") {
+					// Insert the new input pin at the specified index
+					inputPins.splice(index - 1, 0, newPin); // Convert to 0-based index for splice
+
+					// Update indices for input pins only, starting from the insertion point
+					for (let i = index - 1; i < inputPins.length; i++) {
+						inputPins[i].index = i + 1; // Convert back to 1-based index
+					}
+				} else {
+					// Insert the new output pin at the specified index
+					outputPins.splice(index - 1, 0, newPin); // Convert to 0-based index for splice
+
+					// Update indices for output pins only, starting from the insertion point
+					for (let i = index - 1; i < outputPins.length; i++) {
+						outputPins[i].index = i + 1; // Convert back to 1-based index
+					}
+				}
+
+				// Rebuild the pins object with updated pins
 				node.pins = {};
-				pins.forEach(
-					(pin, index) => (node.pins[pin.id] = { ...pin, index: index }),
-				);
+				[...inputPins, ...outputPins].forEach(pin => {
+					node.pins[pin.id] = pin;
+				});
 
 				const command = updateNodeCommand({
 					node: {
@@ -265,9 +287,8 @@ const FlowNodeInner = memo(
 					props.data.boardId,
 				]);
 			},
-			[reactFlow],
+			[reactFlow, sortPins, pushCommand, invalidate],
 		);
-
 		const pinRemoveCallback = useCallback(
 			async (pin: IPin) => {
 				const backend = useBackendStore.getState().backend;
@@ -410,7 +431,6 @@ const FlowNodeInner = memo(
 								key={pin.id}
 								node={props.data.node}
 								boardId={props.data.boardId}
-								index={arrayIndex}
 								pin={pin}
 								onPinRemove={pinRemoveCallback}
 								skipOffset={isReroute}
@@ -441,7 +461,6 @@ const FlowNodeInner = memo(
 							appId={props.data.appId}
 							node={props.data.node}
 							boardId={props.data.boardId}
-							index={arrayIndex}
 							pin={pin}
 							key={pin.id}
 							onPinRemove={pinRemoveCallback}

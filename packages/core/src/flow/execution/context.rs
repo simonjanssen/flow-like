@@ -133,6 +133,7 @@ struct RunUpdateEvent {
 pub struct ExecutionContext {
     pub id: String,
     pub run: Weak<Mutex<Run>>,
+    pub nodes: Arc<HashMap<String, Arc<InternalNode>>>,
     pub profile: Arc<Profile>,
     pub node: Arc<InternalNode>,
     pub sub_traces: Vec<Trace>,
@@ -146,6 +147,7 @@ pub struct ExecutionContext {
     pub completion_callbacks: Arc<RwLock<Vec<EventTrigger>>>,
     pub stream_state: bool,
     pub credentials: Option<Arc<SharedCredentials>>,
+    pub delegated: bool,
     run_id: String,
     state: NodeState,
     callback: InterComCallback,
@@ -153,6 +155,7 @@ pub struct ExecutionContext {
 
 impl ExecutionContext {
     pub async fn new(
+        nodes: Arc<HashMap<String, Arc<InternalNode>>>,
         run: &Weak<Mutex<Run>>,
         state: &Arc<Mutex<FlowLikeState>>,
         node: &Arc<InternalNode>,
@@ -201,13 +204,16 @@ impl ExecutionContext {
             execution_cache,
             stream_state,
             state: NodeState::Idle,
+            nodes,
             completion_callbacks,
             credentials,
+            delegated: false,
         }
     }
 
     pub async fn create_sub_context(&self, node: &Arc<InternalNode>) -> ExecutionContext {
         ExecutionContext::new(
+            self.nodes.clone(),
             &self.run,
             &self.app_state,
             node,

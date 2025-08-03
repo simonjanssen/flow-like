@@ -14,18 +14,21 @@ import { BitVariable } from "./variable-types/bit-select";
 import { BooleanVariable } from "./variable-types/boolean-variable";
 import { VariableDescription } from "./variable-types/default-text";
 import { EnumVariable } from "./variable-types/enum-variable";
+import { FnVariable } from "./variable-types/fn-select";
 
 export function PinEdit({
 	nodeId,
 	pin,
 	defaultValue,
 	appId,
+	boardId,
 	changeDefaultValue,
 }: Readonly<{
 	nodeId: string;
 	pin: IPin;
 	defaultValue: any;
 	appId: string;
+	boardId: string;
 	changeDefaultValue: (value: any) => void;
 }>) {
 	const [cachedDefaultValue, setCachedDefaultValue] = useState(defaultValue);
@@ -64,6 +67,22 @@ export function PinEdit({
 	) {
 		return (
 			<BitVariable
+				pin={pin}
+				value={cachedDefaultValue}
+				appId={appId}
+				setValue={setCachedDefaultValue}
+			/>
+		);
+	}
+
+	if (
+		pin.name.startsWith("fn_ref") &&
+		pin.data_type === IVariableType.String &&
+		pin.value_type === IValueType.Normal
+	) {
+		return (
+			<FnVariable
+				boardId={boardId}
 				pin={pin}
 				value={cachedDefaultValue}
 				appId={appId}

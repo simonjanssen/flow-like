@@ -1,4 +1,5 @@
 pub mod branch_node;
+pub mod call_ref;
 pub mod delay;
 pub mod for_each;
 pub mod gather;
@@ -20,5 +21,6 @@ pub async fn register_functions() -> Vec<Arc<dyn NodeLogic>> {
         Arc::new(gather::GatherExecutionNode::default()),
         Arc::new(reroute::RerouteNode::default()),
         Arc::new(while_loop::WhileLoopNode::default()),
+        Arc::new(call_ref::CallReferenceNode::default()),
     ]
 }

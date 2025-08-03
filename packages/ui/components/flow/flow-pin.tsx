@@ -26,14 +26,12 @@ import { typeToColor } from "./utils";
 
 function FlowPinInnerComponent({
 	pin,
-	index,
 	boardId,
 	appId,
 	node,
 	skipOffset,
 }: Readonly<{
 	pin: IPin;
-	index: number;
 	boardId: string;
 	appId: string;
 	node: INode;
@@ -57,7 +55,7 @@ function FlowPinInnerComponent({
 		if (skipOffset) {
 			return {
 				marginTop: "1.75rem",
-				top: index * 15,
+				top: (pin.index-1) * 15,
 				background:
 					pin.data_type === "Execution" || pin.value_type !== IValueType.Normal
 						? "transparent"
@@ -67,13 +65,13 @@ function FlowPinInnerComponent({
 
 		return {
 			marginTop: "1.75rem",
-			top: index * 15,
+			top: (pin.index-1) * 15,
 			background:
 				pin.data_type === "Execution" || pin.value_type !== IValueType.Normal
 					? "transparent"
 					: typeToColor(pin.data_type),
 		};
-	}, [pin.data_type, pin.value_type, index, node?.name]);
+	}, [pin.data_type, pin.value_type, pin.index, node?.name]);
 
 	const iconStyle = useMemo(
 		() => ({
@@ -208,6 +206,7 @@ function FlowPinInnerComponent({
 						nodeId={node.id}
 						pin={pin}
 						appId={appId}
+						boardId={boardId}
 						defaultValue={defaultValue}
 						changeDefaultValue={setDefaultValue}
 					/>
@@ -235,7 +234,6 @@ function pinPropsAreEqual(prevProps: any, nextProps: any) {
 export const FlowPinInner = memo(FlowPinInnerComponent, pinPropsAreEqual);
 function FlowPin({
 	pin,
-	index,
 	boardId,
 	appId,
 	node,
@@ -243,7 +241,6 @@ function FlowPin({
 	skipOffset,
 }: Readonly<{
 	pin: IPin;
-	index: number;
 	boardId: string;
 	appId: string;
 	node: INode;
@@ -257,7 +254,6 @@ function FlowPin({
 					<FlowPinInner
 						appId={appId}
 						pin={pin}
-						index={index}
 						boardId={boardId}
 						node={node}
 						skipOffset={skipOffset}
@@ -280,7 +276,6 @@ function FlowPin({
 		<FlowPinInner
 			appId={appId}
 			pin={pin}
-			index={index}
 			boardId={boardId}
 			node={node}
 			skipOffset={skipOffset}
