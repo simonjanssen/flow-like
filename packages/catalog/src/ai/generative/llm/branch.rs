@@ -2,7 +2,6 @@
 /// Like the Control > Branch Node but with integrated decision making about the input being either True or False
 /// Useful to route a execution flow between two possible downstream branches.
 /// Node execution might fail if the LLM-output cannot be parsed according to the decision data schema.
-
 use crate::ai::generative::llm::with_tools::extract_tagged;
 use flow_like::{
     bit::Bit,
@@ -168,7 +167,7 @@ impl NodeLogic for LLMBranchNode {
                 .build(&model, context.app_state.clone())
                 .await?;
             model.invoke(&history, None).await?
-        };  // drop model
+        }; // drop model
 
         // parase tool call from response
         let mut response_string = "".to_string();

@@ -283,15 +283,9 @@ impl BitModelClassification {
             .unwrap_or(0.0);
 
         // Log results
-        println!(
-            "[BIT SCORING] Accumulated Preference Weight: {preferences_acc}"
-        );
-        println!(
-            "[BIT SCORING] Static Name Hint Weight: {NAME_HINT_WEIGHT}"
-        );
-        println!(
-            "[BIT SCORING] Accumulated Preference Score: {preference_match_score}"
-        );
+        println!("[BIT SCORING] Accumulated Preference Weight: {preferences_acc}");
+        println!("[BIT SCORING] Static Name Hint Weight: {NAME_HINT_WEIGHT}");
+        println!("[BIT SCORING] Accumulated Preference Score: {preference_match_score}");
         println!("[BIT SCORING] Name Hint Score: {name_match_score}");
 
         // total score = match preferences + weighted match name

@@ -12,10 +12,7 @@ use flow_like::{
     },
     state::FlowLikeState,
 };
-use flow_like_model_provider::{
-    history::History,
-    response::Response,
-};
+use flow_like_model_provider::{history::History, response::Response};
 
 use flow_like_types::{Error, Value, anyhow, async_trait, json, regex::Regex};
 use std::{
