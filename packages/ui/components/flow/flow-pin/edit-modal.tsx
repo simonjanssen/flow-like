@@ -3,7 +3,6 @@
 import { useInternalNode } from "@xyflow/react";
 import { isEqual } from "lodash-es";
 import { useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
 import { useInvalidateInvoke } from "../../../hooks";
 import { type INode, updateNodeCommand } from "../../../lib";
 import { useBackend } from "../../../state/backend-state";
@@ -83,7 +82,6 @@ export function PinEditModal({
 		await pushCommand(result, false);
 		await refetchBoard();
 		stopEditPin();
-		toast.success("Default value updated successfully");
 	}, [
 		appId,
 		currentNode,
