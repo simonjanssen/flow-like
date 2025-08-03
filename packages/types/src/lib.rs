@@ -63,5 +63,7 @@ pub mod utils;
 pub use ab_glyph;
 pub use image;
 pub use imageproc;
+pub use jsonschema;
 pub use minijinja;
+pub use regex;
 pub use rxing;
