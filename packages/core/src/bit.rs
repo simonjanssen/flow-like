@@ -19,7 +19,7 @@ use std::sync::Arc;
 use std::time::SystemTime;
 
 const NAME_HINT_WEIGHT: f32 = 0.2; // weight of name similarity for best model preference
-const NAME_HINT_SIMILARITY_THRESHOLD: f32 = 0.5;  // minimum required similarity score to model name
+const NAME_HINT_SIMILARITY_THRESHOLD: f32 = 0.5; // minimum required similarity score to model name
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 pub struct Metadata {
@@ -47,7 +47,7 @@ impl Metadata {
             if icon.starts_with("http://") || icon.starts_with("https://") {
                 return;
             }
-            let icon_path = prefix.child(format!("{}.webp", icon));
+            let icon_path = prefix.child(format!("{icon}.webp"));
             if let Ok(url) = store
                 .sign(
                     "GET",
@@ -64,7 +64,7 @@ impl Metadata {
             if thumbnail.starts_with("http://") || thumbnail.starts_with("https://") {
                 return;
             }
-            let thumbnail_path = prefix.child(format!("{}.webp", thumbnail));
+            let thumbnail_path = prefix.child(format!("{thumbnail}.webp"));
             if let Ok(url) = store
                 .sign(
                     "GET",
@@ -81,7 +81,7 @@ impl Metadata {
             if media.starts_with("http://") || media.starts_with("https://") {
                 continue;
             }
-            let media_path = prefix.child(format!("{}.webp", media));
+            let media_path = prefix.child(format!("{media}.webp"));
             if let Ok(url) = store
                 .sign(
                     "GET",
@@ -213,7 +213,10 @@ impl BitModelClassification {
 
         for meta in bit.meta.values() {
             let local_similarity = strsim::jaro_winkler(&meta.name, hint) as f32;
-            println!("[BIT NAME SIMILARITY] similarity '{}' <-> '{}': {}", meta.name, hint, local_similarity);
+            println!(
+                "[BIT NAME SIMILARITY] similarity '{}' <-> '{}': {}",
+                meta.name, hint, local_similarity
+            );
             if local_similarity > similarity {
                 similarity = local_similarity;
             }
@@ -224,13 +227,15 @@ impl BitModelClassification {
             Some(provider) => {
                 if let Some(model_id) = provider.model_id {
                     let local_similarity = strsim::jaro_winkler(&model_id, hint) as f32;
-                    println!("[BIT NAME SIMILARITY] similarity (provider) '{}' <-> '{}': {}", model_id, hint, local_similarity);
+                    println!(
+                        "[BIT NAME SIMILARITY] similarity (provider) '{model_id}' <-> '{hint}': {local_similarity}"
+                    );
                     if local_similarity > similarity {
                         similarity = local_similarity;
                     }
                 }
-            },
-            None => return Ok(similarity)
+            }
+            None => return Ok(similarity),
         }
         Ok(similarity)
     }
@@ -270,16 +275,24 @@ impl BitModelClassification {
         }
 
         // Model matching naming hint given by user (if any and if similarity is greater than threshold else 0.0)
-        let name_match_score = preference.model_hint.as_ref()
+        let name_match_score = preference
+            .model_hint
+            .as_ref()
             .and_then(|hint| self.name_similarity(hint, bit).ok())
             .filter(|&score| score > NAME_HINT_SIMILARITY_THRESHOLD)
             .unwrap_or(0.0);
 
         // Log results
-        println!("[BIT SCORING] Accumulated Preference Weight: {}", preferences_acc);
-        println!("[BIT SCORING] Static Name Hint Weight: {}", NAME_HINT_WEIGHT);
-        println!("[BIT SCORING] Accumulated Preference Score: {}", preference_match_score);
-        println!("[BIT SCORING] Name Hint Score: {}", name_match_score);
+        println!(
+            "[BIT SCORING] Accumulated Preference Weight: {preferences_acc}"
+        );
+        println!(
+            "[BIT SCORING] Static Name Hint Weight: {NAME_HINT_WEIGHT}"
+        );
+        println!(
+            "[BIT SCORING] Accumulated Preference Score: {preference_match_score}"
+        );
+        println!("[BIT SCORING] Name Hint Score: {name_match_score}");
 
         // total score = match preferences + weighted match name
         let total_score = preference_match_score + (name_match_score * NAME_HINT_WEIGHT);
@@ -430,7 +443,7 @@ impl BitPack {
         for result in results {
             match result {
                 Ok(_) => println!("Download succeeded"),
-                Err(e) => eprintln!("Download failed: {}", e),
+                Err(e) => eprintln!("Download failed: {e}"),
             }
         }
 

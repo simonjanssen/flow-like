@@ -3,7 +3,6 @@
 /// Effectively, this is a forced single-tool call configuration.
 /// Node execution can fail if the LLM produces an output that cannot be parsed as JSON or if the JSON produced violates the specified schema.
 /// If node execution succeeds, however, the output is *guaranteed* to be valid JSON data that aligns with the specified schema.
-
 use crate::ai::generative::llm::with_tools::extract_tagged;
 use crate::utils::json::parse_with_schema::{
     validate_openai_function_str, validate_openai_tool_call_str,
@@ -138,7 +137,7 @@ impl NodeLogic for LLMWithStructuredOutput {
                 .build(&model, context.app_state.clone())
                 .await?;
             model.invoke(&history, None).await?
-        };  // drop model
+        }; // drop model
 
         // parse tool call from response
         let mut response_string = "".to_string();
@@ -147,7 +146,7 @@ impl NodeLogic for LLMWithStructuredOutput {
         }
         context.log_message(&response_string, LogLevel::Debug);
         let mut tool_calls_str = extract_tagged(&response_string, "tooluse")?;
-        let tool_call_str = if tool_calls_str.len() >= 1 {
+        let tool_call_str = if !tool_calls_str.is_empty() {
             // account for reasoning models which might produce tooluse tags multiple times
             // we are assuming that the last occurance of tooluse is the actual one
             tool_calls_str.pop().unwrap()

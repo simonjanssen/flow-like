@@ -4,7 +4,6 @@
 /// Schema definitions can either be JSON schemas or OpenAI function definitions.
 /// Produces detailed error messages in case of violation.
 /// Additionally, this module bundles JSON- and schema-related utility functions.
-
 use flow_like::{
     flow::{
         execution::context::ExecutionContext,

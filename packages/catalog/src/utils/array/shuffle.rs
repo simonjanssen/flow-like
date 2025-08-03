@@ -1,6 +1,5 @@
 /// # Shuffle Node
 /// Randomly shuffle array elements
-
 use flow_like::{
     flow::{
         board::Board,
@@ -11,7 +10,11 @@ use flow_like::{
     },
     state::FlowLikeState,
 };
-use flow_like_types::{async_trait, json::json, rand::{self, rngs::SmallRng, seq::SliceRandom, SeedableRng}, Value};
+use flow_like_types::{
+    Value, async_trait,
+    json::json,
+    rand::{self, SeedableRng, rngs::SmallRng, seq::SliceRandom},
+};
 use std::sync::Arc;
 
 #[derive(Default)]
@@ -60,7 +63,7 @@ impl NodeLogic for ShuffleArrayNode {
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
         let mut array: Vec<Value> = context.evaluate_pin("array_in").await?;
-        let mut rng = SmallRng::from_rng(&mut rand::rng());  // non-cryptographic is ok here as we just want good statistical quality
+        let mut rng = SmallRng::from_rng(&mut rand::rng()); // non-cryptographic is ok here as we just want good statistical quality
         array.shuffle(&mut rng);
         context.set_pin_value("array_out", json!(array)).await?;
         Ok(())

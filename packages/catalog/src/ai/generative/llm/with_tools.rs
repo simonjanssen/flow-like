@@ -13,12 +13,11 @@ use flow_like::{
     state::FlowLikeState,
 };
 use flow_like_model_provider::{
-    history::{History, HistoryMessage, Role},
+    history::History,
     response::Response,
 };
 
 use flow_like_types::{Error, Value, anyhow, async_trait, json, regex::Regex};
-use serde::Deserialize;
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
@@ -52,8 +51,8 @@ pub fn extract_tagged_simple(text: &str, tag: &str) -> Result<Vec<String>, Error
 /// Extract tagged substrings, e.g. Hello, <tool>extract this</tool> and <tool>this</tool>, good bye.
 /// This is a more robust version that ignores tags not being closed.
 pub fn extract_tagged(text: &str, tag: &str) -> Result<Vec<String>, Error> {
-    let open_tag  = format!("<{}>", tag);
-    let close_tag = format!("</{}>", tag);
+    let open_tag = format!("<{tag}>");
+    let close_tag = format!("</{tag}>");
 
     // 1) Find all open-tag positions
     let mut starts = Vec::new();
@@ -81,12 +80,13 @@ pub fn extract_tagged(text: &str, tag: &str) -> Result<Vec<String>, Error> {
     for &start in &starts {
         let content_start = start + open_tag.len();
         // find the first unused closing tag after this opener
-        if let Some((ei, &end_pos)) = ends.iter().enumerate()
-            .find(|&(i,&e)| !used_ends[i] && e > content_start)
+        if let Some((ei, &end_pos)) = ends
+            .iter()
+            .enumerate()
+            .find(|&(i, &e)| !used_ends[i] && e > content_start)
         {
             // check for any *other* opener nested between this opener and that closer:
-            let has_inner_opener = starts.iter()
-                .any(|&other| other > start && other < end_pos);
+            let has_inner_opener = starts.iter().any(|&other| other > start && other < end_pos);
 
             if has_inner_opener {
                 // this opener is “orphaned” by an inner start—skip it
@@ -198,7 +198,7 @@ impl NodeLogic for LLMWithTools {
                 .build(&model_bit, context.app_state.clone())
                 .await?;
             model.invoke(&history, None).await?
-        };  // drop model
+        }; // drop model
 
         // parse response
         let mut response_string = "".to_string();

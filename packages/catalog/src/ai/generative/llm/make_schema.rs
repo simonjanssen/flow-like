@@ -1,10 +1,9 @@
+use crate::ai::generative::llm::with_tools::extract_tagged;
 /// # Make OpenAI Function Node
 /// Function call definitions or JSON Schemas are tedious to write by hand so this is an utility node to help you out.
 /// Node execution can fail if the LLM produces an output that cannot be parsed as JSON schema.
 /// If node execution succeeds, however, the output is *guaranteed* to be a valid OpenAI-like Function Call Definition with valid JSON schema in the "parameters" section.
-
 use crate::utils::json::parse_with_schema::validate_openai_function_str;
-use crate::ai::generative::llm::with_tools::extract_tagged;
 use flow_like::{
     bit::Bit,
     flow::{
@@ -168,8 +167,8 @@ impl NodeLogic for LLMMakeSchema {
                 .build(&model, context.app_state.clone())
                 .await?;
             model.invoke(&history, None).await?
-        };  // drop model
-        
+        }; // drop model
+
         // parse response
         let mut response_string = "".to_string();
         if let Some(response) = response.last_message() {
@@ -178,13 +177,16 @@ impl NodeLogic for LLMMakeSchema {
         context.log_message(&response_string, LogLevel::Debug);
 
         // parse + validate function defintion
-        let mut schema_str= extract_tagged(&response_string, "schema")?;
-        let schema_str = if schema_str.len() >= 1 {
+        let mut schema_str = extract_tagged(&response_string, "schema")?;
+        let schema_str = if !schema_str.is_empty() {
             // account for reasoning models which might produce schema tags multiple times
             // we are assuming that the last occurance of schema is the actual one
             schema_str.pop().unwrap()
         } else {
-            return Err(anyhow!(format!("Invalid number of schemas: Expected 1, got {}", schema_str.len())))
+            return Err(anyhow!(format!(
+                "Invalid number of schemas: Expected 1, got {}",
+                schema_str.len()
+            )));
         };
         let schema = validate_openai_function_str(&schema_str)?;
 
