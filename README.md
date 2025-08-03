@@ -20,7 +20,7 @@
 
 # Flow-Like: Your Next Generation Workflow OS.
 
-> Any flow you like.
+> *Any flow you like.*
 
 🔀 Flow-Like is an enterprise-grade **workflow operating system**.
 
