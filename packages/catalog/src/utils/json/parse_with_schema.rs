@@ -1,3 +1,10 @@
+/// # Parse With Schema Node
+/// Like utils > types > From String Node but with additional schema validation
+/// Input strings must not only by JSON-serializable but also follow the provided schema
+/// Schema definitions can either be JSON schemas or OpenAI function definitions.
+/// Produces detailed error messages in case of violation.
+/// Additionally, this module bundles JSON- and schema-related utility functions.
+
 use flow_like::{
     flow::{
         execution::context::ExecutionContext,
@@ -157,7 +164,7 @@ fn get_schema_validator(definition_str: &str) -> Result<jsonschema::Validator, E
 }
 
 /// Validates JSON data against JSON/OpenAI Schema and returns JSON data as Value
-/// Returns a JSON Value that is compliant with the given definition
+/// Returns a JSON Value that is compliant with the given schema
 pub fn validate_json_data(schema: &str, data: &str) -> Result<Value, Error> {
     // Get schema validator
     let validator = get_schema_validator(schema)?;
@@ -182,6 +189,7 @@ pub fn validate_json_data(schema: &str, data: &str) -> Result<Value, Error> {
     }
 }
 
+/// Validates a Tool Call string against a list of OpenAi-Functions
 pub fn validate_openai_tool_call_str(
     functions: &Vec<OpenAIFunction>,
     tool_call: &str,
@@ -214,7 +222,7 @@ pub fn validate_openai_tool_call_str(
         }
     }
     Err(anyhow!(format!(
-        "Unknown tool call name: {}",
+        "No matching function found for tool call: {}",
         tool_call.name
     )))
 }

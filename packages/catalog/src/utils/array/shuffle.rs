@@ -1,3 +1,6 @@
+/// # Shuffle Node
+/// Randomly shuffle array elements
+
 use flow_like::{
     flow::{
         board::Board,
@@ -66,7 +69,6 @@ impl NodeLogic for ShuffleArrayNode {
     async fn on_update(&self, node: &mut Node, board: Arc<Board>) {
         let _ = node.match_type("array_out", board.clone(), Some(ValueType::Array), None);
         let _ = node.match_type("array_in", board.clone(), Some(ValueType::Array), None);
-        let _ = node.match_type("value", board, Some(ValueType::Normal), None);
-        node.harmonize_type(vec!["array_in", "array_out", "value"], true);
+        node.harmonize_type(vec!["array_in", "array_out"], true);
     }
 }
