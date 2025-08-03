@@ -18,54 +18,92 @@
 
 <a name="Headline"></a>
 
-# Flow-Like
+# Flow-Like: Your Next Generation Workflow OS.
 
-**The Only Production-Ready Automation Suite for Enterprise Scale Workflows.**
+> Any flow you like.
 
-Flow-Like is a powerful and flexible automation suite designed to handle enterprise-scale workflows with ease. It's built for scalability, speed, and seamless AI integration, allowing you to streamline complex processes and boost productivity.
+🔀 Flow-Like is an enterprise-grade **workflow operating system**.
 
-💫 **Love what you see? Give us a star and help spread the word!**
+✨ It comes with a modular frontend for apps, a rich set of events, a **node catalog**, a powerful **no-code** workflow IDE, and an extensive suite to manage teams, templates and projects within your organization.
 
-<p align="center">
-   <img width="800" src="./assets/recording.gif" alt="Recording">
-</p>
+🤖 Flow-Like lives in a seamless, unopinionated integration of **LLM**, ML-based, and deterministic decision making instances to **automate** any process.
 
-## ✨ Key Features
+⚡️ We build Flow-Like upon Rust 🦀 for uncompromising **performance**, efficiency and code safety.
 
-* **🚀 Scalable and Fast:**
-    * Goes beyond simple agent scripting.
-    * Auto-scales effortlessly, built to handle hundreds of thousands of requests per second.
-    * Specifically designed for enterprise-level demands.
-    * Host it anywhere: On-Premise, Cloud, or on Device.
-    * Integrates modern release best practices like Canary deployments, transparent logging, and more.
-* **🧠 Seamless AI Integration:**
-    * Easily embed Artificial Intelligence into your workflows.
-    * Define model capabilities and let Flow-Like handle the rest.
-    * Features include model discovery, preference management, history tracking (model, vote, message), and straightforward model invocation.
-    * Supports streaming responses and pushing responses efficiently.
-* **🛠️ Rich Customization & Control:**
-    * Build complex flows with conditions, branches, and parallel execution.
-    * Support for custom nodes and triggers.
-    * Unlimited parallel workflows.
+🤝 It is **Open Source**.
 
-## 🔗 Quick Links
+## Quick Start 🚀
+Try and use Flow-Like:
+- [Download ⬇️](https://github.com/TM9657/flow-like/releases) and run the latest stable build of our standalone desktop app, *or*
+- Skip the the setup and [try our hosted version in the cloud ☁️](https://flow-like.com/) (to be available soon), *or*
+- [Build the desktop app from source ⚙️](#build-from-source) (see instructions below).
 
-* **Download: (Coming Soon)** [Get Started with Flow-Like](#)
-* **Documentation:** [Read the Docs](https://docs.flow-like.com)
-* **Website:** [Link](https://flow-like.com)
+## Flow-Like’s Ecosystem 🌐
+### Apps
+Manage your workflows and storages with apps that you can share with others. Create apps offline, online, run them locally or in the cloud:
+<p align="center"><img width="800" src="https://cdn.flow-like.com/website/CreateApp.webp" alt="Create a Flow-Like App"></p>
 
-## 🚀 Getting Started
+### Studio
+Our innovative, no-code workflow builder IDE. Connect, collapse, and annotate. Get automated predictions for matching nodes. Trace execution logs and triggering events:
+<p align="center"><img width="800" src="./assets/recording.gif" alt="Recording"></p>
 
-Example:
-1.  Clone the repository: `git clone https://github.com/TM9657/flow-like`
-2.  Navigate to the project directory: `cd flow-like`
-3.  Follow the installation instructions in our [Documentation](https://docs.flow-like.com/contributing/getting-started/).
+### Node Catalog
+- Build your workflows from a rich set of execution nodes - from branching, databases to object detection and higher-order agent nodes. 
+- Link your application to frontends, backends, and third party apps, for example to chat interfaces or incoming mails.
+- Checkout the full catalog in our [docs 📄](https://docs.flow-like.com/).
 
-## 🤝 Contributing
+### Templates
+Reuse and share your workflows as templates:
+<p align="center"><img width="800" src="https://cdn.flow-like.com/website/Store.webp" alt="Browse Public Apps in the Store"></p>
 
-We welcome contributions from the community! Whether it's bug reports, feature suggestions, or code contributions, your help is appreciated. Please read our `CONTRIBUTING.md` file for guidelines on how to contribute.
+### AI Models
+Download and run LLMs, VLMs, Deep Learning Models, and Embeddings locally or in the cloud. Boost your workflows with intelligent nodes:
+<p align="center"><img width="800" src="https://cdn.flow-like.com/website/SelectYourModel.webp" alt="Select AI Models from the Model Catalog"></p>
 
----
-*We care for good software. If you like it, contribute or consider a Premium Subscription.*
+## Why Use Flow-Like? 💡
+Flow-Like helps *developers and individuals* to efficiently craft highly individualized workflow automations:
+- Choose from a wide node and event catalog for different computational tasks and triggers
+- Efficiently synthesize automations via standardized interfaces, data objects using a powerful builder interface
+- Share and copy workflows as templates and projects to streamline collaboration.
+- Contribute project or enterprise specific nodes and events to the core catalog 
 
-![Alt](https://repobeats.axiom.co/api/embed/6fe5df31b9a96f584f8898beb4457bd8aa3852f1.svg "Repobeats analytics image")
+Flow-Like helps *business responsibles* to express application logic in a natural way:
+- Build workflows without coding. Flows act both as documentation and execution.
+- Collapse lower-level flows into meaningful hierarchical abstractions.
+- Fine-grained access controls for teams and projects.
+
+Flow-Like helps *IT* to manage and operate application stacks:
+- Bring your applications to a unified set of nodes that eases operations, incidence management, governance, and compliance.
+- Transition seamlessly from Proof-of-Concepts to productive, production-ready applications
+- Run your applications efficiently thanks to Rust’s performance guarantees
+- Built-in version control
+
+## Build From Source ⚙️
+For the latest features, you can build the standalone desktop app yourself:
+1. Install Rust: https://www.rust-lang.org/tools/install
+2. Install Bun: https://bun.com/docs/installation
+3. Install Tauri prerequisites: https://tauri.app/start/prerequisites/
+4. Install Protobuf: https://protobuf.dev/installation/
+5. Clone this repository
+6. Run `bun install && bun run build:desktop`
+
+Checkout our docs for specific hints for MacOS, Windows and Linux.
+
+## Gallery 📸
+<p align="center"><img width="800" src="https://cdn.flow-like.com/website/RightsAndRoles.webp" alt="Set Rights and Roles for Your Apps"></p>
+
+<p align="center"><img width="800" src="https://cdn.flow-like.com/website/Storage.webp" alt="Manage App Storage"></p>
+
+<p align="center"><img width="800" src="https://cdn.flow-like.com/website/TeamManagement.webp" alt="Manage Team Members"></p>
+
+## Contribute 🤝
+You can either contribute to Flow-Like itself by [creating an issue 📄](https://github.com/TM9657/flow-like/issues), or by forking this repo and making a PR ↩️.
+
+Please also check our [discussions page 💬](https://github.com/TM9657/flow-like/discussions) for general features and conceptual brainstorming. [Join us on discord](https://discord.com/invite/mdBA9kMjFJ) as well!
+
+Or, contribute your Flows as [templates](#templates) to the community! We'd love to see what you've built!
+
+!["Repobeats analytics image"](https://repobeats.axiom.co/api/embed/6fe5df31b9a96f584f8898beb4457bd8aa3852f1.svg)
+
+
+<p align="center">Made with ❤️ in Munich, Germany.</p>
