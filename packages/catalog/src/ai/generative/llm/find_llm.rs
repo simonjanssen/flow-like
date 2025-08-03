@@ -1,7 +1,7 @@
 use flow_like::{
     bit::{Bit, BitModelPreference},
     flow::{
-        execution::context::ExecutionContext,
+        execution::{context::ExecutionContext, LogLevel},
         node::{Node, NodeLogic},
         pin::PinOptions,
         variable::VariableType,
@@ -61,6 +61,11 @@ impl NodeLogic for FindLLMNode {
             .profile
             .get_best_model(&preference, false, false, http_client)
             .await?;
+        
+        for meta in bit.meta.values() {
+            context.log_message(&format!("Connected to model {}", meta.name), LogLevel::Debug);
+        }
+
         context
             .set_pin_value("model", flow_like_types::json::json!(bit))
             .await?;
