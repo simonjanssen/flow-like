@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { type IBackendState, useBackend, useInvoke, useReactFlow } from "../../../..";
+import { ChevronDown } from "lucide-react";
+import { useBackend, useInvoke } from "../../../..";
 import {
 	Select,
 	SelectContent,
@@ -28,7 +28,10 @@ export function FnVariable({
 	setValue: (value: any) => void;
 }>) {
 	const backend = useBackend();
-	const board = useInvoke(backend.boardState.getBoard, backend.boardState, [appId, boardId]);
+	const board = useInvoke(backend.boardState.getBoard, backend.boardState, [
+		appId,
+		boardId,
+	]);
 
 	return (
 		<div className="flex flex-row items-center justify-start">
@@ -40,22 +43,32 @@ export function FnVariable({
 					// const nodes = flow.getNodes();
 				}}
 			>
-				<SelectTrigger className="w-full p-0 border-0 text-xs text-nowrap text-start max-h-fit h-4">
-					<small className="text-nowrap text-start m-0">
+				<SelectTrigger
+					noChevron
+					size="sm"
+					className="!w-fit !max-w-fit p-0 border-0 text-xs !bg-card text-nowrap text-start max-h-fit h-4 gap-0.5 flex-row items-center"
+				>
+					<small className="text-nowrap text-start text-[10px] !m-0 w-fit">
 						{!board.data && "Loading..."}
-						{board.data && (board?.data?.nodes?.[parseUint8ArrayToJson(value)]?.friendly_name ?? "No Function Selected")}
+						{board.data &&
+							(board?.data?.nodes?.[parseUint8ArrayToJson(value)]
+								?.friendly_name ??
+								"No Function Selected")}
 					</small>
+					<ChevronDown className="size-2 min-w-2 min-h-2 text-card-foreground" />
 				</SelectTrigger>
 				<SelectContent>
 					<SelectGroup>
 						<SelectLabel>{pin.friendly_name}</SelectLabel>
-						{Object.values(board?.data?.nodes ?? {})?.filter(node => node.start).map((node) => {
-							return (
-								<SelectItem key={node.id} value={node.id}>
-									{node.friendly_name ?? node.name}
-								</SelectItem>
-							);
-						})}
+						{Object.values(board?.data?.nodes ?? {})
+							?.filter((node) => node.start)
+							.map((node) => {
+								return (
+									<SelectItem key={node.id} value={node.id}>
+										{node.friendly_name ?? node.name}
+									</SelectItem>
+								);
+							})}
 					</SelectGroup>
 				</SelectContent>
 			</Select>

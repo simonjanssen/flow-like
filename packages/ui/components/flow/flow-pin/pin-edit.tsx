@@ -15,6 +15,7 @@ import { BooleanVariable } from "./variable-types/boolean-variable";
 import { VariableDescription } from "./variable-types/default-text";
 import { EnumVariable } from "./variable-types/enum-variable";
 import { FnVariable } from "./variable-types/fn-select";
+import { VarVariable } from "./variable-types/var-select";
 
 export function PinEdit({
 	nodeId,
@@ -82,6 +83,22 @@ export function PinEdit({
 	) {
 		return (
 			<FnVariable
+				boardId={boardId}
+				pin={pin}
+				value={cachedDefaultValue}
+				appId={appId}
+				setValue={setCachedDefaultValue}
+			/>
+		);
+	}
+
+	if (
+		pin.name.startsWith("var_ref") &&
+		pin.data_type === IVariableType.String &&
+		pin.value_type === IValueType.Normal
+	) {
+		return (
+			<VarVariable
 				boardId={boardId}
 				pin={pin}
 				value={cachedDefaultValue}

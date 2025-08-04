@@ -552,6 +552,7 @@ export function FlowBoard({
 				x: position?.x ?? clickPosition.x,
 				y: position?.y ?? clickPosition.y,
 			});
+
 			const result = addNodeCommand({
 				node: { ...node, coordinates: [location.x, location.y, 0] },
 				current_layer: currentLayer,
@@ -559,6 +560,7 @@ export function FlowBoard({
 
 			await executeCommand(result.command);
 			const new_node = result.node;
+
 			if (droppedPin) {
 				const pinType = droppedPin.pin_type === "Input" ? "Output" : "Input";
 				const pinValueType = droppedPin.value_type;
@@ -1184,6 +1186,7 @@ export function FlowBoard({
 					>
 						<ResizablePanel autoSave="flow-main" ref={flowPanelRef}>
 							<FlowContextMenu
+								board={board.data}
 								droppedPin={droppedPin}
 								onCommentPlace={onCommentPlace}
 								refs={board.data?.refs || {}}
