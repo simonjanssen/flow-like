@@ -128,19 +128,25 @@ impl NodeLogic for CreateLocalDatabaseNode {
                 .ok_or(flow_like_types::anyhow!("No execution cache found"))?
                 .get_storage(false)?;
             let board_dir = board_dir.child("db");
-            let db = context
-                .app_state
-                .lock()
-                .await
-                .config
-                .read()
-                .await
-                .callbacks
-                .build_project_database
-                .clone()
-                .ok_or(flow_like_types::anyhow!("No database builder found"))?(
-                board_dir
-            );
+
+            let db = if let Some(credentials) = &context.credentials {
+                credentials.to_db(board_dir).await?
+            } else {
+                context
+                    .app_state
+                    .lock()
+                    .await
+                    .config
+                    .read()
+                    .await
+                    .callbacks
+                    .build_project_database
+                    .clone()
+                    .ok_or(flow_like_types::anyhow!("No database builder found"))?(
+                    board_dir
+                )
+            };
+
             let db = db.execute().await?;
             let intermediate = LanceDBVectorStore::from_connection(db, table).await;
             let intermediate = CachedDB {
