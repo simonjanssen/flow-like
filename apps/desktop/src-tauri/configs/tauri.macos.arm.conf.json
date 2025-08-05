@@ -14,7 +14,8 @@
             "binaries/mac/arm/libllama.dylib",
             "binaries/mac/arm/libmtmd_helper_shared.dylib",
             "binaries/mac/arm/libmtmd_shared.dylib",
-            "binaries/mac/arm/llama-server"
+            "binaries/mac/arm/llama-server",
+            "bin/flow-docling"
         ],
         "resources": {
             "icons/Assets.car": "Assets.car"

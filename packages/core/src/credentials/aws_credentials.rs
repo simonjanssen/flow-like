@@ -1,8 +1,8 @@
 use crate::credentials::SharedCredentialsTrait;
 use flow_like_storage::lancedb::connection::ConnectBuilder;
 use flow_like_storage::object_store;
-use flow_like_storage::{files::store::FlowLikeStore, lancedb};
 use flow_like_storage::object_store::aws::AmazonS3Builder;
+use flow_like_storage::{files::store::FlowLikeStore, lancedb};
 use flow_like_types::{Result, anyhow, async_trait};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -60,13 +60,19 @@ impl SharedCredentialsTrait for AwsSharedCredentials {
         Ok(FlowLikeStore::AWS(Arc::new(store)))
     }
 
-    #[tracing::instrument(name = "AwsSharedCredentials::to_db", skip(self), level="debug")]
+    #[tracing::instrument(name = "AwsSharedCredentials::to_db", skip(self), level = "debug")]
     async fn to_db(&self, path: object_store::path::Path) -> Result<ConnectBuilder> {
         let connection = make_s3_builder(
             self.content_bucket.clone(),
-            self.access_key_id.clone().ok_or(anyhow!("AWS_ACCESS_KEY_ID is not set"))?,
-            self.secret_access_key.clone().ok_or(anyhow!("AWS_SECRET_ACCESS_KEY is not set"))?,
-            self.session_token.clone().ok_or(anyhow!("SESSION TOKEN is not set"))?,
+            self.access_key_id
+                .clone()
+                .ok_or(anyhow!("AWS_ACCESS_KEY_ID is not set"))?,
+            self.secret_access_key
+                .clone()
+                .ok_or(anyhow!("AWS_SECRET_ACCESS_KEY is not set"))?,
+            self.session_token
+                .clone()
+                .ok_or(anyhow!("SESSION TOKEN is not set"))?,
         );
         let connection = connection(path.clone());
         Ok(connection)
