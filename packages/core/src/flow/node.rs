@@ -3,7 +3,7 @@ use highway::{HighwayHash, HighwayHasher};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeSet, HashMap},
     sync::Arc,
 };
 
@@ -124,8 +124,8 @@ impl Node {
                 pin_type: PinType::Input,
                 data_type,
                 value_type: super::pin::ValueType::Normal,
-                depends_on: HashSet::new(),
-                connected_to: HashSet::new(),
+                depends_on: BTreeSet::new(),
+                connected_to: BTreeSet::new(),
                 default_value: None,
                 options: None,
                 value: None,
@@ -160,8 +160,8 @@ impl Node {
                 pin_type: PinType::Output,
                 data_type,
                 value_type: super::pin::ValueType::Normal,
-                depends_on: HashSet::new(),
-                connected_to: HashSet::new(),
+                depends_on: BTreeSet::new(),
+                connected_to: BTreeSet::new(),
                 default_value: None,
                 value: None,
                 index: num_outputs as u16 + 1,

@@ -19,7 +19,6 @@ use state::TauriFlowLikeState;
 use std::{sync::Arc, time::Duration};
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_deep_link::{DeepLinkExt, OpenUrlEvent};
-use tracing_subscriber::prelude::*;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -83,7 +82,7 @@ pub fn run() {
     });
 
     let sentry_endpoint = std::option_env!("PUBLIC_SENTRY_ENDPOINT");
-    let guard = sentry_endpoint.map(|endpoint| {
+    let _guard = sentry_endpoint.map(|endpoint| {
         sentry::init((
             endpoint,
             sentry::ClientOptions {
