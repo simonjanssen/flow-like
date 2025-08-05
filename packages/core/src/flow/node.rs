@@ -358,17 +358,12 @@ impl Node {
                     hasher.append(&[*enforce_generic_value_type as u8]);
                 }
             }
-            let mut sorted_depends_on: Vec<_> = pin.depends_on.iter().collect();
-            sorted_depends_on.sort();
 
-            for dep in sorted_depends_on {
+            for dep in pin.depends_on.iter() {
                 hasher.append(dep.as_bytes());
             }
 
-            let mut sorted_connected_to: Vec<_> = pin.connected_to.iter().collect();
-            sorted_connected_to.sort();
-
-            for conn in sorted_connected_to {
+            for conn in pin.connected_to.iter() {
                 hasher.append(conn.as_bytes());
             }
         }
