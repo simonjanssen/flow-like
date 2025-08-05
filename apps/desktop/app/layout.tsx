@@ -44,7 +44,6 @@ import { ThemeLoader } from "../components/theme-loader";
 import ToastProvider from "../components/toast-provider";
 import PostHogPageView from "./PostHogPageView";
 import { PHProvider } from "./provider";
-import { ReactScan } from "./ReactScanComponent";
 
 const persister = createIDBPersister();
 const queryClient = new QueryClient({
@@ -119,7 +118,7 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en" suppressHydrationWarning suppressContentEditableWarning>
-			<ReactScan />
+			{/* <ReactScan /> */}
 			<PHProvider>
 				<ReactFlowProvider>
 					<PersistQueryClientProvider
