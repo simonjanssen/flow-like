@@ -96,6 +96,19 @@ impl ModelLogic for LocalModel {
 }
 
 impl LocalModel {
+    pub async fn check_health(port: &str) -> Result<bool> {
+        let response = reqwest::get(format!("http://localhost:{}/health", port)).await?;
+
+        if response.status().is_success() {
+            Ok(true)
+        } else {
+            Err(flow_like_types::anyhow!(
+                "Model is not healthy: {}",
+                response.status()
+            ))
+        }
+    }
+
     pub async fn new(
         bit: &Bit,
         app_state: Arc<TokioMutex<FlowLikeState>>,
@@ -123,14 +136,14 @@ impl LocalModel {
         current_dir.pop();
 
         let child_handle = Arc::new(Mutex::new(None));
-        let child_handle_clone = Arc::clone(&child_handle);
+        let child_handle_clone: Arc<Mutex<Option<Child>>> = Arc::clone(&child_handle);
         let port = pick_unused_port().unwrap();
 
         let async_bit = bit.clone();
         let execution_settings = execution_settings.clone();
         let thread_handle = tokio::task::spawn(async move {
-            let program = PathBuf::from("llamafiler");
-            let mut sidecar = match crate::utils::execute::sidecar(&program).await {
+            let program = PathBuf::from("llama-server");
+            let mut sidecar = match crate::utils::execute::sidecar(&program, None).await {
                 Ok(sidecar) => sidecar,
                 Err(e) => {
                     println!("Error: {}", e);
@@ -141,20 +154,24 @@ impl LocalModel {
             context_length =
                 std::cmp::min(context_length, execution_settings.max_context_size as u32);
             let binding = context_length.to_string();
-            let port = format!("localhost:{}", port);
+            let port = port.to_string();
+            println!("Execution settings: {:?}", execution_settings);
             let mut args = vec![
                 "-m",
                 &gguf_path.to_str().unwrap(),
                 "-c",
                 &binding,
-                "-l",
+                "--host",
+                "localhost",
+                "--port",
                 &port,
+                "--no-webui",
             ];
 
             let mut gpu_layer = 0;
 
             if execution_settings.gpu_mode {
-                gpu_layer = 9999;
+                gpu_layer = 45;
             }
 
             let gpu_layer = gpu_layer.to_string();
@@ -172,7 +189,7 @@ impl LocalModel {
             }
 
             if !projection_path.is_empty() {
-                args.push("-mm");
+                args.push("--mmproj");
                 args.push(&projection_path);
             }
 
@@ -207,7 +224,18 @@ impl LocalModel {
             });
         });
 
-        sleep(Duration::from_millis(2000)).await;
+        let mut loaded = false;
+        let mut max_retries = 60;
+
+        while !loaded && max_retries > 0 {
+            match LocalModel::check_health(&port.to_string()).await {
+                Ok(_) => loaded = true,
+                Err(_e) => {
+                    sleep(Duration::from_secs(1)).await;
+                    max_retries -= 1;
+                }
+            }
+        }
 
         Ok(LocalModel {
             client: reqwest::Client::new(),
@@ -222,14 +250,17 @@ impl LocalModel {
 impl Drop for LocalModel {
     fn drop(&mut self) {
         println!("DROPPING LOCAL MODEL");
-        let mut guard = self.handle.lock().unwrap();
-        if let Some(child) = guard.as_mut() {
-            match child.kill() {
-                Ok(_) => println!("Child process was killed successfully."),
-                Err(e) => eprintln!("Failed to kill child process: {}", e),
+        if let Ok(mut guard) = self.handle.lock() {
+            if let Some(child) = guard.as_mut() {
+                match child.kill() {
+                    Ok(_) => println!("Child process was killed successfully."),
+                    Err(e) => eprintln!("Failed to kill child process: {}", e),
+                }
+            } else {
+                println!("No child process to kill.");
             }
         } else {
-            println!("No child process to kill.");
+            println!("Failed to lock local model handle for dropping.");
         }
 
         self.thread_handle.abort();

@@ -64,12 +64,7 @@ impl NodeLogic for ReadToBytesNode {
 
         let path: FlowPath = context.evaluate_pin("path").await?;
 
-        let path = path.to_runtime(context).await?;
-        let store = path.store.as_generic();
-        let content = store.get(&path.path).await?;
-
-        let content = content.bytes().await?;
-        let bytes = content.to_vec();
+        let bytes = path.get(context, false).await?;
 
         context.set_pin_value("content", json!(bytes)).await?;
         context.activate_exec_pin("exec_out").await?;

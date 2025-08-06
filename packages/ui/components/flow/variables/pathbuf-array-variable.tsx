@@ -13,9 +13,14 @@ import { useBackend } from "../../../state/backend-state";
 import { Separator } from "../../ui";
 
 export function PathbufArrayVariable({
+	disabled,
 	variable,
 	onChange,
-}: Readonly<{ variable: IVariable; onChange: (variable: IVariable) => void }>) {
+}: Readonly<{
+	disabled?: boolean;
+	variable: IVariable;
+	onChange: (variable: IVariable) => void;
+}>) {
 	const backend = useBackend();
 
 	// parse once from default_value
@@ -28,7 +33,8 @@ export function PathbufArrayVariable({
 
 	// add a new path
 	const handleAdd = useCallback(async () => {
-		const pathBuf: any = await backend.openFileOrFolderMenu(
+		if (disabled) return;
+		const pathBuf: any = await backend.helperState.openFileOrFolderMenu(
 			false,
 			isFolder,
 			true,
@@ -38,7 +44,7 @@ export function PathbufArrayVariable({
 		let finalPath = pathBuf;
 
 		if (!isFolder) {
-			const meta = await backend.getPathMeta(pathBuf);
+			const meta = await backend.helperState.getPathMeta(pathBuf);
 			if (!meta || meta.length === 0) return;
 			finalPath = meta[0].file_path;
 		}
@@ -48,17 +54,18 @@ export function PathbufArrayVariable({
 			...variable,
 			default_value: convertJsonToUint8Array(updated),
 		});
-	}, [backend, isFolder, items, onChange, variable]);
+	}, [disabled, backend, isFolder, items, onChange, variable]);
 
 	const handleRemove = useCallback(
 		(idx: number) => {
+			if (disabled) return;
 			const updated = items.filter((_, i) => i !== idx);
 			onChange({
 				...variable,
 				default_value: convertJsonToUint8Array(updated),
 			});
 		},
-		[items, onChange, variable],
+		[disabled, items, onChange, variable],
 	);
 
 	return (
@@ -68,6 +75,7 @@ export function PathbufArrayVariable({
 					checked={isFolder}
 					onCheckedChange={setIsFolder}
 					id="is_folder"
+					disabled={disabled}
 				/>
 				<Label htmlFor="is_folder">Folder</Label>
 			</div>
@@ -78,6 +86,7 @@ export function PathbufArrayVariable({
 					"w-full justify-start text-left font-normal col-span-4  sticky top-0 bg-background",
 					items.length === 0 && "text-muted-foreground",
 				)}
+				disabled={disabled}
 				onClick={handleAdd}
 			>
 				{isFolder ? (
@@ -102,6 +111,7 @@ export function PathbufArrayVariable({
 						)}
 						<span className="flex-1 truncate">{path.split("/").pop()}</span>
 						<Button
+							disabled={disabled}
 							size="icon"
 							variant="destructive"
 							onClick={() => handleRemove(idx)}

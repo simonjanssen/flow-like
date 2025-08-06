@@ -2,3 +2,9 @@ node_modules
 target
 out
 packages/ui
+assets
+tools
+.github
+.env
+.vscode
+.idea

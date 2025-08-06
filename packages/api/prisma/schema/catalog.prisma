@@ -1,0 +1,13 @@
+model Node {
+  id String @id
+
+  name String
+  description String?
+  category String
+  icon String?
+
+  bitId String @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

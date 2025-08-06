@@ -73,6 +73,14 @@ impl NodeLogic for ChatEventNode {
             VariableType::Struct,
         );
 
+        node.add_output_pin(
+            "tools",
+            "Tools",
+            "Tools requested by the user",
+            VariableType::String,
+        )
+        .set_value_type(flow_like::flow::pin::ValueType::Array);
+
         node.add_output_pin("actions", "Actions", "User Actions", VariableType::Struct)
             .set_schema::<ChatAction>()
             .set_value_type(flow_like::flow::pin::ValueType::Array)
@@ -97,6 +105,12 @@ impl NodeLogic for ChatEventNode {
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
         let exec_out_pin = context.get_pin_by_name("exec_out").await?;
+
+        if context.delegated {
+            context.activate_exec_pin_ref(&exec_out_pin).await?;
+            return Ok(());
+        }
+
         let payload = context.get_payload().await?;
         let chat = payload
             .payload
@@ -122,6 +136,9 @@ impl NodeLogic for ChatEventNode {
                 "global_session",
                 chat.global_session.unwrap_or(from_str("{}")?),
             )
+            .await?;
+        context
+            .set_pin_value("tools", json!(chat.tools.unwrap_or_default()))
             .await?;
         context
             .set_pin_value("actions", json!(chat.actions.unwrap_or_default()))
@@ -160,10 +177,22 @@ impl NodeLogic for ChatEventNode {
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
+pub struct ComplexAttachment {
+    pub url: String,
+    pub preview_text: Option<String>,
+    pub thumbnail_url: Option<String>,
+    pub name: Option<String>,
+    pub size: Option<u64>,
+    pub r#type: Option<String>,
+    pub anchor: Option<String>,
+    pub page: Option<u32>,
+}
+
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 #[serde(untagged)]
 pub enum Attachment {
     Url(String),
-    Reference { id: String, resource_type: String },
+    Complex(ComplexAttachment),
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
@@ -191,6 +220,7 @@ pub struct Chat {
     pub local_session: Option<Value>,
     pub global_session: Option<Value>,
     pub actions: Option<Vec<ChatAction>>,
+    pub tools: Option<Vec<String>>,
     pub user: Option<User>,
     pub attachments: Option<Vec<Attachment>>,
 }

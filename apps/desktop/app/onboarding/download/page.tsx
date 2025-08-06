@@ -1,6 +1,7 @@
 "use client";
 import { invoke } from "@tauri-apps/api/core";
 import {
+	type IHub,
 	type UseQueryResult,
 	useBackend,
 	useDownloadManager,
@@ -30,11 +31,11 @@ import { useTauriInvoke } from "../../../components/useInvoke";
 const chartConfig = {
 	downloaded: {
 		label: "Speed (Mbit/s)",
-		color: "hsl(var(--chart-3))",
+		color: "var(--chart-3)",
 	},
 	total: {
 		label: "Total",
-		color: "hsl(var(--chart-4))",
+		color: "var(--chart-4)",
 	},
 } satisfies ChartConfig;
 
@@ -57,7 +58,7 @@ export default function ProfileCreation() {
 		}[]
 	>([]);
 	const [doneCounter, setDoneCounter] = useState(0);
-	const defaultProfiles: UseQueryResult<[ISettingsProfile, IBit[]][]> =
+	const defaultProfiles: UseQueryResult<[[ISettingsProfile, IBit[]][], IHub]> =
 		useTauriInvoke("get_default_profiles", {});
 
 	const [bits, setBits] = useState<IBit[]>([]);
@@ -69,8 +70,8 @@ export default function ProfileCreation() {
 			await invoke("upsert_profile", { profile });
 		}
 
-		await invalidate(backend.getProfile, []);
-		await invalidate(backend.getSettingsProfile, []);
+		await invalidate(backend.userState.getProfile, []);
+		await invalidate(backend.userState.getSettingsProfile, []);
 		await queryClient.invalidateQueries({
 			queryKey: ["get", "profiles"],
 		});
@@ -85,7 +86,7 @@ export default function ProfileCreation() {
 		);
 		if (selected.size === 0) router.push("/onboarding");
 
-		const filteredProfiles = defaultProfiles.data.filter((profile) =>
+		const filteredProfiles = defaultProfiles.data[0].filter((profile) =>
 			selected.has(profile[0].hub_profile.id ?? ""),
 		);
 		const foundBits = new Map<string, IBit>();
@@ -123,11 +124,13 @@ export default function ProfileCreation() {
 
 	const calculateStats = useCallback(async () => {
 		const measurement = await manager.getSpeed(filter);
+		console.groupCollapsed("Download Measurement");
 		console.dir({
 			measurement,
 			filter,
 			manager,
 		});
+		console.groupEnd();
 		setTotalSize((prev) => Math.max(prev, measurement.max));
 		const time = Date.now();
 		const timeString = new Date(time).toLocaleTimeString();
@@ -197,7 +200,6 @@ export default function ProfileCreation() {
 							animateNewValues={false}
 							animationEasing="ease-in-out"
 							animationDuration={100}
-							animationId={1}
 							stroke="var(--color-downloaded)"
 							strokeWidth={2}
 							dot={false}
@@ -234,8 +236,10 @@ export default function ProfileCreation() {
 }
 
 function BitDownload({ bit }: Readonly<{ bit: IBit }>) {
+	const backend = useBackend();
 	const { download } = useDownloadManager();
 	useEffect(() => {
+		if (!backend) return;
 		const downloadBit = async () => {
 			try {
 				await download(bit);
@@ -245,13 +249,15 @@ function BitDownload({ bit }: Readonly<{ bit: IBit }>) {
 		};
 
 		downloadBit();
-	}, [bit]);
+	}, [bit, backend, download]);
 
 	return (
 		<BitHover bit={bit}>
 			<Avatar className="border">
-				<AvatarImage className="p-1" src={bit.icon} />
-				<AvatarImage className="p-1" src="/app-logo.webp" />
+				<AvatarImage
+					className="p-1 transition-transform duration-200 ease-in-out transform scale-110 group-hover:scale-150 rounded-full"
+					src={bit.meta?.en?.icon ?? "/app-logo.webp"}
+				/>
 				<AvatarFallback>NA</AvatarFallback>
 			</Avatar>
 		</BitHover>

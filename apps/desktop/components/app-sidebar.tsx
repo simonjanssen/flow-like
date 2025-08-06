@@ -1,5 +1,8 @@
+"use client";
+import { createId } from "@paralleldrive/cuid2";
 import * as Sentry from "@sentry/nextjs";
 import { invoke } from "@tauri-apps/api/core";
+import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import {
 	Avatar,
 	AvatarFallback,
@@ -24,6 +27,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuShortcut,
 	DropdownMenuTrigger,
+	GlobalPermission,
 	IBitTypes,
 	Input,
 	Label,
@@ -47,15 +51,14 @@ import {
 	useDownloadManager,
 	useInvalidateInvoke,
 	useInvoke,
-	useQueryClient,
 	useSidebar,
 } from "@tm9657/flow-like-ui";
 import type { ISettingsProfile } from "@tm9657/flow-like-ui/types";
 import {
 	BadgeCheck,
 	Bell,
+	BellIcon,
 	BookOpenIcon,
-	BotMessageSquareIcon,
 	BugIcon,
 	ChevronRight,
 	ChevronsUpDown,
@@ -63,88 +66,95 @@ import {
 	DownloadIcon,
 	Edit3Icon,
 	ExternalLinkIcon,
-	LayoutGridIcon,
+	HeartIcon,
+	LayoutDashboardIcon,
+	LibraryIcon,
 	LogInIcon,
 	LogOut,
 	type LucideIcon,
 	Moon,
+	Package2Icon,
 	Plus,
 	Settings2Icon,
 	SidebarCloseIcon,
 	SidebarOpenIcon,
 	Sparkles,
 	Sun,
+	UsersRoundIcon,
 	WorkflowIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useAuth } from "react-oidc-context";
 import { toast } from "sonner";
+import { fetcher } from "../lib/api";
 import { useTauriInvoke } from "./useInvoke";
 
 const data = {
 	navMain: [
 		{
-			title: "Apps",
+			title: "Hub",
 			url: "/",
-			icon: LayoutGridIcon,
+			icon: HeartIcon,
 			isActive: true,
+			permission: false,
 			items: [
 				{
 					title: "Home",
 					url: "/",
 				},
 				{
-					title: "Your Apps",
-					url: "/store/yours",
+					title: "Explore Apps",
+					url: "/store/explore/apps",
 				},
 				{
-					title: "Favorites",
-					url: "/store/favorites",
-				},
-				{
-					title: "Explore",
-					url: "/store/explore",
-				},
-				{
-					title: "Create App",
-					url: "/store/new",
+					title: "Explore Templates",
+					url: "/store/explore/templates",
 				},
 			],
 		},
 		{
-			title: "AI",
-			url: "/ai/playground",
-			icon: BotMessageSquareIcon,
+			title: "Library",
+			url: "/library",
+			icon: LibraryIcon,
+			isActive: false,
+			permission: false,
 			items: [
 				{
-					title: "Playground",
-					url: "/ai/playground",
+					title: "Overview",
+					url: "/library",
 				},
 				{
-					title: "Models",
-					url: "/ai/models",
+					title: "Your Apps",
+					url: "/library/apps",
 				},
 				{
-					title: "Stats",
-					url: "/ai/stats",
+					title: "Your Templates",
+					url: "/library/templates",
 				},
 				{
-					title: "Settings",
-					url: "/settings/ai",
+					title: "Favorites",
+					url: "/library/favorites",
+				},
+				{
+					title: "Create App",
+					url: "/library/new",
 				},
 			],
 		},
 		{
 			title: "Documentation",
 			url: "https://docs.flow-like.com/",
+			permission: false,
 			icon: BookOpenIcon,
 		},
 		{
 			title: "Settings",
 			url: "/settings",
 			icon: Settings2Icon,
+			permission: false,
 			items: [
 				{
 					title: "General",
@@ -176,6 +186,65 @@ const data = {
 				},
 			],
 		},
+		{
+			title: "User Actions",
+			url: "/admin/user",
+			icon: UsersRoundIcon,
+			permission: true,
+			items: [
+				{
+					title: "Find",
+					url: "/admin/user",
+					permission: GlobalPermission.ReadProfile,
+				},
+				{
+					title: "Manage",
+					url: "/admin/user/edit",
+					permission: GlobalPermission.WriteProfile,
+				},
+			],
+		},
+		{
+			title: "Governance",
+			url: "/admin/governance",
+			icon: LayoutDashboardIcon,
+			permission: true,
+			items: [
+				{
+					title: "Dashboard",
+					url: "/admin/governance",
+					permission: GlobalPermission.ReadPublishing,
+				},
+				{
+					title: "Your Requests",
+					url: "/admin/governance/requests",
+					permission: GlobalPermission.WritePublishing,
+				},
+			],
+		},
+		{
+			title: "Bits",
+			url: "/admin/bits",
+			icon: Package2Icon,
+			permission: true,
+			items: [
+				{
+					title: "Add Bits",
+					url: "/admin/bits/add",
+					permission: GlobalPermission.WriteBits,
+				},
+				{
+					title: "Add Profile",
+					url: "/admin/profiles/add",
+					permission: GlobalPermission.WriteBits,
+				},
+				{
+					title: "Edit Bits",
+					url: "/admin/bits/edit",
+					permission: GlobalPermission.WriteBits,
+				},
+			],
+		},
 	],
 };
 
@@ -188,11 +257,13 @@ interface IUser {
 export function AppSidebar({
 	children,
 }: Readonly<{ children: React.ReactNode }>) {
+	const defaultOpen = localStorage.getItem("sidebar_state") === "true";
+
 	return (
-		<SidebarProvider>
+		<SidebarProvider defaultOpen={defaultOpen}>
 			<InnerSidebar />
 			<main className="w-full h-full">
-				<SidebarInset className="bg-dot-black/10 dark:bg-dot-white/10">
+				<SidebarInset className="bg-gradient-to-br from-background via-background to-muted/20">
 					{children}
 				</SidebarInset>
 			</main>
@@ -203,7 +274,6 @@ export function AppSidebar({
 function InnerSidebar() {
 	const intervalRef = useRef<any>(null);
 	const router = useRouter();
-	const { resolvedTheme } = useTheme();
 	const { manager } = useDownloadManager();
 	const [user] = useState<IUser | undefined>();
 	const { open, toggleSidebar } = useSidebar();
@@ -384,12 +454,22 @@ function InnerSidebar() {
 }
 
 function Profiles() {
-	const queryClient = useQueryClient();
 	const backend = useBackend();
 	const invalidate = useInvalidateInvoke();
 	const { isMobile } = useSidebar();
 	const profiles = useTauriInvoke<ISettingsProfile[]>("get_profiles", {});
-	const currentProfile = useInvoke(backend.getSettingsProfile, []);
+	const currentProfile = useInvoke(
+		backend.userState.getSettingsProfile,
+		backend.userState,
+		[],
+	);
+
+	const notifications = useInvoke(
+		backend.userState.getNotifications,
+		backend.userState,
+		[],
+	);
+	const notificationCount = notifications.data?.invites_count ?? 0;
 
 	return (
 		<SidebarMenu>
@@ -398,13 +478,16 @@ function Profiles() {
 					<DropdownMenuTrigger asChild>
 						<SidebarMenuButton
 							size="lg"
-							className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+							className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground relative"
 						>
-							<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+							<div className="flex relative aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
 								<Avatar className="h-8 w-8 rounded-lg">
 									<AvatarImage
 										className="rounded-lg size-8 w-8 h-8"
-										src={currentProfile.data?.hub_profile.thumbnail}
+										src={
+											currentProfile.data?.hub_profile.icon ??
+											"/placeholder.webp"
+										}
 									/>
 									<AvatarImage
 										className="rounded-lg size-8 w-8 h-8"
@@ -412,6 +495,11 @@ function Profiles() {
 									/>
 									<AvatarFallback>NA</AvatarFallback>
 								</Avatar>
+								{notificationCount > 0 && (
+									<div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+										{notificationCount > 5 ? "5+" : notificationCount}
+									</div>
+								)}
 							</div>
 							<div className="grid flex-1 text-left text-sm leading-tight pl-1">
 								<span className="truncate font-semibold">
@@ -446,19 +534,23 @@ function Profiles() {
 												profileId: profile.hub_profile.id,
 											});
 										await Promise.allSettled([
-											invalidate(backend.getProfile, []),
-											invalidate(backend.getSettingsProfile, []),
-											invalidate(backend.getApps, []),
-											invalidate(backend.getBitsByCategory, [IBitTypes.Llm]),
-											invalidate(backend.getBitsByCategory, [IBitTypes.Vlm]),
-											invalidate(backend.getBitsByCategory, [
-												IBitTypes.Embedding,
+											invalidate(backend.userState.getProfile, []),
+											invalidate(backend.userState.getSettingsProfile, []),
+											invalidate(backend.appState.getApps, []),
+											invalidate(backend.bitState.searchBits, [
+												{
+													bit_types: [
+														IBitTypes.Llm,
+														IBitTypes.Vlm,
+														IBitTypes.Embedding,
+														IBitTypes.ImageEmbedding,
+													],
+												},
 											]),
-											invalidate(backend.getBitsByCategory, [
-												IBitTypes.ImageEmbedding,
-											]),
-											invalidate(backend.getBitsByCategory, [
-												IBitTypes.Template,
+											invalidate(backend.bitState.searchBits, [
+												{
+													bit_types: [IBitTypes.Template],
+												},
 											]),
 										]);
 									}}
@@ -468,7 +560,10 @@ function Profiles() {
 										<Avatar className="h-8 w-8 rounded-sm">
 											<AvatarImage
 												className="rounded-sm w-8 h-8"
-												src={profile.hub_profile.thumbnail}
+												src={
+													profile.hub_profile.icon ??
+													"/thumbnail-placeholder.webp"
+												}
 											/>
 											<AvatarImage
 												className="rounded-sm w-8 h-8"
@@ -482,6 +577,24 @@ function Profiles() {
 								</DropdownMenuItem>
 							))}
 						<DropdownMenuSeparator />
+						<a href="/notifications">
+							<DropdownMenuItem className="gap-2 p-2">
+								<div className="flex size-6 items-center justify-center rounded-md border bg-background px-1 relative">
+									<BellIcon className="size-4" />
+									{/* Add notification indicator */}
+									{notificationCount > 0 && (
+										<div className="absolute -top-2 -left-2 bg-red-500 text-white text-xs rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+											{notificationCount > 5 ? "5+" : notificationCount}
+										</div>
+									)}
+								</div>
+								<div className="font-medium text-muted-foreground flex flex-row items-center justify-between w-full">
+									Notifications
+									<DropdownMenuShortcut>⌘N</DropdownMenuShortcut>
+								</div>
+							</DropdownMenuItem>
+						</a>
+						<DropdownMenuSeparator />
 						<DropdownMenuItem className="gap-2 p-2">
 							<div className="flex size-6 items-center justify-center rounded-md border bg-background">
 								<Plus className="size-4" />
@@ -490,14 +603,16 @@ function Profiles() {
 								Add profile
 							</div>
 						</DropdownMenuItem>
-						<DropdownMenuItem className="gap-2 p-2">
-							<div className="flex size-6 items-center justify-center rounded-md border bg-background">
-								<Edit3Icon className="size-4" />
-							</div>
-							<div className="font-medium text-muted-foreground">
-								Edit profile
-							</div>
-						</DropdownMenuItem>
+						<a href="/settings/profiles">
+							<DropdownMenuItem className="gap-2 p-2">
+								<div className="flex size-6 items-center justify-center rounded-md border bg-background">
+									<Edit3Icon className="size-4" />
+								</div>
+								<div className="font-medium text-muted-foreground">
+									Edit profile
+								</div>
+							</DropdownMenuItem>
+						</a>
 					</DropdownMenuContent>
 				</DropdownMenu>
 			</SidebarMenuItem>
@@ -513,98 +628,234 @@ function NavMain({
 		url: string;
 		icon?: LucideIcon;
 		isActive?: boolean;
+		permission?: boolean;
 		items?: {
 			title: string;
 			url: string;
+			permission?: GlobalPermission;
 		}[];
 	}[];
 }>) {
+	const backend = useBackend();
 	const router = useRouter();
 	const pathname = usePathname();
 	const { open } = useSidebar();
+	const info = useInvoke(backend.userState.getInfo, backend.userState, []);
 
 	return (
-		<SidebarGroup>
-			<SidebarGroupLabel>Navigation</SidebarGroupLabel>
-			<SidebarMenu>
-				{items.map((item) =>
-					item.items && item.items.length > 0 ? (
-						<Collapsible
-							key={item.title}
-							asChild
-							defaultOpen={
-								(localStorage.getItem(`sidebar:${item.title}`) ??
-									(item.isActive ? "open" : "closed")) === "open"
-							}
-							onOpenChange={(open) => {
-								localStorage.setItem(
-									`sidebar:${item.title}`,
-									open ? "open" : "closed",
-								);
-							}}
-							className="group/collapsible"
-						>
-							<SidebarMenuItem>
-								<CollapsibleTrigger asChild>
-									<SidebarMenuButton
-										variant={
-											pathname === item.url ||
-											typeof item.items?.find(
-												(item) => item.url === pathname,
-											) !== "undefined"
-												? "outline"
-												: "default"
-										}
-										tooltip={item.title}
-										onClick={() => {
-											if (!open) router.push(item.url);
-										}}
-									>
-										{item.icon && <item.icon />}
-										<span>{item.title}</span>
-										<ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-									</SidebarMenuButton>
-								</CollapsibleTrigger>
-								<CollapsibleContent>
-									<SidebarMenuSub>
-										{item.items?.map((subItem) => (
-											<SidebarMenuSubItem key={subItem.title}>
-												<SidebarMenuSubButton asChild>
-													<Link href={subItem.url}>
-														<span
-															className={
-																pathname === subItem.url
-																	? "font-bold text-primary"
-																	: ""
-															}
-														>
-															{subItem.title}
-														</span>
-													</Link>
-												</SidebarMenuSubButton>
-											</SidebarMenuSubItem>
-										))}
-									</SidebarMenuSub>
-								</CollapsibleContent>
-							</SidebarMenuItem>
-						</Collapsible>
-					) : (
-						<SidebarMenuItem key={item.title}>
-							<a href={item.url} target="_blank" rel="noreferrer">
-								<SidebarMenuButton
-									variant={pathname === item.url ? "outline" : "default"}
-									tooltip={item.title}
+		<>
+			<SidebarGroup>
+				<SidebarGroupLabel>Navigation</SidebarGroupLabel>
+				<SidebarMenu>
+					{items
+						.filter((item) => !item.permission)
+						.map((item) =>
+							item.items && item.items.length > 0 ? (
+								<Collapsible
+									key={item.title}
+									asChild
+									defaultOpen={
+										(localStorage.getItem(`sidebar:${item.title}`) ??
+											(item.isActive ? "open" : "closed")) === "open"
+									}
+									onOpenChange={(open) => {
+										localStorage.setItem(
+											`sidebar:${item.title}`,
+											open ? "open" : "closed",
+										);
+									}}
+									className="group/collapsible"
 								>
-									{item.icon && <item.icon />}
-									<span>{item.title}</span>
-									<ExternalLinkIcon className="ml-auto" />
-								</SidebarMenuButton>
-							</a>
-						</SidebarMenuItem>
-					),
-				)}
-			</SidebarMenu>
-		</SidebarGroup>
+									<SidebarMenuItem>
+										<CollapsibleTrigger asChild>
+											<SidebarMenuButton
+												variant={
+													pathname === item.url ||
+													typeof item.items?.find(
+														(item) => item.url === pathname,
+													) !== "undefined"
+														? "outline"
+														: "default"
+												}
+												tooltip={item.title}
+												onClick={() => {
+													if (!open) router.push(item.url);
+												}}
+												onMouseDown={async (e) => {
+													// Middle mouse button (button 1)
+													if (e.button === 1) {
+														e.preventDefault();
+														try {
+															const _view = new WebviewWindow(
+																`sidebar-${createId()}`,
+																{
+																	url: item.url,
+																	title: item.title,
+																	focus: true,
+																	resizable: true,
+																	maximized: false,
+																	width: 1200,
+																	height: 800,
+																},
+															);
+														} catch (error) {
+															console.error(
+																"Failed to open new window:",
+																error,
+															);
+														}
+													}
+												}}
+											>
+												{item.icon && <item.icon />}
+												<span>{item.title}</span>
+												<ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+											</SidebarMenuButton>
+										</CollapsibleTrigger>
+										<CollapsibleContent>
+											<SidebarMenuSub>
+												{item.items?.map((subItem) => (
+													<SidebarMenuSubItem key={subItem.title}>
+														<SidebarMenuSubButton asChild>
+															<Link href={subItem.url}>
+																<span
+																	className={
+																		pathname === subItem.url
+																			? "font-bold text-primary"
+																			: ""
+																	}
+																>
+																	{subItem.title}
+																</span>
+															</Link>
+														</SidebarMenuSubButton>
+													</SidebarMenuSubItem>
+												))}
+											</SidebarMenuSub>
+										</CollapsibleContent>
+									</SidebarMenuItem>
+								</Collapsible>
+							) : (
+								<SidebarMenuItem key={item.title}>
+									<a href={item.url} target="_blank" rel="noreferrer">
+										<SidebarMenuButton
+											variant={pathname === item.url ? "outline" : "default"}
+											tooltip={item.title}
+										>
+											{item.icon && <item.icon />}
+											<span>{item.title}</span>
+											<ExternalLinkIcon className="ml-auto" />
+										</SidebarMenuButton>
+									</a>
+								</SidebarMenuItem>
+							),
+						)}
+				</SidebarMenu>
+			</SidebarGroup>
+			{(info.data?.permission ?? 0) > 0 && (
+				<SidebarGroup>
+					<SidebarGroupLabel>Admin Area</SidebarGroupLabel>
+					<SidebarMenu>
+						{items
+							.filter(
+								(item) =>
+									item.permission &&
+									typeof item.items?.find((subitem) =>
+										new GlobalPermission(
+											info.data?.permission ?? 0,
+										).hasPermission(
+											subitem.permission ?? GlobalPermission.Admin,
+										),
+									) !== "undefined",
+							)
+							.map((item) =>
+								item.items && item.items.length > 0 ? (
+									<Collapsible
+										key={item.title}
+										asChild
+										defaultOpen={
+											(localStorage.getItem(`sidebar:${item.title}`) ??
+												(item.isActive ? "open" : "closed")) === "open"
+										}
+										onOpenChange={(open) => {
+											localStorage.setItem(
+												`sidebar:${item.title}`,
+												open ? "open" : "closed",
+											);
+										}}
+										className="group/collapsible"
+									>
+										<SidebarMenuItem>
+											<CollapsibleTrigger asChild>
+												<SidebarMenuButton
+													variant={
+														pathname === item.url ||
+														typeof item.items?.find(
+															(item) => item.url === pathname,
+														) !== "undefined"
+															? "outline"
+															: "default"
+													}
+													tooltip={item.title}
+													onClick={() => {
+														if (!open) router.push(item.url);
+													}}
+												>
+													{item.icon && <item.icon />}
+													<span>{item.title}</span>
+													<ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+												</SidebarMenuButton>
+											</CollapsibleTrigger>
+											<CollapsibleContent>
+												<SidebarMenuSub>
+													{item.items
+														?.filter((item) =>
+															new GlobalPermission(
+																info.data?.permission ?? 0,
+															).hasPermission(
+																item.permission ?? GlobalPermission.Admin,
+															),
+														)
+														.map((subItem) => (
+															<SidebarMenuSubItem key={subItem.title}>
+																<SidebarMenuSubButton asChild>
+																	<Link href={subItem.url}>
+																		<span
+																			className={
+																				pathname === subItem.url
+																					? "font-bold text-primary"
+																					: ""
+																			}
+																		>
+																			{subItem.title}
+																		</span>
+																	</Link>
+																</SidebarMenuSubButton>
+															</SidebarMenuSubItem>
+														))}
+												</SidebarMenuSub>
+											</CollapsibleContent>
+										</SidebarMenuItem>
+									</Collapsible>
+								) : (
+									<SidebarMenuItem key={item.title}>
+										<a href={item.url} target="_blank" rel="noreferrer">
+											<SidebarMenuButton
+												variant={pathname === item.url ? "outline" : "default"}
+												tooltip={item.title}
+											>
+												{item.icon && <item.icon />}
+												<span>{item.title}</span>
+												<ExternalLinkIcon className="ml-auto" />
+											</SidebarMenuButton>
+										</a>
+									</SidebarMenuItem>
+								),
+							)}
+					</SidebarMenu>
+				</SidebarGroup>
+			)}
+		</>
 	);
 }
 
@@ -614,6 +865,24 @@ export function NavUser({
 	user?: IUser;
 }>) {
 	const { isMobile } = useSidebar();
+	const auth = useAuth();
+	const backend = useBackend();
+	const profile = useInvoke(
+		backend.userState.getProfile,
+		backend.userState,
+		[],
+	);
+	const info = useInvoke(backend.userState.getInfo, backend.userState, []);
+
+	const displayName: string = useMemo(() => {
+		if (!info.data) return "Offline";
+
+		return info.data?.name ?? info.data?.preferred_username ?? "Offline";
+	}, [info.data]);
+
+	const email: string = useMemo(() => {
+		return info.data?.email ?? "Anonymous";
+	}, [info.data]);
 
 	return (
 		<SidebarMenu>
@@ -625,18 +894,17 @@ export function NavUser({
 							className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
 						>
 							<Avatar className="h-8 w-8 rounded-lg">
-								<AvatarImage src={user?.avatar} alt={user?.name ?? "Offline"} />
+								<AvatarImage
+									src={info.data?.avatar}
+									alt={user?.name ?? "Offline"}
+								/>
 								<AvatarFallback className="rounded-lg">
-									{(user?.name ?? "Anon").slice(0, 2).toUpperCase()}
+									{displayName.slice(0, 2).toUpperCase()}
 								</AvatarFallback>
 							</Avatar>
 							<div className="grid flex-1 text-left text-sm leading-tight">
-								<span className="truncate font-semibold">
-									{user?.name ?? "Offline"}
-								</span>
-								<span className="truncate text-xs">
-									{user?.email ?? "Anonymous"}
-								</span>
+								<span className="truncate font-semibold">{displayName}</span>
+								<span className="truncate text-xs">{email}</span>
 							</div>
 							<ChevronsUpDown className="ml-auto size-4" />
 						</SidebarMenuButton>
@@ -650,26 +918,19 @@ export function NavUser({
 						<DropdownMenuLabel className="p-0 font-normal">
 							<div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
 								<Avatar className="h-8 w-8 rounded-lg">
-									<AvatarImage
-										src={user?.avatar}
-										alt={user?.name ?? "Offline"}
-									/>
+									<AvatarImage src={info.data?.avatar} alt={"User Avatar"} />
 									<AvatarFallback className="rounded-lg">
-										{(user?.name ?? "Anonymous").slice(0, 2).toUpperCase()}
+										{displayName.slice(0, 2).toUpperCase()}
 									</AvatarFallback>
 								</Avatar>
 								<div className="grid flex-1 text-left text-sm leading-tight">
-									<span className="truncate font-semibold">
-										{user?.name ?? "Offline"}
-									</span>
-									<span className="truncate text-xs">
-										{user?.email ?? "Anonymous"}
-									</span>
+									<span className="truncate font-semibold">{displayName}</span>
+									<span className="truncate text-xs">{email}</span>
 								</div>
 							</div>
 						</DropdownMenuLabel>
 						<DropdownMenuSeparator />
-						{user && (
+						{auth?.isAuthenticated && (
 							<>
 								<DropdownMenuGroup>
 									<DropdownMenuItem className="gap-2">
@@ -679,28 +940,61 @@ export function NavUser({
 								</DropdownMenuGroup>
 								<DropdownMenuSeparator />
 								<DropdownMenuGroup>
-									<DropdownMenuItem className="gap-2">
-										<BadgeCheck className="size-4" />
-										Account
-									</DropdownMenuItem>
-									<DropdownMenuItem className="gap-2">
-										<CreditCard className="size-4" />
-										Billing
-									</DropdownMenuItem>
+									<a href="/account">
+										<DropdownMenuItem className="gap-2">
+											<BadgeCheck className="size-4" />
+											Account
+										</DropdownMenuItem>
+									</a>
+									{profile.data && (
+										<DropdownMenuItem
+											className="gap-2"
+											onClick={async () => {
+												const urlRequest = await fetcher<{ url: string }>(
+													profile.data,
+													"user/billing",
+													{ method: "GET" },
+													auth,
+												);
+
+												const _view = new WebviewWindow("billing", {
+													url: urlRequest.url,
+													title: "Billing",
+													focus: true,
+													resizable: true,
+													maximized: true,
+													contentProtected: true,
+												});
+											}}
+										>
+											<CreditCard className="size-4" />
+											Billing
+										</DropdownMenuItem>
+									)}
 									<DropdownMenuItem className="gap-2">
 										<Bell className="size-4" />
 										Notifications
 									</DropdownMenuItem>
 								</DropdownMenuGroup>
 								<DropdownMenuSeparator />
-								<DropdownMenuItem className="gap-2">
+								<DropdownMenuItem
+									className="gap-2"
+									onClick={async () => {
+										await auth?.signoutRedirect();
+									}}
+								>
 									<LogOut className="size-4" />
 									Log out
 								</DropdownMenuItem>
 							</>
 						)}
-						{!user && (
-							<DropdownMenuItem className="gap-2">
+						{!auth?.isAuthenticated && (
+							<DropdownMenuItem
+								className="gap-2"
+								onClick={async () => {
+									await auth?.signinRedirect();
+								}}
+							>
 								<LogInIcon className="size-4" />
 								Log in
 							</DropdownMenuItem>
@@ -717,7 +1011,11 @@ function Flows() {
 	const router = useRouter();
 	const pathname = usePathname();
 	const params = useSearchParams();
-	const openBoards = useInvoke(backend.getOpenBoards, []);
+	const openBoards = useInvoke(
+		backend.boardState.getOpenBoards,
+		backend.boardState,
+		[],
+	);
 
 	if ((openBoards.data?.length ?? 0) <= 0) return null;
 

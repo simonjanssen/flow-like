@@ -3,16 +3,20 @@ export type { IRunPayload } from "./flow/run-payload";
 export * from "./bit/bit";
 export type {
 	IBitPack,
-	IBitMeta,
+	IMetadata,
 } from "./bit/bit-pack";
 export * from "./bit/preferences";
 export * from "./bit/bit/embedding-model-parameters";
 export type { IImageEmbeddingModelParameters } from "./bit/bit/image-embedding-model-parameters";
 
 export type { ILlmParameters } from "./bit/bit/llm-parameters";
+export type {
+	IBitModelClassification,
+	IModelProvider,
+} from "./bit/bit/llm-parameters";
 export type { IVlmParameters } from "./bit/bit/vlm-parameters";
 export type { IProvider } from "./bit/bit/provider";
-
+export * from "./storage/storage-item";
 export * from "./files/file-metadata";
 export * from "./flow/node";
 export { IValueType } from "./flow/variable";
@@ -29,10 +33,14 @@ export {
 	type ISystemTime,
 } from "./flow/board";
 export type {
-	IRelease,
+	IEvent,
+	ICanaryEvent,
 	IReleaseNotes,
-	ICanaryRelease,
-} from "./flow/release";
+} from "./flow/event";
+export type { IEventPayload } from "./flow/event-payload";
+export type { IEventPayloadMail } from "./flow/event-payload-mail";
+export type { IEventPayloadChat } from "./flow/event-payload-chat";
+export type { IEventPayloadAPI } from "./flow/event-payload-api";
 export { IVersionType } from "./flow/version-type";
 export type { ICanary } from "./flow/canary";
 export {

@@ -1,7 +1,7 @@
 import react from "@astrojs/react";
 import starlight from "@astrojs/starlight";
-import tailwind from "@astrojs/tailwind";
-// @ts-check
+import tailwindcss from "@tailwindcss/vite";
+
 import { defineConfig, passthroughImageService } from "astro/config";
 // https://astro.build/config
 export default defineConfig({
@@ -10,6 +10,7 @@ export default defineConfig({
 	image: {
 		service: passthroughImageService(),
 	},
+
 	integrations: [
 		react(),
 		starlight({
@@ -35,12 +36,24 @@ export default defineConfig({
 				dark: "./src/assets/app-logo.webp",
 			},
 			customCss: ["./src/tailwind.css"],
-			social: {
-				github: "https://github.com/TM9657/flow-like",
-				"x.com": "https://x.com/tm9657",
-				linkedin: "https://linkedin.com/company/tm9657",
-				discord: "https://discord.gg/KTWMrS2",
-			},
+			social: [
+				{
+					icon: "discord",
+					label: "Discord",
+					href: "https://discord.gg/KTWMrS2",
+				},
+				{
+					icon: "github",
+					label: "GitHub",
+					href: "https://github.com/TM9657/flow-like",
+				},
+				{ icon: "x.com", label: "X.com", href: "https://x.com/tm9657" },
+				{
+					icon: "linkedin",
+					label: "LinkedIn",
+					href: "https://linkedin.com/company/tm9657",
+				},
+			],
 			lastUpdated: true,
 			sidebar: [
 				{
@@ -61,8 +74,39 @@ export default defineConfig({
 				},
 			],
 		}),
-		tailwind({
-			applyBaseStyles: false,
-		}),
 	],
+	vite: {
+		ssr: {
+			noExternal: [
+				"katex",
+				"rehype-katex",
+				"@tm9657/flow-like-ui",
+				"lodash-es",
+				"@platejs/math",
+				"react-lite-youtube-embed",
+				"react-tweet",
+			],
+		},
+		define: {
+			// stub out `process.env` so next/dist/client code can import it without blowing up
+			"process.env": {},
+			// if any code reads process.env.NODE_ENV, you can explicitly set it:
+			"process.env.NODE_ENV": JSON.stringify(
+				process.env.NODE_ENV || "production",
+			),
+		},
+		plugins: [
+			{
+				name: "ignore-css-imports-ssr",
+				enforce: "pre",
+				load(id, { ssr }) {
+					if (ssr && id.endsWith(".css")) {
+						// pretend it was an empty module
+						return { code: "" };
+					}
+				},
+			},
+			tailwindcss(),
+		],
+	},
 });

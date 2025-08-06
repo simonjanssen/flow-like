@@ -1,11 +1,11 @@
 /// # ONNX Model Loader Nodes
 use crate::{
-    ai::ml::onnx::{NodeOnnxSession, SessionWithMeta},
+    ai::ml::onnx::{NodeOnnxSession, Provider, SessionWithMeta, classify, detect},
     storage::path::FlowPath,
 };
 use flow_like::{
     flow::{
-        execution::{LogLevel, context::ExecutionContext},
+        execution::context::ExecutionContext,
         node::{Node, NodeLogic},
         pin::PinOptions,
         variable::VariableType,
@@ -15,38 +15,67 @@ use flow_like::{
 use flow_like_model_provider::ml::ort::session::Session;
 use flow_like_types::{Error, Result, anyhow, async_trait, json::json};
 
-/// Determine input-tensor name and shape to resize our images accordingly
-/// For simplicity, we are assuming that the first tensor is the image-related one.
-fn determine_onnx_input(session: &Session) -> Result<(String, u32, u32), Error> {
-    for input in &session.inputs {
-        if let Some(dims) = input.input_type.tensor_dimensions() {
-            let d = dims.len();
-            if d > 1 {
-                let (w, h) = (dims[d - 2], dims[d - 1]);
-                return Ok((String::from(&input.name), w as u32, h as u32));
-            }
-        }
+// ## Loader Utilities
+// Identifying ONNX-I/Os
+static DFINE_INPUTS: [&str; 2] = ["images", "orig_target_sizes"];
+static DFINE_OUTPUTS: [&str; 3] = ["labels", "boxes", "scores"];
+static YOLO_INPUTS: [&str; 1] = ["images"];
+static YOLO_OUTPUTS: [&str; 1] = ["output0"];
+static TIMM_INPUTS: [&str; 1] = ["input0"];
+static TIMM_OUTPUTS: [&str; 1] = ["output0"];
+
+/// Factory Function Matching ONNX Assets to a Provider-Frameworks
+pub fn determine_provider(session: &Session) -> Result<Provider, Error> {
+    let input_names: Vec<&str> = session.inputs.iter().map(|i| i.name.as_str()).collect();
+    let output_names: Vec<&str> = session.outputs.iter().map(|o| o.name.as_str()).collect();
+    if input_names == DFINE_INPUTS && output_names == DFINE_OUTPUTS {
+        let (input_width, input_height) = determine_input_shape(session, "images")?;
+        println!(
+            "Model is DfineLike with input shape ({},{})",
+            input_width, input_height
+        );
+        Ok(Provider::DfineLike(detect::DfineLike {
+            input_width,
+            input_height,
+        }))
+    } else if input_names == YOLO_INPUTS && output_names == YOLO_OUTPUTS {
+        let (input_width, input_height) = determine_input_shape(session, "images")?;
+        println!(
+            "Model is YoloLike with input shape ({},{})",
+            input_width, input_height
+        );
+        Ok(Provider::YoloLike(detect::YoloLike {
+            input_width,
+            input_height,
+        }))
+    } else if input_names == TIMM_INPUTS && output_names == TIMM_OUTPUTS {
+        let (input_width, input_height) = determine_input_shape(session, "input0")?;
+        println!(
+            "Model is TimmLike with input shape ({},{})",
+            input_width, input_height
+        );
+        Ok(Provider::TimmLike(classify::TimmLike {
+            input_width,
+            input_height,
+        }))
+    } else {
+        Err(anyhow!("Failed to determine provider!"))
     }
-    Err(anyhow!(
-        "Failed to determine ONNX model input - no input tensor found!"
-    ))
 }
 
-/// Determine output-tensor name to extract as array
-/// For simplicity, we are assuming that the first tensor is the prediction-related one.
-fn determine_onnx_output(session: &Session) -> Result<String, Error> {
-    for output in &session.outputs {
-        if let Some(dims) = output.output_type.tensor_dimensions() {
-            let d = dims.len();
-            if d > 1 {
-                //let (w, h) = (dims[d - 2], dims[d - 1]);
-                return Ok(String::from(&output.name));
+pub fn determine_input_shape(session: &Session, input_name: &str) -> Result<(u32, u32), Error> {
+    for input in &session.inputs {
+        if input.name == input_name {
+            if let Some(dims) = input.input_type.tensor_dimensions() {
+                let d = dims.len();
+                if d > 1 {
+                    let (w, h) = (dims[d - 2], dims[d - 1]);
+                    return Ok((w as u32, h as u32));
+                }
             }
         }
     }
-    Err(anyhow!(
-        "Failed to determine ONNX model output - no output tensor found!"
-    ))
+    Err(anyhow!("Failed to determine input shape!"))
 }
 
 #[derive(Default)]
@@ -104,42 +133,15 @@ impl NodeLogic for LoadOnnxNode {
 
         // fetch inputs
         let path: FlowPath = context.evaluate_pin("path").await?;
-        let path_runtime = path.to_runtime(context).await?;
-        let bytes = path_runtime
-            .store
-            .as_generic()
-            .get(&path_runtime.path)
-            .await?
-            .bytes()
-            .await?
-            .to_vec();
+        let bytes = path.get(context, false).await?;
 
         // init ONNX session
         let session = Session::builder()?.commit_from_memory(&bytes)?;
 
-        // wrap session with input/output specs
-        // we try to determine the specs once here to fail fast at model-load time and not at model-evaluate time later
-        let (input_name, input_width, input_height) = determine_onnx_input(&session)?;
-        context.log_message(
-            &format!(
-                "model input tensor {:?} with shape ({:?}, {:?})",
-                input_name, input_width, input_height
-            ),
-            LogLevel::Debug,
-        );
-        let output_name = determine_onnx_output(&session)?;
-        context.log_message(
-            &format!("model output tensor {:?}", output_name),
-            LogLevel::Debug,
-        );
-        let session_with_meta = SessionWithMeta {
-            session,
-            input_name,
-            input_width,
-            input_height,
-            output_name,
-            classes: None,
-        };
+        // wrap ONNX session with provider metadata
+        // we try to determine the here to fail fast in case of incompatible ONNX assets
+        let provider = determine_provider(&session)?;
+        let session_with_meta = SessionWithMeta { session, provider };
         let node_session = NodeOnnxSession::new(context, session_with_meta).await;
 
         // set outputs

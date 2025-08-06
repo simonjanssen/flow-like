@@ -7,13 +7,19 @@ import {
 } from "../../../lib/uint8";
 
 export function StringVariable({
+	disabled,
 	variable,
 	onChange,
-}: Readonly<{ variable: IVariable; onChange: (variable: IVariable) => void }>) {
+}: Readonly<{
+	disabled?: boolean;
+	variable: IVariable;
+	onChange: (variable: IVariable) => void;
+}>) {
 	return (
-		<div className="grid w-full max-w-sm items-center gap-1.5">
+		<div className="grid w-full items-center gap-1.5">
 			{variable.secret ? (
 				<Input
+					disabled={disabled}
 					value={parseUint8ArrayToJson(variable.default_value)}
 					onChange={(e) => {
 						onChange({
@@ -27,6 +33,7 @@ export function StringVariable({
 				/>
 			) : (
 				<Textarea
+					disabled={disabled}
 					rows={6}
 					value={parseUint8ArrayToJson(variable.default_value)}
 					onChange={(e) => {

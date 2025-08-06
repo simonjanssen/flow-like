@@ -3,6 +3,7 @@ use super::{
     log::LogMessage, trace::Trace,
 };
 use crate::{
+    credentials::SharedCredentials,
     flow::{
         board::ExecutionStage,
         node::{Node, NodeState},
@@ -67,7 +68,7 @@ impl ExecutionContextCache {
         })
     }
 
-    pub fn get_user_cache(&self, node: bool) -> flow_like_types::Result<Path> {
+    pub fn get_user_dir(&self, node: bool) -> flow_like_types::Result<Path> {
         let base = Path::from("users")
             .child(self.sub.clone())
             .child("apps")
@@ -79,8 +80,16 @@ impl ExecutionContextCache {
         Ok(base.child(self.node_id.clone()))
     }
 
-    pub fn get_cache(&self, node: bool) -> flow_like_types::Result<Path> {
-        let base = Path::from("tmp").child("apps").child(self.app_id.clone());
+    pub fn get_cache(&self, node: bool, user: bool) -> flow_like_types::Result<Path> {
+        let mut base = Path::from("tmp");
+
+        if user {
+            base = base.child("user").child(self.sub.clone());
+        } else {
+            base = base.child("global");
+        }
+
+        base = base.child("apps").child(self.app_id.clone());
 
         if !node {
             return Ok(base);
@@ -124,6 +133,7 @@ struct RunUpdateEvent {
 pub struct ExecutionContext {
     pub id: String,
     pub run: Weak<Mutex<Run>>,
+    pub nodes: Arc<HashMap<String, Arc<InternalNode>>>,
     pub profile: Arc<Profile>,
     pub node: Arc<InternalNode>,
     pub sub_traces: Vec<Trace>,
@@ -135,6 +145,9 @@ pub struct ExecutionContext {
     pub trace: Trace,
     pub execution_cache: Option<ExecutionContextCache>,
     pub completion_callbacks: Arc<RwLock<Vec<EventTrigger>>>,
+    pub stream_state: bool,
+    pub credentials: Option<Arc<SharedCredentials>>,
+    pub delegated: bool,
     run_id: String,
     state: NodeState,
     callback: InterComCallback,
@@ -142,6 +155,7 @@ pub struct ExecutionContext {
 
 impl ExecutionContext {
     pub async fn new(
+        nodes: Arc<HashMap<String, Arc<InternalNode>>>,
         run: &Weak<Mutex<Run>>,
         state: &Arc<Mutex<FlowLikeState>>,
         node: &Arc<InternalNode>,
@@ -152,6 +166,7 @@ impl ExecutionContext {
         profile: Arc<Profile>,
         callback: InterComCallback,
         completion_callbacks: Arc<RwLock<Vec<EventTrigger>>>,
+        credentials: Option<Arc<SharedCredentials>>,
     ) -> Self {
         let (id, execution_cache) = {
             let node_id = node.node.lock().await.id.clone();
@@ -164,12 +179,12 @@ impl ExecutionContext {
             trace.snapshot_variables(variables).await;
         }
 
-        let run_id = match run.upgrade() {
+        let (run_id, stream_state) = match run.upgrade() {
             Some(run) => {
                 let run = run.lock().await;
-                run.id.clone()
+                (run.id.clone(), run.stream_state)
             }
-            None => "".to_string(),
+            None => ("".to_string(), false),
         };
 
         ExecutionContext {
@@ -187,13 +202,18 @@ impl ExecutionContext {
             profile,
             callback,
             execution_cache,
+            stream_state,
             state: NodeState::Idle,
+            nodes,
             completion_callbacks,
+            credentials,
+            delegated: false,
         }
     }
 
     pub async fn create_sub_context(&self, node: &Arc<InternalNode>) -> ExecutionContext {
         ExecutionContext::new(
+            self.nodes.clone(),
             &self.run,
             &self.app_state,
             node,
@@ -204,6 +224,7 @@ impl ExecutionContext {
             self.profile.clone(),
             self.callback.clone(),
             self.completion_callbacks.clone(),
+            self.credentials.clone(),
         )
         .await
     }
@@ -269,6 +290,11 @@ impl ExecutionContext {
         None
     }
 
+    pub async fn has_cache(&self, key: &str) -> bool {
+        let cache = self.cache.read().await;
+        cache.contains_key(key)
+    }
+
     pub async fn set_cache(&self, key: &str, value: Arc<dyn Cacheable>) {
         let mut cache = self.cache.write().await;
         cache.insert(key.to_string(), value);
@@ -301,6 +327,10 @@ impl ExecutionContext {
             NodeState::Running => RunUpdateEventMethod::Add,
             _ => RunUpdateEventMethod::Remove,
         };
+
+        if !self.stream_state {
+            return;
+        }
 
         let update_event = RunUpdateEvent {
             run_id: self.run_id.clone(),

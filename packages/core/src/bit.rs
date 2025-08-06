@@ -5,25 +5,95 @@ use flow_like_model_provider::provider::{
     EmbeddingModelProvider, ImageEmbeddingModelProvider, ModelProvider,
 };
 use flow_like_storage::Path;
+use flow_like_storage::files::store::FlowLikeStore;
 use flow_like_storage::files::store::local_store::LocalObjectStore;
 use flow_like_types::Value;
 use flow_like_types::intercom::InterComCallback;
 use flow_like_types::sync::Mutex;
-use futures::FutureExt;
-use futures::future::BoxFuture;
+
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::SystemTime;
+
+const NAME_HINT_WEIGHT: f32 = 0.2; // weight of name similarity for best model preference
+const NAME_HINT_SIMILARITY_THRESHOLD: f32 = 0.5; // minimum required similarity score to model name
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
-pub struct BitMeta {
+pub struct Metadata {
     pub name: String,
     pub description: String,
-    pub long_description: String,
+    pub long_description: Option<String>,
+    pub release_notes: Option<String>,
     pub tags: Vec<String>,
-    pub use_case: String,
+    pub use_case: Option<String>,
+    pub icon: Option<String>,
+    pub thumbnail: Option<String>,
+    pub preview_media: Vec<String>,
+    pub age_rating: Option<i32>,
+    pub website: Option<String>,
+    pub support_url: Option<String>,
+    pub docs_url: Option<String>,
+    pub organization_specific_values: Option<Vec<u8>>,
+    pub created_at: SystemTime,
+    pub updated_at: SystemTime,
+}
+
+impl Metadata {
+    pub async fn presign(&mut self, prefix: Path, store: &FlowLikeStore) {
+        if let Some(icon) = &self.icon {
+            if icon.starts_with("http://") || icon.starts_with("https://") {
+                return;
+            }
+            let icon_path = prefix.child(format!("{icon}.webp"));
+            if let Ok(url) = store
+                .sign(
+                    "GET",
+                    &icon_path,
+                    std::time::Duration::from_secs(60 * 60 * 24),
+                )
+                .await
+            {
+                self.icon = Some(url.to_string());
+            }
+        }
+
+        if let Some(thumbnail) = &self.thumbnail {
+            if thumbnail.starts_with("http://") || thumbnail.starts_with("https://") {
+                return;
+            }
+            let thumbnail_path = prefix.child(format!("{thumbnail}.webp"));
+            if let Ok(url) = store
+                .sign(
+                    "GET",
+                    &thumbnail_path,
+                    std::time::Duration::from_secs(60 * 60 * 24),
+                )
+                .await
+            {
+                self.thumbnail = Some(url.to_string());
+            }
+        }
+
+        for media in &mut self.preview_media {
+            if media.starts_with("http://") || media.starts_with("https://") {
+                continue;
+            }
+            let media_path = prefix.child(format!("{media}.webp"));
+            if let Ok(url) = store
+                .sign(
+                    "GET",
+                    &media_path,
+                    std::time::Duration::from_secs(60 * 60 * 24),
+                )
+                .await
+            {
+                *media = url.to_string();
+            }
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
@@ -45,9 +115,11 @@ pub enum BitTypes {
     Project,
     Board,
     Other,
+    ObjectDetection,
 }
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, Default)]
 pub struct BitModelPreference {
+    pub multimodal: Option<bool>,
     pub cost_weight: Option<f32>,
     pub speed_weight: Option<f32>,
     pub reasoning_weight: Option<f32>,
@@ -141,31 +213,41 @@ impl BitModelClassification {
 
         for meta in bit.meta.values() {
             let local_similarity = strsim::jaro_winkler(&meta.name, hint) as f32;
+            println!(
+                "[BIT NAME SIMILARITY] similarity '{}' <-> '{}': {}",
+                meta.name, hint, local_similarity
+            );
             if local_similarity > similarity {
                 similarity = local_similarity;
             }
         }
 
         let provider = bit.try_to_provider();
-        if provider.is_none() {
-            return Ok(similarity);
-        }
-
-        let provider = provider.unwrap();
-        if let Some(model_id) = provider.model_id {
-            let local_similarity = strsim::jaro_winkler(&model_id, hint) as f32;
-            if local_similarity > similarity {
-                similarity = local_similarity;
+        match provider {
+            Some(provider) => {
+                if let Some(model_id) = provider.model_id {
+                    let local_similarity = strsim::jaro_winkler(&model_id, hint) as f32;
+                    println!(
+                        "[BIT NAME SIMILARITY] similarity (provider) '{model_id}' <-> '{hint}': {local_similarity}"
+                    );
+                    if local_similarity > similarity {
+                        similarity = local_similarity;
+                    }
+                }
             }
+            None => return Ok(similarity),
         }
-
         Ok(similarity)
     }
 
     /// Calculates the score of the model in a range from 0 to 1 based on the provided preference
     pub fn score(&self, preference: &BitModelPreference, bit: &Bit) -> f32 {
-        let mut total_score = 0.0;
-        let name_similarity_weight = 0.2;
+        // If preference is multimodal but model doesn't support it return a score of 0
+        if let Some(multimodal) = preference.multimodal {
+            if multimodal && !bit.is_multimodal() {
+                return 0.0;
+            }
+        }
 
         // Map weights to model fields dynamically
         let field_weight_pairs = vec![
@@ -181,28 +263,42 @@ impl BitModelClassification {
             (preference.coding_weight, self.coding),
         ];
 
-        // Calculate the weighted sum
-        let mut total_weight: f32 = field_weight_pairs.iter().filter_map(|(w, _)| *w).sum();
-        if total_weight == 0.0 {
-            return 0.0; // Avoid division by zero
-        }
+        // Total accumulated preferences weights set by user
+        let preferences_acc: f32 = field_weight_pairs.iter().filter_map(|(w, _)| *w).sum();
 
-        if let Some(hint) = &preference.model_hint {
-            if let Ok(name_similarity) = self.name_similarity(hint, bit) {
-                if name_similarity > 0.8 {
-                    total_score += name_similarity_weight * name_similarity;
-                    total_weight += name_similarity_weight;
-                }
+        // Model matching preferences accross all traits/characteristics
+        let mut preference_match_score = 0.0;
+        for (preference_weight, model_trait) in field_weight_pairs {
+            if let Some(preference_weight) = preference_weight {
+                preference_match_score += preference_weight * model_trait;
             }
         }
 
-        for (weight, value) in field_weight_pairs {
-            if let Some(w) = weight {
-                total_score += w * value;
-            }
-        }
+        // Model matching naming hint given by user (if any and if similarity is greater than threshold else 0.0)
+        let name_match_score = preference
+            .model_hint
+            .as_ref()
+            .and_then(|hint| self.name_similarity(hint, bit).ok())
+            .filter(|&score| score > NAME_HINT_SIMILARITY_THRESHOLD)
+            .unwrap_or(0.0);
 
-        total_score / total_weight
+        // Log results
+        println!("[BIT SCORING] Accumulated Preference Weight: {preferences_acc}");
+        println!("[BIT SCORING] Static Name Hint Weight: {NAME_HINT_WEIGHT}");
+        println!("[BIT SCORING] Accumulated Preference Score: {preference_match_score}");
+        println!("[BIT SCORING] Name Hint Score: {name_match_score}");
+
+        // total score = match preferences + weighted match name
+        let total_score = preference_match_score + (name_match_score * NAME_HINT_WEIGHT);
+        // total weight = accumulated preference weights + static name weight
+        let total_weight = preferences_acc + NAME_HINT_WEIGHT;
+
+        // account for numerical stability
+        if total_weight > 0.001 {
+            total_score / total_weight
+        } else {
+            0.0
+        }
     }
 }
 
@@ -211,7 +307,7 @@ pub struct Bit {
     pub id: String,
     #[serde(rename = "type")]
     pub bit_type: BitTypes,
-    pub meta: std::collections::HashMap<String, BitMeta>,
+    pub meta: std::collections::HashMap<String, Metadata>,
     pub authors: Vec<String>,
     pub repository: Option<String>,
     pub download_link: Option<String>,
@@ -220,10 +316,9 @@ pub struct Bit {
     pub size: Option<u64>,
     pub hub: String,
     pub parameters: Value,
-    pub icon: String,
-    pub version: String,
-    pub license: String,
-    pub dependencies: Vec<(String, String)>,
+    pub version: Option<String>,
+    pub license: Option<String>,
+    pub dependencies: Vec<String>,
     pub dependency_tree_hash: String,
     pub created: String,
     pub updated: String,
@@ -248,38 +343,15 @@ pub struct BitPack {
     pub bits: Vec<Bit>,
 }
 
-fn collect_dependencies<'a>(
-    bit: &'a Bit,
+async fn collect_dependencies(
+    bit: &Bit,
     state: Arc<Mutex<FlowLikeState>>,
-    visited: &'a mut HashSet<String>,
-    hubs: &'a mut HashMap<String, crate::hub::Hub>,
-    dependencies: &'a mut Vec<Bit>,
-) -> BoxFuture<'a, ()> {
-    async move {
-        let http_client = state.lock().await.http_client.clone();
-        let bit_id = bit.id.clone();
-        if visited.contains(&bit_id) {
-            return;
-        }
-        visited.insert(bit_id.clone());
-
-        dependencies.push(bit.clone());
-
-        for (hub_domain, dependency_id) in bit.dependencies.iter() {
-            if !hubs.contains_key(hub_domain) {
-                let hub =
-                    crate::hub::Hub::new(&format!("https://{hub_domain}"), http_client.clone())
-                        .await
-                        .unwrap();
-                hubs.insert(hub_domain.to_string(), hub);
-            }
-            let hub = hubs.get(hub_domain).unwrap();
-            if let Ok(dependency) = hub.get_bit_by_id(dependency_id).await {
-                collect_dependencies(&dependency, state.clone(), visited, hubs, dependencies).await;
-            }
-        }
-    }
-    .boxed()
+) -> flow_like_types::Result<Vec<Bit>> {
+    let http_client = state.lock().await.http_client.clone();
+    let hub = crate::hub::Hub::new(&bit.hub, http_client.clone()).await?;
+    let bit_id = bit.id.clone();
+    let bits = hub.get_bit_dependencies(&bit_id).await?;
+    Ok(bits)
 }
 
 impl BitPack {
@@ -324,16 +396,36 @@ impl BitPack {
                 || bit.size.is_none()
                 || bit.file_name.is_none()
             {
+                println!(
+                    "Skipping bit {}: already downloaded or missing required fields",
+                    bit.id
+                );
                 return;
             }
 
-            if bit.size.unwrap() == 0 {
+            if bit.size.unwrap_or(0) == 0 {
+                println!("Skipping bit {}: size is zero, cannot download", bit.id);
                 return;
             }
 
             deduplicated_bits.push(bit.clone());
             deduplication_helper.insert(bit.hash.clone());
         });
+
+        if deduplicated_bits.is_empty() {
+            println!("No bits to download");
+            return Ok(vec![]);
+        }
+
+        println!(
+            "Downloading {} bits: {}",
+            deduplicated_bits.len(),
+            deduplicated_bits
+                .iter()
+                .map(|bit| bit.id.clone())
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
 
         let download_futures: Vec<_> = deduplicated_bits
             .iter()
@@ -345,7 +437,7 @@ impl BitPack {
         for result in results {
             match result {
                 Ok(_) => println!("Download succeeded"),
-                Err(e) => eprintln!("Download failed: {}", e),
+                Err(e) => eprintln!("Download failed: {e}"),
             }
         }
 
@@ -498,7 +590,6 @@ impl Bit {
     ) -> flow_like_types::Result<BitPack> {
         let bits_store = FlowLikeState::bit_store(&state).await?.as_generic();
 
-        let mut dependencies = vec![];
         let cache_dir =
             Path::from("deps-cache").child(format!("bit-deps-{}.bin", self.dependency_tree_hash));
 
@@ -511,31 +602,10 @@ impl Bit {
             }
         }
 
-        let mut visited = HashSet::new();
-        let mut hubs = HashMap::new();
-        let http_client = state.lock().await.http_client.clone();
-        for (hub_domain, dependency_id) in self.dependencies.iter() {
-            if !hubs.contains_key(hub_domain) {
-                let hub =
-                    crate::hub::Hub::new(&format!("https://{hub_domain}"), http_client.clone())
-                        .await
-                        .unwrap();
-                hubs.insert(hub_domain.to_string(), hub);
-            }
-            let hub = hubs.get(hub_domain).unwrap();
-            if let Ok(dependency) = hub.get_bit_by_id(dependency_id).await {
-                collect_dependencies(
-                    &dependency,
-                    state.clone(),
-                    &mut visited,
-                    &mut hubs,
-                    &mut dependencies,
-                )
-                .await;
-            }
-        }
+        let dependencies = collect_dependencies(self, state.clone()).await?;
 
         println!("Dependencies for {} found", self.id);
+
         let bit_pack = BitPack { bits: dependencies };
         let res = compress_to_file_json(bits_store, cache_dir, &bit_pack).await;
         if res.is_err() {

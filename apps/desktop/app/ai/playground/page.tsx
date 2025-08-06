@@ -20,8 +20,8 @@ import {
 	type ISettingsProfile,
 	Input,
 	Response as LLMResponse,
-	MarkdownComponent,
 	Progress,
+	TextEditor,
 	Textarea,
 	Tooltip,
 	TooltipContent,
@@ -43,7 +43,8 @@ export default function Home() {
 	const [question, setQuestion] = useState("");
 	const [model, setModel] = useState("");
 	const profile: UseQueryResult<ISettingsProfile> = useInvoke(
-		backend.getSettingsProfile,
+		backend.userState.getSettingsProfile,
+		backend.userState,
 		[],
 	);
 	const [response, setResponse] = useState("");
@@ -65,16 +66,6 @@ export default function Home() {
 			reader.onerror = (error) =>
 				reject(new Error("Error converting file to base64"));
 		});
-	}
-
-	function base64FilesToString(files: string[]) {
-		if (files.length === 0) return "";
-
-		const images = files.map((img, index) => {
-			return `![img${index + 1}](${img})`;
-		});
-
-		return `images: ${images.join(", ")}`;
 	}
 
 	async function send() {
@@ -146,7 +137,8 @@ export default function Home() {
 				systemPrompt:
 					"You are Flowy, a next gen AI assistant, always return your answers parsed in markdown. Be friendly and sprinkle some Smileys in your answers. Generally you are super open minded and talk about any topic the user likes to talk about.",
 				bit,
-				prompt: `${prompt}${base64FilesToString(base64Files)}`,
+				prompt: `${prompt}`,
+				images: base64Files,
 			}),
 		);
 
@@ -302,7 +294,11 @@ export default function Home() {
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
-						<MarkdownComponent content={response} />
+						<TextEditor
+							initialContent={response}
+							isMarkdown={true}
+							editable={false}
+						/>
 					</CardContent>
 				</Card>
 			)}

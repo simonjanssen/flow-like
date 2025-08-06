@@ -28,7 +28,7 @@ const poweredBy: {
 			href: "https://github.com/Mozilla-Ocho/llamafile?tab=License-1-ov-file#readme",
 		},
 		href: "https://github.com/Mozilla-Ocho/llamafile",
-	}
+	},
 ];
 
 export default function PoweredByPage() {

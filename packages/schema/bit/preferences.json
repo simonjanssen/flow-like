@@ -3,6 +3,9 @@
 	"title": "BitModelPreference",
 	"type": "object",
 	"properties": {
+		"multimodal": {
+			"type": ["boolean", "null"]
+		},
 		"cost_weight": {
 			"type": ["number", "null"],
 			"format": "float"

@@ -13,6 +13,7 @@ message Variable {
     bool exposed = 8;
     bool secret = 9;
     bool editable = 10;
+    optional uint64 hash = 11;
 }
 
 enum VariableType {

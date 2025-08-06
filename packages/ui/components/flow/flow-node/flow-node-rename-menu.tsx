@@ -38,7 +38,11 @@ export function FlowNodeRenameMenu({
 			node: { ...node, friendly_name: friendlyName },
 		});
 
-		const result = await backend.executeCommand(appId, boardId, command);
+		const result = await backend.boardState.executeCommand(
+			appId,
+			boardId,
+			command,
+		);
 		await pushCommand(result);
 		onOpenChange(false);
 		setFriendlyName("");
@@ -46,7 +50,7 @@ export function FlowNodeRenameMenu({
 	}
 
 	async function refetchBoard() {
-		await invalidate(backend.getBoard, [appId, boardId]);
+		await invalidate(backend.boardState.getBoard, [appId, boardId]);
 	}
 
 	return (

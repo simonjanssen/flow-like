@@ -2,27 +2,38 @@
 	"$schema": "http://json-schema.org/draft-07/schema#",
 	"title": "Profile",
 	"type": "object",
-	"required": [
-		"bits",
-		"created",
-		"description",
-		"name",
-		"thumbnail",
-		"updated"
-	],
+	"required": ["bits", "created", "name", "updated"],
 	"properties": {
 		"id": {
-			"default": "d40o0335eyf3z4ni8wd7qw39",
+			"default": "rm7y5x03obdgki5uul60hdxk",
 			"type": "string"
 		},
 		"name": {
 			"type": "string"
 		},
 		"description": {
-			"type": "string"
+			"type": ["string", "null"]
+		},
+		"icon": {
+			"default": null,
+			"type": ["string", "null"]
 		},
 		"thumbnail": {
-			"type": "string"
+			"type": ["string", "null"]
+		},
+		"interests": {
+			"default": [],
+			"type": "array",
+			"items": {
+				"type": "string"
+			}
+		},
+		"tags": {
+			"default": [],
+			"type": "array",
+			"items": {
+				"type": "string"
+			}
 		},
 		"hub": {
 			"default": "",
@@ -35,27 +46,75 @@
 				"type": "string"
 			}
 		},
+		"apps": {
+			"default": null,
+			"type": ["array", "null"],
+			"items": {
+				"$ref": "#/definitions/ProfileApp"
+			}
+		},
+		"theme": {
+			"default": null
+		},
 		"bits": {
 			"type": "array",
 			"items": {
-				"type": "array",
-				"items": [
-					{
-						"type": "string"
-					},
-					{
-						"type": "string"
-					}
-				],
-				"maxItems": 2,
-				"minItems": 2
+				"type": "string"
 			}
+		},
+		"settings": {
+			"default": {
+				"connection_mode": "simplebezier"
+			},
+			"allOf": [
+				{
+					"$ref": "#/definitions/Settings"
+				}
+			]
 		},
 		"updated": {
 			"type": "string"
 		},
 		"created": {
 			"type": "string"
+		}
+	},
+	"definitions": {
+		"ProfileApp": {
+			"type": "object",
+			"required": ["app_id", "favorite", "pinned"],
+			"properties": {
+				"app_id": {
+					"type": "string"
+				},
+				"favorite": {
+					"type": "boolean"
+				},
+				"favorite_order": {
+					"type": ["integer", "null"],
+					"format": "int32"
+				},
+				"pinned": {
+					"type": "boolean"
+				},
+				"pinned_order": {
+					"type": ["integer", "null"],
+					"format": "int32"
+				}
+			}
+		},
+		"Settings": {
+			"type": "object",
+			"required": ["connection_mode"],
+			"properties": {
+				"connection_mode": {
+					"$ref": "#/definitions/ConnectionMode"
+				}
+			}
+		},
+		"ConnectionMode": {
+			"type": "string",
+			"enum": ["default", "straight", "step", "smoothstep", "simplebezier"]
 		}
 	}
 }

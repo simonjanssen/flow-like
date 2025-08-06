@@ -1,8 +1,9 @@
 use flow_like_types::{async_trait, create_id};
+use highway::{HighwayHash, HighwayHasher};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeSet, HashMap},
     sync::Arc,
 };
 
@@ -57,6 +58,7 @@ pub struct Node {
     pub docs: Option<String>,
     pub event_callback: Option<bool>,
     pub layer: Option<String>,
+    pub hash: Option<u64>,
 }
 
 impl Node {
@@ -78,6 +80,7 @@ impl Node {
             docs: None,
             event_callback: None,
             layer: None,
+            hash: None,
         }
     }
 
@@ -121,8 +124,8 @@ impl Node {
                 pin_type: PinType::Input,
                 data_type,
                 value_type: super::pin::ValueType::Normal,
-                depends_on: HashSet::new(),
-                connected_to: HashSet::new(),
+                depends_on: BTreeSet::new(),
+                connected_to: BTreeSet::new(),
                 default_value: None,
                 options: None,
                 value: None,
@@ -157,8 +160,8 @@ impl Node {
                 pin_type: PinType::Output,
                 data_type,
                 value_type: super::pin::ValueType::Normal,
-                depends_on: HashSet::new(),
-                connected_to: HashSet::new(),
+                depends_on: BTreeSet::new(),
+                connected_to: BTreeSet::new(),
                 default_value: None,
                 value: None,
                 index: num_outputs as u16 + 1,
@@ -284,6 +287,112 @@ impl Node {
         }
 
         Ok(found_type)
+    }
+
+    pub fn hash(&mut self) {
+        let mut hasher = HighwayHasher::new(highway::Key([
+            0x0123456789abcdef,
+            0xfedcba9876543210,
+            0x0011223344556677,
+            0x8899aabbccddeeff,
+        ]));
+
+        hasher.append(self.name.as_bytes());
+        hasher.append(self.friendly_name.as_bytes());
+        hasher.append(self.description.as_bytes());
+        hasher.append(self.category.as_bytes());
+
+        if let Some(coords) = &self.coordinates {
+            hasher.append(&coords.0.to_le_bytes());
+            hasher.append(&coords.1.to_le_bytes());
+            hasher.append(&coords.2.to_le_bytes());
+        }
+
+        if let Some(scores) = &self.scores {
+            hasher.append(&[
+                scores.privacy,
+                scores.security,
+                scores.performance,
+                scores.governance,
+            ]);
+        }
+
+        let mut pin_keys: Vec<_> = self.pins.keys().collect();
+        pin_keys.sort();
+        for key in pin_keys {
+            let pin = &self.pins[key];
+            hasher.append(pin.name.as_bytes());
+            hasher.append(pin.friendly_name.as_bytes());
+            hasher.append(pin.description.as_bytes());
+            hasher.append(&(pin.pin_type.clone() as u8).to_le_bytes());
+            hasher.append(&(pin.data_type.clone() as u8).to_le_bytes());
+            hasher.append(&pin.index.to_le_bytes());
+            hasher.append(&(pin.value_type.clone() as u8).to_le_bytes());
+            if let Some(schema) = &pin.schema {
+                hasher.append(schema.as_bytes());
+            }
+            if let Some(default_value) = &pin.default_value {
+                hasher.append(default_value);
+            }
+            if let Some(options) = &pin.options {
+                if let Some(valid_values) = &options.valid_values {
+                    for value in valid_values {
+                        hasher.append(value.as_bytes());
+                    }
+                }
+
+                if let Some(range) = &options.range {
+                    hasher.append(&range.0.to_le_bytes());
+                    hasher.append(&range.1.to_le_bytes());
+                }
+
+                if let Some(step) = &options.step {
+                    hasher.append(&step.to_le_bytes());
+                }
+
+                if let Some(enforce_schema) = &options.enforce_schema {
+                    hasher.append(&[*enforce_schema as u8]);
+                }
+
+                if let Some(enforce_generic_value_type) = &options.enforce_generic_value_type {
+                    hasher.append(&[*enforce_generic_value_type as u8]);
+                }
+            }
+
+            for dep in pin.depends_on.iter() {
+                hasher.append(dep.as_bytes());
+            }
+
+            for conn in pin.connected_to.iter() {
+                hasher.append(conn.as_bytes());
+            }
+        }
+
+        if let Some(start) = &self.start {
+            hasher.append(&[*start as u8]);
+        }
+
+        if let Some(icon) = &self.icon {
+            hasher.append(icon.as_bytes());
+        }
+
+        if let Some(comment) = &self.comment {
+            hasher.append(comment.as_bytes());
+        }
+
+        if let Some(long_running) = &self.long_running {
+            hasher.append(&[*long_running as u8]);
+        }
+
+        if let Some(event_callback) = &self.event_callback {
+            hasher.append(&[*event_callback as u8]);
+        }
+
+        if let Some(layer) = &self.layer {
+            hasher.append(layer.as_bytes());
+        }
+
+        self.hash = Some(hasher.finalize64());
     }
 }
 

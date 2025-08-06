@@ -9,11 +9,10 @@ use flow_like::{
     state::FlowLikeState,
 };
 use flow_like_model_provider::history::{
-    Content, ContentType, HistoryMessage, MessageContent, Role,
+    Content, ContentType, HistoryMessage, ImageUrl, MessageContent, Role,
 };
 use flow_like_types::{Value, async_trait, json::json};
 use std::sync::Arc;
-
 #[derive(Default)]
 pub struct MakeHistoryMessageNode {}
 
@@ -101,11 +100,12 @@ impl NodeLogic for MakeHistoryMessageNode {
             }
             "Image" => {
                 let image_pin: String = context.evaluate_pin("image").await?;
-                let mime_pin: String = context.evaluate_pin("mime").await?;
                 message.content = MessageContent::Contents(vec![Content::Image {
                     content_type: ContentType::ImageUrl,
-                    data: image_pin,
-                    mime_type: mime_pin,
+                    image_url: ImageUrl {
+                        url: image_pin,
+                        detail: None,
+                    },
                 }]);
             }
             _ => {}
@@ -126,13 +126,12 @@ impl NodeLogic for MakeHistoryMessageNode {
 
         let text_pin = node.get_pin_by_name("text");
         let image_pin = node.get_pin_by_name("image");
-        let mime_pin = node.get_pin_by_name("mime");
 
         if (type_pin == *"Text") && text_pin.is_some() {
             return;
         }
 
-        if (type_pin == *"Image") && image_pin.is_some() && mime_pin.is_some() {
+        if (type_pin == *"Image") && image_pin.is_some() {
             return;
         }
 
@@ -141,10 +140,6 @@ impl NodeLogic for MakeHistoryMessageNode {
         if type_pin == "Text" {
             if let Some(image_pin) = image_pin {
                 removal.push(image_pin.id.clone());
-            }
-
-            if let Some(mime_pin) = mime_pin {
-                removal.push(mime_pin.id.clone());
             }
 
             for id in removal {
@@ -164,6 +159,5 @@ impl NodeLogic for MakeHistoryMessageNode {
         }
 
         node.add_input_pin("image", "Image", "Image Content", VariableType::String);
-        node.add_input_pin("mime", "Mime", "Mime Type", VariableType::String);
     }
 }

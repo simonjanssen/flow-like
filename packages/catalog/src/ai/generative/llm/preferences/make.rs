@@ -1,7 +1,7 @@
 use flow_like::{
     bit::BitModelPreference,
     flow::{
-        execution::context::ExecutionContext,
+        execution::{LogLevel, context::ExecutionContext},
         node::{Node, NodeLogic},
         variable::VariableType,
     },
@@ -29,6 +29,14 @@ impl NodeLogic for MakePreferencesNode {
         );
         node.add_icon("/flow/icons/struct.svg");
 
+        node.add_input_pin(
+            "multimodal",
+            "Multimodal",
+            "Should the model be able to handle images?",
+            VariableType::Boolean,
+        )
+        .set_default_value(Some(json!(false)));
+
         node.add_output_pin(
             "preferences",
             "Preferences",
@@ -41,7 +49,16 @@ impl NodeLogic for MakePreferencesNode {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
-        let preferences = BitModelPreference::default();
+        let mut preferences = BitModelPreference::default();
+        context.log_message(
+            &format!("New Preferences: {:?}", &preferences),
+            LogLevel::Debug,
+        );
+
+        let multimodal = context.evaluate_pin::<bool>("multimodal").await;
+        if let Ok(multimodal) = multimodal {
+            preferences.multimodal = Some(multimodal);
+        }
 
         context
             .set_pin_value("preferences", json!(preferences))

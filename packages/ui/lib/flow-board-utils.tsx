@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import { createId } from "@paralleldrive/cuid2";
 import { CopyIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -119,10 +118,25 @@ export function isValidConnection(
 	const [sourcePin, sourceNode] = cache.get(connection.sourceHandle) || [];
 	const [targetPin, targetNode] = cache.get(connection.targetHandle) || [];
 
-	if (!sourcePin || !targetPin) return false;
-	if (!sourceNode || !targetNode) return false;
+	if (!sourcePin || !targetPin) {
+		console.warn(
+			`Invalid connection: source or target pin not found for ${connection.sourceHandle} or ${connection.targetHandle}`,
+		);
+		return false;
+	}
+	if (!sourceNode || !targetNode) {
+		console.warn(
+			`Invalid connection: source or target node not found for ${connection.sourceHandle} or ${connection.targetHandle}`,
+		);
+		return false;
+	}
 
-	if (sourceNode.id === targetNode.id) return false;
+	if (sourceNode.id === targetNode.id) {
+		console.warn(
+			`Invalid connection: source and target nodes are the same (${sourceNode.id})`,
+		);
+		return false;
+	}
 
 	return doPinsMatch(sourcePin, targetPin, refs);
 }
@@ -196,12 +210,6 @@ export function doPinsMatch(
 	return true;
 }
 
-function hashNode(node: INode | IComment | ILayer) {
-	const hash = crypto.createHash("md5");
-	hash.update(JSON.stringify(node));
-	return hash.digest("hex");
-}
-
 export function parseBoard(
 	board: IBoard,
 	appId: string,
@@ -218,11 +226,11 @@ export function parseBoard(
 	const nodes: any[] = [];
 	const edges: any[] = [];
 	const cache = new Map<string, [IPin, INode, boolean]>();
-	const oldNodesMap = new Map<string, any>();
+	const oldNodesMap = new Map<number, any>();
 	const oldEdgesMap = new Map<string, any>();
 
 	for (const oldNode of oldNodes ?? []) {
-		oldNodesMap.set(oldNode.data?.hash, oldNode);
+		if (oldNode.data?.hash) oldNodesMap.set(oldNode.data?.hash, oldNode);
 	}
 
 	for (const edge of oldEdges ?? []) {
@@ -235,8 +243,8 @@ export function parseBoard(
 			cache.set(pin.id, [pin, node, nodeLayer === currentLayer]);
 		}
 		if (nodeLayer !== currentLayer) continue;
-		const hash = hashNode(node);
-		const oldNode = oldNodesMap.get(hash);
+		const hash = node.hash ?? -1;
+		const oldNode = hash === -1 ? undefined : oldNodesMap.get(hash);
 		if (oldNode) {
 			nodes.push(oldNode);
 		} else {
@@ -358,6 +366,7 @@ export function parseBoard(
 						data: {
 							label: node.name,
 							node: node,
+							hash: node.hash ?? -1,
 							boardId: board.id,
 							appId: appId,
 							ghost: true,
@@ -397,6 +406,7 @@ export function parseBoard(
 							node: connectedNode,
 							boardId: board.id,
 							appId: appId,
+							hash: connectedNode.hash ?? -1,
 							ghost: true,
 							onExecute: async (node: INode, payload?: object) => {
 								await executeBoard(node, payload);
@@ -450,7 +460,7 @@ export function parseBoard(
 					target: connectedNodeId,
 					targetHandle: conntectedPin.id,
 					style: { stroke: typeToColor(pin.data_type) },
-					type: connectionMode ?? "simplebezier",
+					type: connectionMode ?? "default",
 					data_type: pin.data_type,
 					selected: selected.has(`${pin.id}-${connectedTo}`),
 				});
@@ -461,8 +471,8 @@ export function parseBoard(
 		const commentLayer =
 			(comment.layer ?? "") === "" ? undefined : comment.layer;
 		if (commentLayer !== currentLayer) continue;
-		const hash = hashNode(comment);
-		const oldNode = oldNodesMap.get(hash);
+		const hash = comment.hash ?? -1;
+		const oldNode = hash === -1 ? undefined : oldNodesMap.get(hash);
 		if (oldNode) {
 			nodes.push(oldNode);
 			continue;
@@ -491,7 +501,6 @@ export function parseBoard(
 			selected: selected.has(comment.id),
 		});
 	}
-
 	return { nodes, edges, cache };
 }
 

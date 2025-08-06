@@ -154,6 +154,7 @@ impl HTTPClient {
 
         // fetches from the network
         let response = self.client.execute(request).await?;
+        println!("Response: {:?}", response);
         let value = response.json::<Value>().await?;
         let _ = self.put(&request_hash, &value);
         let value = flow_like_types::json::from_value::<T>(value.clone())?;

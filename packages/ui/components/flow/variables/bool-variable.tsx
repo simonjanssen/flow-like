@@ -7,12 +7,18 @@ import {
 } from "../../../lib/uint8";
 
 export function BoolVariable({
+	disabled,
 	variable,
 	onChange,
-}: Readonly<{ variable: IVariable; onChange: (variable: IVariable) => void }>) {
+}: Readonly<{
+	disabled?: boolean;
+	variable: IVariable;
+	onChange: (variable: IVariable) => void;
+}>) {
 	return (
 		<div className="flex items-center space-x-2">
 			<Switch
+				disabled={disabled}
 				checked={parseUint8ArrayToJson(variable.default_value)}
 				onCheckedChange={(checked) =>
 					onChange({

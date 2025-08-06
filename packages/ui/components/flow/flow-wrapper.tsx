@@ -8,7 +8,14 @@ import { FlowBoard } from "./flow-board";
 export function FlowWrapper({
 	boardId,
 	appId,
-}: Readonly<{ boardId: string; appId: string }>) {
+	nodeId,
+	version,
+}: Readonly<{
+	boardId: string;
+	appId: string;
+	nodeId?: string;
+	version?: [number, number, number];
+}>) {
 	const mouseSensor = useSensor(MouseSensor, {
 		activationConstraint: {
 			distance: 10,
@@ -53,7 +60,12 @@ export function FlowWrapper({
 				});
 			}}
 		>
-			<FlowBoard boardId={boardId} appId={appId} />
+			<FlowBoard
+				boardId={boardId}
+				appId={appId}
+				nodeId={nodeId}
+				initialVersion={version}
+			/>
 			<Dialog
 				open={detail !== undefined}
 				onOpenChange={(open) => {
@@ -64,16 +76,16 @@ export function FlowWrapper({
 					<DialogHeader>
 						<DialogTitle>Reference: {detail?.variable.name}</DialogTitle>
 					</DialogHeader>
-					<div className="w-full flex items-center justify-start gap-2">
+					<div className="w-full flex items-center justify-start gap-2 max-w-full">
 						<Button
-							className="w-full"
+							className="flex-grow"
 							variant={"outline"}
 							onClick={() => placeNode("get")}
 						>
 							Get
 						</Button>
 						<Button
-							className="w-full"
+							className="flex-grow"
 							variant={"outline"}
 							onClick={() => placeNode("set")}
 						>

@@ -1,5 +1,5 @@
 import { PlusCircleIcon, Trash2Icon } from "lucide-react";
-import React, { useState, useMemo, useCallback } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Input } from "../../../components/ui/input";
 import type { IVariable } from "../../../lib/schema/flow/variable";
 import {
@@ -9,9 +9,14 @@ import {
 import { Button, Separator } from "../../ui";
 
 export function FloatSetVariable({
+	disabled,
 	variable,
 	onChange,
-}: Readonly<{ variable: IVariable; onChange: (variable: IVariable) => void }>) {
+}: Readonly<{
+	disabled?: boolean;
+	variable: IVariable;
+	onChange: (variable: IVariable) => void;
+}>) {
 	const [newValue, setNewValue] = useState("");
 
 	// parse once per render
@@ -20,15 +25,16 @@ export function FloatSetVariable({
 		if (!Array.isArray(parsed)) return [];
 		return parsed.map((v) => {
 			const n = Number(v);
-			return isNaN(n) ? 0 : n;
+			return Number.isNaN(n) ? 0 : n;
 		});
 	}, [variable.default_value]);
 
 	const handleAdd = useCallback(() => {
+		if (disabled) return;
 		const trimmed = newValue.trim();
 		if (!trimmed) return;
 		const num = Number.parseFloat(trimmed);
-		if (isNaN(num)) return;
+		if (Number.isNaN(num)) return;
 		const updated = [...values, num];
 		onChange({
 			...variable,
@@ -37,10 +43,11 @@ export function FloatSetVariable({
 			),
 		});
 		setNewValue("");
-	}, [newValue, values, onChange, variable]);
+	}, [disabled, newValue, values, onChange, variable]);
 
 	const handleRemove = useCallback(
 		(index: number) => {
+			if (disabled) return;
 			const updated = values.filter((_, i) => i !== index);
 			onChange({
 				...variable,
@@ -49,25 +56,28 @@ export function FloatSetVariable({
 				),
 			});
 		},
-		[values, onChange, variable],
+		[disabled, values, onChange, variable],
 	);
 
 	return (
-		<div className="grid w-full max-w-sm items-center gap-1.5">
-			<div className="flex flex-row gap-2 items-center w-full sticky top-0 bg-background">
+		<div className="grid w-full items-center gap-1.5">
+			<div className="flex flex-row gap-2 items-center w-full sticky top-0">
 				<Input
 					value={newValue}
 					onChange={(e) => setNewValue(e.target.value)}
 					onKeyDown={(e) => e.key === "Enter" && handleAdd()}
 					type={variable.secret ? "password" : "number"}
 					placeholder="Add number"
+					disabled={disabled}
 					step="any"
 				/>
 				<Button
 					size="icon"
 					variant="default"
 					onClick={handleAdd}
-					disabled={newValue.trim() === ""}
+					disabled={
+						newValue.trim() === "" || disabled || Number.isNaN(Number(newValue))
+					}
 				>
 					<PlusCircleIcon className="w-4 h-4" />
 				</Button>
@@ -85,6 +95,7 @@ export function FloatSetVariable({
 						size="icon"
 						variant="destructive"
 						onClick={() => handleRemove(idx)}
+						disabled={disabled}
 					>
 						<Trash2Icon className="w-4 h-4" />
 					</Button>

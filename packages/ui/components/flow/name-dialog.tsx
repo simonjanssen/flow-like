@@ -9,7 +9,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 	Input,
-	Textarea,
 } from "../ui";
 
 export function NameDialog({

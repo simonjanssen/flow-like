@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-flow-like-types = { path = "../types" }
+flow-like-types.workspace = true
 text-splitter = {version = "0.25.1", features = ["markdown", "tokenizers", "tiktoken-rs"]}
 tokenizers = {version="0.21.1", default-features = false, features = ["onig"]}
 schemars.workspace = true

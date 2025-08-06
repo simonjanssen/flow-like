@@ -199,6 +199,7 @@ impl ToProto<flow_like_types::proto::Layer> for Layer {
             comment: self.comment.clone(),
             error: self.error.clone(),
             color: self.color.clone(),
+            hash: self.hash,
         }
     }
 }
@@ -234,6 +235,7 @@ impl FromProto<flow_like_types::proto::Layer> for Layer {
             comment: proto.comment,
             error: proto.error,
             color: proto.color,
+            hash: proto.hash,
         }
     }
 }

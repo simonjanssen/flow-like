@@ -1,5 +1,7 @@
 use super::board::ExecutionStage;
+use super::event::Event;
 use super::{board::Board, node::NodeState, variable::Variable};
+use crate::credentials::SharedCredentials;
 use crate::profile::Profile;
 use crate::state::FlowLikeState;
 use ahash::AHasher;
@@ -8,9 +10,7 @@ use flow_like_storage::arrow_array::{RecordBatch, RecordBatchIterator};
 use flow_like_storage::arrow_schema::FieldRef;
 use flow_like_storage::files::store::FlowLikeStore;
 use flow_like_storage::lancedb::Connection;
-use flow_like_storage::lancedb::arrow::IntoArrowStream;
 use flow_like_storage::lancedb::index::scalar::BitmapIndexBuilder;
-use flow_like_storage::lancedb::query::ExecutableQuery;
 use flow_like_storage::serde_arrow::schema::{SchemaLike, TracingOptions};
 use flow_like_storage::{Path, serde_arrow};
 use flow_like_types::Value;
@@ -119,6 +119,8 @@ pub struct LogMeta {
     pub nodes: Option<Vec<(String, u8)>>,
     pub logs: Option<u64>,
     pub node_id: String,
+    pub event_version: Option<String>,
+    pub event_id: String,
     pub payload: Vec<u8>,
 }
 
@@ -153,13 +155,20 @@ impl LogMeta {
 
         let table = db.open_table("runs").execute().await;
 
-        if let Err(err) = table {
+        if let Err(_err) = table {
             let table = db
                 .create_empty_table("runs", schema.clone())
                 .execute()
                 .await?;
             let iter = RecordBatchIterator::new(vec![arrow_batch].into_iter().map(Ok), schema);
             table.add(iter).execute().await?;
+            table
+                .create_index(
+                    &["event_id"],
+                    flow_like_storage::lancedb::index::Index::Bitmap(BitmapIndexBuilder {}),
+                )
+                .execute()
+                .await?;
             table
                 .create_index(
                     &["node_id"],
@@ -207,6 +216,10 @@ pub struct Run {
     pub highest_log_level: LogLevel,
     pub log_initialized: bool,
     pub logs: u64,
+    pub stream_state: bool,
+
+    pub event_id: Option<String>,
+    pub event_version: Option<String>,
 
     pub visited_nodes: HashMap<String, LogLevel>,
     pub log_store: Option<FlowLikeStore>,
@@ -308,6 +321,8 @@ impl Run {
             nodes: Some(visited_nodes),
             logs: Some(self.logs),
             node_id: self.payload.id.clone(),
+            event_id: self.event_id.clone().unwrap_or("".to_string()),
+            event_version: self.event_version.clone(),
             payload,
         };
 
@@ -362,13 +377,14 @@ pub type EventTrigger =
 #[derive(Clone)]
 pub struct InternalRun {
     pub run: Arc<Mutex<Run>>,
-    pub nodes: HashMap<String, Arc<InternalNode>>,
+    pub nodes: Arc<HashMap<String, Arc<InternalNode>>>,
     pub dependencies: HashMap<String, Vec<Arc<InternalNode>>>,
     pub pins: HashMap<String, Arc<Mutex<InternalPin>>>,
     pub variables: Arc<Mutex<HashMap<String, Variable>>>,
     pub cache: Arc<RwLock<HashMap<String, Arc<dyn Cacheable>>>>,
     pub profile: Arc<Profile>,
     pub callback: InterComCallback,
+    pub credentials: Option<Arc<SharedCredentials>>,
 
     stack: Arc<RunStack>,
     concurrency_limit: u64,
@@ -388,11 +404,14 @@ impl InternalRun {
     pub async fn new(
         app_id: &str,
         board: Arc<Board>,
+        event: Option<Event>,
         handler: &Arc<Mutex<FlowLikeState>>,
         profile: &Profile,
-        payload: RunPayload,
+        payload: &RunPayload,
         sub: Option<String>,
+        stream_state: bool,
         callback: InterComCallback,
+        credentials: Option<SharedCredentials>,
     ) -> flow_like_types::Result<Self> {
         let before = Instant::now();
         let run_id = create_id();
@@ -419,6 +438,13 @@ impl InternalRun {
             highest_log_level: LogLevel::Debug,
             log_initialized: false,
             logs: 0,
+            stream_state,
+
+            event_id: event.as_ref().map(|e| e.id.clone()),
+            event_version: event.as_ref().map(|e| {
+                let (major, minor, patch) = e.event_version;
+                format!("{}.{}.{}", major, minor, patch)
+            }),
 
             visited_nodes: HashMap::with_capacity(board.nodes.len()),
             log_store,
@@ -429,12 +455,27 @@ impl InternalRun {
 
         let mut dependencies = HashMap::with_capacity(board.nodes.len());
 
+        let event_variables = event
+            .as_ref()
+            .map(|e| e.variables.clone())
+            .unwrap_or_default();
+
         let variables = Arc::new(Mutex::new({
             let mut map = HashMap::with_capacity(board.variables.len());
-            for (variable_id, variable) in &board.variables {
-                let value = variable.default_value.as_ref().map_or(Value::Null, |v| {
-                    flow_like_types::json::from_slice::<Value>(v).unwrap()
-                });
+            for (variable_id, board_variable) in &board.variables {
+                let variable = if board_variable.exposed {
+                    event_variables.get(variable_id).unwrap_or(board_variable)
+                } else {
+                    board_variable
+                };
+
+                let value = match &variable.default_value {
+                    Some(bytes) => {
+                        flow_like_types::json::from_slice::<Value>(bytes).unwrap_or(Value::Null)
+                    }
+                    None => Value::Null,
+                };
+
                 let mut var = variable.clone();
                 var.value = Arc::new(Mutex::new(value));
                 map.insert(variable_id.clone(), var);
@@ -563,7 +604,7 @@ impl InternalRun {
 
         Ok(InternalRun {
             run,
-            nodes,
+            nodes: Arc::new(nodes),
             pins,
             variables,
             cache: Arc::new(RwLock::new(HashMap::new())),
@@ -572,6 +613,7 @@ impl InternalRun {
             concurrency_map: Arc::new(DashMap::with_capacity(board.nodes.len())),
             cpus: num_cpus::get(),
             callback,
+            credentials: credentials.map(Arc::new),
             dependencies,
             log_level: board.log_level,
             profile: Arc::new(profile.clone()),
@@ -637,9 +679,12 @@ impl InternalRun {
                 let log_level = log_level;
                 let concurrency_map = self.concurrency_map.clone();
                 let completion_callbacks = self.completion_callbacks.clone();
+                let credentials = self.credentials.clone();
+                let nodes = self.nodes.clone();
 
                 async move {
                     step_core(
+                        nodes,
                         &node,
                         concurrency_limit,
                         &handler,
@@ -653,6 +698,7 @@ impl InternalRun {
                         &callback,
                         concurrency_map,
                         &completion_callbacks,
+                        credentials,
                     )
                     .await
                 }
@@ -687,6 +733,7 @@ impl InternalRun {
 
         let node = stack.stack.first().unwrap();
         let connected_nodes = step_core(
+            self.nodes.clone(),
             node,
             concurrency_limit,
             handler,
@@ -700,6 +747,7 @@ impl InternalRun {
             &self.callback,
             self.concurrency_map.clone(),
             &self.completion_callbacks,
+            self.credentials.clone(),
         )
         .await;
 
@@ -841,6 +889,31 @@ impl InternalRun {
             }
         }
     }
+
+    // ONLY CALL THIS IF WE ARE BEING CANCELLED
+    pub async fn flush_logs_cancelled(&mut self) -> flow_like_types::Result<Option<LogMeta>> {
+        let mut run = self.run.lock().await;
+        run.highest_log_level = LogLevel::Fatal;
+        run.status = RunStatus::Stopped;
+        run.end = SystemTime::now();
+
+        let cancel_log = LogMessage::new("Run cancelled", LogLevel::Fatal, None);
+        if let Some(trace) = run.traces.last_mut() {
+            trace.logs.push(cancel_log);
+        } else {
+            // Create a system trace if no traces exist
+            let mut system_trace = Trace::new(
+                run.visited_nodes
+                    .keys()
+                    .next()
+                    .unwrap_or(&"system".to_string()),
+            );
+            system_trace.logs.push(cancel_log);
+            run.traces.push(system_trace);
+        }
+
+        run.flush_logs(true).await
+    }
 }
 
 fn recursive_get_deps(
@@ -891,6 +964,7 @@ pub enum RunStatus {
 }
 
 async fn step_core(
+    nodes: Arc<HashMap<String, Arc<InternalNode>>>,
     node: &Arc<InternalNode>,
     concurrency_limit: u64,
     handler: &Arc<Mutex<FlowLikeState>>,
@@ -904,6 +978,7 @@ async fn step_core(
     callback: &InterComCallback,
     concurrency_map: Arc<DashMap<String, u64>>,
     completion_callbacks: &Arc<RwLock<Vec<EventTrigger>>>,
+    credentials: Option<Arc<SharedCredentials>>,
 ) -> flow_like_types::Result<Vec<(String, Arc<InternalNode>)>> {
     // Check Node State and Validate Execution Count (to stop infinite loops)
     {
@@ -919,6 +994,7 @@ async fn step_core(
 
     let weak_run = Arc::downgrade(run);
     let mut context = ExecutionContext::new(
+        nodes,
         &weak_run,
         handler,
         node,
@@ -929,6 +1005,7 @@ async fn step_core(
         profile.clone(),
         callback.clone(),
         completion_callbacks.clone(),
+        credentials,
     )
     .await;
 

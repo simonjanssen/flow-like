@@ -2,12 +2,15 @@ use std::sync::Arc;
 
 use super::TauriFunctionError;
 use crate::state::{TauriFlowLikeState, TauriSettingsState};
-use flow_like::bit::{Bit, BitPack, BitTypes};
+use flow_like::{
+    bit::{Bit, BitPack},
+    hub::BitSearchQuery,
+};
 use flow_like_types::intercom::BufferedInterComHandler;
 use tauri::{AppHandle, Emitter};
 
 #[tauri::command(async)]
-pub async fn get_bit_by_id(
+pub async fn get_bit(
     app_handle: AppHandle,
     bit: String,
     hub: Option<String>,
@@ -37,31 +40,24 @@ pub async fn get_pack_from_bit(
     bit: Bit,
 ) -> Result<BitPack, TauriFunctionError> {
     let flow_like_state = TauriFlowLikeState::construct(&app_handle).await?;
-    let pack = bit.pack(flow_like_state).await?;
+    let pack = bit.pack(flow_like_state).await;
+    if let Err(err) = &pack {
+        println!("Error getting pack from bit: {}", err);
+    }
+    let pack = pack?;
+    println!("Pack size: {}", pack.size());
     Ok(pack)
 }
 
 #[tauri::command(async)]
-pub async fn get_bits_by_category(
+pub async fn search_bits(
     app_handle: AppHandle,
-    bit_type: BitTypes,
+    query: BitSearchQuery,
 ) -> Result<Vec<Bit>, TauriFunctionError> {
     let profile = TauriSettingsState::current_profile(&app_handle).await?;
     let http_client = TauriFlowLikeState::http_client(&app_handle).await?;
-    let bits = profile
-        .hub_profile
-        .get_available_bits_of_type(&bit_type, http_client)
-        .await?;
+    let bits = profile.hub_profile.search_bits(&query, http_client).await?;
 
-    Ok(bits)
-}
-
-#[tauri::command(async)]
-pub async fn get_bits(app_handle: AppHandle) -> Result<Vec<Bit>, TauriFunctionError> {
-    let http_client = TauriFlowLikeState::http_client(&app_handle).await?;
-    let profile = TauriSettingsState::current_profile(&app_handle).await?;
-
-    let bits = profile.hub_profile.get_available_bits(http_client).await?;
     Ok(bits)
 }
 

@@ -14,6 +14,7 @@ import {
 	SquarePenIcon,
 } from "lucide-react";
 import { useCallback, useState } from "react";
+import { toast } from "sonner";
 import {
 	ContextMenu,
 	ContextMenuContent,
@@ -22,7 +23,7 @@ import {
 	ContextMenuTrigger,
 } from "../../components/ui/context-menu";
 import type { IComment } from "../../lib/schema/flow/board";
-import { Button } from "../ui/button";
+import { TextEditor } from "../ui";
 import { ColorPicker } from "../ui/color-picker";
 import {
 	Dialog,
@@ -31,9 +32,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "../ui/dialog";
-import { MarkdownComponent } from "../ui/markdown";
-import { Textarea } from "../ui/textarea";
-import { CommentDialog } from "./comment-dialog";
 
 export type CommentNode = Node<
 	{
@@ -125,7 +123,7 @@ export function CommentNode(props: NodeProps<CommentNode>) {
 				<ContextMenuTrigger>
 					<div
 						key={`${props.id}__node`}
-						className={`bg-card p-1 react-flow__node-default selectable !w-full !h-full focus:ring-2 relative rounded-md !border-0 group opacity-80 ${props.selected && ""}`}
+						className={`bg-card p-1 md-wrapper react-flow__node-default selectable w-full! h-full! focus:ring-2 relative rounded-md! border-0! group opacity-80 ${props.selected && ""}`}
 						style={{
 							backgroundColor: currentColor,
 						}}
@@ -146,45 +144,49 @@ export function CommentNode(props: NodeProps<CommentNode>) {
 						)}
 						<Dialog
 							open={edit.open}
-							onOpenChange={(open) => {
+							onOpenChange={async (open) => {
+								if (!open) {
+									await props.data.onUpsert({
+										...props.data.comment,
+										content: edit.content,
+									});
+									toast.success("Comment updated successfully");
+								}
 								setEdit((old) => ({ ...old, open }));
 							}}
 						>
-							<DialogContent>
+							<DialogContent className="max-w-(--breakpoint-xl) min-w-[95dvw] w-full min-h-[90vh] max-h-[90vh] overflow-hidden flex flex-col">
 								<DialogHeader>
 									<DialogTitle>Edit Comment</DialogTitle>
 									<DialogDescription>
 										Edit the text content of the comment.
 									</DialogDescription>
 								</DialogHeader>
-								<Textarea
-									rows={6}
-									value={edit.content}
-									onChange={(e) => {
-										setEdit({ ...edit, content: e.target.value });
-									}}
-								/>
-								<Button
-									disabled={props.data.comment.content === edit.content}
-									onClick={async () => {
-										await props.data.onUpsert({
-											...props.data.comment,
-											content: edit.content,
-										});
-										setEdit((old) => ({ ...old, open: false }));
-									}}
-								>
-									Save
-								</Button>
+								<div className="flex flex-col grow max-h-full overflow-auto relative">
+									<TextEditor
+										initialContent={
+											props.data.comment.content === ""
+												? "Empty Comment"
+												: props.data.comment.content
+										}
+										onChange={(content) => {
+											setEdit((old) => ({ ...old, content }));
+										}}
+										isMarkdown={true}
+										editable={true}
+									/>
+								</div>
 							</DialogContent>
 						</Dialog>
-						<div className="text-start">
-							<MarkdownComponent
-								content={
+						<div className="text-start relative">
+							<TextEditor
+								initialContent={
 									props.data.comment.content === ""
 										? "Empty Comment"
 										: props.data.comment.content
 								}
+								isMarkdown={true}
+								editable={false}
 							/>
 						</div>
 					</div>

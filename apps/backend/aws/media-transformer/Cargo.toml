@@ -1,0 +1,31 @@
+[package]
+name = "media-transformer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+aws_lambda_events = { version = "0.16.1", default-features = false, features = ["s3", "sqs"] }
+image.workspace = true
+imageproc.workspace = true
+flow-like-types.workspace = true
+
+serde = { workspace = true, features = ["derive", "rc"] }
+serde_json.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+aws-config.workspace = true
+aws-sdk-s3.workspace = true
+
+lambda_runtime.workspace = true
+tokio = { workspace = true, features = ["macros"] }
+urlencoding.workspace = true
+webp.workspace = true
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+debug = false

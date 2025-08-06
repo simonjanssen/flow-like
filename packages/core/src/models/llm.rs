@@ -25,7 +25,6 @@ impl Default for ExecutionSettings {
 
 impl ExecutionSettings {
     pub fn new() -> Self {
-
         Self {
             gpu_mode: false,
             max_context_size: 32_000,

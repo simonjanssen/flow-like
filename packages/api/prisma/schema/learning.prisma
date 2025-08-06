@@ -1,0 +1,29 @@
+
+model CourseConnection {
+  id String @id
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId String
+
+  app App @relation(fields: [appId], references: [id], onDelete: Cascade)
+  appId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([appId])
+}
+
+model Course {
+  id String @id
+
+  language String
+  meta Meta[]
+
+  connections CourseConnection[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([language])
+}

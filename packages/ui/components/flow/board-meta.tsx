@@ -62,18 +62,22 @@ export function BoardMeta({
 	});
 	const backend = useBackend();
 	const invalidate = useInvalidateInvoke();
-	const versions = useInvoke(backend.getBoardVersions, [appId, boardId]);
+	const versions = useInvoke(
+		backend.boardState.getBoardVersions,
+		backend.boardState,
+		[appId, boardId],
+	);
 
 	const [localVersion, setLocalVersion] = useState<
 		[number, number, number] | undefined
 	>(board.version as [number, number, number] | undefined);
 
 	const invalidateBoard = useCallback(async () => {
-		await invalidate(backend.getBoard, [appId, boardId]);
+		await invalidate(backend.boardState.getBoard, [appId, boardId]);
 	}, [invalidate, appId, boardId, backend]);
 
 	const saveMeta = useCallback(async () => {
-		await backend.updateBoardMeta(
+		await backend.boardState.upsertBoard(
 			appId,
 			boardId,
 			boardMeta.name,
@@ -88,7 +92,11 @@ export function BoardMeta({
 
 	const createVersion = useCallback(
 		async (type: IVersionType) => {
-			const newVersion = await backend.createBoardVersion(appId, boardId, type);
+			const newVersion = await backend.boardState.createBoardVersion(
+				appId,
+				boardId,
+				type,
+			);
 			setLocalVersion(newVersion);
 			await versions.refetch();
 		},
@@ -223,7 +231,7 @@ export function BoardMeta({
 						</SelectContent>
 					</Select>
 				</div>
-				<div className="w-full flex flex-row gap-2">
+				<div className="w-full flex flex-row gap-2 overflow-hidden">
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button variant={"secondary"} className="w-1/3">
@@ -252,7 +260,7 @@ export function BoardMeta({
 					</DropdownMenu>
 
 					<Button
-						className="w-full"
+						className="flex-grow"
 						onClick={async () => {
 							await saveMeta();
 						}}

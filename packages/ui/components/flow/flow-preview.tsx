@@ -2,11 +2,11 @@ import {
 	Background,
 	BackgroundVariant,
 	Controls,
-	MiniMap,
 	ReactFlow,
 	useEdgesState,
 	useNodesState,
 } from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
 import { useTheme } from "next-themes";
 import { useEffect, useMemo } from "react";
 import {
@@ -18,15 +18,23 @@ import {
 } from "../../lib";
 import { CommentNode } from "./comment-node";
 import { FlowNode } from "./flow-node";
-import "@xyflow/react/dist/style.css";
-import { PreviewFlowNode } from "./preview/preview-node";
+import { LayerNode } from "./layer-node";
 
 export function FlowPreview({ nodes }: Readonly<{ nodes: INode[] }>) {
 	const [boardNodes, setNodes] = useNodesState<any>([]);
 	const { resolvedTheme } = useTheme();
+	const colorMode = useMemo(
+		() => (resolvedTheme === "dark" ? "dark" : "light"),
+		[resolvedTheme],
+	);
 	const [edges, setEdges] = useEdgesState<any>([]);
 	const nodeTypes = useMemo(
-		() => ({ flowNode: PreviewFlowNode, commentNode: CommentNode }),
+		() => ({
+			flowNode: FlowNode,
+			commentNode: CommentNode,
+			layerNode: LayerNode,
+			node: FlowNode,
+		}),
 		[],
 	);
 
@@ -83,29 +91,14 @@ export function FlowPreview({ nodes }: Readonly<{ nodes: INode[] }>) {
 			<ReactFlow
 				suppressHydrationWarning
 				className="w-0 h-0 min-h-0 dark:w-full dark:h-full dark:min-h-56 rounded-lg"
-				colorMode={"dark"}
+				colorMode={colorMode}
+				elementsSelectable={false}
 				nodes={boardNodes}
 				nodeTypes={nodeTypes}
 				fitView
 				fitViewOptions={{
-					padding: 0.8,
+					padding: 0.2,
 				}}
-				edges={edges}
-				proOptions={{ hideAttribution: true }}
-			>
-				<Controls />
-				<Background variant={BackgroundVariant.Dots} gap={12} size={1} />
-			</ReactFlow>
-			<ReactFlow
-				suppressHydrationWarning
-				className="w-full h-full min-h-56 dark:min-h-0 dark:w-0 dark:h-0 rounded-lg"
-				colorMode={"light"}
-				fitView
-				fitViewOptions={{
-					padding: 0.8,
-				}}
-				nodes={boardNodes}
-				nodeTypes={nodeTypes}
 				edges={edges}
 				proOptions={{ hideAttribution: true }}
 			>

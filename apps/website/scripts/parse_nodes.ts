@@ -1,5 +1,5 @@
-import fs from "fs";
-import type { Edge, IComment, INode, IPin, Node } from "@tm9657/flow-like-ui";
+import fs from "node:fs";
+import type { IComment, INode, IPin, Node } from "@tm9657/flow-like-ui";
 import { typeToColor } from "@tm9657/flow-like-ui/components/flow/utils";
 
 const cache = new Map<string, [IPin, INode]>();
@@ -63,7 +63,7 @@ for (const [pin, node] of cache.values()) {
 				target: connectedNodeId,
 				targetHandle: conntectedPin.id,
 				style: { stroke: typeToColor(pin.data_type) },
-				type: "simplebezier",
+				type: "default",
 				data_type: pin.data_type,
 			});
 	}

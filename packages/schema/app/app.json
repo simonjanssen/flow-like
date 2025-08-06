@@ -7,20 +7,27 @@
 		"bits",
 		"boards",
 		"created_at",
+		"download_count",
+		"events",
+		"execution_mode",
 		"id",
-		"meta",
-		"releases",
-		"updated_at"
+		"interactions_count",
+		"rating_count",
+		"rating_sum",
+		"status",
+		"templates",
+		"updated_at",
+		"visibility"
 	],
 	"properties": {
 		"id": {
 			"type": "string"
 		},
-		"meta": {
-			"type": "object",
-			"additionalProperties": {
-				"$ref": "#/definitions/BitMeta"
-			}
+		"status": {
+			"$ref": "#/definitions/AppStatus"
+		},
+		"visibility": {
+			"$ref": "#/definitions/AppVisibility"
 		},
 		"authors": {
 			"type": "array",
@@ -40,17 +47,80 @@
 				"type": "string"
 			}
 		},
-		"releases": {
+		"events": {
 			"type": "array",
 			"items": {
 				"type": "string"
 			}
+		},
+		"templates": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			}
+		},
+		"changelog": {
+			"type": ["string", "null"]
+		},
+		"primary_category": {
+			"anyOf": [
+				{
+					"$ref": "#/definitions/AppCategory"
+				},
+				{
+					"type": "null"
+				}
+			]
+		},
+		"secondary_category": {
+			"anyOf": [
+				{
+					"$ref": "#/definitions/AppCategory"
+				},
+				{
+					"type": "null"
+				}
+			]
+		},
+		"rating_sum": {
+			"type": "integer",
+			"format": "uint64",
+			"minimum": 0.0
+		},
+		"rating_count": {
+			"type": "integer",
+			"format": "uint64",
+			"minimum": 0.0
+		},
+		"download_count": {
+			"type": "integer",
+			"format": "uint64",
+			"minimum": 0.0
+		},
+		"interactions_count": {
+			"type": "integer",
+			"format": "uint64",
+			"minimum": 0.0
+		},
+		"avg_rating": {
+			"type": ["number", "null"],
+			"format": "double"
+		},
+		"relevance_score": {
+			"type": ["number", "null"],
+			"format": "double"
+		},
+		"execution_mode": {
+			"$ref": "#/definitions/AppExecutionMode"
 		},
 		"updated_at": {
 			"$ref": "#/definitions/SystemTime"
 		},
 		"created_at": {
 			"$ref": "#/definitions/SystemTime"
+		},
+		"version": {
+			"type": ["string", "null"]
 		},
 		"frontend": {
 			"anyOf": [
@@ -61,38 +131,57 @@
 					"type": "null"
 				}
 			]
+		},
+		"price": {
+			"type": ["integer", "null"],
+			"format": "uint32",
+			"minimum": 0.0
 		}
 	},
 	"definitions": {
-		"BitMeta": {
-			"type": "object",
-			"required": [
-				"description",
-				"long_description",
-				"name",
-				"tags",
-				"use_case"
-			],
-			"properties": {
-				"name": {
-					"type": "string"
-				},
-				"description": {
-					"type": "string"
-				},
-				"long_description": {
-					"type": "string"
-				},
-				"tags": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					}
-				},
-				"use_case": {
-					"type": "string"
-				}
-			}
+		"AppStatus": {
+			"type": "string",
+			"enum": ["Active", "Inactive", "Archived"]
+		},
+		"AppVisibility": {
+			"type": "string",
+			"enum": [
+				"Public",
+				"PublicRequestAccess",
+				"Private",
+				"Prototype",
+				"Offline"
+			]
+		},
+		"AppCategory": {
+			"type": "string",
+			"enum": [
+				"Other",
+				"Productivity",
+				"Social",
+				"Entertainment",
+				"Education",
+				"Health",
+				"Finance",
+				"Lifestyle",
+				"Travel",
+				"News",
+				"Sports",
+				"Shopping",
+				"FoodAndDrink",
+				"Music",
+				"Photography",
+				"Utilities",
+				"Weather",
+				"Games",
+				"Business",
+				"Communication",
+				"Anime"
+			]
+		},
+		"AppExecutionMode": {
+			"type": "string",
+			"enum": ["Any", "Local", "Remote"]
 		},
 		"SystemTime": {
 			"type": "object",

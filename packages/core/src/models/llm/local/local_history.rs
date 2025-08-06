@@ -1,5 +1,5 @@
 use flow_like_model_provider::history::{
-    Content, ContentType, History, MessageContent, ResponseFormat, Role,
+    Content, ContentType, History, HistoryMessage, ImageUrl, MessageContent, ResponseFormat,
 };
 use flow_like_types::utils::data_url::optimize_data_url;
 use serde::{Deserialize, Serialize};
@@ -13,7 +13,7 @@ pub struct LocalModelHistoryMessage {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct LocalModelHistory {
     model: String,
-    messages: Vec<LocalModelHistoryMessage>,
+    messages: Vec<HistoryMessage>,
     stream: Option<bool>,
     max_completion_tokens: Option<u32>,
     top_p: Option<f32>,
@@ -43,20 +43,9 @@ impl LocalModelHistory {
     }
 }
 
-async fn parse_messages(history: &History) -> Vec<LocalModelHistoryMessage> {
+async fn parse_messages(history: &History) -> Vec<HistoryMessage> {
     let mut messages = Vec::with_capacity(history.messages.len());
     for message in &history.messages {
-        let role = match message.role {
-            Role::Assistant => "assistant",
-            Role::User => "user",
-            Role::System => "system",
-            Role::Function => "function",
-            Role::Tool => "tool",
-        };
-
-        let mut message_string = String::new();
-        let mut img_counter = 0;
-
         let content: Vec<Content> = match message.content {
             MessageContent::String(ref text) => vec![Content::Text {
                 content_type: ContentType::Text,
@@ -65,26 +54,44 @@ async fn parse_messages(history: &History) -> Vec<LocalModelHistoryMessage> {
             MessageContent::Contents(ref contents) => contents.clone(),
         };
 
+        let mut new_content = Vec::with_capacity(content.len());
+
         for content in &content {
             match content {
                 Content::Text { text, .. } => {
-                    message_string.push_str(text);
-                    message_string.push(' ');
+                    new_content.push(Content::Text {
+                        content_type: ContentType::Text,
+                        text: text.clone(),
+                    });
                 }
-                Content::Image { data, .. } => {
-                    let optimized_url = optimize_data_url(data).await;
+                Content::Image { image_url, .. } => {
+                    let optimized_url = optimize_data_url(&image_url.url).await;
 
-                    if let Ok(data_url) = optimized_url {
-                        img_counter += 1;
-                        message_string.push_str(&format!("![img: {}]({})", img_counter, data_url));
+                    match optimized_url {
+                        Ok(url) => {
+                            new_content.push(Content::Image {
+                                content_type: ContentType::ImageUrl,
+                                image_url: ImageUrl { url, detail: None },
+                            });
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to optimize image URL: {}", e);
+                            new_content.push(Content::Text {
+                                content_type: ContentType::Text,
+                                text: "The user tried to send an image, but it could not be optimized.".to_string(),
+                            });
+                        }
                     }
                 }
             }
         }
 
-        messages.push(LocalModelHistoryMessage {
-            role: role.to_string(),
-            content: message_string,
+        messages.push(HistoryMessage {
+            role: message.role.clone(),
+            content: MessageContent::Contents(new_content),
+            name: None,
+            tool_call_id: None,
+            tool_calls: None,
         });
     }
     messages

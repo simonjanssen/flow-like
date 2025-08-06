@@ -1,6 +1,6 @@
 {
 	"$schema": "http://json-schema.org/draft-07/schema#",
-	"title": "CanaryRelease",
+	"title": "CanaryEvent",
 	"type": "object",
 	"required": [
 		"board_id",
@@ -103,6 +103,11 @@
 				},
 				"editable": {
 					"type": "boolean"
+				},
+				"hash": {
+					"type": ["integer", "null"],
+					"format": "uint64",
+					"minimum": 0.0
 				}
 			}
 		},

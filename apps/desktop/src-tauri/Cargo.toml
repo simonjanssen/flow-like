@@ -17,30 +17,43 @@ name = "flow_like_desktop_lib"
 crate-type = ["lib", "cdylib"]
 
 [build-dependencies]
-tauri-build = { version = "2.1.1", features = [] }
+tauri-build = { version = "2.2.0", features = [] }
 
 [dependencies]
-flow-like = { path = "../../../packages/core" }
-flow-like-catalog = { path = "../../../packages/catalog" }
-flow-like-types = { path = "../../../packages/types" }
-tauri = { version = "2.4.1", features = [ "protocol-asset", "macos-private-api"] }
+flow-like = {workspace = true, features = ["tauri"] }
+flow-like-catalog.workspace = true
+flow-like-types.workspace = true
+tauri = { version = "2.5.1", features = [ "protocol-asset", "macos-private-api"] }
 tauri-plugin-shell = "2.2.1"
-tauri-plugin-log = "2.3.1"
+tauri-plugin-log = "2"
 tauri-plugin-notification = "2.2.2"
 window-vibrancy = "0.6.0"
 anyhow = "1.0.95"
-sentry = { version = "0.37.0", features = ["anyhow"] }
-tauri-plugin-dialog = "2.2.1"
-tauri-plugin-deep-link = "2.2.1"
-sentry-tracing = "0.37.0"
+sentry = { version = "0.40.0", features = ["anyhow"] }
+tauri-plugin-dialog = "2.2.2"
+tauri-plugin-deep-link = "2.3.0"
+sentry-tracing = "0.40.0"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "json"] }
 tracing = { version = "0.1.41", features = ["async-await", "attributes"] }
 dirs-next = "2.0.0"
 futures.workspace = true
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_json.workspace = true
+image.workspace = true
+imageproc.workspace = true
+webp.workspace = true
 tauri-plugin = "2.2.0"
 tauri-plugin-clipboard-manager = "2.2.2"
+tauri-plugin-http = "2"
+tauri-plugin-devtools = "2.0.0"
+tauri-plugin-fs = "2.4.0"
+
+[target."cfg(any(target_os = \"macos\", windows, target_os = \"linux\"))".dependencies]
+tauri-plugin-single-instance = { version = "2.2.4", features = ["deep-link"] }
+tauri-plugin-window-state = "2.2.3"
+
+[target."cfg(target_os = \"macos\")".dependencies]
+cocoa = "0.26"
 
 [profile.release]
 panic = "abort"
@@ -50,5 +63,11 @@ opt-level = "z"
 strip = true
 incremental = false
 
-[target."cfg(any(target_os = \"macos\", windows, target_os = \"linux\"))".dependencies]
-tauri-plugin-single-instance = { version = "2.2.3", features = ["deep-link"] }
+[profile.dev]
+opt-level = 1
+debug = 1
+split-debuginfo = "unpacked"  # macOS
+incremental = true
+
+[profile.dev.package."*"]
+opt-level = 0

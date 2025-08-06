@@ -23,8 +23,8 @@ impl NodeLogic for BitFromStringNode {
     async fn get_node(&self, _app_state: &FlowLikeState) -> Node {
         let mut node = Node::new(
             "bit_from_string",
-            "Bit From String",
-            "Converts a string to a boolean (bit)",
+            "Load Bit",
+            "Loads a Bit from a string ID",
             "Bit",
         );
         node.add_icon("/flow/icons/bit.svg");

@@ -71,12 +71,24 @@ pub struct Choice {
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
+pub struct Audio {
+    pub data: String,
+    pub expires_at: Option<u64>,
+    pub id: String,
+    pub transcript: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
 pub struct ResponseMessage {
     pub role: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub content: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub refusal: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub annotations: Option<Vec<Annotation>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub audio: Option<Audio>,
 
     #[serde(default)]
     pub tool_calls: Vec<FunctionCall>,
@@ -87,6 +99,8 @@ impl Default for ResponseMessage {
         ResponseMessage {
             content: None,
             refusal: None,
+            annotations: None,
+            audio: None,
             tool_calls: vec![],
             role: "".to_string(),
         }
@@ -198,6 +212,19 @@ pub struct CompletionTokenDetails {
     rejected_prediction_tokens: u32,
 }
 
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
+pub struct Annotation {
+    r#type: String,
+    url_citation: Option<UrlCitation>,
+}
+
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone)]
+pub struct UrlCitation {
+    end_index: u32,
+    start_index: u32,
+    title: String,
+    url: String,
+}
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, Default)]
 pub struct Response {
     #[serde(skip_serializing_if = "Option::is_none")]

@@ -7,7 +7,10 @@ const mobile = !!/android|ios/.exec(process.env.TAURI_ENV_PLATFORM);
 
 // @ts-ignore
 export default defineConfig(async () => ({
-	plugins: [react()],
+	plugins: [
+		react(),
+		// tailwindcss()
+	],
 	// Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
 	//
 	// 1. prevent vite from obscuring rust errors

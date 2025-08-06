@@ -1,8 +1,9 @@
 use super::variable::VariableType;
-use flow_like_types::{Value, json::to_string_pretty, sync::Mutex};
+use canonical_json::ser::to_string;
+use flow_like_types::{Value, json::to_value, sync::Mutex};
 use schemars::{JsonSchema, schema_for};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashSet, sync::Arc};
+use std::{collections::BTreeSet, sync::Arc};
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
 pub enum PinType {
@@ -79,8 +80,8 @@ pub struct Pin {
     pub data_type: VariableType,
     pub schema: Option<String>,
     pub value_type: ValueType,
-    pub depends_on: HashSet<String>,
-    pub connected_to: HashSet<String>,
+    pub depends_on: BTreeSet<String>,
+    pub connected_to: BTreeSet<String>,
     pub default_value: Option<Vec<u8>>,
     pub index: u16,
     pub options: Option<PinOptions>,
@@ -108,7 +109,7 @@ impl Pin {
 
     pub fn set_schema<T: Serialize + JsonSchema>(&mut self) -> &mut Self {
         let schema = schema_for!(T);
-        let schema_str = to_string_pretty(&schema).ok();
+        let schema_str = to_value(&schema).ok().and_then(|v| to_string(&v).ok());
         self.schema = schema_str;
         self
     }
@@ -124,7 +125,7 @@ impl Pin {
     }
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq, Eq)]
 pub enum ValueType {
     Array,
     Normal,
@@ -140,7 +141,8 @@ mod tests {
     use flow_like_types::sync::Mutex;
     use flow_like_types::{FromProto, ToProto};
     use flow_like_types::{Message, Value, tokio};
-    use std::{collections::HashSet, sync::Arc};
+    use std::collections::BTreeSet;
+    use std::sync::Arc;
 
     #[tokio::test]
     async fn serialize_pin() {
@@ -153,8 +155,8 @@ mod tests {
             data_type: super::VariableType::Execution,
             schema: None,
             value_type: super::ValueType::Normal,
-            depends_on: HashSet::new(),
-            connected_to: HashSet::new(),
+            depends_on: BTreeSet::new(),
+            connected_to: BTreeSet::new(),
             default_value: None,
             index: 0,
             options: None,

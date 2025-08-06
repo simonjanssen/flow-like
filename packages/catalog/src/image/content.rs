@@ -4,6 +4,7 @@ use std::sync::Arc;
 pub mod read_barcodes;
 pub mod read_from_path;
 pub mod read_from_url;
+pub mod write_to_dataurl;
 pub mod write_to_path;
 
 /// Content-Related Image Nodes
@@ -13,6 +14,7 @@ pub async fn register_functions() -> Vec<Arc<dyn NodeLogic>> {
         Arc::new(read_from_path::ReadImagePathNode::default()),
         Arc::new(read_from_url::ReadImageFromUrlNode::default()),
         Arc::new(write_to_path::WriteImageNode::default()),
+        Arc::new(write_to_dataurl::WriteImageDataUrlNode::default()),
     ];
     nodes
 }

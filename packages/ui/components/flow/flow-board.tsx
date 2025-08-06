@@ -16,6 +16,7 @@ import {
 	type OnEdgesChange,
 	type OnNodesChange,
 	ReactFlow,
+	type ReactFlowInstance,
 	addEdge,
 	applyEdgeChanges,
 	applyNodeChanges,
@@ -38,7 +39,6 @@ import {
 	VariableIcon,
 	XIcon,
 } from "lucide-react";
-import MiniSearch from "minisearch";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -87,11 +87,12 @@ import { type INode, IVariableType } from "../../lib/schema/flow/node";
 import type { IPin } from "../../lib/schema/flow/pin";
 import type { ILayer } from "../../lib/schema/flow/run";
 import { convertJsonToUint8Array } from "../../lib/uint8";
-import { useBackend } from "../../state/backend-state";
+import { useBackend, useBackendStore } from "../../state/backend-state";
 import { useFlowBoardParentState } from "../../state/flow-board-parent-state";
 import { useRunExecutionStore } from "../../state/run-execution-state";
 import { BoardMeta } from "./board-meta";
 import { useUndoRedo } from "./flow-history";
+import { PinEditModal } from "./flow-pin/edit-modal";
 import { FlowRuns } from "./flow-runs";
 import { LayerNode } from "./layer-node";
 
@@ -108,7 +109,14 @@ function hexToRgba(hex: string, alpha = 0.3): string {
 export function FlowBoard({
 	appId,
 	boardId,
-}: Readonly<{ appId: string; boardId: string }>) {
+	nodeId,
+	initialVersion,
+}: Readonly<{
+	appId: string;
+	boardId: string;
+	nodeId?: string;
+	initialVersion?: [number, number, number];
+}>) {
 	const { pushCommand, pushCommands, redo, undo } = useUndoRedo(appId, boardId);
 	const router = useRouter();
 	const backend = useBackend();
@@ -119,7 +127,10 @@ export function FlowBoard({
 	const { refetchLogs, setCurrentMetadata, currentMetadata } =
 		useLogAggregation();
 	const flowRef = useRef<any>(null);
-	const [version, setVersion] = useState<[number, number, number]>();
+	const [version, setVersion] = useState<[number, number, number] | undefined>(
+		initialVersion,
+	);
+	const [initialized, setInitialized] = useState(false);
 	const flowPanelRef = useRef<ImperativePanelHandle>(null);
 	const logPanelRef = useRef<ImperativePanelHandle>(null);
 	const varPanelRef = useRef<ImperativePanelHandle>(null);
@@ -129,13 +140,22 @@ export function FlowBoard({
 
 	const { resolvedTheme } = useTheme();
 
-	const catalog: UseQueryResult<INode[]> = useInvoke(backend.getCatalog, []);
+	const catalog: UseQueryResult<INode[]> = useInvoke(
+		backend.boardState.getCatalog,
+		backend.boardState,
+		[],
+	);
 	const board = useInvoke(
-		backend.getBoard,
+		backend.boardState.getBoard,
+		backend.boardState,
 		[appId, boardId, version],
 		boardId !== "",
 	);
-	const currentProfile = useInvoke(backend.getSettingsProfile, []);
+	const currentProfile = useInvoke(
+		backend.userState.getProfile,
+		backend.userState,
+		[],
+	);
 	const { addRun, removeRun, pushUpdate } = useRunExecutionStore();
 	const { screenToFlowPosition } = useReactFlow();
 
@@ -165,31 +185,43 @@ export function FlowBoard({
 
 	const executeCommand = useCallback(
 		async (command: IGenericCommand, append = false): Promise<any> => {
+			const backend = useBackendStore.getState().backend;
+			if (!backend) return;
 			if (typeof version !== "undefined") {
 				toastError("Cannot change old version", <XIcon />);
 				return;
 			}
-			const result = await backend.executeCommand(appId, boardId, command);
+			const result = await backend.boardState.executeCommand(
+				appId,
+				boardId,
+				command,
+			);
 			await pushCommand(result, append);
 			await board.refetch();
 			return result;
 		},
-		[board.refetch, appId, boardId, backend, pushCommand, version],
+		[board.refetch, appId, boardId, pushCommand, version],
 	);
 
 	const executeCommands = useCallback(
 		async (commands: IGenericCommand[]) => {
+			const backend = useBackendStore.getState().backend;
+			if (!backend) return;
 			if (typeof version !== "undefined") {
 				toastError("Cannot change old version", <XIcon />);
 				return;
 			}
 			if (commands.length === 0) return;
-			const result = await backend.executeCommands(appId, boardId, commands);
+			const result = await backend.boardState.executeCommands(
+				appId,
+				boardId,
+				commands,
+			);
 			await pushCommands(result);
 			await board.refetch();
 			return result;
 		},
-		[board.refetch, appId, boardId, backend, pushCommands, version],
+		[board.refetch, appId, boardId, pushCommands, version],
 	);
 
 	useEffect(() => {
@@ -200,6 +232,24 @@ export function FlowBoard({
 
 		if (size < 10) logPanelRef.current.resize(45);
 	}, [logPanelRef.current]);
+
+	const initializeFlow = useCallback(
+		async (instance: ReactFlowInstance) => {
+			if (initialized) return;
+			if (!nodeId || nodeId === "") return;
+
+			instance.fitView({
+				nodes: [
+					{
+						id: nodeId ?? "",
+					},
+				],
+				duration: 500,
+			});
+			setInitialized(true);
+		},
+		[nodeId, initialized],
+	);
 
 	function toggleVars() {
 		if (!varPanelRef.current) return;
@@ -270,41 +320,63 @@ export function FlowBoard({
 	const executeBoard = useCallback(
 		async (node: INode, payload?: object) => {
 			let added = false;
-			console.log(appId);
-			const runMeta: ILogMetadata | undefined = await backend.executeBoard(
-				appId,
-				boardId,
-				{
-					id: node.id,
-					payload: payload,
-				},
-				(update) => {
-					const runUpdates = update
-						.filter((item) => item.event_type.startsWith("run:"))
-						.map((item) => item.payload);
-					if (runUpdates.length === 0) return;
-					const firstItem = runUpdates[0];
-					if (!added) {
-						addRun(firstItem.run_id, boardId, [node.id]);
+			let runId = "";
+			let meta: ILogMetadata | undefined = undefined;
+			try {
+				meta = await backend.boardState.executeBoard(
+					appId,
+					boardId,
+					{
+						id: node.id,
+						payload: payload,
+					},
+					true,
+					async (id: string) => {
+						if (added) return;
+						console.log("Run started", id);
+						runId = id;
 						added = true;
-					}
+						addRun(id, boardId, [node.id]);
+					},
+					(update) => {
+						const runUpdates = update
+							.filter((item) => item.event_type.startsWith("run:"))
+							.map((item) => item.payload);
+						if (runUpdates.length === 0) return;
+						const firstItem = runUpdates[0];
+						if (!added) {
+							runId = firstItem.run_id;
+							addRun(firstItem.run_id, boardId, [node.id]);
+							added = true;
+						}
 
-					pushUpdate(firstItem.run_id, runUpdates);
-				},
-			);
-			if (!runMeta) {
+						pushUpdate(firstItem.run_id, runUpdates);
+					},
+				);
+			} catch (error) {
+				console.warn("Failed to execute board", error);
+			}
+			removeRun(runId);
+			if (!meta) {
 				toastError(
 					"Failed to execute board",
 					<PlayCircleIcon className="w-4 h-4" />,
 				);
 				return;
 			}
-			removeRun(runMeta.run_id);
-			await backend.finalizeRun(appId, runMeta.run_id);
 			await refetchLogs(backend);
-			setCurrentMetadata(runMeta);
+			if (meta) setCurrentMetadata(meta);
 		},
-		[appId, boardId, backend, refetchLogs],
+		[
+			appId,
+			boardId,
+			backend,
+			refetchLogs,
+			pushUpdate,
+			addRun,
+			removeRun,
+			setCurrentMetadata,
+		],
 	);
 
 	const handlePasteCB = useCallback(
@@ -352,6 +424,14 @@ export function FlowBoard({
 
 	const shortcutHandler = useCallback(
 		async (event: KeyboardEvent) => {
+			const target = event.target as HTMLElement;
+			if (
+				target.tagName === "INPUT" ||
+				target.tagName === "TEXTAREA" ||
+				target.isContentEditable
+			) {
+				return;
+			}
 			// Undo
 			if (
 				(event.metaKey || event.ctrlKey) &&
@@ -365,7 +445,7 @@ export function FlowBoard({
 					return;
 				}
 				const stack = await undo();
-				if (stack) await backend.undoBoard(appId, boardId, stack);
+				if (stack) await backend.boardState.undoBoard(appId, boardId, stack);
 				toastSuccess("Undo", <Undo2Icon className="w-4 h-4" />);
 				await board.refetch();
 				return;
@@ -380,7 +460,7 @@ export function FlowBoard({
 					return;
 				}
 				const stack = await redo();
-				if (stack) await backend.redoBoard(appId, boardId, stack);
+				if (stack) await backend.boardState.redoBoard(appId, boardId, stack);
 				toastSuccess("Redo", <Redo2Icon className="w-4 h-4" />);
 				await board.refetch();
 			}
@@ -472,6 +552,7 @@ export function FlowBoard({
 				x: position?.x ?? clickPosition.x,
 				y: position?.y ?? clickPosition.y,
 			});
+
 			const result = addNodeCommand({
 				node: { ...node, coordinates: [location.x, location.y, 0] },
 				current_layer: currentLayer,
@@ -479,6 +560,7 @@ export function FlowBoard({
 
 			await executeCommand(result.command);
 			const new_node = result.node;
+
 			if (droppedPin) {
 				const pinType = droppedPin.pin_type === "Input" ? "Output" : "Input";
 				const pinValueType = droppedPin.value_type;
@@ -621,7 +703,7 @@ export function FlowBoard({
 			executeBoard,
 			executeCommand,
 			selected.current,
-			currentProfile.data?.flow_settings.connection_mode,
+			currentProfile.data?.settings?.connection_mode ?? "default",
 			nodes,
 			edges,
 			currentLayer,
@@ -630,7 +712,7 @@ export function FlowBoard({
 		setNodes(parsed.nodes);
 		setEdges(parsed.edges);
 		setPinCache(new Map(parsed.cache));
-	}, [board.data, currentLayer]);
+	}, [board.data, currentLayer, currentProfile.data]);
 
 	const nodeTypes = useMemo(
 		() => ({
@@ -860,7 +942,7 @@ export function FlowBoard({
 			edgeReconnectSuccessful.current = true;
 			setEdges((els) => reconnectEdge(oldEdge, newConnection, els));
 		},
-		[boardId, setEdges, pinToNode, executeCommands],
+		[setEdges, pinToNode, executeCommands],
 	);
 
 	const onReconnectEnd = useCallback(
@@ -882,7 +964,7 @@ export function FlowBoard({
 
 			edgeReconnectSuccessful.current = true;
 		},
-		[boardId, setEdges, pinToNode],
+		[setEdges, pinToNode],
 	);
 
 	const onContextMenuCB = useCallback((event: any) => {
@@ -1004,7 +1086,7 @@ export function FlowBoard({
 	);
 
 	return (
-		<div className="min-h-dvh h-dvh max-h-dvh w-full flex-1 flex-grow flex-col">
+		<div className="min-h-dvh h-dvh max-h-dvh w-full flex-1 grow flex-col">
 			<div className="flex items-center justify-center absolute translate-x-[-50%] mt-5 left-[50dvw] z-40">
 				{board.data && editBoard && (
 					<BoardMeta
@@ -1082,7 +1164,7 @@ export function FlowBoard({
 			</div>
 			<ResizablePanelGroup
 				direction="horizontal"
-				className="flex flex-grow min-h-dvh h-dvh"
+				className="flex grow min-h-dvh h-dvh"
 			>
 				<ResizablePanel
 					className="z-50 bg-background"
@@ -1100,10 +1182,11 @@ export function FlowBoard({
 				<ResizablePanel autoSave="flow-main-container">
 					<ResizablePanelGroup
 						direction="vertical"
-						className="h-full flex flex-grow"
+						className="h-full flex grow"
 					>
 						<ResizablePanel autoSave="flow-main" ref={flowPanelRef}>
 							<FlowContextMenu
+								board={board.data}
 								droppedPin={droppedPin}
 								onCommentPlace={onCommentPlace}
 								refs={board.data?.refs || {}}
@@ -1132,6 +1215,7 @@ export function FlowBoard({
 										onContextMenu={onContextMenuCB}
 										nodesDraggable={typeof version === "undefined"}
 										nodesConnectable={typeof version === "undefined"}
+										onInit={initializeFlow}
 										ref={flowRef}
 										colorMode={colorMode}
 										nodes={nodes}
@@ -1160,36 +1244,41 @@ export function FlowBoard({
 										<MiniMap
 											pannable
 											zoomable
+											bgColor="color-mix(in oklch, var(--background) 80%, transparent)"
+											maskColor="color-mix(in oklch, var(--foreground) 10%, transparent)"
 											nodeColor={(node) => {
 												if (node.type === "layerNode")
-													return "hsl(var(--foreground) / 0.5)";
+													return "color-mix(in oklch, var(--foreground) 50%, transparent)";
 
 												if (node.type === "node") {
 													const nodeData: INode = node.data.node as INode;
 													if (nodeData.event_callback)
-														return "hsl(var(--primary/ 0.8))";
-													if (nodeData.start) return "hsl(var(--primary/ 0.8))";
+														return "color-mix(in oklch, var(--primary) 80%, transparent)";
+													if (nodeData.start)
+														return "color-mix(in oklch, var(--primary) 80%, transparent)";
 													if (
 														!Object.values(nodeData.pins).find(
 															(pin) =>
 																pin.data_type === IVariableType.Execution,
 														)
-													)
-														return "hsl(var(--tertiary)/ 0.8)";
-													return "hsl(var(--muted))";
+													) {
+														return "color-mix(in oklch, var(--tertiary) 80%, transparent)";
+													}
+													return "color-mix(in oklch, var(--muted) 80%, transparent)";
 												}
 												if (node.type === "commentNode") {
 													const commentData: IComment = node.data
 														.comment as IComment;
 													let color =
-														commentData.color ?? "hsl(var(--muted)/ 0.3)";
+														commentData.color ??
+														"color-mix(in oklch, var(--muted) 80%, transparent)";
 
 													if (color.startsWith("#")) {
 														color = hexToRgba(color, 0.3);
 													}
 													return color;
 												}
-												return "hsl(var(--primary)/ 0.6)";
+												return "color-mix(in oklch, var(--primary) 60%, transparent)";
 											}}
 										/>
 										<Background
@@ -1198,9 +1287,13 @@ export function FlowBoard({
 													? BackgroundVariant.Lines
 													: BackgroundVariant.Dots
 											}
-											color={currentLayer && "hsl(var(--muted) / 0.3)"}
+											color={
+												currentLayer
+													? "color-mix(in oklch, var(--foreground) 5%, transparent)"
+													: "color-mix(in oklch, var(--foreground) 20%, transparent)"
+											}
+											bgColor="color-mix(in oklch, var(--background) 80%, transparent)"
 											gap={12}
-											// bgColor={currentLayer && "hsl(var(--background))"}
 											size={1}
 										/>
 									</ReactFlow>
@@ -1257,6 +1350,7 @@ export function FlowBoard({
 					)}
 				</ResizablePanel>
 			</ResizablePanelGroup>
+			<PinEditModal appId={appId} boardId={boardId} />
 		</div>
 	);
 }

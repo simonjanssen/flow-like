@@ -1,0 +1,108 @@
+
+enum BitType {
+  COURSE
+  LLM
+  VLM
+  EMBEDDING
+  IMAGE_EMBEDDING
+  OBJECT_DETECTION
+  FILE
+  MEDIA
+  TEMPLATE
+  TOKENIZER
+  TOKENIZER_CONFIG
+  SPECIAL_TOKENS_MAP
+  CONFIG
+  PREPROCESSOR_CONFIG
+  PROJECTION
+  PROJECT
+  BOARD
+  OTHER
+}
+
+model Bit {
+  id String @id
+
+  authors String[]
+  type BitType
+  meta Meta[]
+  repository String?
+  downloadLink String?
+  fileName String?
+  hash String
+  parameters Json?
+
+  size BigInt?
+  hub String
+
+  version String?
+  license String?
+
+  dependencies String[]
+  dependencyTreeHash String @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  featuredSwimlane SwimlaneItem[]
+
+  cache BitTreeCache?
+  caches BitCache[]
+
+  @@index([type])
+  @@index([createdAt])
+  @@index([updatedAt])
+  @@index([hash])
+  @@index([hub])
+}
+
+model BitCache {
+  id String @id
+
+  bit Bit? @relation(fields: [bitId], references: [id], onDelete: Cascade)
+  bitId String?
+
+  externalBit Json?
+
+  bitTreeCache BitTreeCache @relation(fields: [dependencyTreeHash], references: [dependencyTreeHash], onDelete: Cascade)
+  dependencyTreeHash String
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@index([dependencyTreeHash])
+}
+
+model BitTreeCache {
+  dependencyTreeHash String @id
+  bit Bit @relation(fields: [dependencyTreeHash], references: [dependencyTreeHash], onDelete: Cascade)
+
+  bits BitCache[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+}
+
+model TemplateProfile {
+  id String @id
+
+  name String
+  thumbnail String?
+  icon String?
+  description String?
+  interests String[]
+  tags String[]
+
+  theme Json?
+  settings Json?
+
+  // JSON with the apps that are part of the profile. Contains the app ID, if it is favorite, pinned and position of the two
+  apps Json[]
+  bitIds String[]
+  hub String
+  hubs String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

@@ -50,6 +50,8 @@ impl From<ChatCompletionResponse> for Response {
                         .collect();
 
                     ResponseMessage {
+                        annotations: None,
+                        audio: None,
                         role,
                         content,
                         refusal,

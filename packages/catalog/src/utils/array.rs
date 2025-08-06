@@ -12,6 +12,7 @@ pub mod pop;
 pub mod push;
 pub mod remove_index;
 pub mod set;
+pub mod shuffle;
 
 pub async fn register_functions() -> Vec<Arc<dyn NodeLogic>> {
     vec![
@@ -26,5 +27,6 @@ pub async fn register_functions() -> Vec<Arc<dyn NodeLogic>> {
         Arc::new(remove_index::RemoveArrayIndexNode::default()),
         Arc::new(clear::ClearArrayNode::default()),
         Arc::new(find_item::FindItemInArrayNode::default()),
+        Arc::new(shuffle::ShuffleArrayNode::default()),
     ]
 }

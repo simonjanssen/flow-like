@@ -1,4 +1,5 @@
 use flow_like_types::{Value, create_id, sync::Mutex};
+use highway::{HighwayHash, HighwayHasher};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -17,10 +18,29 @@ pub struct Variable {
     pub exposed: bool,
     pub secret: bool,
     pub editable: bool,
+    pub hash: Option<u64>,
 
     #[serde(skip)]
     pub value: Arc<Mutex<Value>>,
 }
+
+impl PartialEq for Variable {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+            && self.name == other.name
+            && self.category == other.category
+            && self.description == other.description
+            && self.default_value == other.default_value
+            && self.data_type == other.data_type
+            && self.value_type == other.value_type
+            && self.exposed == other.exposed
+            && self.secret == other.secret
+            && self.editable == other.editable
+        // Intentionally excluding self.value comparison
+    }
+}
+
+impl Eq for Variable {}
 
 impl Variable {
     pub fn new(name: &str, data_type: VariableType, value_type: ValueType) -> Self {
@@ -36,6 +56,7 @@ impl Variable {
             secret: false,
             editable: true,
             value: Arc::new(Mutex::new(Value::Null)),
+            hash: None,
         }
     }
 
@@ -52,6 +73,7 @@ impl Variable {
             secret: self.secret,
             editable: self.editable,
             value: Arc::new(Mutex::new(Value::Null)),
+            hash: None,
         }
     }
 
@@ -88,9 +110,44 @@ impl Variable {
     pub fn get_value(&self) -> Arc<Mutex<Value>> {
         self.value.clone()
     }
+
+    pub fn hash(&mut self) {
+        let mut hasher = HighwayHasher::new(highway::Key([
+            0x0123456789abcdfe,
+            0xfedcba9876543200,
+            0x0011223344556677,
+            0x8899aabbccddeeff,
+        ]));
+
+        hasher.append(self.id.as_bytes());
+        hasher.append(self.name.as_bytes());
+
+        if let Some(category) = &self.category {
+            hasher.append(category.as_bytes());
+        }
+
+        if let Some(description) = &self.description {
+            hasher.append(description.as_bytes());
+        }
+
+        // We don´t leak secret values in the hash
+        if !self.secret {
+            if let Some(default_value) = &self.default_value {
+                hasher.append(default_value);
+            }
+        }
+
+        hasher.append(format!("{:?}", self.data_type).as_bytes());
+        hasher.append(format!("{:?}", self.value_type).as_bytes());
+        hasher.append(&[self.exposed as u8]);
+        hasher.append(&[self.secret as u8]);
+        hasher.append(&[self.editable as u8]);
+
+        self.hash = Some(hasher.finalize64());
+    }
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
+#[derive(PartialEq, Eq, Serialize, Deserialize, JsonSchema, Debug, Clone)]
 pub enum VariableType {
     Execution,
     String,

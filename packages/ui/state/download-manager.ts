@@ -102,7 +102,12 @@ export const useDownloadManager = create<IDownloadManager>((set, get) => ({
 	setDownloadBackend: (backend: IBackendState) => set({ backend }),
 	download: async (bit: IBit, cb?: (dl: Download) => void) => {
 		const { manager, backend } = get();
-		console.dir(backend);
+
+		// Check if the backend actually has functions to download bits
+		if (!backend.bitState.downloadBit) {
+			throw new Error("Backend does not support downloading bits.");
+		}
+
 		return await manager.download(backend, bit, cb);
 	},
 }));

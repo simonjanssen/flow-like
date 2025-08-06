@@ -135,7 +135,7 @@ const FlowRunsComponent = ({
 	);
 
 	return (
-		<div className="flex flex-col gap-2 p-4 bg-background flex-grow h-full max-h-full overflow-hidden">
+		<div className="flex flex-col gap-2 p-4 bg-background grow h-full max-h-full overflow-hidden">
 			<div className="flex flex-row items-center justify-between">
 				<h3>Runs</h3>
 				<Button
@@ -247,7 +247,7 @@ const FlowRunsComponent = ({
 
 							setCurrentMetadata(run);
 							onVersionChange(
-								run.version === "v" + version.join("-")
+								run.version === `v${version.join("-")}`
 									? undefined
 									: (run.version.replace("v", "").split("-").map(Number) as [
 											number,
@@ -263,7 +263,7 @@ const FlowRunsComponent = ({
 									{nodes[run.node_id]?.friendly_name ?? "Deleted Event"}
 								</small>
 								<small className="text-muted-foreground">
-									{run.version === "v" + version.join("-")
+									{run.version === `v${version.join("-")}`
 										? "Latest"
 										: `${run.version}`}
 								</small>

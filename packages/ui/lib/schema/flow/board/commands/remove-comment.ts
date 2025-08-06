@@ -9,6 +9,7 @@ export interface IComment {
 	comment_type: ICommentType;
 	content: string;
 	coordinates: number[];
+	hash?: number | null;
 	height?: number | null;
 	id: string;
 	layer?: null | string;

@@ -1,27 +1,33 @@
 import { IconBinary, IconPdf } from "@tabler/icons-react";
 import {
 	BracesIcon,
+	Database,
 	EllipsisVerticalIcon,
+	FileArchive,
+	FileAudioIcon,
 	FileIcon,
+	FileImageIcon,
+	FileSpreadsheetIcon,
+	FileTextIcon,
+	FileVideoIcon,
 	FolderIcon,
-	HeadphonesIcon,
-	ImageIcon,
-	LetterTextIcon,
-	VideoIcon,
+	Music,
+	PresentationIcon,
+	Settings,
+	Zap,
 } from "lucide-react";
 import { useCallback } from "react";
 import { toast } from "sonner";
-import { type INode, humanFileSize } from "../../lib";
+import { type INode, type IStorageItem, humanFileSize } from "../../lib";
+import { convertJsonToUint8Array } from "../../lib/uint8";
 import {
-	convertJsonToUint8Array,
-	parseUint8ArrayToJson,
-} from "../../lib/uint8";
-import {
+	Badge,
 	Button,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuLabel,
+	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 	canPreview,
 	isAudio,
@@ -123,14 +129,6 @@ const TEMPLATE = JSON.parse(`{
   "comments": []
 }`);
 
-export interface IStorageItem {
-	location: string;
-	last_modified: string;
-	size: number;
-	e_tag?: string;
-	version?: string;
-}
-
 export function FileOrFolder({
 	file,
 	highlight,
@@ -144,7 +142,7 @@ export function FileOrFolder({
 	highlight: boolean;
 	changePrefix?: (prefix: string) => void;
 	loadFile?: (file: string) => void;
-	shareFile?: (file: string) => void;
+	shareFile?: (file: string, e: any) => void;
 	deleteFile?: (file: string) => void;
 	downloadFile?: (file: string) => void;
 }>) {
@@ -158,15 +156,14 @@ export function FileOrFolder({
 			if (isFolder) {
 				const location = file.location.split("/").pop()?.slice(1, -7) ?? "";
 				const parentPath = file.location.split("/").slice(3, -1).join("/");
-				TEMPLATE.nodes[childNode].pins[
-					"w8k4qi9sq7265ium4c3l6qg8"
-				].default_value = convertJsonToUint8Array(`${parentPath}/${location}`);
+				TEMPLATE.nodes[childNode].pins.w8k4qi9sq7265ium4c3l6qg8.default_value =
+					convertJsonToUint8Array(`${parentPath}/${location}`);
 				navigator.clipboard.writeText(JSON.stringify(TEMPLATE));
 				toast.success("Path copied to clipboard");
 				return;
 			}
 
-			TEMPLATE.nodes[childNode].pins["x56ex8kn2uoq37rd8xitawbh"].default_value =
+			TEMPLATE.nodes[childNode].pins.x56ex8kn2uoq37rd8xitawbh.default_value =
 				convertJsonToUint8Array(file.location.split("/").slice(3).join("/"));
 			navigator.clipboard.writeText(JSON.stringify(TEMPLATE));
 			toast.success("Path copied to clipboard");
@@ -176,96 +173,142 @@ export function FileOrFolder({
 
 	if (file.location.endsWith("._path")) {
 		return (
-			<button
-				className="border p-2 w-full flex flex-row justify-between items-center hover:bg-muted bg-background"
-				onClick={() => {
-					changePrefix?.(file.location.split("/").pop()?.slice(1, -7) ?? "");
-				}}
+			<div
+				className={`group relative rounded-lg border border-border/50 p-3 w-full transition-all duration-200 hover:border-primary/50 hover:shadow-md bg-linear-to-r from-background to-muted/20 ${
+					highlight ? "border-primary bg-primary/5 shadow-sm" : ""
+				}`}
 			>
-				<div className="flex flex-row items-center gap-2">
-					<FolderIcon className="w-4 h-4 text-primary" />
-					<p className="line-clamp-1 text-start">
-						{file.location.split("/").pop()?.slice(1, -7)}
-					</p>
-				</div>
-				<DropdownMenu>
-					<DropdownMenuTrigger>
-						<Button
-							className="max-h-4 max-w-4"
-							variant={"ghost"}
-							size={"icon"}
-							onClick={(e) => {
-								e.stopPropagation();
-								e.preventDefault();
-							}}
-						>
-							<EllipsisVerticalIcon className="max-h-4" />
-						</Button>
-					</DropdownMenuTrigger>
-					<DropdownMenuContent>
-						<DropdownMenuLabel>Folder Actions</DropdownMenuLabel>
-						<DropdownMenuItem
-							onClick={(e) => {
-								e.preventDefault();
-								e.stopPropagation();
-								copyPath(true);
-							}}
-						>
-							Copy Path
-						</DropdownMenuItem>
-						{typeof deleteFile !== "undefined" && (
+				<button
+					className="w-full flex flex-row justify-between items-center"
+					onClick={() => {
+						changePrefix?.(file.location.split("/").pop()?.slice(1, -7) ?? "");
+					}}
+				>
+					<div className="flex flex-row items-center gap-3">
+						<div className="p-2 rounded-md bg-primary/10 group-hover:bg-primary/20 transition-colors">
+							<FolderIcon className="w-5 h-5 text-primary" />
+						</div>
+						<div className="flex flex-col items-start">
+							<p className="line-clamp-1 text-start font-medium text-foreground text-sm sm:text-base">
+								{file.location.split("/").pop()?.slice(1, -7)}
+							</p>
+							<Badge
+								variant="secondary"
+								className="text-xs mt-1 px-1 py-0 h-4 sm:h-5 sm:px-2 sm:py-1"
+							>
+								Folder
+							</Badge>
+						</div>
+					</div>
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button
+								className="opacity-0 group-hover:opacity-100 transition-opacity"
+								variant="ghost"
+								size="sm"
+								onClick={(e) => {
+									e.stopPropagation();
+									e.preventDefault();
+								}}
+							>
+								<EllipsisVerticalIcon className="h-4 w-4" />
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="end">
+							<DropdownMenuLabel>Folder Actions</DropdownMenuLabel>
+							<DropdownMenuSeparator />
 							<DropdownMenuItem
 								onClick={(e) => {
 									e.preventDefault();
 									e.stopPropagation();
-									deleteFile?.(
-										file.location.split("/").pop()?.slice(1, -7) ?? "",
-									);
-									deleteFile?.(file.location.split("/").pop() ?? "");
+									copyPath(true);
 								}}
 							>
-								Delete
+								Copy Path
 							</DropdownMenuItem>
-						)}
-					</DropdownMenuContent>
-				</DropdownMenu>
-			</button>
+							{typeof deleteFile !== "undefined" && (
+								<>
+									<DropdownMenuSeparator />
+									<DropdownMenuItem
+										className="bg-destructive text-destructive-foreground focus:text-destructive-foreground"
+										onClick={(e) => {
+											e.preventDefault();
+											e.stopPropagation();
+											deleteFile?.(
+												file.location.split("/").pop()?.slice(1, -7) ?? "",
+											);
+											deleteFile?.(file.location.split("/").pop() ?? "");
+										}}
+									>
+										Delete
+									</DropdownMenuItem>
+								</>
+							)}
+						</DropdownMenuContent>
+					</DropdownMenu>
+				</button>
+			</div>
 		);
 	}
 
 	return (
-		<button
-			className={`border p-2 w-full flex flex-row justify-between items-center bg-background ${highlight ? "bg-muted" : ""} ${canPreview(file.location) ? "hover:border-primary" : "cursor-not-allowed"}`}
-			onClick={() => {
-				if (canPreview(file.location)) loadFile?.(file.location);
-			}}
+		<div
+			className={`group relative rounded-lg border border-border/50 p-3 w-full transition-all duration-200 bg-linear-to-r from-background to-muted/10 ${
+				highlight ? "border-primary bg-primary/5 shadow-sm" : ""
+			} ${
+				canPreview(file.location)
+					? "hover:border-primary/50 hover:shadow-md cursor-pointer"
+					: "cursor-not-allowed opacity-75"
+			}`}
 		>
-			<div className="flex flex-row items-center gap-2">
-				<IconForFile file={file} />
-				<p className="line-clamp-1 text-start">
-					{file.location.split("/").pop()}
-				</p>
-			</div>
-			<div className="flex flex-row items-center gap-2 ml-2">
-				<small className="text-xs text-muted-foreground whitespace-nowrap">
-					{humanFileSize(file.size, true)}
-				</small>
+			<button
+				className="w-full flex flex-row justify-between items-center"
+				onClick={() => {
+					if (canPreview(file.location)) loadFile?.(file.location);
+				}}
+			>
+				<div className="flex flex-row items-center gap-3 flex-1 min-w-0">
+					<div
+						className={`p-2 rounded-md transition-colors ${
+							canPreview(file.location)
+								? "bg-primary/10 group-hover:bg-primary/20"
+								: "bg-muted/50"
+						}`}
+					>
+						<IconForFile file={file} />
+					</div>
+					<div className="flex flex-col items-start flex-1 min-w-0">
+						<p className="line-clamp-1 text-start font-medium text-foreground truncate w-full text-sm sm:text-base">
+							{file.location.split("/").pop()}
+						</p>
+						<div className="flex items-center gap-1 sm:gap-2 mt-1">
+							<Badge
+								variant="outline"
+								className="text-xs px-1 py-0 h-4 sm:h-5 sm:px-2 sm:py-1"
+							>
+								{humanFileSize(file.size, true)}
+							</Badge>
+							<FileTypeBadge filename={file.location} />
+						</div>
+					</div>
+				</div>
 				<DropdownMenu>
-					<DropdownMenuTrigger>
+					<DropdownMenuTrigger asChild>
 						<Button
-							className="max-h-4 max-w-4"
-							variant={"ghost"}
-							size={"icon"}
+							className="opacity-0 group-hover:opacity-100 transition-opacity"
+							variant="ghost"
+							size="sm"
 							onClick={(e) => {
 								e.stopPropagation();
 								e.preventDefault();
 							}}
 						>
-							<EllipsisVerticalIcon className="max-h-4" />
+							<EllipsisVerticalIcon className="h-4 w-4" />
 						</Button>
 					</DropdownMenuTrigger>
-					<DropdownMenuContent>
+					<DropdownMenuContent align="end">
 						<DropdownMenuLabel>File Actions</DropdownMenuLabel>
+						<DropdownMenuSeparator />
 						<DropdownMenuItem
 							onClick={(e) => {
 								e.preventDefault();
@@ -280,7 +323,7 @@ export function FileOrFolder({
 								onClick={(e) => {
 									e.preventDefault();
 									e.stopPropagation();
-									downloadFile?.(file.location.split("/").pop() ?? "");
+									downloadFile?.(file.location);
 								}}
 							>
 								Download
@@ -288,42 +331,207 @@ export function FileOrFolder({
 						)}
 						{typeof shareFile !== "undefined" && (
 							<DropdownMenuItem
+								disabled
 								onClick={(e) => {
 									e.preventDefault();
 									e.stopPropagation();
-									shareFile?.(file.location.split("/").pop() ?? "");
+									shareFile?.(file.location.split("/").pop() ?? "", e);
 								}}
 							>
 								Share
 							</DropdownMenuItem>
 						)}
 						{typeof deleteFile !== "undefined" && (
-							<DropdownMenuItem
-								onClick={(e) => {
-									e.preventDefault();
-									e.stopPropagation();
-									deleteFile?.(file.location.split("/").pop() ?? "");
-								}}
-							>
-								Delete
-							</DropdownMenuItem>
+							<>
+								<DropdownMenuSeparator />
+								<DropdownMenuItem
+									className="bg-destructive text-destructive-foreground focus:text-destructive-foreground"
+									onClick={(e) => {
+										e.preventDefault();
+										e.stopPropagation();
+										deleteFile?.(file.location.split("/").pop() ?? "");
+									}}
+								>
+									Delete
+								</DropdownMenuItem>
+							</>
 						)}
 					</DropdownMenuContent>
 				</DropdownMenu>
-			</div>
-		</button>
+			</button>
+		</div>
 	);
 }
 
+function FileTypeBadge({ filename }: { filename: string }) {
+	const extension = filename.split(".").pop()?.toLowerCase();
+	const badgeClassName = "text-xs px-1 py-0 h-4 sm:h-5 sm:px-2 sm:py-1";
+
+	if (isImage(filename))
+		return (
+			<Badge variant="secondary" className={badgeClassName}>
+				Image
+			</Badge>
+		);
+	if (isVideo(filename))
+		return (
+			<Badge variant="secondary" className={badgeClassName}>
+				Video
+			</Badge>
+		);
+	if (isAudio(filename))
+		return (
+			<Badge variant="secondary" className={badgeClassName}>
+				Audio
+			</Badge>
+		);
+	if (isCode(filename))
+		return (
+			<Badge variant="secondary" className={badgeClassName}>
+				Code
+			</Badge>
+		);
+	if (isText(filename))
+		return (
+			<Badge variant="secondary" className={badgeClassName}>
+				Text
+			</Badge>
+		);
+
+	switch (extension) {
+		case "pdf":
+			return (
+				<Badge variant="secondary" className={badgeClassName}>
+					PDF
+				</Badge>
+			);
+		case "zip":
+		case "rar":
+		case "7z":
+		case "tar":
+		case "gz":
+			return (
+				<Badge variant="secondary" className={badgeClassName}>
+					Archive
+				</Badge>
+			);
+		case "xlsx":
+		case "xls":
+		case "csv":
+			return (
+				<Badge variant="secondary" className={badgeClassName}>
+					Sheet
+				</Badge>
+			);
+		case "pptx":
+		case "ppt":
+			return (
+				<Badge variant="secondary" className={badgeClassName}>
+					Slides
+				</Badge>
+			);
+		case "sql":
+		case "db":
+		case "sqlite":
+			return (
+				<Badge variant="secondary" className={badgeClassName}>
+					DB
+				</Badge>
+			);
+		case "json":
+		case "xml":
+		case "yaml":
+		case "yml":
+			return (
+				<Badge variant="secondary" className={badgeClassName}>
+					Data
+				</Badge>
+			);
+		case "exe":
+		case "msi":
+		case "app":
+		case "deb":
+		case "rpm":
+			return (
+				<Badge variant="secondary" className={badgeClassName}>
+					Exec
+				</Badge>
+			);
+		default:
+			return (
+				<Badge variant="outline" className={badgeClassName}>
+					{extension?.toUpperCase() || "File"}
+				</Badge>
+			);
+	}
+}
+
 function IconForFile({ file }: Readonly<{ file: IStorageItem }>) {
-	const className = `w-4 h-4 ${canPreview(file.location) ? "text-primary" : "text-foreground"}`;
+	const className = `w-5 h-5 ${canPreview(file.location) ? "text-primary" : "text-muted-foreground"}`;
+	const extension = file.location.split(".").pop()?.toLowerCase();
+
+	// PDF files
 	if (file.location.endsWith(".pdf")) return <IconPdf className={className} />;
-	if (isImage(file.location)) return <ImageIcon className={className} />;
-	if (isVideo(file.location)) return <VideoIcon className={className} />;
-	if (isAudio(file.location)) return <HeadphonesIcon className={className} />;
+
+	// Images
+	if (isImage(file.location)) return <FileImageIcon className={className} />;
+
+	// Videos
+	if (isVideo(file.location)) return <FileVideoIcon className={className} />;
+
+	// Audio
+	if (isAudio(file.location)) return <FileAudioIcon className={className} />;
+
+	// Code files
 	if (isCode(file.location)) return <BracesIcon className={className} />;
-	if (isText(file.location)) return <LetterTextIcon className={className} />;
-	if (!file.location.split("/").pop()?.includes("."))
-		return <IconBinary className={className} />;
-	return <FileIcon className={className} />;
+
+	// Text files
+	if (isText(file.location)) return <FileTextIcon className={className} />;
+
+	// Specific file types
+	switch (extension) {
+		case "zip":
+		case "rar":
+		case "7z":
+		case "tar":
+		case "gz":
+			return <FileArchive className={className} />;
+		case "xlsx":
+		case "xls":
+		case "csv":
+			return <FileSpreadsheetIcon className={className} />;
+		case "pptx":
+		case "ppt":
+			return <PresentationIcon className={className} />;
+		case "sql":
+		case "db":
+		case "sqlite":
+			return <Database className={className} />;
+		case "json":
+		case "xml":
+		case "yaml":
+		case "yml":
+			return <BracesIcon className={className} />;
+		case "exe":
+		case "msi":
+		case "app":
+		case "deb":
+		case "rpm":
+			return <Zap className={className} />;
+		case "conf":
+		case "config":
+		case "ini":
+		case "env":
+			return <Settings className={className} />;
+		case "mp3":
+		case "wav":
+		case "flac":
+		case "aac":
+			return <Music className={className} />;
+		default:
+			// Files without extension (binary)
+			if (!file.location.split("/").pop()?.includes("."))
+				return <IconBinary className={className} />;
+			return <FileIcon className={className} />;
+	}
 }

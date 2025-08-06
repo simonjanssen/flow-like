@@ -29,9 +29,9 @@ pub async fn make_data_url(url: &str) -> anyhow::Result<String> {
 
     if !content_type.starts_with("image/") {
         // Now we check if the url path ends with an image extension
-        let path = url.split('/').last().unwrap_or("");
+        let path = url.split('/').next_back().unwrap_or("");
         let path = path.split('?').next().unwrap_or("");
-        let extension = path.split('.').last().unwrap_or("");
+        let extension = path.split('.').next_back().unwrap_or("");
 
         content_type = match extension {
             "jpg" | "jpeg" => "image/jpeg",
@@ -73,7 +73,7 @@ pub async fn data_url_to_bytes(url: &str) -> anyhow::Result<Vec<u8>> {
 
 pub fn data_url_to_base64(url: &str) -> anyhow::Result<&str> {
     url.split(',')
-        .last()
+        .next_back()
         .ok_or_else(|| anyhow::anyhow!("Invalid Data URL"))
 }
 
@@ -83,6 +83,23 @@ pub async fn pathbuf_to_data_url(path: &std::path::PathBuf) -> anyhow::Result<St
     let base64 = STANDARD.encode(&base64);
     let data_url = format!("data:{};base64,{}", mime, base64);
     Ok(data_url)
+}
+
+pub async fn image_to_data_url(
+    image: &image::DynamicImage,
+    format: image::ImageFormat,
+) -> anyhow::Result<String> {
+    let mut buffer = Cursor::new(Vec::new()); // Use Cursor to wrap the Vec<u8>
+    image.write_to(&mut buffer, format)?;
+    let base64 = STANDARD.encode(buffer.into_inner());
+    let mime = match format {
+        image::ImageFormat::Png => "image/png",
+        image::ImageFormat::Jpeg => "image/jpeg",
+        image::ImageFormat::Gif => "image/gif",
+        image::ImageFormat::WebP => "image/webp",
+        _ => "application/octet-stream",
+    };
+    Ok(format!("data:{};base64,{}", mime, base64))
 }
 
 #[cfg(test)]

@@ -20,6 +20,7 @@ pub async fn init_downloads(
     let dl_list: HashMap<String, Bit> = download_manager.load();
 
     download_manager.block_resume();
+    println!("Download Manager Resumed with {} items", dl_list.len());
 
     Ok(dl_list)
 }

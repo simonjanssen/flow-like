@@ -29,8 +29,8 @@ impl History {
                             crate::history::Content::Text { text, .. } => {
                                 content.push(ContentBlock::Text(text.clone()));
                             }
-                            crate::history::Content::Image { data, .. } => {
-                                let url = match make_data_url(data).await {
+                            crate::history::Content::Image { image_url, .. } => {
+                                let url = match make_data_url(&image_url.url).await {
                                     Ok(url) => url,
                                     Err(err) => {
                                         println!("Error creating data URL: {}", err);

@@ -3,18 +3,20 @@ use flow_like_storage::lancedb::connection::ConnectBuilder;
 use flow_like_storage::object_store::path::Path;
 use flow_like_types::Ok;
 use flow_like_types::sync::{DashMap, Mutex, RwLock};
-use futures::future;
+#[cfg(feature = "flow-runtime")]
+use flow_like_types::tokio_util::sync::CancellationToken;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
+#[cfg(feature = "flow-runtime")]
+use std::time::Instant;
 
+use crate::flow::event::Event;
 #[cfg(feature = "flow-runtime")]
 use crate::flow::execution::{LogMeta, log::LogMessage};
 
 #[cfg(feature = "flow-runtime")]
 use crate::flow::board::Board;
-#[cfg(feature = "flow-runtime")]
-use crate::flow::execution::InternalRun;
 use crate::flow::node::Node;
 #[cfg(feature = "flow-runtime")]
 use crate::flow::node::NodeLogic;
@@ -55,6 +57,20 @@ impl FlowLikeConfig {
         FlowLikeConfig {
             callbacks: FlowLikeCallbacks::default(),
             stores: FlowLikeStores::default(),
+        }
+    }
+
+    pub fn with_default_store(store: FlowLikeStore) -> Self {
+        FlowLikeConfig {
+            callbacks: FlowLikeCallbacks::default(),
+            stores: FlowLikeStores {
+                app_storage_store: Some(store.clone()),
+                app_meta_store: Some(store.clone()),
+                bits_store: Some(store.clone()),
+                user_store: Some(store.clone()),
+                temporary_store: Some(store.clone()),
+                log_store: Some(store),
+            },
         }
     }
 
@@ -116,6 +132,19 @@ impl FlowNodeRegistryInner {
 
     pub fn get_nodes(&self) -> Vec<Node> {
         self.registry.values().map(|node| node.0.clone()).collect()
+    }
+
+    pub async fn prepare(state: &FlowLikeState, nodes: &Arc<Vec<Arc<dyn NodeLogic>>>) -> Self {
+        let mut registry = FlowNodeRegistryInner {
+            registry: HashMap::with_capacity(nodes.len()),
+        };
+
+        for logic in nodes.iter() {
+            let node = logic.get_node(state).await;
+            registry.insert(node, logic.clone());
+        }
+
+        registry
     }
 
     #[inline]
@@ -198,31 +227,6 @@ impl FlowNodeRegistry {
             registry: self.node_registry.registry.clone(),
         };
 
-        let num_cpus = std::thread::available_parallelism()
-            .map(|p| p.get())
-            .unwrap_or(2);
-        let batch_size = std::cmp::min(64, std::cmp::max(4, num_cpus * 4));
-
-        for chunk in nodes.chunks(batch_size) {
-            let futures: Vec<_> = chunk
-                .iter()
-                .map(|logic| {
-                    let logic_clone = logic.clone();
-                    let guard_ref = &guard;
-                    async move {
-                        let node = logic_clone.get_node(guard_ref).await;
-                        (node, logic_clone)
-                    }
-                })
-                .collect();
-
-            let results = future::join_all(futures).await;
-
-            for (node, logic) in results {
-                registry.insert(node, logic);
-            }
-        }
-
         for logic in nodes {
             let node = logic.get_node(&guard).await;
             registry.insert(node, logic);
@@ -239,6 +243,54 @@ impl FlowNodeRegistry {
     pub fn instantiate(&self, node: &Node) -> flow_like_types::Result<Arc<dyn NodeLogic>> {
         let node = self.node_registry.instantiate(node)?;
         Ok(node)
+    }
+}
+
+#[derive(Clone)]
+pub struct RunData {
+    pub start_time: Instant,
+    pub board_id: Arc<str>,
+    pub node_id: Arc<str>,
+    pub event_id: Option<Arc<str>>,
+    pub cancellation_token: CancellationToken,
+}
+
+impl RunData {
+    pub fn new(
+        board_id: &str,
+        node_id: &str,
+        event_id: Option<String>,
+        cancellation_token: CancellationToken,
+    ) -> Self {
+        RunData {
+            start_time: Instant::now(),
+            board_id: Arc::from(board_id),
+            node_id: Arc::from(node_id),
+            event_id: event_id.map(|s| Arc::from(s.as_str())),
+            cancellation_token,
+        }
+    }
+
+    pub fn is_cancelled(&self) -> bool {
+        self.cancellation_token.is_cancelled()
+    }
+
+    pub fn cancel(&self) {
+        self.cancellation_token.cancel();
+    }
+
+    pub fn elapsed(&self) -> std::time::Duration {
+        self.start_time.elapsed()
+    }
+
+    pub fn from_event(event: &Event, cancellation_token: CancellationToken) -> Self {
+        RunData {
+            start_time: Instant::now(),
+            board_id: Arc::from(event.board_id.as_str()),
+            node_id: Arc::from(event.node_id.as_str()),
+            event_id: Some(Arc::from(event.id.as_str())),
+            cancellation_token,
+        }
     }
 }
 
@@ -264,7 +316,7 @@ pub struct FlowLikeState {
     #[cfg(feature = "flow-runtime")]
     pub board_registry: Arc<DashMap<String, Arc<Mutex<Board>>>>, // TODO: should board be wrapped in RWLock or Mutex?
     #[cfg(feature = "flow-runtime")]
-    pub board_run_registry: Arc<DashMap<String, Arc<Mutex<InternalRun>>>>,
+    pub board_run_registry: Arc<DashMap<String, Arc<RunData>>>,
 }
 
 impl FlowLikeState {
@@ -336,6 +388,28 @@ impl FlowLikeState {
     }
 
     #[cfg(feature = "flow-runtime")]
+    pub fn get_template(
+        &self,
+        template_id: &str,
+        version: Option<(u32, u32, u32)>,
+    ) -> flow_like_types::Result<Arc<Mutex<Board>>> {
+        let key = if let Some(version) = version {
+            format!("{}-{}-{}-{}", template_id, version.0, version.1, version.2)
+        } else {
+            template_id.to_string()
+        };
+
+        let board = self.board_registry.try_get(&key);
+
+        match board.try_unwrap() {
+            Some(board) => Ok(board.clone()),
+            None => Err(flow_like_types::anyhow!(
+                "Board not found or could not be locked"
+            )),
+        }
+    }
+
+    #[cfg(feature = "flow-runtime")]
     pub fn remove_board(
         &self,
         board_id: &str,
@@ -365,23 +439,40 @@ impl FlowLikeState {
     }
 
     #[cfg(feature = "flow-runtime")]
-    pub fn board_run_registry(&self) -> Arc<DashMap<String, Arc<Mutex<InternalRun>>>> {
+    pub fn board_run_registry(&self) -> Arc<DashMap<String, Arc<RunData>>> {
         self.board_run_registry.clone()
     }
 
     #[cfg(feature = "flow-runtime")]
-    pub fn register_run(&self, run_id: &str, run: Arc<Mutex<InternalRun>>) {
-        self.board_run_registry.insert(run_id.to_string(), run);
+    pub fn list_runs(&self) -> flow_like_types::Result<Vec<(String, Arc<RunData>)>> {
+        let runs = self
+            .board_run_registry
+            .iter()
+            .map(|entry| (entry.key().clone(), entry.value().clone()))
+            .collect::<Vec<_>>();
+        Ok(runs)
     }
 
     #[cfg(feature = "flow-runtime")]
-    pub fn remove_run(&self, run_id: &str) -> Option<Arc<Mutex<InternalRun>>> {
+    pub fn register_run(&self, run_id: &str, run: RunData) {
+        self.board_run_registry
+            .insert(run_id.to_string(), Arc::new(run));
+    }
+
+    #[cfg(feature = "flow-runtime")]
+    pub fn remove_and_cancel_run(&self, run_id: &str) -> flow_like_types::Result<()> {
         let removed = self.board_run_registry.remove(run_id);
-        removed.map(|(_id, run)| run)
+        if let Some((_id, run)) = removed {
+            if !run.is_cancelled() {
+                run.cancel();
+            }
+        }
+
+        Ok(())
     }
 
     #[cfg(feature = "flow-runtime")]
-    pub fn get_run(&self, run_id: &str) -> flow_like_types::Result<Arc<Mutex<InternalRun>>> {
+    pub fn get_run(&self, run_id: &str) -> flow_like_types::Result<Arc<RunData>> {
         let run = self.board_run_registry.try_get(run_id);
 
         match run.try_unwrap() {
@@ -433,7 +524,7 @@ impl FlowLikeState {
             q = q.only_if(query);
         }
 
-        let results = q.limit(limit).offset(offset).execute().await?;
+        let results = q.offset(offset).limit(limit).execute().await?;
         let results = results.try_collect::<Vec<_>>().await?;
 
         let mut log_messages = Vec::with_capacity(results.len() * 10);

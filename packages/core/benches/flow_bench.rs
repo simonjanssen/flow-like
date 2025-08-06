@@ -56,9 +56,12 @@ async fn run_board(id: &str, start_ids: Vec<String>) {
         let mut run = InternalRun::new(
             "bench",
             board.clone(),
+            None,
             &state,
             &profile,
-            payload,
+            &payload,
+            None,
+            false,
             None,
             None,
         )
@@ -82,9 +85,12 @@ async fn run_shared_board(
         let mut run = InternalRun::new(
             "bench",
             board.clone(),
+            None,
             &state,
             &profile,
-            payload,
+            &payload,
+            None,
+            false,
             None,
             None,
         )

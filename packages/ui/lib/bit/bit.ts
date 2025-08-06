@@ -1,7 +1,7 @@
 import { get, set } from "idb-keyval";
 import type { IBackendState } from "../../state/backend-state";
 import type { Nullable } from "../schema/auto-import";
-import { type IBit, type IBitMeta, IBitTypes } from "../schema/bit/bit";
+import { type IBit, IBitTypes, type IMetadata } from "../schema/bit/bit";
 import type { IEmbeddingModelParameters } from "../schema/bit/bit/embedding-model-parameters";
 import type { IImageEmbeddingModelParameters } from "../schema/bit/bit/image-embedding-model-parameters";
 import type { ILlmParameters } from "../schema/bit/bit/llm-parameters";
@@ -104,7 +104,7 @@ export class Download {
 export class Bit implements IBit {
 	authors: string[] = [];
 	created = "";
-	dependencies: Array<string[]> = [];
+	dependencies: Array<string> = [];
 	dependency_tree_hash = "";
 	download_link?: Nullable<string>;
 	file_name?: Nullable<string>;
@@ -113,7 +113,7 @@ export class Bit implements IBit {
 	icon = "";
 	id = "";
 	license = "";
-	meta: { [key: string]: IBitMeta } = {};
+	meta: { [key: string]: IMetadata } = {};
 	parameters:
 		| IImageEmbeddingModelParameters
 		| IEmbeddingModelParameters
@@ -145,7 +145,7 @@ export class Bit implements IBit {
 	public toObject(): IBit {
 		const obj: Record<string, any> = {};
 		Object.keys(this).forEach((key) => {
-			if (typeof (this as any)[key] !== "function") {
+			if (key !== "backend" && typeof (this as any)[key] !== "function") {
 				obj[key] = (this as any)[key];
 			}
 		});
@@ -171,14 +171,23 @@ export class Bit implements IBit {
 			const deps: IBit[] = cachedDependencies;
 			const pack = new BitPack();
 			pack.bits = deps;
+
+			console.groupCollapsed("Cached Dependencies for", this.hash);
+			console.dir(pack, { depth: null });
+			console.groupEnd();
+
 			return pack;
+		}
+
+		if (!this.backend) {
+			throw new Error("Backend is not set");
 		}
 
 		const bits:
 			| undefined
 			| {
 					bits: IBit[];
-			  } = await this.backend?.getPackFromBit(this.toObject());
+			  } = await this.backend?.bitState?.getPackFromBit(this.toObject());
 
 		if (!bits) {
 			throw new Error("No dependencies found");
@@ -187,28 +196,39 @@ export class Bit implements IBit {
 		if (bits.bits.length > 0) await set(this.dependency_tree_hash, bits.bits);
 		const pack = new BitPack();
 		pack.bits = bits.bits;
+
+		console.groupCollapsed("Fetched Dependencies for", this.hash);
+		console.dir(pack, { depth: null });
+		console.groupEnd();
+
 		return pack;
 	}
 
-	async fetchSize(): Promise<number> {
+	public async fetchSize(): Promise<number> {
 		const pack = await this.fetchDependencies();
+
+		console.dir(pack, { depth: null });
 		return pack.bits.reduce((acc, bit) => acc + (bit.size ?? 0), 0);
 	}
 
 	async download(cb?: (progress: Download) => void): Promise<IBit[]> {
 		try {
 			const dependencies = await this.fetchDependencies();
+			console.groupCollapsed("Dependencies for", this.hash);
+			console.dir(dependencies, { depth: null });
+			console.groupEnd();
 			const totalProgress = new Download(this.toObject(), dependencies.bits);
 
-			const download: undefined | IBit[] = await this.backend?.downloadBit(
-				this.toObject(),
-				dependencies.toObject(),
-				(progress) => {
-					const lastElement = progress.pop();
-					if (lastElement) totalProgress.push(lastElement);
-					if (cb) cb(totalProgress);
-				},
-			);
+			const download: undefined | IBit[] =
+				await this.backend?.bitState?.downloadBit(
+					this.toObject(),
+					dependencies.toObject(),
+					(progress) => {
+						const lastElement = progress.pop();
+						if (lastElement) totalProgress.push(lastElement);
+						if (cb) cb(totalProgress);
+					},
+				);
 
 			if (!download) {
 				throw new Error("No dependencies found");
