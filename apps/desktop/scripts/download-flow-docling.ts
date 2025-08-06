@@ -18,12 +18,19 @@ const binaries: readonly Binary[] = [
 ];
 
 async function fetchJson<T>(url: string): Promise<T> {
-  const res = await fetch(url, {
-    headers: {
-      "User-Agent": "flow-like-downloader",
-      Accept: "application/vnd.github+json",
-    },
-  });
+
+ const headers: Record<string, string> = {
+    "User-Agent": "flow-like-downloader",
+    Accept: "application/vnd.github+json",
+  };
+
+  const githubToken = process.env.GITHUB_TOKEN;
+  if (githubToken) {
+    headers.Authorization = `Bearer ${githubToken}`;
+  }
+
+  const res = await fetch(url, { headers });
+
   if (!res.ok) {
     throw new Error(`Failed to fetch ${url}: ${res.status} ${res.statusText}`);
   }
@@ -31,8 +38,17 @@ async function fetchJson<T>(url: string): Promise<T> {
 }
 
 async function downloadFile(url: string, dest: string) {
+  const headers: Record<string, string> = {};
+
+  const githubToken = process.env.GITHUB_TOKEN;
+  if (githubToken) {
+    headers.Authorization = `Bearer ${githubToken}`;
+  }
+
   await fs.promises.mkdir(path.dirname(dest), { recursive: true });
-  const res = await fetch(url);
+  const res = await fetch(url, {
+    headers: headers
+  });
   if (!res.ok) {
     throw new Error(`Failed to download ${url}: ${res.status} ${res.statusText}`);
   }
