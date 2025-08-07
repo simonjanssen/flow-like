@@ -12,11 +12,5 @@
     <true/>
     <key>com.apple.security.device.audio-input</key>
     <true/>
-
-    <!-- Camera and Microphone Access -->
-    <key>NSCameraUsageDescription</key>
-    <string>This app needs camera access for video calls and media capture</string>
-    <key>NSMicrophoneUsageDescription</key>
-    <string>This app needs microphone access for audio recording and voice calls</string>
 </dict>
 </plist>
