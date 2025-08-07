@@ -234,6 +234,7 @@ impl Board {
                 },
             };
             node_logic.on_update(node, reference.clone()).await;
+
             node.hash();
         }
 

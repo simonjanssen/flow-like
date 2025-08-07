@@ -12,7 +12,7 @@
 		"dev:win:x64": "bun run tauri dev --config src-tauri/configs/tauri.win.x64.conf.json",
 		"dev:win:arm": "bun run tauri dev --config src-tauri/configs/tauri.win.arm.conf.json",
 		"dev:linux:x64": "bun run tauri dev --config src-tauri/configs/tauri.linux.x64.conf.json & bun run --watch ./scripts/translation-server.ts",
-		"postinstall": "bun run ./scripts/sync-version.ts",
+		"postinstall": "bun run ./scripts/sync-version.ts && bun run ./scripts/download-flow-docling.ts",
 		"build": "next build --turbopack",
 		"start": "next start",
 		"lint": "next lint",

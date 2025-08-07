@@ -19,7 +19,64 @@ import {
 import { toast } from "sonner";
 import { fetcher } from "../../lib/api";
 import type { TauriBackend } from "../tauri-provider";
+import { isObject, transform } from "lodash-es";
 
+interface DiffEntry {
+    path: string;
+    local: any;
+    remote: any;
+}
+
+const getDeepDifferences = (local: any, remote: any, path = ""): DiffEntry[] => {
+    const differences: DiffEntry[] = [];
+
+    if (!isEqual(local, remote)) {
+        if (!isObject(local) || !isObject(remote)) {
+            differences.push({ path, local, remote });
+        } else {
+            const allKeys = new Set([...Object.keys(local || {}), ...Object.keys(remote || {})]);
+
+            for (const key of allKeys) {
+                const currentPath = path ? `${path}.${key}` : key;
+				//@ts-ignore
+                const localValue = local?.[key];
+				//@ts-ignore
+                const remoteValue = remote?.[key];
+
+                if (!isEqual(localValue, remoteValue)) {
+                    differences.push(...getDeepDifferences(localValue, remoteValue, currentPath));
+                }
+            }
+        }
+    }
+
+    return differences;
+};
+
+const logBoardDifferences = (localBoard: IBoard, remoteBoard: IBoard) => {
+    const differences = getDeepDifferences(localBoard, remoteBoard);
+
+    if (differences.length === 0) {
+        console.log("No differences found between local and remote board");
+        return;
+    }
+
+    console.log(`Found ${differences.length} differences between local and remote board:`);
+    console.table(differences.map(diff => ({
+        path: diff.path,
+        localType: typeof diff.local,
+        remoteType: typeof diff.remote,
+        localValue: JSON.stringify(diff.local)?.slice(0, 100) + (JSON.stringify(diff.local)?.length > 100 ? "..." : ""),
+        remoteValue: JSON.stringify(diff.remote)?.slice(0, 100) + (JSON.stringify(diff.remote)?.length > 100 ? "..." : "")
+    })));
+
+    differences.forEach(diff => {
+        console.groupCollapsed(`Path: ${diff.path}`);
+        console.log("Local value:", diff.local);
+        console.log("Remote value:", diff.remote);
+        console.groupEnd();
+    });
+};
 export class BoardState implements IBoardState {
 	constructor(private readonly backend: TauriBackend) {}
 
@@ -169,7 +226,13 @@ export class BoardState implements IBoardState {
 					throw new Error("Failed to fetch board data");
 				}
 
+				remoteData.updated_at = board.updated_at
+
 				if (!isEqual(remoteData, board) && typeof version === "undefined") {
+					console.log("Board Missmatch, updating local state:");
+
+					logBoardDifferences(board, remoteData);
+
 					await invoke("upsert_board", {
 						appId: appId,
 						boardId: boardId,
@@ -177,6 +240,8 @@ export class BoardState implements IBoardState {
 						description: remoteData.description,
 						boardData: remoteData,
 					});
+				}else{
+					console.log("Board data is up to date, no update needed.");
 				}
 
 				return remoteData;

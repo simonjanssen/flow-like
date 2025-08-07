@@ -136,7 +136,7 @@ impl LocalModel {
         current_dir.pop();
 
         let child_handle = Arc::new(Mutex::new(None));
-        let child_handle_clone = Arc::clone(&child_handle);
+        let child_handle_clone: Arc<Mutex<Option<Child>>> = Arc::clone(&child_handle);
         let port = pick_unused_port().unwrap();
 
         let async_bit = bit.clone();
@@ -250,14 +250,17 @@ impl LocalModel {
 impl Drop for LocalModel {
     fn drop(&mut self) {
         println!("DROPPING LOCAL MODEL");
-        let mut guard = self.handle.lock().unwrap();
-        if let Some(child) = guard.as_mut() {
-            match child.kill() {
-                Ok(_) => println!("Child process was killed successfully."),
-                Err(e) => eprintln!("Failed to kill child process: {}", e),
+        if let Ok(mut guard) = self.handle.lock() {
+            if let Some(child) = guard.as_mut() {
+                match child.kill() {
+                    Ok(_) => println!("Child process was killed successfully."),
+                    Err(e) => eprintln!("Failed to kill child process: {}", e),
+                }
+            } else {
+                println!("No child process to kill.");
             }
         } else {
-            println!("No child process to kill.");
+            println!("Failed to lock local model handle for dropping.");
         }
 
         self.thread_handle.abort();

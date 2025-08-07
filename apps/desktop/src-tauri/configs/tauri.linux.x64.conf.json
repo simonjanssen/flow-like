@@ -16,7 +16,8 @@
             "binaries/linux/x64/libggml.so",
             "binaries/linux/x64/libllama.so",
             "binaries/linux/x64/libmtmd.so",
-            "binaries/linux/x64/llama-server"
+            "binaries/linux/x64/llama-server",
+            "bin/flow-docling"
         ]
 	}
 }

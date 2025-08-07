@@ -20,10 +20,10 @@ pub async fn presign(
 
     let mut access = CredentialsAccess::InvokeNone;
 
-    if permission.has_permission(RolePermissions::ReadFiles) {
-        access = CredentialsAccess::InvokeRead;
-    } else if permission.has_permission(RolePermissions::WriteFiles) {
+    if permission.has_permission(RolePermissions::WriteFiles) {
         access = CredentialsAccess::InvokeWrite;
+    } else if permission.has_permission(RolePermissions::ReadFiles) {
+        access = CredentialsAccess::InvokeRead;
     }
 
     let credentials = state.scoped_credentials(&sub, &app_id, access).await?;

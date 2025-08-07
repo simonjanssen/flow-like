@@ -127,7 +127,6 @@ impl FlowPath {
     ) -> flow_like_types::Result<Option<Arc<FlowLikeStore>>> {
         let cache_store_ref = self.cache_store_ref.clone();
         if cache_store_ref.is_none() {
-            println!("No cache store reference available for path: {}", self.path);
             return Ok(None);
         }
 

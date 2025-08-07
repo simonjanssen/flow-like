@@ -33,12 +33,12 @@ import {
 } from "@tm9657/flow-like-ui";
 import {
 	Calendar,
-	Database,
 	ExternalLink,
 	PlusCircleIcon,
-	Settings,
+	SquareMousePointerIcon,
 	Trash2,
-	WorkflowIcon,
+	VariableIcon,
+	WorkflowIcon
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -416,11 +416,11 @@ function BoardCard({
 					<div className="flex items-center justify-between pt-2 border-t">
 						<div className="flex items-center space-x-4 text-sm text-muted-foreground">
 							<div className="flex items-center space-x-1">
-								<Database className="h-3 w-3" />
+								<SquareMousePointerIcon className="h-3 w-3" />
 								<span>{Object.keys(board.nodes).length}</span>
 							</div>
 							<div className="flex items-center space-x-1">
-								<Settings className="h-3 w-3" />
+								<VariableIcon className="h-3 w-3" />
 								<span>{Object.keys(board.variables).length}</span>
 							</div>
 						</div>

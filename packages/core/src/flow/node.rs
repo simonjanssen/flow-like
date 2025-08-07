@@ -3,7 +3,7 @@ use highway::{HighwayHash, HighwayHasher};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeSet, HashMap},
     sync::Arc,
 };
 
@@ -124,8 +124,8 @@ impl Node {
                 pin_type: PinType::Input,
                 data_type,
                 value_type: super::pin::ValueType::Normal,
-                depends_on: HashSet::new(),
-                connected_to: HashSet::new(),
+                depends_on: BTreeSet::new(),
+                connected_to: BTreeSet::new(),
                 default_value: None,
                 options: None,
                 value: None,
@@ -160,8 +160,8 @@ impl Node {
                 pin_type: PinType::Output,
                 data_type,
                 value_type: super::pin::ValueType::Normal,
-                depends_on: HashSet::new(),
-                connected_to: HashSet::new(),
+                depends_on: BTreeSet::new(),
+                connected_to: BTreeSet::new(),
                 default_value: None,
                 value: None,
                 index: num_outputs as u16 + 1,
@@ -358,17 +358,12 @@ impl Node {
                     hasher.append(&[*enforce_generic_value_type as u8]);
                 }
             }
-            let mut sorted_depends_on: Vec<_> = pin.depends_on.iter().collect();
-            sorted_depends_on.sort();
 
-            for dep in sorted_depends_on {
+            for dep in pin.depends_on.iter() {
                 hasher.append(dep.as_bytes());
             }
 
-            let mut sorted_connected_to: Vec<_> = pin.connected_to.iter().collect();
-            sorted_connected_to.sort();
-
-            for conn in sorted_connected_to {
+            for conn in pin.connected_to.iter() {
                 hasher.append(conn.as_bytes());
             }
         }
