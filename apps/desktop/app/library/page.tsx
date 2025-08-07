@@ -1,5 +1,6 @@
 "use client";
 
+import { invoke } from "@tauri-apps/api/core";
 import {
 	AppCard,
 	Button,
@@ -28,6 +29,7 @@ import {
 	ArrowUpDown,
 	FilesIcon,
 	Grid3X3,
+	ImportIcon,
 	LayoutGridIcon,
 	LibraryIcon,
 	Link2,
@@ -187,6 +189,18 @@ export default function YoursPage() {
 						</div>
 					</div>
 					<div className="flex items-center space-x-2">
+						<Button
+							size="lg"
+							variant="outline"
+							className="shadow-lg hover:shadow-xl transition-all duration-200"
+							onClick={async () => {
+								await invoke("import_app")
+								await apps.refetch();
+							}}
+						>
+							<ImportIcon className="mr-2 h-4 w-4" />
+							Import Project
+						</Button>
 						<Button
 							size="lg"
 							variant="outline"
