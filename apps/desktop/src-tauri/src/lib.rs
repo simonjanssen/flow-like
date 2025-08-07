@@ -284,6 +284,7 @@ pub fn run() {
             functions::app::get_apps,
             functions::app::get_app_size,
             functions::app::create_app,
+            functions::app::import_app,
             functions::app::update_app,
             functions::app::delete_app,
             functions::bit::get_bit,
