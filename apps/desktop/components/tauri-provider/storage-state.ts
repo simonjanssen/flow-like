@@ -1,13 +1,14 @@
 import { invoke } from "@tauri-apps/api/core";
 import { save } from "@tauri-apps/plugin-dialog";
-import { mkdir, open, open as openFile } from "@tauri-apps/plugin-fs";
+import { mkdir, open, create } from "@tauri-apps/plugin-fs";
 import type { IStorageItem, IStorageState } from "@tm9657/flow-like-ui";
 import type { IStorageItemActionResult } from "@tm9657/flow-like-ui/state/backend-state/types";
 import { fetcher, put } from "../../lib/api";
 import type { TauriBackend } from "../tauri-provider";
+import { join, delimiter, resolve, dirname } from "@tauri-apps/api/path";
 
 export class StorageState implements IStorageState {
-	constructor(private readonly backend: TauriBackend) {}
+	constructor(private readonly backend: TauriBackend) { }
 	async listStorageItems(
 		appId: string,
 		prefix: string,
@@ -218,7 +219,7 @@ export class StorageState implements IStorageState {
 						filePath = file.webkitRelativePath;
 					}
 
-					filePath = `${prefix}/${filePath}`;
+					filePath = await join(prefix, filePath);
 
 					console.group("Uploading file to storage");
 					console.dir({
@@ -237,20 +238,23 @@ export class StorageState implements IStorageState {
 						url.startsWith("asset://") ||
 						url.startsWith("http://asset.localhost/")
 					) {
-						const path = decodeURIComponent(
+						const rawPath = decodeURIComponent(
 							url
 								.replace("http://asset.localhost/", "")
 								.replaceAll("asset://localhost/", ""),
 						);
 
-						const parentDir = path.substring(0, path.lastIndexOf("/"));
+						const parentDir = await dirname(rawPath);
 						await mkdir(parentDir, { recursive: true });
-						const fileHandle = await openFile(path, {
+						let fileHandle
+
+						fileHandle = await open(await resolve(rawPath), {
 							append: false,
 							create: true,
 							write: true,
 							truncate: true,
 						});
+
 
 						if (!fileHandle) {
 							completedFiles++;
