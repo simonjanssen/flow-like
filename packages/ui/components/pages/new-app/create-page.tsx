@@ -166,7 +166,7 @@ export function CreateAppPage() {
 			toast(`${isOffline ? "Offline" : "Online"} app created successfully! 🎉`);
 			await apps.refetch();
 			setTimeout(() => {
-				router.push("/library/apps");
+				router.push("/library");
 			}, 2000);
 		} catch (error) {
 			console.error("Failed to create app:", error);

@@ -182,7 +182,7 @@ export default function Id() {
 	async function deleteApp() {
 		await backend.appState.deleteApp(id ?? "");
 		await invalidate(backend.appState.getApps, []);
-		router.push("/library/apps");
+		router.push("/library");
 	}
 
 	const handleThumbnailUpload = useCallback(async () => {

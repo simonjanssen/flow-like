@@ -232,12 +232,6 @@ export default function Id({
 									</BreadcrumbItem>
 									<BreadcrumbSeparator />
 									<BreadcrumbItem>
-										<BreadcrumbLink href="/library/apps">
-											Your Apps
-										</BreadcrumbLink>
-									</BreadcrumbItem>
-									<BreadcrumbSeparator />
-									<BreadcrumbItem>
 										<BreadcrumbPage className="font-medium flex flex-row items-center gap-2">
 											{metadata.isFetching ? (
 												<Skeleton className="h-4 w-24" />
