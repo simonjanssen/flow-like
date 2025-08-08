@@ -15,7 +15,7 @@ reqwest = { version = "0.12.15", features = ["stream", "json", "gzip", "brotli",
 schemars.workspace = true
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_json.workspace = true
-tokio = {version="1.44.2", features = ["full"] }
+tokio = { workspace = true, features = ["full"] }
 dashmap = { version="6.1.0", features = ["serde", "rayon", "inline"] }
 futures.workspace = true
 image.workspace = true

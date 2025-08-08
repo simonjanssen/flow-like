@@ -69,13 +69,13 @@ export default function YoursPage() {
 				switch (sortBy) {
 					case "created":
 						return (
-							(b?.created_at?.nanos_since_epoch ?? 0) -
-							(a?.created_at?.nanos_since_epoch ?? 0)
+							(b?.created_at?.secs_since_epoch ?? 0) -
+							(a?.created_at?.secs_since_epoch ?? 0)
 						);
 					case "updated":
 						return (
-							(b?.updated_at?.nanos_since_epoch ?? 0) -
-							(a?.updated_at?.nanos_since_epoch ?? 0)
+							(b?.updated_at?.secs_since_epoch ?? 0) -
+							(a?.updated_at?.secs_since_epoch ?? 0)
 						);
 					case "visibility":
 						const aVisibility = a?.app.visibility;

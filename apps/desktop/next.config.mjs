@@ -20,7 +20,6 @@ const nextConfig = {
 	devIndicators: {
 		appIsrStatus: false,
 	},
-	transpilePackages: ["@tm9657/flow-like-ui"],
 };
 
 export default withSentryConfig(nextConfig, {

@@ -13,6 +13,7 @@ pub enum PinType {
 
 #[derive(Serialize, Deserialize, JsonSchema, Debug, Clone, PartialEq)]
 pub struct PinOptions {
+    pub sensitive: Option<bool>,
     pub valid_values: Option<Vec<String>>,
     pub range: Option<(f64, f64)>,
     pub step: Option<f64>,
@@ -29,6 +30,7 @@ impl Default for PinOptions {
 impl PinOptions {
     pub fn new() -> Self {
         PinOptions {
+            sensitive: None,
             valid_values: None,
             range: None,
             step: None,
@@ -44,6 +46,11 @@ impl PinOptions {
 
     pub fn set_range(&mut self, range: (f64, f64)) -> &mut Self {
         self.range = Some(range);
+        self
+    }
+
+    pub fn set_sensitive(&mut self, sensitive: bool) -> &mut Self {
+        self.sensitive = Some(sensitive);
         self
     }
 
