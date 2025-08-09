@@ -163,7 +163,7 @@ impl NodeLogic for ImapListInboxesNode {
         context.deactivate_exec_pin("exec_out").await?;
 
         let connection: ImapConnection = context.evaluate_pin("connection").await?;
-        let session_arc = connection.from_context(context).await?;
+        let session_arc = connection.to_session(context).await?;
         let mut session = session_arc.lock().await;
 
         let name_stream = session
@@ -198,42 +198,6 @@ impl ImapCreateMailboxNode {
     pub fn new() -> Self {
         Self
     }
-}
-
-async fn mailbox_exists(
-    session: &mut tokio::sync::MutexGuard<
-        '_,
-        async_imap::Session<async_native_tls::TlsStream<tokio::net::TcpStream>>,
-    >,
-    name: &str,
-) -> flow_like_types::Result<bool> {
-    let list = session
-        .list(None, Some(name))
-        .await
-        .map_err(|e| flow_like_types::anyhow!("IMAP LIST failed: {}", e))?;
-
-    let exists = list
-        .try_collect::<Vec<_>>()
-        .await
-        .map_err(|e| flow_like_types::anyhow!("IMAP LIST stream failed: {}", e))?
-        .into_iter()
-        .any(|n| n.name() == name);
-
-    Ok(exists)
-}
-
-async fn create_mailbox(
-    session: &mut tokio::sync::MutexGuard<
-        '_,
-        async_imap::Session<async_native_tls::TlsStream<tokio::net::TcpStream>>,
-    >,
-    name: &str,
-) -> flow_like_types::Result<()> {
-    session
-        .create(name)
-        .await
-        .map_err(|e| flow_like_types::anyhow!("IMAP CREATE failed: {}", e))?;
-    Ok(())
 }
 
 #[async_trait]
@@ -297,12 +261,11 @@ impl NodeLogic for ImapCreateMailboxNode {
         let name: String = context.evaluate_pin("name").await?;
 
         let connection: ImapConnection = context.evaluate_pin("connection").await?;
-        let session_arc = connection.from_context(context).await?;
-        let mut session = session_arc.lock().await;
+        let mut session = connection.to_session_cache(context).await?;
 
-        let created = match mailbox_exists(&mut session, &name).await {
+        let created = match session.mailbox_exists(&name).await {
             Ok(true) => false,
-            Ok(false) => match create_mailbox(&mut session, &name).await {
+            Ok(false) => match session.create_mailbox(&name).await {
                 Ok(()) => true,
                 Err(e) => {
                     let msg = format!("{e}");
