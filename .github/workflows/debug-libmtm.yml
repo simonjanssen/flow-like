@@ -1,0 +1,66 @@
+name: "debug-libmtm"
+
+on:
+  push:
+    branches:
+      - bug/160-fix-linux-deployment
+
+jobs:
+  debug-libmtm:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: "ubuntu-latest" # for Tauri v1 you could replace this with ubuntu-20.04.
+            args: "--config src-tauri/configs/tauri.linux.x64.conf.json --verbose"
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install dependencies (ubuntu only)
+        if: matrix.platform == 'ubuntu-latest' || matrix.platform == 'ubuntu-24.04-arm'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: install bun
+        run: "npm install -g bun"
+
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ (matrix.platform == 'macos-latest' || matrix.platform == 'macos-13') && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: install frontend dependencies
+        run: bun install
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          PUBLIC_SENTRY_ENDPOINT: ${{ secrets.PUBLIC_SENTRY_ENDPOINT }}
+          LD_LIBRARY_PATH: "${{ github.workspace }}/apps/desktop/src-tauri/binaries/linux/x64"
+        with:
+          tagName: alpha-v__VERSION__
+          releaseName: "Flow Like - Alpha v__VERSION__"
+          releaseBody: "Alpha release for testing purposes. Please do not distribute."
+          releaseDraft: true
+          prerelease: true
+          projectPath: "./apps/desktop"
+          tauriScript: "bun tauri"
+          args: ${{ matrix.args }}
