@@ -6,6 +6,7 @@
             "bin/flow-docling"
         ],
         "resources": {
+            "binaries/linux/x64/libmtmd.so": "libmtmd.so",
             "binaries/linux/x64/libggml-base.so": "libggml-base.so",
             "binaries/linux/x64/libggml-cpu-alderlake.so": "libggml-cpu-alderlake.so",
             "binaries/linux/x64/libggml-cpu-haswell.so": "libggml-cpu-haswell.so",
