@@ -79,7 +79,7 @@ impl EmailRef {
 
     pub async fn fetch(&self, context: &mut ExecutionContext) -> flow_like_types::Result<Email> {
         let inbox = self.inbox.clone();
-        let session_arc = self.connection.from_context(context).await?;
+        let session_arc = self.connection.to_session(context).await?;
         let mut session = session_arc.lock().await;
         session.select(&inbox.name).await.map_err(|e| anyhow!(e))?;
 
@@ -278,7 +278,7 @@ impl NodeLogic for ListMailsNode {
             }
             _ => {}
         }
-        let session_arc = connection.from_context(context).await?;
+        let session_arc = connection.to_session(context).await?;
         let mut session = session_arc.lock().await;
         session.select(&inbox.name).await.map_err(|e| anyhow!(e))?;
         let uids = session

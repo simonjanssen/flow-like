@@ -70,6 +70,13 @@
 			"exceptionDomain": "localhost",
 			"entitlements": "./Entitlements.plist"
 		},
+		"linux": {
+			"rpm": {
+				"compression": {
+					"type": "none"
+				}
+			}
+		},
 		"homepage": "https://flow-like.com",
 		"publisher": "TM9657 GmbH",
 		"licenseFile": "../../../LICENSE",

@@ -31,7 +31,9 @@ use std::any::Any;
 
 pub use anyhow::{Error, Ok, Result, anyhow, bail};
 pub use async_trait::async_trait;
+pub use base64;
 pub use cuid2::create_id;
+pub use mime_guess;
 pub use prost::Message;
 pub use reqwest;
 pub use reqwest_eventsource;

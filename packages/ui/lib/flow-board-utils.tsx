@@ -245,7 +245,7 @@ export function parseBoard(
 		if (nodeLayer !== currentLayer) continue;
 		const hash = node.hash ?? -1;
 		const oldNode = hash === -1 ? undefined : oldNodesMap.get(hash);
-		if (oldNode) {
+		if (oldNode && !oldNode?.data?.ghost) {
 			nodes.push(oldNode);
 		} else {
 			nodes.push({

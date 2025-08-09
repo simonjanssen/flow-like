@@ -8,6 +8,7 @@ use flow_like::{
     state::FlowLikeState,
 };
 use flow_like_types::{Cacheable, anyhow, async_trait, json::json};
+use futures::TryStreamExt;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -29,7 +30,7 @@ impl ImapConnection {
         ImapConnection { id }
     }
 
-    pub async fn from_context(
+    pub async fn to_session(
         &self,
         context: &mut ExecutionContext,
     ) -> flow_like_types::Result<ImapSession> {
@@ -46,12 +47,58 @@ impl ImapConnection {
             Err(flow_like_types::anyhow!("IMAP session not found"))
         }
     }
+
+    pub async fn to_session_cache(
+        &self,
+        context: &mut ExecutionContext,
+    ) -> flow_like_types::Result<ImapSessionCache> {
+        let cache_key = format!("imap_session_{}", self.id);
+        if let Some(session) = context.get_cache(&cache_key).await {
+            let session = session
+                .as_any()
+                .downcast_ref::<ImapSessionCache>()
+                .ok_or_else(|| flow_like_types::anyhow!("Failed to downcast ImapSessionCache"))?
+                .clone();
+            Ok(session.clone())
+        } else {
+            Err(flow_like_types::anyhow!("IMAP session not found"))
+        }
+    }
 }
 
 pub type ImapSession = Arc<Mutex<async_imap::Session<async_native_tls::TlsStream<TcpStream>>>>;
 
+#[derive(Clone)]
 pub struct ImapSessionCache {
     pub session: ImapSession,
+}
+
+impl ImapSessionCache {
+    pub async fn create_mailbox(&mut self, name: &str) -> flow_like_types::Result<()> {
+        let mut session = self.session.lock().await;
+        session
+            .create(name)
+            .await
+            .map_err(|e| flow_like_types::anyhow!("IMAP CREATE failed: {}", e))?;
+        Ok(())
+    }
+
+    pub async fn mailbox_exists(&mut self, name: &str) -> flow_like_types::Result<bool> {
+        let mut session = self.session.lock().await;
+        let list = session
+            .list(None, Some(name))
+            .await
+            .map_err(|e| flow_like_types::anyhow!("IMAP LIST failed: {}", e))?;
+
+        let exists = list
+            .try_collect::<Vec<_>>()
+            .await
+            .map_err(|e| flow_like_types::anyhow!("IMAP LIST stream failed: {}", e))?
+            .into_iter()
+            .any(|n| n.name() == name);
+
+        Ok(exists)
+    }
 }
 
 impl Cacheable for ImapSessionCache {
