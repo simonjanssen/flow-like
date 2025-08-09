@@ -16,6 +16,7 @@ message PinOptions {
   double step = 4;
   bool enforce_schema = 5;
   bool enforce_generic_value_type = 6;
+  optional bool sensitive = 7;
 }
 
 message Pin {
