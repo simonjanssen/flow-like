@@ -12,9 +12,6 @@ use futures::TryStreamExt;
 
 use crate::mail::imap::inbox::list::EmailRef;
 
-// ============================
-// Delete Mail Node
-// ============================
 #[derive(Default)]
 pub struct ImapDeleteMailNode;
 
@@ -33,7 +30,7 @@ impl NodeLogic for ImapDeleteMailNode {
             "Deletes a mail (by UID) from its current mailbox",
             "Email/IMAP",
         );
-        node.add_icon("/flow/icons/trash.svg");
+        node.add_icon("/flow/icons/mail.svg");
 
         node.add_input_pin("exec_in", "In", "Trigger", VariableType::Execution);
 

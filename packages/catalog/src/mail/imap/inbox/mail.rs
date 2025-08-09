@@ -10,11 +10,12 @@ use flow_like::{
 };
 use flow_like_types::{async_trait, json::json};
 
+pub mod copy;
 pub mod delete;
 pub mod draft;
+pub mod mark_seen;
 pub mod mv;
 
-/// Node to fetch the message envelope
 #[derive(Default)]
 pub struct FetchMailNode;
 
@@ -73,9 +74,6 @@ impl NodeLogic for FetchMailNode {
     }
 }
 
-// =========================
-// Email → Headers (pure)
-// =========================
 #[derive(Default)]
 pub struct EmailHeadersNode;
 
@@ -145,9 +143,6 @@ impl NodeLogic for EmailHeadersNode {
     }
 }
 
-// =========================
-// Email → Content (pure)
-// =========================
 #[derive(Default)]
 pub struct EmailContentNode;
 
@@ -194,9 +189,6 @@ impl NodeLogic for EmailContentNode {
     }
 }
 
-// =========================
-// Email → Attachments (pure)
-// =========================
 #[derive(Default)]
 pub struct EmailAttachmentsNode;
 
@@ -215,7 +207,7 @@ impl NodeLogic for EmailAttachmentsNode {
             "Access attachments array",
             "Email/Access",
         );
-        node.add_icon("/flow/icons/attachment.svg");
+        node.add_icon("/flow/icons/mail.svg");
 
         node.add_input_pin("email", "Email", "Email struct", VariableType::Struct)
             .set_schema::<Email>()
@@ -241,9 +233,6 @@ impl NodeLogic for EmailAttachmentsNode {
     }
 }
 
-// =========================
-// MailAddress → Fields (pure)
-// =========================
 #[derive(Default)]
 pub struct MailAddressFieldsNode;
 
@@ -262,7 +251,7 @@ impl NodeLogic for MailAddressFieldsNode {
             "Access name and email on a MailAddress",
             "Email/Access",
         );
-        node.add_icon("/flow/icons/user.svg");
+        node.add_icon("/flow/icons/mail.svg");
 
         node.add_input_pin(
             "address",
@@ -292,9 +281,6 @@ impl NodeLogic for MailAddressFieldsNode {
     }
 }
 
-// =========================
-// Attachment → Fields (pure)
-// =========================
 #[derive(Default)]
 pub struct AttachmentFieldsNode;
 
@@ -313,7 +299,7 @@ impl NodeLogic for AttachmentFieldsNode {
             "Access filename, content_type and data",
             "Email/Access",
         );
-        node.add_icon("/flow/icons/attachment.svg");
+        node.add_icon("/flow/icons/mail.svg");
 
         node.add_input_pin(
             "attachment",
@@ -354,9 +340,6 @@ impl NodeLogic for AttachmentFieldsNode {
     }
 }
 
-// =========================
-// Attachment → Fields (pure)
-// =========================
 #[derive(Default)]
 pub struct ToMailReferenceNode;
 
@@ -375,7 +358,7 @@ impl NodeLogic for ToMailReferenceNode {
             "Transforms a Mail struct into a reference",
             "Email/Access",
         );
-        node.add_icon("/flow/icons/attachment.svg");
+        node.add_icon("/flow/icons/mail.svg");
 
         node.add_input_pin("mail", "Mail", "Mail struct", VariableType::Struct)
             .set_schema::<Email>()
@@ -414,6 +397,8 @@ pub async fn register_functions() -> Vec<Arc<dyn NodeLogic>> {
         Arc::new(draft::ImapCreateDraftNode::new()) as Arc<dyn NodeLogic>,
         Arc::new(mv::ImapMoveMailNode::new()) as Arc<dyn NodeLogic>,
         Arc::new(delete::ImapDeleteMailNode::new()) as Arc<dyn NodeLogic>,
+        Arc::new(mark_seen::ImapMarkSeenNode::new()) as Arc<dyn NodeLogic>,
+        Arc::new(copy::ImapCopyMailNode::new()) as Arc<dyn NodeLogic>,
     ];
     output
 }

@@ -19,9 +19,7 @@ use crate::mail::imap::ImapConnection;
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone)]
 pub struct ImapInbox {
-    /// Underlying connection reference
     pub connection: ImapConnection,
-    /// Name of mailbox (e.g. "INBOX")
     pub name: String,
 }
 

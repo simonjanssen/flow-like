@@ -1,3 +1,6 @@
+use crate::mail::imap::ImapConnection;
+use crate::mail::smtp::send_mail::{build_rfc5322_message_send, generate_message_id};
+use crate::storage::path::FlowPath;
 use flow_like::{
     flow::{
         execution::{LogLevel, context::ExecutionContext},
@@ -8,13 +11,7 @@ use flow_like::{
     state::FlowLikeState,
 };
 use flow_like_types::{async_trait, json::json};
-use futures::TryStreamExt;
 
-use crate::mail::imap::{ImapConnection, inbox::list::EmailRef};
-
-// ============================
-// Create Draft Node
-// ============================
 #[derive(Default)]
 pub struct ImapCreateDraftNode;
 
@@ -33,11 +30,10 @@ impl NodeLogic for ImapCreateDraftNode {
             "Appends a new draft message to a mailbox (defaults to 'Drafts')",
             "Email/IMAP",
         );
-        node.add_icon("/flow/icons/draft.svg");
+        node.add_icon("/flow/icons/mail.svg");
 
         node.add_input_pin("exec_in", "In", "Trigger", VariableType::Execution);
 
-        // Reuse EmailRef solely for account/connection; inbox/uid are ignored here.
         node.add_input_pin(
             "connection",
             "Connection",
@@ -63,7 +59,6 @@ impl NodeLogic for ImapCreateDraftNode {
         )
         .set_default_value(Some(json!(true)));
 
-        // Headers / content
         node.add_input_pin("from", "From", "From header", VariableType::String);
         node.add_input_pin("to", "To", "Comma-separated list", VariableType::String);
         node.add_input_pin("cc", "Cc", "Comma-separated list", VariableType::String)
@@ -86,6 +81,18 @@ impl NodeLogic for ImapCreateDraftNode {
             VariableType::String,
         )
         .set_default_value(Some(json!("")));
+
+        node.add_input_pin(
+            "attachments",
+            "Attachments",
+            "Files to attach",
+            VariableType::Struct,
+        )
+        .set_value_type(flow_like::flow::pin::ValueType::Array)
+        .set_schema::<FlowPath>()
+        .set_options(PinOptions::new().set_enforce_schema(true).build())
+        .set_default_value(Some(json!([])));
+
         node.add_input_pin(
             "mark_seen",
             "Mark as Seen",
@@ -94,7 +101,19 @@ impl NodeLogic for ImapCreateDraftNode {
         )
         .set_default_value(Some(json!(false)));
 
-        node.add_output_pin("exec_out", "", "", VariableType::Execution);
+        node.add_output_pin(
+            "exec_out",
+            "Out",
+            "Execution output",
+            VariableType::Execution,
+        );
+        node.add_output_pin(
+            "message_id",
+            "Message-ID",
+            "The generated Message-ID",
+            VariableType::String,
+        );
+
         node
     }
 
@@ -114,6 +133,19 @@ impl NodeLogic for ImapCreateDraftNode {
         let body_html: String = context.evaluate_pin("body_html").await?;
         let mark_seen: bool = context.evaluate_pin("mark_seen").await?;
 
+        let in_attachments = context.evaluate_pin::<Vec<FlowPath>>("attachments").await?;
+        let mut attachments = Vec::new();
+        for flow_path in in_attachments {
+            let content = flow_path.get(context, false).await?;
+            let filename = flow_path
+                .path
+                .split('/')
+                .last()
+                .unwrap_or("attachment")
+                .to_string();
+            attachments.push((filename, content));
+        }
+
         let mut cached_session = connection.to_session_cache(context).await?;
 
         if create_if_missing {
@@ -128,11 +160,19 @@ impl NodeLogic for ImapCreateDraftNode {
             }
         }
 
-        // Build RFC 5322 message (simple plain or multipart/alternative)
-        let message =
-            build_rfc5322_message(&from, &to, &cc, &bcc, &subject, &body_text, &body_html);
+        let message_id = generate_message_id(&from);
+        let message = build_rfc5322_message_send(
+            &from,
+            &to,
+            &cc,
+            &bcc,
+            &subject,
+            &body_text,
+            &body_html,
+            &message_id,
+            &attachments,
+        );
 
-        // Append with \Draft (+ optionally \Seen); if that fails, retry without flags
         let flags_str = if mark_seen {
             "\\Draft \\Seen"
         } else {
@@ -160,113 +200,19 @@ impl NodeLogic for ImapCreateDraftNode {
         }
 
         context.log_message(
-            &format!("Draft created in '{}' (subject: '{}')", mailbox, subject),
+            &format!(
+                "Draft created in '{}' (subject: '{}') with {} attachment(s)",
+                mailbox,
+                subject,
+                attachments.len()
+            ),
             LogLevel::Debug,
         );
 
+        context
+            .set_pin_value("message_id", json!(message_id))
+            .await?;
         context.activate_exec_pin("exec_out").await?;
         Ok(())
     }
-}
-
-// ============================
-// Helpers
-// ============================
-fn build_rfc5322_message(
-    from: &str,
-    to: &str,
-    cc: &str,
-    bcc: &str,
-    subject: &str,
-    body_text: &str,
-    body_html: &str,
-) -> String {
-    let crlf = "\r\n";
-    let mut headers = Vec::new();
-
-    if !from.is_empty() {
-        headers.push(format!("From: {}", from));
-    }
-    if !to.is_empty() {
-        headers.push(format!("To: {}", to));
-    }
-    if !cc.is_empty() {
-        headers.push(format!("Cc: {}", cc));
-    }
-    if !bcc.is_empty() {
-        headers.push(format!("Bcc: {}", bcc));
-    }
-    headers.push(format!("Subject: {}", subject));
-    // Message-ID helps servers accept APPENDed messages
-    headers.push(format!("Message-ID: {}", generate_message_id(from)));
-    headers.push("MIME-Version: 1.0".to_string());
-
-    let mut message = String::new();
-
-    if body_html.trim().is_empty() {
-        // Plain text only
-        headers.push("Content-Type: text/plain; charset=utf-8".to_string());
-        headers.push("Content-Transfer-Encoding: 8bit".to_string());
-        message.push_str(&headers.join(crlf));
-        message.push_str(crlf);
-        message.push_str(crlf);
-        message.push_str(body_text);
-        // Footer signature
-        message.push_str(crlf);
-        message.push_str(crlf);
-        message.push_str("--");
-        message.push_str(crlf);
-        message.push_str("sent from flow-like.com, your efficient automation suite");
-    } else {
-        // multipart/alternative
-        let boundary = "----=_FlowLikeBoundary_mpart_alternative_001";
-        headers.push(format!(
-            "Content-Type: multipart/alternative; boundary=\"{}\"",
-            boundary
-        ));
-        message.push_str(&headers.join(crlf));
-        message.push_str(crlf);
-        message.push_str(crlf);
-
-        // text part
-        message.push_str(&format!("--{}{}", boundary, crlf));
-        message.push_str("Content-Type: text/plain; charset=utf-8");
-        message.push_str(crlf);
-        message.push_str("Content-Transfer-Encoding: 8bit");
-        message.push_str(crlf);
-        message.push_str(crlf);
-        message.push_str(body_text);
-        message.push_str(crlf);
-
-        // html part
-        message.push_str(&format!("--{}{}", boundary, crlf));
-        message.push_str("Content-Type: text/html; charset=utf-8");
-        message.push_str(crlf);
-        message.push_str("Content-Transfer-Encoding: 8bit");
-        message.push_str(crlf);
-        message.push_str(crlf);
-        message.push_str(body_html);
-        // Footer signature (HTML)
-        message.push_str("<br><br>&mdash;<br><small>sent via <a href=\"https://flow-like.com\">flow-like.com</a>, your efficient automation suite</small>");
-        message.push_str(crlf);
-
-        // closing boundary
-        message.push_str(&format!("--{}--{}", boundary, crlf));
-    }
-
-    message
-}
-
-fn generate_message_id(from: &str) -> String {
-    use std::time::SystemTime;
-    let domain = from.split('@').nth(1).unwrap_or("flow-like.local");
-    let now = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap_or_default();
-    format!(
-        "<flowlike-{}-{}@{}>",
-        now.as_secs(),
-        now.subsec_nanos(),
-        domain
-    )
 }
