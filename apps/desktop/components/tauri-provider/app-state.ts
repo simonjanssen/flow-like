@@ -17,6 +17,7 @@ import type { IMediaItem } from "@tm9657/flow-like-ui/state/backend-state/app-st
 import { fetcher, put } from "../../lib/api";
 import { appsDB } from "../../lib/apps-db";
 import type { TauriBackend } from "../tauri-provider";
+import { dirname, resolve } from "@tauri-apps/api/path";
 
 export class AppState implements IAppState {
 	constructor(private readonly backend: TauriBackend) {}
@@ -435,9 +436,9 @@ export class AppState implements IAppState {
 				);
 				fileName = path.split("/").pop() ?? file.name;
 
-				const parentDir = path.substring(0, path.lastIndexOf("/"));
+				const parentDir = await dirname(path);
 				await mkdir(parentDir, { recursive: true });
-				const fileHandle = await openFile(path, {
+				const fileHandle = await openFile(await resolve(path), {
 					append: false,
 					create: true,
 					write: true,

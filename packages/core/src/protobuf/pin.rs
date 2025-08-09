@@ -13,6 +13,7 @@ impl ToProto<flow_like_types::proto::PinOptions> for PinOptions {
             step: self.step.unwrap_or(0.0),
             enforce_schema: self.enforce_schema.unwrap_or(false),
             enforce_generic_value_type: self.enforce_generic_value_type.unwrap_or(false),
+            sensitive: self.sensitive,
         }
     }
 }
@@ -45,6 +46,7 @@ impl FromProto<flow_like_types::proto::PinOptions> for PinOptions {
             } else {
                 None
             },
+            sensitive: proto.sensitive,
         }
     }
 }
