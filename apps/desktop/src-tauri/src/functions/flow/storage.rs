@@ -5,109 +5,14 @@ use flow_like::{
     flow_like_storage::{
         Path,
         files::store::{FlowLikeStore, StorageItem},
-        object_store::{MultipartUpload, PutPayload},
     },
     utils::storage::construct_storage,
 };
-use flow_like_types::{
-    Bytes, Value, create_id, json,
-    tokio::io::{AsyncReadExt, BufReader},
-};
+use flow_like_types::{Value, create_id, json};
 use futures::{StreamExt, TryStreamExt};
 use tauri::AppHandle;
 
 use crate::{functions::TauriFunctionError, state::TauriFlowLikeState};
-
-async fn copy_large_file(
-    store: &FlowLikeStore,
-    from_path: &std::path::Path,
-    to_path: &Path,
-) -> Result<(), TauriFunctionError> {
-    let mut reader = BufReader::new(
-        flow_like_types::tokio::fs::File::open(from_path)
-            .await
-            .map_err(|e| anyhow!("Failed to open file: {}", e))?,
-    );
-    let mut upload_stream = store
-        .as_generic()
-        .put_multipart(to_path)
-        .await
-        .map_err(|e| anyhow!("Failed to create multipart upload: {}", e))?;
-
-    let mut buffer = vec![0; 8 * 1024 * 1024];
-    loop {
-        let bytes_read = reader
-            .read(&mut buffer)
-            .await
-            .map_err(|e| anyhow!("Failed to read file: {}", e))?;
-        if bytes_read == 0 {
-            break;
-        }
-
-        let chunk = Bytes::copy_from_slice(&buffer[..bytes_read]);
-
-        upload_stream
-            .put_part(PutPayload::from_bytes(chunk))
-            .await
-            .map_err(|e| anyhow!("Failed to upload file part: {}", e))?;
-    }
-
-    upload_stream
-        .complete()
-        .await
-        .map_err(|e| anyhow!("Failed to complete upload: {}", e))?;
-    Ok(())
-}
-
-async fn copy_directory_recursively(
-    store: &FlowLikeStore,
-    src_path: &std::path::Path,
-    dest_path: &Path,
-) -> Result<(), TauriFunctionError> {
-    let dir_entries = flow_like_types::tokio::fs::read_dir(src_path)
-        .await
-        .map_err(|e| anyhow!("Failed to read directory: {}", e))?;
-
-    let mut entries = Vec::new();
-    let mut dir_handle = dir_entries;
-
-    while let Some(entry) = dir_handle
-        .next_entry()
-        .await
-        .map_err(|e| anyhow!("Failed to read directory entry: {}", e))?
-    {
-        entries.push(entry);
-    }
-
-    for entry in entries {
-        let entry_path = entry.path();
-        let file_name = entry_path
-            .file_name()
-            .ok_or(anyhow!("Invalid file name"))?
-            .to_string_lossy();
-        let target_path = dest_path.child(file_name.as_ref());
-
-        let metadata = entry
-            .metadata()
-            .await
-            .map_err(|e| anyhow!("Failed to read metadata: {}", e))?;
-
-        if metadata.is_dir() {
-            store.create_folder(dest_path, &file_name).await?;
-            Box::pin(copy_directory_recursively(store, &entry_path, &target_path)).await?;
-        } else if metadata.is_file() {
-            match copy_large_file(store, &entry_path, &target_path).await {
-                Ok(_) => {}
-                Err(e) => {
-                    println!("Error copying file {}: {:?}", file_name, e);
-                    continue;
-                }
-            }
-        }
-    }
-
-    Ok(())
-}
 
 #[tauri::command(async)]
 pub async fn storage_add(
@@ -157,7 +62,7 @@ pub async fn storage_rename(
     prefix: String,
 ) -> Result<(), TauriFunctionError> {
     let state = TauriFlowLikeState::construct(&app_handle).await?;
-    let (store, path) = construct_storage(&state, &app_id, &prefix, true).await?;
+    let (_store, _path) = construct_storage(&state, &app_id, &prefix, true).await?;
 
     Ok(())
 }
@@ -176,7 +81,22 @@ pub async fn storage_list(
         .list_with_delimiter(Some(&path))
         .await
         .map_err(|e| anyhow!("Failed to list items: {}", e))?;
-    let items: Vec<StorageItem> = items.objects.into_iter().map(StorageItem::from).collect();
+    let items: Vec<StorageItem> = items
+        .objects
+        .into_iter()
+        .map(|object| {
+            let mut item = StorageItem::from(object);
+            // Split the location, skip the first three parts, and rejoin
+            let stripped_location = item
+                .location
+                .split('/')
+                .skip(3)
+                .collect::<Vec<_>>()
+                .join("/");
+            item.location = stripped_location;
+            item
+        })
+        .collect();
     println!("Listed {} items", items.len());
     Ok(items)
 }
@@ -192,6 +112,10 @@ pub async fn storage_get(
 
     for prefix in prefixes.iter() {
         let (store, path) = construct_storage(&state, &app_id, prefix, false).await?;
+        println!(
+            "Generating signed URL for path: {:?}, from prefix: {:?}",
+            path, prefix
+        );
         let signed_url = match store
             .sign("GET", &path, Duration::from_secs(60 * 60 * 24))
             .await

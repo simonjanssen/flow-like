@@ -77,7 +77,10 @@ export function ChatWelcome({
 
 	// Filter examples based on current message and show max 5
 	const filteredExamples = useMemo(() => {
-		const examples = config?.example_messages ?? defaultExamples;
+		const examples =
+			(config?.example_messages?.length ?? 0) === 0
+				? defaultExamples
+				: (config?.example_messages ?? []);
 		if (!currentMessage.trim()) {
 			return examples.slice(0, 4);
 		}

@@ -1,12 +1,13 @@
 "use client";
-import { Check, Copy, Workflow } from "lucide-react";
+import { Calendar, Check, Copy, Workflow } from "lucide-react";
 import {
-	Avatar,
-	AvatarFallback,
-	AvatarImage,
 	Badge,
 	Card,
 	CardContent,
+	CardHeader,
+	CardTitle,
+	type IDate,
+	formatRelativeTime,
 } from "../../..";
 import type { IMetadata } from "../../../lib";
 
@@ -27,48 +28,76 @@ export function TemplateCard({
 }>) {
 	return (
 		<Card
-			className={`cursor-pointer transition-all duration-300 ${
-				compact ? "hover:shadow-sm" : "hover:shadow-lg hover:-translate-y-1"
-			} ${
+			className={`group cursor-pointer transition-all duration-300 h-full flex flex-col ${
 				selected
-					? "ring-2 ring-primary shadow-lg shadow-primary/20 bg-gradient-to-br from-primary/5 to-transparent"
-					: "hover:border-primary/30"
+					? "ring-2 ring-primary shadow-xl shadow-primary/20"
+					: "hover:shadow-xl"
 			}`}
 			onClick={onSelect}
 		>
-			<CardContent className={compact ? "p-3" : "p-4"}>
-				<div className={`flex items-center gap-3 ${compact ? "mb-2" : "mb-3"}`}>
-					<Avatar className={`${compact ? "h-8 w-8" : "h-12 w-12"} shadow-sm`}>
-						<AvatarImage src={metadata.icon ?? ""} />
-						<AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20">
-							<Copy className={compact ? "h-3 w-3" : "h-6 w-6"} />
-						</AvatarFallback>
-					</Avatar>
-					<div className="flex-1 min-w-0">
-						<h3
-							className={`font-semibold truncate ${compact ? "text-sm" : ""}`}
+			<CardHeader className="space-y-4">
+				<div className="flex items-start justify-between">
+					<div className="flex items-center gap-3">
+						<div
+							className={`p-2 rounded-lg transition-colors ${
+								selected
+									? "bg-primary/30"
+									: "bg-primary/10 group-hover:bg-primary/30"
+							}`}
 						>
-							{metadata?.name}
-						</h3>
-						<Badge
-							variant={selected ? "default" : "secondary"}
-							className={"text-xs"}
-						>
-							<Workflow className="h-3 w-3 mr-1" />
-							Template
-						</Badge>
-					</div>
-					{selected && (
-						<div className="p-1.5 bg-primary rounded-full">
-							<Check className="h-4 w-4 text-primary-foreground" />
+							<Copy className="w-5 h-5 text-primary" />
 						</div>
-					)}
+						<div className="flex-1 min-w-0">
+							<CardTitle
+								className={`text-lg font-semibold transition-colors truncate ${
+									selected
+										? "text-primary"
+										: "text-foreground group-hover:text-primary"
+								}`}
+							>
+								{metadata?.name}
+							</CardTitle>
+						</div>
+					</div>
+					<div className="flex items-center gap-2">
+						{selected && (
+							<div className="p-1.5 bg-primary rounded-full">
+								<Check className="h-4 w-4 text-primary-foreground" />
+							</div>
+						)}
+					</div>
 				</div>
-				<p
-					className={`text-muted-foreground line-clamp-2 ${compact ? "text-xs" : "text-sm"}`}
-				>
+			</CardHeader>
+			<CardContent className="space-y-4 flex-1 flex flex-col">
+				<p className="text-muted-foreground text-sm leading-relaxed line-clamp-2 text-start flex-1">
 					{metadata?.description}
 				</p>
+
+				<div className="flex flex-wrap gap-1">
+					<Badge
+						variant={selected ? "default" : "secondary"}
+						className="text-xs"
+					>
+						<Workflow className="h-3 w-3 mr-1" />
+						Template
+					</Badge>
+					{metadata?.tags?.map((tag) => (
+						<Badge key={tag} variant="outline" className="text-xs">
+							{tag}
+						</Badge>
+					))}
+				</div>
+
+				<div className="pt-4 border-t mt-auto">
+					<div className="flex items-center justify-between text-xs text-muted-foreground">
+						<div className="flex items-center gap-1">
+							<Calendar className="w-3 h-3" />
+							{metadata?.created_at && (
+								<span>{formatRelativeTime(metadata?.created_at as IDate)}</span>
+							)}
+						</div>
+					</div>
+				</div>
 			</CardContent>
 		</Card>
 	);

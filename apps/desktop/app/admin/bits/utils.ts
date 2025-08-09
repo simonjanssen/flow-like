@@ -1,8 +1,4 @@
-import {
-	GGMLQuantizationType,
-	type GGUFParseOutput,
-	gguf,
-} from "@huggingface/gguf";
+import { type GGUFParseOutput, gguf } from "@huggingface/gguf";
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 
 export async function getModelSize(fileName: string, repo?: string) {
@@ -16,6 +12,7 @@ export async function getModelSize(fileName: string, repo?: string) {
 
 		return Number.parseInt(headers.headers.get("content-length") || "0");
 	} catch (error) {
+		console.error("Error fetching model size:", error);
 		return -1;
 	}
 }
@@ -34,6 +31,7 @@ export async function guessedModelLink(
 		if (size === 0) return "";
 		return root;
 	} catch (error) {
+		console.error("Error guessing model link:", error);
 		return "";
 	}
 }

@@ -72,7 +72,7 @@ export function TemplateSection({
 			</CardHeader>
 			<CardContent className="space-y-4">
 				{!skipTemplate && (
-					<div className="grid md:grid-cols-2 gap-4">
+					<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
 						{templatesByApp.slice(0, 4).map(([appId, templates]) => (
 							<AppTemplateFolder
 								key={appId}

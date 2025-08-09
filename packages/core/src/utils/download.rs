@@ -4,14 +4,16 @@ use flow_like_storage::{Path, blake3};
 use flow_like_types::intercom::{InterComCallback, InterComEvent};
 use flow_like_types::reqwest::Client;
 use flow_like_types::sync::Mutex;
-use flow_like_types::tokio::fs::OpenOptions;
-use flow_like_types::tokio::io::AsyncWriteExt;
+use flow_like_types::tokio::fs::{self as async_fs, OpenOptions};
+use flow_like_types::tokio::io::{AsyncReadExt, AsyncWriteExt, BufWriter};
+use flow_like_types::tokio::task::yield_now;
+use flow_like_types::tokio::time::Instant;
 use flow_like_types::{anyhow, bail, reqwest};
 use futures::StreamExt;
 use serde::{Deserialize, Serialize};
 use std::cmp::min;
-use std::fs;
 use std::sync::Arc;
+use std::time::Duration;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct BitDownloadEvent {
@@ -56,6 +58,31 @@ async fn publish_progress(
     }
 
     Ok(())
+}
+
+async fn feed_hasher_with_existing(
+    path: &std::path::Path,
+    hasher: &mut blake3::Hasher,
+) -> flow_like_types::Result<u64> {
+    let mut f = async_fs::File::open(path).await?;
+    let mut buf = vec![0u8; 1024 * 1024];
+    let mut total = 0u64;
+
+    loop {
+        let n = f.read(&mut buf).await?;
+        if n == 0 {
+            break;
+        }
+        hasher.update(&buf[..n]);
+        total += n as u64;
+
+        // yield occasionally to keep the runtime responsive (Windows)
+        if total % (8 * 1024 * 1024) == 0 {
+            yield_now().await;
+        }
+    }
+
+    Ok(total)
 }
 
 async fn remove_download(bit: &crate::bit::Bit, app_state: &Arc<Mutex<FlowLikeState>>) {
@@ -111,7 +138,7 @@ pub async fn download_bit(
     let remote_size = get_remote_size(&client, &url).await;
 
     if remote_size.is_err() {
-        if path_name.exists() {
+        if async_fs::try_exists(&path_name).await.unwrap_or(false) {
             let _rem = remove_download(bit, &app_state).await;
             let _ = publish_progress(bit, callback, path_name.metadata()?.len(), &store_path).await;
             return Ok(store_path);
@@ -123,7 +150,7 @@ pub async fn download_bit(
     let remote_size = remote_size?;
 
     let mut local_size = 0;
-    if path_name.exists() {
+    if async_fs::try_exists(&path_name).await.unwrap_or(false) {
         local_size = path_name.metadata()?.len();
         if local_size == remote_size {
             let _rem = remove_download(bit, &app_state).await;
@@ -141,7 +168,7 @@ pub async fn download_bit(
                 "Local file is bigger than remote file, deleting: {}",
                 path_name.display()
             );
-            fs::remove_file(&path_name)?;
+            let _ = async_fs::remove_file(&path_name).await;
         }
     }
 
@@ -163,7 +190,7 @@ pub async fn download_bit(
     };
 
     if let Some(parent) = path_name.parent() {
-        fs::create_dir_all(parent)?;
+        async_fs::create_dir_all(parent).await?;
     }
 
     let mut file = match OpenOptions::new()
@@ -182,16 +209,20 @@ pub async fn download_bit(
         }
     };
 
+    let mut file = BufWriter::with_capacity(1 << 20, file);
+
     let mut downloaded: u64 = 0;
     let mut hasher = blake3::Hasher::new();
 
     if resume {
+        feed_hasher_with_existing(&path_name, &mut hasher).await?;
         downloaded = local_size;
-        hasher.update(&fs::read(&path_name)?);
     }
 
     let mut stream = res.bytes_stream();
     let mut in_buffer = 0;
+    let mut since_yield = 0usize;
+    let mut last_emit = Instant::now();
 
     while let Some(item) = stream.next().await {
         let chunk = match item {
@@ -203,32 +234,37 @@ pub async fn download_bit(
 
         hasher.update(&chunk);
 
-        match file.write(&chunk).await {
-            Ok(_) => (),
-            Err(_) => {
-                continue;
-            }
-        };
+        if file.write_all(&chunk).await.is_err() {
+            continue;
+        }
 
         in_buffer += chunk.len();
+        since_yield += chunk.len();
 
         let new = min(downloaded + (chunk.len() as u64), remote_size);
         downloaded = new;
 
         // if buffer is bigger than 20 mb flush
         if in_buffer > 20_000_000 {
-            let flushed = file.flush().await.is_ok();
-
-            if flushed {
+            if file.flush().await.is_ok() {
                 in_buffer = 0;
             }
         }
 
-        let _res = publish_progress(bit, callback, new, &store_path).await;
+        if last_emit.elapsed() >= Duration::from_millis(150) {
+            let _ = publish_progress(bit, callback, new, &store_path).await;
+            last_emit = Instant::now();
+        }
+
+        if since_yield >= 8 * 1024 * 1024 {
+            yield_now().await;
+            since_yield = 0;
+        }
     }
 
     let _ = file.flush().await;
-    let _ = file.sync_all().await;
+    let inner = file.get_mut();
+    let _ = inner.sync_all().await;
 
     let _rem = remove_download(bit, &app_state).await;
 
@@ -238,7 +274,7 @@ pub async fn download_bit(
             "Error downloading file, hash does not match, deleting __ {} != {}",
             file_hash, bit.hash
         );
-        fs::remove_file(&path_name)?;
+        let _ = async_fs::remove_file(&path_name).await;
         if retries > 0 {
             println!("Retrying download: {}", bit.hash);
             let result = Box::pin(download_bit(bit, app_state, retries - 1, callback));

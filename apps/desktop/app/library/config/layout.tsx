@@ -232,17 +232,17 @@ export default function Id({
 									</BreadcrumbItem>
 									<BreadcrumbSeparator />
 									<BreadcrumbItem>
-										<BreadcrumbLink href="/library/apps">
-											Your Apps
-										</BreadcrumbLink>
-									</BreadcrumbItem>
-									<BreadcrumbSeparator />
-									<BreadcrumbItem>
-										<BreadcrumbPage className="font-medium">
+										<BreadcrumbPage className="font-medium flex flex-row items-center gap-2">
 											{metadata.isFetching ? (
 												<Skeleton className="h-4 w-24" />
 											) : (
 												metadata.data?.name
+											)}
+											{/* Visibility Badge Overlay */}
+											{app.data?.visibility && (
+												<div className="bg-gray-600/40 dark:bg-background rounded-full">
+													<VisibilityIcon visibility={app.data?.visibility} />
+												</div>
 											)}
 										</BreadcrumbPage>
 									</BreadcrumbItem>
@@ -312,13 +312,6 @@ export default function Id({
 												)}
 											</CardTitle>
 										</div>
-
-										{/* Visibility Badge Overlay */}
-										{app.data?.visibility && (
-											<div className="absolute top-2.5 right-2.5 bg-background rounded-full">
-												<VisibilityIcon visibility={app.data?.visibility} />
-											</div>
-										)}
 									</div>
 
 									{/* Description */}
@@ -549,7 +542,7 @@ export default function Id({
 								</Tooltip>
 							</div>
 						</CardHeader>
-						<CardContent className="flex-1 p-6 pt-0 overflow-hidden">
+						<CardContent className="flex-1 p-6 pb-0 pt-0 overflow-hidden">
 							<Suspense
 								fallback={
 									<div className="space-y-4">

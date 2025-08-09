@@ -1,53 +1,25 @@
 "use client";
-import { Channel, invoke } from "@tauri-apps/api/core";
-import { type Event, type UnlistenFn, listen } from "@tauri-apps/api/event";
-import { open } from "@tauri-apps/plugin-dialog";
-import { mkdir, open as openFile } from "@tauri-apps/plugin-fs";
+import { invoke } from "@tauri-apps/api/core";
 
 import { createId } from "@paralleldrive/cuid2";
 import {
-	type IApp,
 	type IAppState,
 	IAppVisibility,
-	type IBackendRole,
 	type IBackendState,
 	type IBit,
-	type IBitPack,
 	type IBitState,
-	type IBoard,
 	type IBoardState,
-	type IDownloadProgress,
-	type IEvent,
 	type IEventState,
-	type IExecutionStage,
-	type IFileMetadata,
 	type IGenericCommand,
 	type IHelperState,
-	type IIntercomEvent,
-	type IInvite,
-	type IInviteLink,
-	type IJoinRequest,
-	type ILog,
-	type ILogLevel,
-	type ILogMetadata,
-	type IMember,
-	type IMetadata,
-	type INode,
 	type IProfile,
 	type IRoleState,
-	type IRunPayload,
-	type ISettingsProfile,
-	type IStorageItemActionResult,
 	type IStorageState,
 	type ITeamState,
 	type ITemplateState,
 	type IUserState,
-	type IVersionType,
 	LoadingScreen,
 	type QueryClient,
-	injectData,
-	injectDataFunction,
-	isEqual,
 	offlineSyncDB,
 	useBackend,
 	useBackendStore,
@@ -55,17 +27,10 @@ import {
 	useInvoke,
 	useQueryClient,
 } from "@tm9657/flow-like-ui";
-import type { ICommandSync, IStorageItem } from "@tm9657/flow-like-ui/lib";
-import type { IBitSearchQuery } from "@tm9657/flow-like-ui/lib/schema/hub/bit-search-query";
+import type { ICommandSync } from "@tm9657/flow-like-ui/lib";
 import type { IAIState } from "@tm9657/flow-like-ui/state/backend-state/ai-state";
-import type {
-	INotificationsOverview,
-	IUserLookup,
-} from "@tm9657/flow-like-ui/state/backend-state/types";
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { type AuthContextProps, useAuth } from "react-oidc-context";
-import { toast } from "sonner";
-import { fetcher, put } from "../lib/api";
+import type { AuthContextProps } from "react-oidc-context";
 import { appsDB } from "../lib/apps-db";
 import { AiState } from "./tauri-provider/ai-state";
 import { AppState } from "./tauri-provider/app-state";
@@ -168,6 +133,51 @@ export class TauriBackend implements IBackendState {
 		boardId: string,
 	): Promise<void> {
 		await offlineSyncDB.commands.delete(commandId);
+	}
+
+	async uploadSignedUrl(
+		signedUrl: string,
+		file: File,
+		completedFiles: number,
+		totalFiles: number,
+		onProgress?: (progress: number) => void,
+	): Promise<void> {
+		const formData = new FormData();
+		formData.append("file", file);
+
+		await new Promise<void>((resolve, reject) => {
+			const xhr = new XMLHttpRequest();
+
+			xhr.upload.addEventListener("progress", (event) => {
+				if (event.lengthComputable) {
+					const fileProgress = event.loaded / event.total;
+					const totalProgress =
+						((completedFiles + fileProgress) / totalFiles) * 100;
+					onProgress?.(totalProgress);
+				}
+			});
+
+			xhr.addEventListener("load", () => {
+				if (xhr.status >= 200 && xhr.status < 300) {
+					resolve();
+				} else {
+					reject(new Error(`Upload failed with status: ${xhr.status}`));
+				}
+			});
+
+			xhr.addEventListener("error", () => {
+				reject(new Error("Upload failed"));
+			});
+
+			xhr.open("PUT", signedUrl);
+			xhr.setRequestHeader(
+				"Content-Type",
+				file.type || "application/octet-stream",
+			);
+			xhr.send(file);
+		});
+
+		onProgress?.((completedFiles / totalFiles) * 100);
 	}
 }
 

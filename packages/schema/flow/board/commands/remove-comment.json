@@ -64,6 +64,11 @@
 				"z_index": {
 					"type": ["integer", "null"],
 					"format": "int32"
+				},
+				"hash": {
+					"type": ["integer", "null"],
+					"format": "uint64",
+					"minimum": 0.0
 				}
 			}
 		},

@@ -31,7 +31,6 @@ import {
 	DropdownMenuLabel,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-	FilePreviewer,
 	Input,
 	ResizableHandle,
 	ResizablePanel,

@@ -1,8 +1,6 @@
 use flow_like_types::{async_trait, sync::Mutex};
 use schemars::JsonSchema;
-use std::sync::Arc;
-
-use std::collections::HashSet;
+use std::{collections::BTreeSet, sync::Arc};
 
 use crate::{
     flow::{
@@ -165,7 +163,7 @@ pub fn connect_pins(
     // We will allow it BUT ONLY via explicit parallel sequence node.
     if from_pin.data_type == VariableType::Execution {
         let mut old_connect_to = from_pin.connected_to.clone();
-        from_pin.connected_to = HashSet::from([to_pin.id.clone()]);
+        from_pin.connected_to = BTreeSet::from([to_pin.id.clone()]);
         old_connect_to.remove(&to_pin.id);
 
         board.nodes.iter_mut().for_each(|(_, node)| {
@@ -179,7 +177,7 @@ pub fn connect_pins(
 
     if from_pin.data_type != VariableType::Execution {
         let mut old_depends_on = to_pin.depends_on.clone();
-        to_pin.depends_on = HashSet::from([from_pin.id.clone()]);
+        to_pin.depends_on = BTreeSet::from([from_pin.id.clone()]);
         old_depends_on.remove(&from_pin.id);
 
         board.nodes.iter_mut().for_each(|(_, node)| {

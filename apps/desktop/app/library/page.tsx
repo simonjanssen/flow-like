@@ -1,5 +1,6 @@
 "use client";
 
+import { invoke } from "@tauri-apps/api/core";
 import {
 	AppCard,
 	Button,
@@ -11,16 +12,24 @@ import {
 	DialogHeader,
 	DialogTitle,
 	EmptyState,
+	type IApp,
 	type IMetadata,
 	Input,
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
 	Separator,
 	useBackend,
 	useInvoke,
 	useMiniSearch,
 } from "@tm9657/flow-like-ui";
 import {
+	ArrowUpDown,
 	FilesIcon,
 	Grid3X3,
+	ImportIcon,
 	LayoutGridIcon,
 	LibraryIcon,
 	Link2,
@@ -42,14 +51,45 @@ export default function YoursPage() {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [joinDialogOpen, setJoinDialogOpen] = useState(false);
 	const [inviteLink, setInviteLink] = useState("");
+	const [sortBy, setSortBy] = useState<
+		"created" | "updated" | "visibility" | "name"
+	>("created");
 
 	const allItems = useMemo(() => {
-		const map = new Map();
+		const map = new Map<string, IMetadata & { id: string; app: IApp }>();
 		apps.data?.forEach(([app, meta]) => {
 			if (meta) map.set(app.id, { ...meta, id: app.id, app });
 		});
 		return Array.from(map.values());
 	}, [apps.data]);
+
+	const sortItems = useCallback(
+		(items: Array<IMetadata & { id: string; app: IApp }>) => {
+			return items.toSorted((a, b) => {
+				switch (sortBy) {
+					case "created":
+						return (
+							(b?.created_at?.secs_since_epoch ?? 0) -
+							(a?.created_at?.secs_since_epoch ?? 0)
+						);
+					case "updated":
+						return (
+							(b?.updated_at?.secs_since_epoch ?? 0) -
+							(a?.updated_at?.secs_since_epoch ?? 0)
+						);
+					case "visibility":
+						const aVisibility = a?.app.visibility;
+						const bVisibility = b?.app.visibility;
+						return aVisibility.localeCompare(bVisibility);
+					case "name":
+						return (a?.name ?? "").localeCompare(b?.name ?? "");
+					default:
+						return 0;
+				}
+			});
+		},
+		[sortBy],
+	);
 
 	const handleJoin = useCallback(async () => {
 		const url = new URL(inviteLink);
@@ -99,6 +139,7 @@ export default function YoursPage() {
 					{items.map((meta) => (
 						<div key={viewMode + meta.id} className="group w-full">
 							<AppCard
+								apps={items}
 								app={meta.app}
 								metadata={meta as IMetadata}
 								variant="extended"
@@ -116,6 +157,7 @@ export default function YoursPage() {
 				{items.map((meta) => (
 					<div key={`left${meta.id}`} className="group">
 						<AppCard
+							apps={items}
 							app={meta.app}
 							metadata={meta as IMetadata}
 							variant="small"
@@ -147,15 +189,18 @@ export default function YoursPage() {
 						</div>
 					</div>
 					<div className="flex items-center space-x-2">
-						<Link href={"/library/new"}>
-							<Button
-								size="lg"
-								className="shadow-lg hover:shadow-xl transition-all duration-200"
-							>
-								<Sparkles className="mr-2 h-4 w-4" />
-								Create App
-							</Button>
-						</Link>
+						<Button
+							size="lg"
+							variant="outline"
+							className="shadow-lg hover:shadow-xl transition-all duration-200"
+							onClick={async () => {
+								await invoke("import_app")
+								await apps.refetch();
+							}}
+						>
+							<ImportIcon className="mr-2 h-4 w-4" />
+							Import Project
+						</Button>
 						<Button
 							size="lg"
 							variant="outline"
@@ -165,6 +210,15 @@ export default function YoursPage() {
 							<Link2 className="mr-2 h-4 w-4" />
 							Join Project
 						</Button>
+						<Link href={"/library/new"}>
+							<Button
+								size="lg"
+								className="shadow-lg hover:shadow-xl transition-all duration-200"
+							>
+								<Sparkles className="mr-2 h-4 w-4" />
+								Create App
+							</Button>
+						</Link>
 					</div>
 				</div>
 
@@ -223,6 +277,21 @@ export default function YoursPage() {
 						/>
 					</div>
 					<div className="flex items-center space-x-2">
+						<Select
+							value={sortBy}
+							onValueChange={(value: typeof sortBy) => setSortBy(value)}
+						>
+							<SelectTrigger className="w-[140px]">
+								<ArrowUpDown className="h-4 w-4 mr-2" />
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="created">Created</SelectItem>
+								<SelectItem value="updated">Updated</SelectItem>
+								<SelectItem value="visibility">Visibility</SelectItem>
+								<SelectItem value="name">Name</SelectItem>
+							</SelectContent>
+						</Select>
 						<Button
 							variant={"outline"}
 							size="sm"
@@ -261,23 +330,11 @@ export default function YoursPage() {
 
 				{searchQuery === "" &&
 					allItems.length > 0 &&
-					renderAppCards(
-						allItems.toSorted(
-							(a, b) =>
-								(b?.updated_at?.nanos_since_epoch ?? 0) -
-								(a?.updated_at?.nanos_since_epoch ?? 0),
-						),
-					)}
+					renderAppCards(sortItems(allItems))}
 
 				{searchQuery !== "" &&
 					(searchResults?.length ?? 0) > 0 &&
-					renderAppCards(
-						(searchResults ?? []).toSorted(
-							(a, b) =>
-								(b?.updated_at?.nanos_since_epoch ?? 0) -
-								(a?.updated_at?.nanos_since_epoch ?? 0),
-						),
-					)}
+					renderAppCards(sortItems(searchResults ?? []))}
 
 				{searchResults && searchResults.length === 0 && searchQuery && (
 					<div className="flex flex-col items-center justify-center h-64 text-center">

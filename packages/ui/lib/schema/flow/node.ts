@@ -7,6 +7,7 @@ export interface INode {
 	error?: null | string;
 	event_callback?: boolean | null;
 	friendly_name: string;
+	hash?: number | null;
 	icon?: null | string;
 	id: string;
 	layer?: null | string;

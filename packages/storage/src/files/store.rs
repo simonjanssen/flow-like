@@ -1,5 +1,6 @@
+use base64::{Engine as _, engine::general_purpose::STANDARD};
 use flow_like_types::{
-    Cacheable, JsonSchema, Result, anyhow, bail,
+    Cacheable, JsonSchema, Result, anyhow, bail, mime_guess,
     reqwest::{self, Url},
     utils::data_url::pathbuf_to_data_url,
 };
@@ -38,6 +39,7 @@ pub enum FlowLikeStore {
     AWS(Arc<object_store::aws::AmazonS3>),
     Azure(Arc<object_store::azure::MicrosoftAzure>),
     Google(Arc<object_store::gcp::GoogleCloudStorage>),
+    Memory(Arc<object_store::memory::InMemory>),
     Other(Arc<dyn ObjectStore>),
 }
 
@@ -58,6 +60,7 @@ impl FlowLikeStore {
             FlowLikeStore::AWS(store) => store.clone() as Arc<dyn ObjectStore>,
             FlowLikeStore::Azure(store) => store.clone() as Arc<dyn ObjectStore>,
             FlowLikeStore::Google(store) => store.clone() as Arc<dyn ObjectStore>,
+            FlowLikeStore::Memory(store) => store.clone() as Arc<dyn ObjectStore>,
             FlowLikeStore::Other(store) => store.clone() as Arc<dyn ObjectStore>,
         }
     }
@@ -110,6 +113,15 @@ impl FlowLikeStore {
             FlowLikeStore::AWS(store) => store.signed_url(method, path, expires_after).await?,
             FlowLikeStore::Google(store) => store.signed_url(method, path, expires_after).await?,
             FlowLikeStore::Azure(store) => store.signed_url(method, path, expires_after).await?,
+            FlowLikeStore::Memory(store) => {
+                let mime = mime_guess::from_path(path.to_string()).first_or_octet_stream();
+                let path = Path::from(path.to_string());
+                let data = store.get(&path).await?;
+                let data = data.bytes().await?;
+                let base64 = STANDARD.encode(data);
+                let data_url = format!("data:{};base64,{}", mime, base64);
+                Url::parse(&data_url)?
+            }
             FlowLikeStore::Local(store) => {
                 let local_path = store.path_to_filesystem(path)?;
 
@@ -117,12 +129,12 @@ impl FlowLikeStore {
                 let is_tauri = cfg!(feature = "tauri") || std::env::var("TAURI_ENV").is_ok();
 
                 if is_tauri {
+                    #[cfg(any(windows, target_os = "android"))]
+                    let base = "http://asset.localhost/";
+                    #[cfg(not(any(windows, target_os = "android")))]
+                    let base = "asset://localhost/";
                     let urlencoded_path = encode(local_path.to_str().unwrap_or(""));
-                    let url = if cfg!(windows) {
-                        format!("http://{}.localhost/{}", "asset", urlencoded_path)
-                    } else {
-                        format!("{}://{}", "asset", urlencoded_path)
-                    };
+                    let url = format!("{base}{urlencoded_path}");
                     let url = Url::parse(&url)?;
                     return Ok(url);
                 }

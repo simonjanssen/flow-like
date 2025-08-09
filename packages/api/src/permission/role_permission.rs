@@ -28,4 +28,11 @@ bitflags! {
         const ReadCourses       =   0b00100000_00000000_00000000;
         const WriteCourses      =   0b01000000_00000000_00000000;
     }
+
+}
+
+pub fn has_role_permission(permissions: &RolePermissions, permission: RolePermissions) -> bool {
+    permissions.contains(permission)
+        || permissions.contains(RolePermissions::Admin)
+        || permissions.contains(RolePermissions::Owner)
 }

@@ -155,6 +155,46 @@ export function StorageSystem({
 		[appId, preview],
 	);
 
+	const downloadFile = useCallback(
+		async (file: string) => {
+			if (preview.file === file) {
+				setPreview((old) => ({ ...old, file: "", url: "" }));
+				return;
+			}
+
+			const signedUrl = await backend.storageState.downloadStorageItems(appId, [
+				file,
+			]);
+
+			if (signedUrl.length === 0 || !signedUrl[0]?.url) {
+				toast.error("Failed to load file preview");
+				return;
+			}
+
+			if (backend.storageState.writeStorageItems) {
+				await backend.storageState.writeStorageItems(signedUrl);
+				return;
+			}
+
+			const fileUrl = signedUrl[0].url;
+			const fileName =
+				fileUrl.split("/").pop()?.split("?")[0] || "downloaded_file";
+			const fileContent = await fetch(fileUrl).then((res) => res.blob());
+			const blob = new Blob([fileContent], {
+				type: "application/octet-stream",
+			});
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = fileName;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+		},
+		[appId, preview],
+	);
+
 	const filteredFiles = useMemo(
 		() =>
 			files.data?.filter((file) =>
@@ -214,7 +254,7 @@ export function StorageSystem({
 	).length;
 
 	return (
-		<div className="flex flex-grow flex-col gap-4 min-h-full h-full max-h-full overflow-hidden w-full">
+		<div className="flex grow flex-col gap-4 min-h-full h-full max-h-full overflow-hidden w-full">
 			<input
 				ref={fileReference}
 				type="file"
@@ -271,17 +311,7 @@ export function StorageSystem({
 			{/* Header Section */}
 			<div className="flex flex-col gap-4 px-4 pt-4">
 				<div className="flex flex-row items-center justify-between">
-					<div className="flex flex-col gap-1">
-						<h2 className="text-2xl font-semibold tracking-tight">Storage</h2>
-						<div className="flex items-center gap-2 text-sm text-muted-foreground">
-							<Badge variant="secondary" className="px-2 py-1">
-								{fileCount} files
-							</Badge>
-							<Badge variant="secondary" className="px-2 py-1">
-								{folderCount} folders
-							</Badge>
-						</div>
-					</div>
+					<h2 className="text-2xl font-semibold tracking-tight">Storage</h2>
 					<div className="flex items-center gap-2">
 						<div className="flex items-center gap-2">
 							<div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -427,14 +457,15 @@ export function StorageSystem({
 						</Tooltip>
 					</div>
 				</div>
-
-				{(files.data?.length ?? 0) > 0 && (
-					<div className="flex flex-row items-end justify-between gap-4 w-full">
+				<div className="flex items-end gap-2 mt-2 justify-between">
+					{(files.data?.length ?? 0) > 0 && (
 						<StorageBreadcrumbs
 							appId={appId}
 							prefix={prefix}
 							updatePrefix={(prefix) => updatePrefix(prefix)}
 						/>
+					)}
+					{(files.data?.length ?? 0) > 0 && (
 						<div className="relative">
 							<SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 							<Input
@@ -444,15 +475,15 @@ export function StorageSystem({
 								onChange={(e) => setSearchQuery(e.target.value)}
 							/>
 						</div>
-					</div>
-				)}
+					)}
+				</div>
 			</div>
 
 			<Separator />
 
 			{/* Content Section */}
 			{(files.data?.length ?? 0) === 0 && (
-				<div className="flex flex-col h-full w-full flex-grow relative px-4">
+				<div className="flex flex-col h-full w-full grow relative px-4">
 					<EmptyState
 						className="w-full h-full max-w-full border-2 border-dashed border-muted-foreground/25 rounded-lg"
 						title="No Files Found"
@@ -473,7 +504,7 @@ export function StorageSystem({
 			)}
 
 			{(files.data?.length ?? 0) > 0 && (
-				<div className="flex flex-col gap-4 flex-grow max-h-full h-full overflow-y-hidden px-4 pb-4">
+				<div className="flex flex-col gap-4 grow max-h-full h-full overflow-y-hidden px-4 pb-4">
 					{preview.url !== "" && (
 						<>
 							{isPreviewMaximized && (
@@ -492,7 +523,7 @@ export function StorageSystem({
 												<MinimizeIcon className="h-4 w-4" />
 											</Button>
 										</div>
-										<div className="flex-grow overflow-auto">
+										<div className="grow overflow-auto">
 											<FilePreviewer url={preview.url} page={2} />
 										</div>
 									</div>
@@ -504,15 +535,29 @@ export function StorageSystem({
 									autoSaveId={"file_viewer"}
 									className="border rounded-lg"
 								>
-									<ResizablePanel className="flex flex-col gap-2 flex-grow overflow-y-hidden max-h-full h-full p-4 bg-background">
+									<ResizablePanel className="flex flex-col gap-2 grow overflow-y-hidden max-h-full h-full p-4 bg-background">
 										<div
 											key={sortBy}
-											className="flex flex-col flex-grow max-h-full h-full overflow-hidden gap-2"
+											className="flex flex-col grow max-h-full h-full overflow-hidden gap-2"
 										>
-											<h3 className="font-medium text-sm text-muted-foreground mb-2">
-												Files & Folders
-											</h3>
-											<div className="flex flex-col gap-2 flex-grow max-h-full h-full overflow-auto">
+											<div className="flex items-center gap-2 mb-2">
+												<h3 className="font-medium text-sm text-muted-foreground">
+													Files & Folders
+												</h3>
+												<Badge
+													variant="secondary"
+													className="px-2 py-1 text-xs"
+												>
+													{fileCount} files
+												</Badge>
+												<Badge
+													variant="secondary"
+													className="px-2 py-1 text-xs"
+												>
+													{folderCount} folders
+												</Badge>
+											</div>
+											<div className="flex flex-col gap-2 grow max-h-full h-full overflow-auto">
 												{sortedFiles.map((file) => (
 													<FileOrFolder
 														highlight={preview.file === file.location}
@@ -565,21 +610,7 @@ export function StorageSystem({
 															}
 														}}
 														downloadFile={async (file) => {
-															const downloadLinks =
-																await backend.storageState.downloadStorageItems(
-																	appId,
-																	[file],
-																);
-															if (downloadLinks.length === 0) {
-																return;
-															}
-
-															const firstItem: any = downloadLinks[0];
-															if (!firstItem?.url) {
-																return;
-															}
-
-															window.open(firstItem.url, "_blank");
+															downloadFile(file);
 														}}
 													/>
 												))}
@@ -587,8 +618,8 @@ export function StorageSystem({
 										</div>
 									</ResizablePanel>
 									<ResizableHandle className="mx-2" />
-									<ResizablePanel className="flex flex-col gap-2 flex-grow overflow-y-hidden max-h-full h-full p-4 bg-background">
-										<div className="flex flex-col flex-grow overflow-auto max-h-full h-full bg-muted/50 rounded-md border">
+									<ResizablePanel className="flex flex-col gap-2 grow overflow-y-hidden max-h-full h-full p-4 bg-background">
+										<div className="flex flex-col grow overflow-auto max-h-full h-full bg-muted/50 rounded-md border">
 											<div className="p-2 border-b bg-background rounded-t-md flex items-center justify-between">
 												<h3 className="font-medium text-sm">Preview</h3>
 												<Button
@@ -600,7 +631,7 @@ export function StorageSystem({
 													<MaximizeIcon className="h-3 w-3" />
 												</Button>
 											</div>
-											<div className="flex-grow overflow-auto">
+											<div className="grow overflow-auto">
 												<FilePreviewer url={preview.url} page={2} />
 											</div>
 										</div>
@@ -610,10 +641,18 @@ export function StorageSystem({
 						</>
 					)}
 					{preview.url === "" && (
-						<div className="flex flex-col flex-grow max-h-full h-full overflow-auto gap-2 border rounded-lg p-4 bg-background">
-							<h3 className="font-medium text-sm text-muted-foreground mb-2">
-								Files & Folders
-							</h3>
+						<div className="flex flex-col grow max-h-full h-full overflow-auto gap-2 border rounded-lg p-4 bg-background">
+							<div className="flex items-center gap-2 mb-2">
+								<h3 className="font-medium text-sm text-muted-foreground">
+									Files & Folders
+								</h3>
+								<Badge variant="secondary" className="px-2 py-1 text-xs">
+									{fileCount} files
+								</Badge>
+								<Badge variant="secondary" className="px-2 py-1 text-xs">
+									{folderCount} folders
+								</Badge>
+							</div>
 							<div
 								className={`grid gap-2 ${viewMode === "grid" ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-1"}`}
 							>
@@ -661,18 +700,7 @@ export function StorageSystem({
 											}
 										}}
 										downloadFile={async (file) => {
-											const downloadLinks =
-												await backend.storageState.downloadStorageItems(appId, [
-													file,
-												]);
-											if (downloadLinks.length === 0) {
-												return;
-											}
-											const firstItem: any = downloadLinks[0];
-											if (!firstItem?.url) {
-												return;
-											}
-											window.open(firstItem.url, "_blank");
+											downloadFile(file);
 										}}
 									/>
 								))}

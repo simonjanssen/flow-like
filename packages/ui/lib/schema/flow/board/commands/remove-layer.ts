@@ -14,6 +14,7 @@ export interface ILayer {
 	comments: { [key: string]: IComment };
 	coordinates: number[];
 	error?: null | string;
+	hash?: number | null;
 	id: string;
 	name: string;
 	nodes: { [key: string]: INode };
@@ -30,6 +31,7 @@ export interface IComment {
 	comment_type: ICommentType;
 	content: string;
 	coordinates: number[];
+	hash?: number | null;
 	height?: number | null;
 	id: string;
 	layer?: null | string;
@@ -60,6 +62,7 @@ export interface INode {
 	error?: null | string;
 	event_callback?: boolean | null;
 	friendly_name: string;
+	hash?: number | null;
 	icon?: null | string;
 	id: string;
 	layer?: null | string;
@@ -152,6 +155,7 @@ export interface IVariable {
 	description?: null | string;
 	editable: boolean;
 	exposed: boolean;
+	hash?: number | null;
 	id: string;
 	name: string;
 	secret: boolean;

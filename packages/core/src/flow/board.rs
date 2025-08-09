@@ -16,6 +16,7 @@ use commands::GenericCommand;
 use flow_like_storage::object_store::{ObjectStore, path::Path};
 use flow_like_types::{FromProto, ToProto, create_id, sync::Mutex};
 use futures::StreamExt;
+use highway::{HighwayHash, HighwayHasher};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -68,6 +69,7 @@ pub struct Layer {
     pub comment: Option<String>,
     pub error: Option<String>,
     pub color: Option<String>,
+    pub hash: Option<u64>,
 }
 
 impl Layer {
@@ -85,7 +87,67 @@ impl Layer {
             comment: None,
             error: None,
             color: None,
+            hash: None,
         }
+    }
+
+    pub fn hash(&mut self) {
+        let mut hasher = HighwayHasher::new(highway::Key([
+            0x0123456789abcdfe,
+            0xfedcba9876543210,
+            0x0011223344556677,
+            0x8899aabbccddeeff,
+        ]));
+
+        hasher.append(self.id.as_bytes());
+        hasher.append(self.name.as_bytes());
+        hasher.append(format!("{:?}", self.r#type).as_bytes());
+
+        if let Some(parent_id) = &self.parent_id {
+            hasher.append(parent_id.as_bytes());
+        }
+
+        let mut sorted_nodes: Vec<_> = self.nodes.iter().collect();
+        sorted_nodes.sort_by_key(|(id, _)| *id);
+        for (id, node) in sorted_nodes {
+            hasher.append(id.as_bytes());
+            hasher.append(node.id.as_bytes());
+        }
+
+        let mut sorted_variables: Vec<_> = self.variables.iter().collect();
+        sorted_variables.sort_by_key(|(id, _)| *id);
+        for (id, variable) in sorted_variables {
+            hasher.append(id.as_bytes());
+            hasher.append(variable.id.as_bytes());
+        }
+
+        let mut sorted_comments: Vec<_> = self.comments.iter().collect();
+        sorted_comments.sort_by_key(|(id, _)| *id);
+        for (id, comment) in sorted_comments {
+            hasher.append(id.as_bytes());
+            hasher.append(comment.id.as_bytes());
+        }
+
+        let mut sorted_pins: Vec<_> = self.pins.iter().collect();
+        sorted_pins.sort_by_key(|(id, _)| *id);
+        for (id, pin) in sorted_pins {
+            hasher.append(id.as_bytes());
+            hasher.append(pin.id.as_bytes());
+        }
+
+        hasher.append(&self.coordinates.0.to_le_bytes());
+        hasher.append(&self.coordinates.1.to_le_bytes());
+        hasher.append(&self.coordinates.2.to_le_bytes());
+
+        if let Some(comment) = &self.comment {
+            hasher.append(comment.as_bytes());
+        }
+
+        if let Some(color) = &self.color {
+            hasher.append(color.as_bytes());
+        }
+
+        self.hash = Some(hasher.finalize64());
     }
 }
 
@@ -172,6 +234,20 @@ impl Board {
                 },
             };
             node_logic.on_update(node, reference.clone()).await;
+
+            node.hash();
+        }
+
+        for layer in self.layers.values_mut() {
+            layer.hash();
+        }
+
+        for variable in self.variables.values_mut() {
+            variable.hash();
+        }
+
+        for comment in self.comments.values_mut() {
+            comment.hash();
         }
     }
 
@@ -325,7 +401,8 @@ impl Board {
                                                     .iter()
                                                     .filter(|(_, p)| p.pin_type == new_pin.pin_type)
                                                     .count()
-                                                    as u16;
+                                                    as u16
+                                                    + 1;
                                                 layer.pins.insert(pin.id.clone(), new_pin);
                                             }
                                         }
@@ -370,7 +447,8 @@ impl Board {
                                                     .iter()
                                                     .filter(|(_, p)| p.pin_type == new_pin.pin_type)
                                                     .count()
-                                                    as u16;
+                                                    as u16
+                                                    + 1;
                                                 layer.pins.insert(pin.id.clone(), new_pin);
                                             }
                                         }
@@ -906,6 +984,52 @@ pub struct Comment {
     pub layer: Option<String>,
     pub color: Option<String>,
     pub z_index: Option<i32>,
+    pub hash: Option<u64>,
+}
+
+impl Comment {
+    pub fn hash(&mut self) {
+        let mut hasher = HighwayHasher::new(highway::Key([
+            0x0123456789abcdfe,
+            0xfedcba9876543210,
+            0x0011223344556677,
+            0x8899aabbccddeeff,
+        ]));
+
+        hasher.append(self.id.as_bytes());
+        hasher.append(self.content.as_bytes());
+        hasher.append(format!("{:?}", self.comment_type).as_bytes());
+
+        if let Some(author) = &self.author {
+            hasher.append(author.as_bytes());
+        }
+
+        hasher.append(&self.coordinates.0.to_le_bytes());
+        hasher.append(&self.coordinates.1.to_le_bytes());
+        hasher.append(&self.coordinates.2.to_le_bytes());
+
+        if let Some(width) = self.width {
+            hasher.append(&width.to_le_bytes());
+        }
+
+        if let Some(height) = self.height {
+            hasher.append(&height.to_le_bytes());
+        }
+
+        if let Some(layer) = &self.layer {
+            hasher.append(layer.as_bytes());
+        }
+
+        if let Some(color) = &self.color {
+            hasher.append(color.as_bytes());
+        }
+
+        if let Some(z_index) = self.z_index {
+            hasher.append(&z_index.to_le_bytes());
+        }
+
+        self.hash = Some(hasher.finalize64());
+    }
 }
 
 #[cfg(test)]

@@ -1,8 +1,6 @@
 "use client";
 
 import {
-	Avatar,
-	AvatarFallback,
 	Badge,
 	Button,
 	Card,
@@ -33,24 +31,19 @@ import {
 	Textarea,
 	formatRelativeTime,
 	nowSystemTime,
-	parseTimespan,
 	useBackend,
 	useInvoke,
 	useSetQueryParams,
 } from "@tm9657/flow-like-ui";
 import {
 	Calendar,
-	Copy,
 	CopyIcon,
 	Edit,
 	Filter,
 	MoreVertical,
 	Plus,
 	Search,
-	Star,
 	Trash2,
-	User,
-	Workflow,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
@@ -142,189 +135,171 @@ export default function TemplatesPage() {
 		);
 
 	return (
-		<main className="flex-col flex flex-grow max-h-full overflow-hidden p-6 space-y-8">
+		<main className="flex-col flex flex-grow max-h-full overflow-hidden p-6 pt-0 space-y-8">
 			{/* Header Section */}
-			<div className="relative">
-				<div className="absolute inset-0 bg-primary rounded-3xl opacity-10" />
-				<div className="relative bg-card/80 backdrop-blur-sm rounded-3xl p-8 border shadow-xl">
-					<div className="flex items-center justify-between">
-						<div className="space-y-2">
-							<h1 className="text-4xl font-bold text-primary">
-								Flow Templates
-							</h1>
-							<p className="text-muted-foreground text-lg">
-								Create, manage, and organize your workflow templates
-							</p>
-						</div>
-						<Dialog
-							open={isCreateDialogOpen}
-							onOpenChange={setIsCreateDialogOpen}
-						>
-							<DialogTrigger asChild>
-								<Button
-									size="lg"
-									className="shadow-lg hover:shadow-xl transition-all duration-200"
+			<div className="flex items-center justify-between py-4">
+				<div className="space-y-1">
+					<h1 className="text-2xl font-bold">Flow Templates</h1>
+					<p className="text-muted-foreground text-sm">
+						Create, manage, and organize your workflow templates
+					</p>
+				</div>
+				<Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+					<DialogTrigger asChild>
+						<Button className="shadow-sm">
+							<Plus className="w-4 h-4 mr-2" />
+							Create Template
+						</Button>
+					</DialogTrigger>
+					<DialogContent className="sm:max-w-md">
+						<DialogHeader className="space-y-3">
+							<div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+								<CopyIcon className="h-6 w-6 text-primary" />
+							</div>
+							<DialogTitle className="text-center text-xl">
+								Create New Template
+							</DialogTitle>
+							<DialogDescription className="text-center">
+								Create a reusable template from an existing workflow
+							</DialogDescription>
+						</DialogHeader>
+
+						<div className="space-y-6 py-4">
+							<div className="space-y-2">
+								<Label htmlFor="template-name" className="text-sm font-medium">
+									Template Name
+								</Label>
+								<Input
+									id="template-name"
+									placeholder="Enter template name"
+									value={newTemplate.name}
+									onChange={(e) =>
+										setNewTemplate({ ...newTemplate, name: e.target.value })
+									}
+								/>
+							</div>
+
+							<div className="space-y-2">
+								<Label
+									htmlFor="template-description"
+									className="text-sm font-medium"
 								>
-									<Plus className="w-5 h-5 mr-2" />
+									Description
+								</Label>
+								<Textarea
+									id="template-description"
+									placeholder="Describe what this template does"
+									value={newTemplate.description}
+									onChange={(e) =>
+										setNewTemplate({
+											...newTemplate,
+											description: e.target.value,
+										})
+									}
+									className="min-h-[80px] resize-none"
+								/>
+							</div>
+
+							<div className="space-y-2">
+								<Label
+									htmlFor="workflow-select"
+									className="text-sm font-medium"
+								>
+									Source Workflow
+								</Label>
+								<Select
+									value={selectedWorkflow}
+									onValueChange={setSelectedWorkflow}
+								>
+									<SelectTrigger>
+										<SelectValue placeholder="Select a workflow" />
+									</SelectTrigger>
+									<SelectContent>
+										{boards.data?.map((workflow) => (
+											<SelectItem key={workflow.id} value={workflow.id}>
+												{workflow.name}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+
+							{selectedWorkflow && (
+								<div className="space-y-2">
+									<Label
+										htmlFor="version-select"
+										className="text-sm font-medium"
+									>
+										Workflow Version
+									</Label>
+									<Select
+										value={newTemplate.workflowVersion}
+										onValueChange={(value) =>
+											setNewTemplate({
+												...newTemplate,
+												workflowVersion:
+													value === "" || value === "none"
+														? undefined
+														: value.split(".").map(Number),
+											})
+										}
+										disabled={versions.isFetching}
+									>
+										<SelectTrigger>
+											<SelectValue
+												placeholder={
+													versions.isFetching ? "Loading versions..." : "Latest"
+												}
+											/>
+										</SelectTrigger>
+										<SelectContent>
+											{versions.isFetching ? (
+												<div className="flex items-center justify-center py-4">
+													<div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
+													<span className="ml-2 text-sm text-muted-foreground">
+														Loading versions...
+													</span>
+												</div>
+											) : (
+												<>
+													{versions.data?.map((version) => (
+														<SelectItem
+															key={version.join(".")}
+															value={version.join(".")}
+														>
+															v{version.join(".")}
+														</SelectItem>
+													))}
+													<SelectItem key={""} value={"none"}>
+														Latest
+													</SelectItem>
+												</>
+											)}
+										</SelectContent>
+									</Select>
+								</div>
+							)}
+
+							<div className="flex gap-2 pt-4">
+								<Button
+									onClick={async () => {
+										await handleCreateTemplate();
+									}}
+									disabled={!newTemplate.name || !selectedWorkflow}
+									className="flex-1"
+								>
 									Create Template
 								</Button>
-							</DialogTrigger>
-							<DialogContent className="sm:max-w-md">
-								<DialogHeader className="space-y-3">
-									<div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-										<CopyIcon className="h-6 w-6 text-primary" />
-									</div>
-									<DialogTitle className="text-center text-xl">
-										Create New Template
-									</DialogTitle>
-									<DialogDescription className="text-center">
-										Create a reusable template from an existing workflow
-									</DialogDescription>
-								</DialogHeader>
-
-								<div className="space-y-6 py-4">
-									<div className="space-y-2">
-										<Label
-											htmlFor="template-name"
-											className="text-sm font-medium"
-										>
-											Template Name
-										</Label>
-										<Input
-											id="template-name"
-											placeholder="Enter template name"
-											value={newTemplate.name}
-											onChange={(e) =>
-												setNewTemplate({ ...newTemplate, name: e.target.value })
-											}
-										/>
-									</div>
-
-									<div className="space-y-2">
-										<Label
-											htmlFor="template-description"
-											className="text-sm font-medium"
-										>
-											Description
-										</Label>
-										<Textarea
-											id="template-description"
-											placeholder="Describe what this template does"
-											value={newTemplate.description}
-											onChange={(e) =>
-												setNewTemplate({
-													...newTemplate,
-													description: e.target.value,
-												})
-											}
-											className="min-h-[80px] resize-none"
-										/>
-									</div>
-
-									<div className="space-y-2">
-										<Label
-											htmlFor="workflow-select"
-											className="text-sm font-medium"
-										>
-											Source Workflow
-										</Label>
-										<Select
-											value={selectedWorkflow}
-											onValueChange={setSelectedWorkflow}
-										>
-											<SelectTrigger>
-												<SelectValue placeholder="Select a workflow" />
-											</SelectTrigger>
-											<SelectContent>
-												{boards.data?.map((workflow) => (
-													<SelectItem key={workflow.id} value={workflow.id}>
-														{workflow.name}
-													</SelectItem>
-												))}
-											</SelectContent>
-										</Select>
-									</div>
-
-									{selectedWorkflow && (
-										<div className="space-y-2">
-											<Label
-												htmlFor="version-select"
-												className="text-sm font-medium"
-											>
-												Workflow Version
-											</Label>
-											<Select
-												value={newTemplate.workflowVersion}
-												onValueChange={(value) =>
-													setNewTemplate({
-														...newTemplate,
-														workflowVersion:
-															value === "" || value === "none"
-																? undefined
-																: value.split(".").map(Number),
-													})
-												}
-												disabled={versions.isFetching}
-											>
-												<SelectTrigger>
-													<SelectValue
-														placeholder={
-															versions.isFetching
-																? "Loading versions..."
-																: "Latest"
-														}
-													/>
-												</SelectTrigger>
-												<SelectContent>
-													{versions.isFetching ? (
-														<div className="flex items-center justify-center py-4">
-															<div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
-															<span className="ml-2 text-sm text-muted-foreground">
-																Loading versions...
-															</span>
-														</div>
-													) : (
-														<>
-															{versions.data?.map((version) => (
-																<SelectItem
-																	key={version.join(".")}
-																	value={version.join(".")}
-																>
-																	v{version.join(".")}
-																</SelectItem>
-															))}
-															<SelectItem key={""} value={"none"}>
-																Latest
-															</SelectItem>
-														</>
-													)}
-												</SelectContent>
-											</Select>
-										</div>
-									)}
-
-									<div className="flex gap-2 pt-4">
-										<Button
-											onClick={async () => {
-												await handleCreateTemplate();
-											}}
-											disabled={!newTemplate.name || !selectedWorkflow}
-											className="flex-1"
-										>
-											Create Template
-										</Button>
-										<Button
-											variant="outline"
-											onClick={() => setIsCreateDialogOpen(false)}
-										>
-											Cancel
-										</Button>
-									</div>
-								</div>
-							</DialogContent>
-						</Dialog>
-					</div>
-				</div>
+								<Button
+									variant="outline"
+									onClick={() => setIsCreateDialogOpen(false)}
+								>
+									Cancel
+								</Button>
+							</div>
+						</div>
+					</DialogContent>
+				</Dialog>
 			</div>
 
 			{/* Search and Filter Bar */}
@@ -354,8 +329,9 @@ export default function TemplatesPage() {
 								e.preventDefault();
 								setQueryParams("templateId", templateId);
 							}}
+							className="h-full"
 						>
-							<Card className="group hover:shadow-xl transition-all duration-300">
+							<Card className="group hover:shadow-xl transition-all duration-300 h-full flex flex-col">
 								<CardHeader className="space-y-4">
 									<div className="flex items-start justify-between">
 										<div className="flex items-center gap-3">
@@ -392,8 +368,8 @@ export default function TemplatesPage() {
 										</DropdownMenu>
 									</div>
 								</CardHeader>
-								<CardContent className="space-y-4">
-									<p className="text-muted-foreground text-sm leading-relaxed line-clamp-2 text-start">
+								<CardContent className="space-y-4 flex-1 flex flex-col">
+									<p className="text-muted-foreground text-sm leading-relaxed line-clamp-2 text-start flex-1">
 										{meta?.description}
 									</p>
 
@@ -405,7 +381,7 @@ export default function TemplatesPage() {
 										))}
 									</div>
 
-									<div className="pt-4 border-t">
+									<div className="pt-4 border-t mt-auto">
 										<div className="flex items-center justify-between text-xs text-muted-foreground">
 											<div className="flex items-center gap-1">
 												<Calendar className="w-3 h-3" />

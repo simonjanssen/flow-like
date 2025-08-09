@@ -53,7 +53,32 @@ import CATPPUCHIN from "./themes/catppuccin.json";
 import CLAYMORPHISM from "./themes/claymorphism.json";
 import CLEAN_SLATE from "./themes/clean-slate.json";
 import COSMIC_NIGHT from "./themes/cosmic-night.json";
+import CYBER_PUNK from "./themes/cyber-punk.json";
+import DOOM from "./themes/doom.json";
+import GRAPHITE from "./themes/graphite.json";
+import KODAMA_GROVE from "./themes/kodama-grove.json";
+import LUXURY from "./themes/luxury.json";
+import MIDNIGHT_BLOOM from "./themes/midnight-bloom.json";
+import MOCHA_MOUSSE from "./themes/mocha-mousse.json";
+import MODERN_MINIMAL from "./themes/modern-minimal.json";
+
+import MONO from "./themes/mono.json";
+import NATURE from "./themes/nature.json";
+import NEO_BRUTALISM from "./themes/neo-brutalism.json";
+import NORTHERN_LIGHTS from "./themes/northern-lights.json";
+import NOTEBOOK from "./themes/notebook.json";
+import OCEAN_BREEZE from "./themes/ocean-breeze.json";
+import PASTEL_DREAMS from "./themes/pastel-dreams.json";
+import PERPETUITY from "./themes/perpetuity.json";
+import QUANTUM_ROSE from "./themes/quantum-rose.json";
+import RETRO_ARCADE from "./themes/retro-arcade.json";
+import SOFT_POP from "./themes/soft-pop.json";
+import SOLAR_DUSK from "./themes/solar-dusk.json";
+import STARRY_NIGHT from "./themes/starry-night.json";
+import SUNSET_HORIZON from "./themes/sunset-horizon.json";
+import TANGERINE from "./themes/tangerine.json";
 import VINTAGE_PAPER from "./themes/vintage-paper.json";
+import VIOLET_BLOOM from "./themes/violet-bloom.json";
 
 const THEME_TRANSLATION: Record<IThemes, any> = {
 	[IThemes.FLOW_LIKE]: undefined,
@@ -67,27 +92,30 @@ const THEME_TRANSLATION: Record<IThemes, any> = {
 	[IThemes.CLAYMORPHISM]: CLAYMORPHISM,
 	[IThemes.CLEAN_SLATE]: CLEAN_SLATE,
 	[IThemes.COSMIC_NIGHT]: COSMIC_NIGHT,
-	[IThemes.CYBERPUNK]: undefined,
-	[IThemes.DOOM_64]: undefined,
-	[IThemes.ELEGANT_LUXURY]: undefined,
-	[IThemes.GRAPHITE]: undefined,
-	[IThemes.KODAMA_GROVE]: undefined,
-	[IThemes.MIDNIGHT_BLOOM]: undefined,
-	[IThemes.MOCHA_MOUSSE]: undefined,
-	[IThemes.MODERN_MINIMAL]: undefined,
-	[IThemes.MONO]: undefined,
-	[IThemes.NATURE]: undefined,
-	[IThemes.NEO_BRUTALISM]: undefined,
-	[IThemes.NORTHERN_LIGHTS]: undefined,
-	[IThemes.NOTEBOOK]: undefined,
-	[IThemes.OCEAN_BREEZE]: undefined,
-	[IThemes.PASTEL_DREAMS]: undefined,
-	[IThemes.PERPETUITY]: undefined,
-	[IThemes.QUANTUM_ROSE]: undefined,
-	[IThemes.RETRO_ARCADE]: undefined,
-	[IThemes.SOLAR_DUSK]: undefined,
-	[IThemes.STARRY_NIGHT]: undefined,
-	[IThemes.SUNSET_HORIZON]: undefined,
+	[IThemes.CYBERPUNK]: CYBER_PUNK,
+	[IThemes.DOOM_64]: DOOM,
+	[IThemes.ELEGANT_LUXURY]: LUXURY,
+	[IThemes.GRAPHITE]: GRAPHITE,
+	[IThemes.KODAMA_GROVE]: KODAMA_GROVE,
+	[IThemes.MIDNIGHT_BLOOM]: MIDNIGHT_BLOOM,
+	[IThemes.MOCHA_MOUSSE]: MOCHA_MOUSSE,
+	[IThemes.MODERN_MINIMAL]: MODERN_MINIMAL,
+	[IThemes.MONO]: MONO,
+	[IThemes.NATURE]: NATURE,
+	[IThemes.NEO_BRUTALISM]: NEO_BRUTALISM,
+	[IThemes.NORTHERN_LIGHTS]: NORTHERN_LIGHTS,
+	[IThemes.NOTEBOOK]: NOTEBOOK,
+	[IThemes.OCEAN_BREEZE]: OCEAN_BREEZE,
+	[IThemes.PASTEL_DREAMS]: PASTEL_DREAMS,
+	[IThemes.PERPETUITY]: PERPETUITY,
+	[IThemes.QUANTUM_ROSE]: QUANTUM_ROSE,
+	[IThemes.RETRO_ARCADE]: RETRO_ARCADE,
+	[IThemes.SOLAR_DUSK]: SOLAR_DUSK,
+	[IThemes.STARRY_NIGHT]: STARRY_NIGHT,
+	[IThemes.SUNSET_HORIZON]: SUNSET_HORIZON,
+	[IThemes.SOFT_POP]: SOFT_POP,
+	[IThemes.TANGERINE]: TANGERINE,
+	[IThemes.VIOLET_BLOOM]: VIOLET_BLOOM,
 	[IThemes.VINTAGE_PAPER]: VINTAGE_PAPER,
 };
 
@@ -546,7 +574,7 @@ export default function SettingsPage() {
 								<Select
 									value={
 										localProfile.hub_profile.settings?.connection_mode ??
-										IConnectionMode.Simplebezier
+										IConnectionMode.Default
 									}
 									onValueChange={(value: IConnectionMode) =>
 										updateProfile({
@@ -564,10 +592,16 @@ export default function SettingsPage() {
 										<SelectValue placeholder="Select connection mode" />
 									</SelectTrigger>
 									<SelectContent>
+										<SelectItem value={IConnectionMode.Default}>
+											Default
+										</SelectItem>
 										<SelectItem value={IConnectionMode.Straight}>
 											Straight
 										</SelectItem>
 										<SelectItem value={IConnectionMode.Step}>Step</SelectItem>
+										<SelectItem value={IConnectionMode.Smoothstep}>
+											Smooth Step
+										</SelectItem>
 										<SelectItem value={IConnectionMode.Simplebezier}>
 											Simple Bezier
 										</SelectItem>

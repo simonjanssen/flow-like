@@ -29,9 +29,8 @@ import {
 import { Badge } from "@tm9657/flow-like-ui";
 import { Avatar, AvatarFallback, AvatarImage } from "@tm9657/flow-like-ui";
 import { Separator } from "@tm9657/flow-like-ui";
-import { Checkbox } from "@tm9657/flow-like-ui";
 import { Image, Monitor, Plus, Save, Upload, User, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useAuth } from "react-oidc-context";
 import { fetcher, get } from "../../../../lib/api";
 import { useApi } from "../../../../lib/useApi";

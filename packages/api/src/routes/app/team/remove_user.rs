@@ -10,9 +10,7 @@ use axum::{
     Extension, Json,
     extract::{Path, State},
 };
-use sea_orm::{
-    ActiveModelTrait, ColumnTrait, EntityTrait, ModelTrait, QueryFilter, TransactionTrait,
-};
+use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, TransactionTrait};
 
 /// Users are allowed to remove other users if they are admin. If the remove themselfes they are allowed to do so regardless of their role
 #[tracing::instrument(name = "DELETE /apps/{app_id}/team/{sub}", skip(state, user))]

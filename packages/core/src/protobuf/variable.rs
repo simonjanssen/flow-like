@@ -90,6 +90,7 @@ impl ToProto<flow_like_types::proto::Variable> for Variable {
             exposed: self.exposed,
             secret: self.secret,
             editable: self.editable,
+            hash: self.hash,
         }
     }
 }
@@ -120,6 +121,7 @@ impl FromProto<flow_like_types::proto::Variable> for Variable {
             secret: proto.secret,
             editable: proto.editable,
             value: Arc::new(Mutex::new(Value::Null)),
+            hash: proto.hash,
         }
     }
 }

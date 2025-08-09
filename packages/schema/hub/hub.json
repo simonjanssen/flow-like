@@ -62,6 +62,9 @@
 		"cdn": {
 			"type": ["string", "null"]
 		},
+		"app": {
+			"type": ["string", "null"]
+		},
 		"legal_notice": {
 			"type": "string"
 		},
@@ -86,6 +89,23 @@
 			"additionalProperties": {
 				"$ref": "#/definitions/UserTier"
 			}
+		},
+		"lookup": {
+			"default": {
+				"additional_information": true,
+				"avatar": true,
+				"created_at": true,
+				"description": true,
+				"email": false,
+				"name": true,
+				"preferred_username": true,
+				"username": false
+			},
+			"allOf": [
+				{
+					"$ref": "#/definitions/Lookup"
+				}
+			]
 		}
 	},
 	"definitions": {
@@ -302,6 +322,45 @@
 					"items": {
 						"type": "string"
 					}
+				}
+			}
+		},
+		"Lookup": {
+			"type": "object",
+			"required": [
+				"additional_information",
+				"avatar",
+				"created_at",
+				"description",
+				"email",
+				"name",
+				"preferred_username",
+				"username"
+			],
+			"properties": {
+				"email": {
+					"type": "boolean"
+				},
+				"name": {
+					"type": "boolean"
+				},
+				"username": {
+					"type": "boolean"
+				},
+				"preferred_username": {
+					"type": "boolean"
+				},
+				"avatar": {
+					"type": "boolean"
+				},
+				"additional_information": {
+					"type": "boolean"
+				},
+				"description": {
+					"type": "boolean"
+				},
+				"created_at": {
+					"type": "boolean"
 				}
 			}
 		}

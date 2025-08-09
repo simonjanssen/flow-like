@@ -3,31 +3,33 @@
 import { VariableIcon } from "lucide-react";
 import { memo, useEffect, useState } from "react";
 import { Button } from "../../../components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger,
-} from "../../../components/ui/dialog";
+import { IValueType } from "../../../lib";
 import {
 	type IPin,
 	IPinType,
 	IVariableType,
 } from "../../../lib/schema/flow/pin";
-import { VariablesMenuEdit } from "../variables/variables-menu-edit";
+import useFlowControlState from "../../../state/flow-control-state";
+import { BitVariable } from "./variable-types/bit-select";
 import { BooleanVariable } from "./variable-types/boolean-variable";
 import { VariableDescription } from "./variable-types/default-text";
 import { EnumVariable } from "./variable-types/enum-variable";
+import { FnVariable } from "./variable-types/fn-select";
+import { VarVariable } from "./variable-types/var-select";
 
 export function PinEdit({
+	nodeId,
 	pin,
 	defaultValue,
+	appId,
+	boardId,
 	changeDefaultValue,
 }: Readonly<{
+	nodeId: string;
 	pin: IPin;
 	defaultValue: any;
+	appId: string;
+	boardId: string;
 	changeDefaultValue: (value: any) => void;
 }>) {
 	const [cachedDefaultValue, setCachedDefaultValue] = useState(defaultValue);
@@ -59,25 +61,68 @@ export function PinEdit({
 			/>
 		);
 
+	if (
+		pin.name.startsWith("bit_id") &&
+		pin.data_type === IVariableType.String &&
+		pin.value_type === IValueType.Normal
+	) {
+		return (
+			<BitVariable
+				pin={pin}
+				value={cachedDefaultValue}
+				appId={appId}
+				setValue={setCachedDefaultValue}
+			/>
+		);
+	}
+
+	if (
+		pin.name.startsWith("fn_ref") &&
+		pin.data_type === IVariableType.String &&
+		pin.value_type === IValueType.Normal
+	) {
+		return (
+			<FnVariable
+				boardId={boardId}
+				pin={pin}
+				value={cachedDefaultValue}
+				appId={appId}
+				setValue={setCachedDefaultValue}
+			/>
+		);
+	}
+
+	if (
+		pin.name.startsWith("var_ref") &&
+		pin.data_type === IVariableType.String &&
+		pin.value_type === IValueType.Normal
+	) {
+		return (
+			<VarVariable
+				boardId={boardId}
+				pin={pin}
+				value={cachedDefaultValue}
+				appId={appId}
+				setValue={setCachedDefaultValue}
+			/>
+		);
+	}
+
 	return (
-		<WithMenu
-			pin={pin}
-			defaultValue={cachedDefaultValue}
-			changeDefaultValue={setCachedDefaultValue}
-		/>
+		<WithMenu nodeId={nodeId} pin={pin} defaultValue={cachedDefaultValue} />
 	);
 }
 
 function WithMenuInner({
+	nodeId,
 	pin,
 	defaultValue,
-	changeDefaultValue,
 }: Readonly<{
+	nodeId: string;
 	pin: IPin;
 	defaultValue: number[] | undefined | null;
-	changeDefaultValue: (value: any) => void;
 }>) {
-	const [defaultValueState, setDefaultValueState] = useState(defaultValue);
+	const { editPin } = useFlowControlState();
 	return (
 		<>
 			<VariableDescription pin={pin} />
@@ -85,47 +130,13 @@ function WithMenuInner({
 				size={"icon"}
 				variant={"ghost"}
 				className="w-fit h-fit text-foreground"
+				onClick={() => {
+					editPin(nodeId, pin);
+				}}
 			>
-				<Dialog
-					onOpenChange={(open) => {
-						if (!open) {
-							changeDefaultValue(defaultValueState);
-						}
-					}}
-				>
-					<DialogTrigger asChild>
-						<VariableIcon
-							className={`w-[0.45rem] h-[0.45rem] min-w-[0.45rem] min-h-[0.45rem] ${(typeof defaultValue === "undefined" || defaultValue === null) && "text-primary"}`}
-						/>
-					</DialogTrigger>
-					<DialogContent>
-						<DialogHeader>
-							<DialogTitle>Set Default Value</DialogTitle>
-							<DialogDescription>
-								The default value will only be used if the pin is not connected.
-							</DialogDescription>
-						</DialogHeader>
-						<div className="w-full">
-							<VariablesMenuEdit
-								variable={{
-									data_type: pin.data_type,
-									default_value: defaultValue,
-									exposed: false,
-									id: pin.id,
-									value_type: pin.value_type,
-									name: pin.name,
-									editable: pin.editable,
-									secret: false,
-									category: pin.category,
-									description: pin.description,
-								}}
-								updateVariable={async (variable) => {
-									setDefaultValueState(variable.default_value);
-								}}
-							/>
-						</div>
-					</DialogContent>
-				</Dialog>
+				<VariableIcon
+					className={`size-[0.45rem] ${(typeof defaultValue === "undefined" || defaultValue === null) && "text-primary"}`}
+				/>
 			</Button>
 		</>
 	);

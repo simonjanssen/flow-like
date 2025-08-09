@@ -25,7 +25,13 @@ pub async fn list_files(
 
     let sub = user.sub()?;
 
-    let project_dir = state.scoped_credentials(&sub, &app_id).await?;
+    let project_dir = state
+        .scoped_credentials(
+            &sub,
+            &app_id,
+            crate::credentials::CredentialsAccess::ReadApp,
+        )
+        .await?;
     let project_dir = project_dir.to_store(false).await?;
     let path = project_dir
         .construct_upload(&app_id, &payload.prefix, true)

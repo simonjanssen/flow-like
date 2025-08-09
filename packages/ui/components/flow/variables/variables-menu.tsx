@@ -336,7 +336,7 @@ export function Variable({
 			}}
 		>
 			<SheetTrigger>{element}</SheetTrigger>
-			<SheetContent className="flex flex-col gap-6 max-h-screen overflow-hidden">
+			<SheetContent className="flex flex-col gap-6 max-h-screen overflow-hidden px-3 pt-2 pb-4">
 				<SheetHeader>
 					<SheetTitle className="flex flex-row items-center gap-2">
 						Edit Variable {isArrayDropdown}
@@ -427,10 +427,10 @@ export function Variable({
 					</small>
 				</div>
 				<Separator />
-				<div className="flex flex-grow h-full flex-col max-h-full overflow-auto">
+				<div className="flex grow h-full flex-col max-h-full overflow-auto">
 					{!localVariable.exposed && (
 						<VariablesMenuEdit
-							key={`${localVariable.value_type} - ${localVariable.data_type}`}
+							key={`${localVariable.value_type} - ${localVariable.data_type}-${localVariable.secret}`}
 							variable={localVariable}
 							updateVariable={async (variable) =>
 								setLocalVariable((old) => ({

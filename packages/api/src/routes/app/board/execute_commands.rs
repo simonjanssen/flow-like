@@ -40,7 +40,11 @@ pub async fn execute_commands(
             flow_state.clone()
         } else {
             let flow_state = state
-                .scoped_credentials(&sub, &app_id)
+                .scoped_credentials(
+                    &sub,
+                    &app_id,
+                    crate::credentials::CredentialsAccess::EditApp,
+                )
                 .await?
                 .to_state(state)
                 .await?;

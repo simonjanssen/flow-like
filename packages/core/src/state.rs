@@ -524,7 +524,7 @@ impl FlowLikeState {
             q = q.only_if(query);
         }
 
-        let results = q.limit(limit).offset(offset).execute().await?;
+        let results = q.offset(offset).limit(limit).execute().await?;
         let results = results.try_collect::<Vec<_>>().await?;
 
         let mut log_messages = Vec::with_capacity(results.len() * 10);

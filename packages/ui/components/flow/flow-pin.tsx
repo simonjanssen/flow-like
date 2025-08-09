@@ -18,7 +18,7 @@ import { useInvalidateInvoke } from "../../hooks";
 import { updateNodeCommand } from "../../lib";
 import type { INode } from "../../lib/schema/flow/node";
 import { type IPin, IValueType } from "../../lib/schema/flow/pin";
-import { useBackend } from "../../state/backend-state";
+import { useBackendStore } from "../../state/backend-state";
 import { DynamicImage } from "../ui/dynamic-image";
 import { useUndoRedo } from "./flow-history";
 import { PinEdit } from "./flow-pin/pin-edit";
@@ -26,14 +26,12 @@ import { typeToColor } from "./utils";
 
 function FlowPinInnerComponent({
 	pin,
-	index,
 	boardId,
 	appId,
 	node,
 	skipOffset,
 }: Readonly<{
 	pin: IPin;
-	index: number;
 	boardId: string;
 	appId: string;
 	node: INode;
@@ -41,7 +39,6 @@ function FlowPinInnerComponent({
 }>) {
 	const { pushCommand } = useUndoRedo(appId, boardId);
 	const invalidate = useInvalidateInvoke();
-	const backend = useBackend();
 	const currentNode = useInternalNode(node?.id);
 
 	const [defaultValue, setDefaultValue] = useState(pin.default_value);
@@ -58,7 +55,7 @@ function FlowPinInnerComponent({
 		if (skipOffset) {
 			return {
 				marginTop: "1.75rem",
-				top: index * 15,
+				top: (pin.index - 1) * 15,
 				background:
 					pin.data_type === "Execution" || pin.value_type !== IValueType.Normal
 						? "transparent"
@@ -68,13 +65,13 @@ function FlowPinInnerComponent({
 
 		return {
 			marginTop: "1.75rem",
-			top: index * 15,
+			top: (pin.index - 1) * 15,
 			background:
 				pin.data_type === "Execution" || pin.value_type !== IValueType.Normal
 					? "transparent"
 					: typeToColor(pin.data_type),
 		};
-	}, [pin.data_type, pin.value_type, index, node?.name]);
+	}, [pin.data_type, pin.value_type, pin.index, node?.name]);
 
 	const iconStyle = useMemo(
 		() => ({
@@ -89,7 +86,6 @@ function FlowPinInnerComponent({
 		() =>
 			pin.name !== "exec_in" &&
 			pin.name !== "exec_out" &&
-			pin.name !== "var_ref" &&
 			node?.name !== "reroute",
 		[pin.name, node?.name],
 	);
@@ -101,17 +97,22 @@ function FlowPinInnerComponent({
 	);
 
 	const refetchBoard = useCallback(async () => {
+		const backend = useBackendStore.getState().backend;
+		if (!backend) return;
 		invalidate(backend.boardState.getBoard, [appId, boardId]);
-	}, [appId, boardId, backend, invalidate]);
+	}, [appId, boardId, invalidate]);
 
 	const updateNode = useCallback(async () => {
 		if (defaultValue === undefined) return;
 		if (defaultValue === null) return;
 		if (defaultValue === pin.default_value) return;
 		if (!currentNode) return;
+		const backend = useBackendStore.getState().backend;
+		if (!backend) return;
 		const command = updateNodeCommand({
 			node: {
 				...node,
+				hash: undefined,
 				coordinates: [currentNode.position.x, currentNode.position.y, 0],
 				pins: {
 					...node.pins,
@@ -132,7 +133,6 @@ function FlowPinInnerComponent({
 		defaultValue,
 		currentNode,
 		refetchBoard,
-		backend,
 		boardId,
 		node,
 		pushCommand,
@@ -191,7 +191,7 @@ function FlowPinInnerComponent({
 	);
 
 	return (
-		<Handle
+		<MemoizedHandle
 			type={pinTypeProps.type as HandleType}
 			position={pinTypeProps.position}
 			id={pin.id}
@@ -202,19 +202,24 @@ function FlowPinInnerComponent({
 			{shouldRenderPinEdit && (
 				<div className={pinEditContainerClassName}>
 					<PinEdit
+						nodeId={node.id}
 						pin={pin}
+						appId={appId}
+						boardId={boardId}
 						defaultValue={defaultValue}
 						changeDefaultValue={setDefaultValue}
 					/>
 				</div>
 			)}
-		</Handle>
+		</MemoizedHandle>
 	);
 }
 
+const MemoizedHandle = memo(Handle);
+
 function pinPropsAreEqual(prevProps: any, nextProps: any) {
 	return (
-		prevProps.index === nextProps.index &&
+		// prevProps.index === nextProps.index &&
 		prevProps.boardId === nextProps.boardId &&
 		prevProps.node?.id === nextProps.node?.id &&
 		prevProps.pin.id === nextProps.pin.id &&
@@ -228,7 +233,6 @@ function pinPropsAreEqual(prevProps: any, nextProps: any) {
 export const FlowPinInner = memo(FlowPinInnerComponent, pinPropsAreEqual);
 function FlowPin({
 	pin,
-	index,
 	boardId,
 	appId,
 	node,
@@ -236,7 +240,6 @@ function FlowPin({
 	skipOffset,
 }: Readonly<{
 	pin: IPin;
-	index: number;
 	boardId: string;
 	appId: string;
 	node: INode;
@@ -250,7 +253,6 @@ function FlowPin({
 					<FlowPinInner
 						appId={appId}
 						pin={pin}
-						index={index}
 						boardId={boardId}
 						node={node}
 						skipOffset={skipOffset}
@@ -273,7 +275,6 @@ function FlowPin({
 		<FlowPinInner
 			appId={appId}
 			pin={pin}
-			index={index}
 			boardId={boardId}
 			node={node}
 			skipOffset={skipOffset}

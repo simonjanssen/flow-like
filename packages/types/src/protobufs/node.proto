@@ -31,5 +31,6 @@ message Node {
     optional string docs = 16;
     optional string layer = 17;
     bool event_callback = 18;
+    optional uint64 hash = 19;
 }
 

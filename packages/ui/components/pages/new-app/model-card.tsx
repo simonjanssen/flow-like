@@ -96,7 +96,7 @@ export function ModelCard({
 		<Card
 			className={`cursor-pointer transition-all duration-300 hover:shadow-md ${
 				selected
-					? "ring-2 ring-primary shadow-md shadow-primary/10 bg-gradient-to-br from-primary/5 to-transparent"
+					? "ring-2 ring-primary shadow-md shadow-primary/10 bg-linear-to-br from-primary/5 to-transparent"
 					: "hover:border-primary/20"
 			}`}
 			onClick={() => onToggle(bitId)}
@@ -105,7 +105,7 @@ export function ModelCard({
 				<div className="flex items-center gap-3 mb-3">
 					<Avatar className="h-10 w-10 border border-border">
 						<AvatarImage src={bitData.data.icon} />
-						<AvatarFallback className="bg-gradient-to-br from-primary/10 to-secondary/10">
+						<AvatarFallback className="bg-linear-to-br from-primary/10 to-secondary/10">
 							<TypeIcon className="h-5 w-5" />
 						</AvatarFallback>
 					</Avatar>

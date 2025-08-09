@@ -334,6 +334,7 @@ impl App {
             let paste_command =
                 crate::flow::board::commands::GenericCommand::CopyPaste(paste_command);
             board.execute_command(paste_command, state).await?;
+            board.refs = template.refs.clone();
         }
         board.save(None).await?;
         self.boards.push(board.id.clone());

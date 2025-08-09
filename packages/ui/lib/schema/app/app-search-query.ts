@@ -1,9 +1,11 @@
 export interface IAppSearchQuery {
-	authors?: string[] | null;
-	categories?: IAppCategory[] | null;
+	author?: null | string;
+	category?: IAppCategory | null;
+	id?: null | string;
+	language?: null | string;
 	limit?: number | null;
 	offset?: number | null;
-	search?: null | string;
+	query?: null | string;
 	sort?: IAppSearchSort | null;
 	tag?: null | string;
 	[property: string]: any;

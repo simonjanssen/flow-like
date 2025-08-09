@@ -5,10 +5,14 @@ export interface IThemeColors {
 	foreground?: string;
 	card?: string;
 	cardForeground?: string;
+	popover?: string;
+	popoverForeground?: string;
 	primary?: string;
 	primaryForeground?: string;
 	secondary?: string;
 	secondaryForeground?: string;
+	tertiary?: string;
+	tertiaryForeground?: string;
 	muted?: string;
 	mutedForeground?: string;
 	accent?: string;
@@ -43,8 +47,8 @@ export interface IThemeColors {
 	shadowLg?: string;
 	shadowXl?: string;
 	shadow2xl?: string;
-	tertiary?: string;
-	tertiaryForeground?: string;
+	trackingNormal?: string;
+	spacing?: string;
 }
 
 export interface ITheme {
@@ -119,6 +123,23 @@ ${lightVars}
 .dark,
 :root[data-theme="dark"] {
 ${darkVars}
+}
+
+/* Apply theme fonts to body and font classes */
+body {
+    font-family: var(--font-sans, inherit) !important;
+}
+
+.font-sans {
+    font-family: var(--font-sans, inherit) !important;
+}
+
+.font-serif {
+    font-family: var(--font-serif, inherit) !important;
+}
+
+.font-mono {
+    font-family: var(--font-mono, inherit) !important;
 }`;
 
 	// Inject the CSS

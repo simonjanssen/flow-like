@@ -73,6 +73,7 @@ pub struct Lookup {
     pub email: bool,
     pub name: bool,
     pub username: bool,
+    pub preferred_username: bool,
     pub avatar: bool,
     pub additional_information: bool,
     pub description: bool,
@@ -83,8 +84,9 @@ impl Default for Lookup {
     fn default() -> Self {
         Self {
             email: false,
-            username: true,
-            name: false,
+            username: false,
+            name: true,
+            preferred_username: true,
             avatar: true,
             additional_information: true,
             description: true,

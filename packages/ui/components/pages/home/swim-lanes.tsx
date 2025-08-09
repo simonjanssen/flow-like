@@ -2,10 +2,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, ExternalLink } from "lucide-react";
 import { useInvoke } from "../../../hooks";
-import type { IAppCategory } from "../../../lib";
+import type { IApp, IAppCategory } from "../../../lib";
 import type { IAppSearchSort } from "../../../lib/schema/app/app-search-query";
 import { type IBackendState, useBackend } from "../../../state/backend-state";
-import { BitCard, DynamicImage, Skeleton } from "../../ui";
+import {
+	Alert,
+	AlertDescription,
+	AlertTitle,
+	BitCard,
+	DynamicImage,
+	Skeleton,
+} from "../../ui";
 import { AppCard } from "../../ui/app-card";
 
 export interface ISwimlaneItem {
@@ -65,22 +72,74 @@ function useSwimlanes() {
 }
 
 export function HomeSwimlanes() {
-	const { data } = useSwimlanes();
+	const backend = useBackend();
+	const apps = useInvoke(backend.appState.getApps, backend.appState, []);
+	const { data, error } = useSwimlanes();
 
-	if (!data) return null;
+	if (error) {
+		return (
+			<main className="min-h-screen items-center w-full max-h-dvh overflow-auto p-4 grid grid-cols-6 justify-start gap-2">
+				<div className="col-span-6">
+					<Alert variant="destructive">
+						<ExternalLink className="h-4 w-4" />
+						<AlertTitle>Connection Error</AlertTitle>
+						<AlertDescription>
+							Failed to load swimlanes. Please check your internet connection or
+							try again later.
+							{error.message && (
+								<details className="mt-2">
+									<summary className="cursor-pointer text-sm opacity-80 hover:opacity-100">
+										Technical details
+									</summary>
+									<code className="text-xs bg-background/50 px-2 py-1 rounded mt-1 block">
+										{error.message}
+									</code>
+								</details>
+							)}
+						</AlertDescription>
+					</Alert>
+				</div>
+				<Skeleton className="col-span-6 h-full min-h-[30dvh]" />
+				<Skeleton className="col-span-3 h-full min-h-[20dvh]" />
+				<Skeleton className="col-span-3 h-full" />
+				<Skeleton className="col-span-2 h-full" />
+				<Skeleton className="col-span-2 h-full" />
+				<Skeleton className="col-span-2 h-full" />
+			</main>
+		);
+	}
+
+	if (!data)
+		return (
+			<main className="min-h-screen items-center w-full max-h-dvh overflow-auto p-4 grid grid-cols-6 justify-start gap-2">
+				<Skeleton className="col-span-6 h-full min-h-[30dvh]" />
+				<Skeleton className="col-span-3 h-full min-h-[20dvh]" />
+				<Skeleton className="col-span-3 h-full" />
+				<Skeleton className="col-span-2 h-full" />
+				<Skeleton className="col-span-2 h-full" />
+				<Skeleton className="col-span-2 h-full" />
+			</main>
+		);
 
 	return (
 		<main className="min-h-screen w-full max-h-dvh overflow-auto bg-background flex flex-col items-center">
 			<div className="w-full space-y-8 p-6 max-w-[1800px]">
 				{data?.map((swimlane) => (
-					<SwimlaneSection key={swimlane.id} swimlane={swimlane} />
+					<SwimlaneSection
+						key={swimlane.id}
+						swimlane={swimlane}
+						apps={apps.data?.map((i) => i[0]) ?? []}
+					/>
 				))}
 			</div>
 		</main>
 	);
 }
 
-function SwimlaneSection({ swimlane }: Readonly<{ swimlane: ISwimlane }>) {
+function SwimlaneSection({
+	swimlane,
+	apps,
+}: Readonly<{ swimlane: ISwimlane; apps: IApp[] }>) {
 	const getGridCols = () => {
 		switch (swimlane.size) {
 			case "large":
@@ -104,7 +163,7 @@ function SwimlaneSection({ swimlane }: Readonly<{ swimlane: ISwimlane }>) {
 
 	return (
 		<section className="space-y-4">
-			<SwimlaneHeader swimlane={swimlane} />
+			<SwimlaneHeader swimlane={swimlane} apps={apps} />
 			<div className={`grid ${getGridCols()} gap-4`}>
 				{swimlane.items?.map((item, index) => (
 					<SwimlaneSlot
@@ -112,6 +171,7 @@ function SwimlaneSection({ swimlane }: Readonly<{ swimlane: ISwimlane }>) {
 						items={Array.isArray(item) ? item : [item]}
 						size={swimlane.size}
 						variant={getItemSize()}
+						apps={apps}
 					/>
 				))}
 			</div>
@@ -123,14 +183,21 @@ function SwimlaneSlot({
 	items,
 	size,
 	variant,
+	apps,
 }: Readonly<{
 	items: (ISwimlaneItem | ISearchQuery)[];
 	size: "large" | "medium" | "small";
 	variant: "extended" | "small";
+	apps: IApp[];
 }>) {
 	if (items.length === 1) {
 		return (
-			<SwimlaneItemOrSearch item={items[0]} size={size} variant={variant} />
+			<SwimlaneItemOrSearch
+				item={items[0]}
+				size={size}
+				variant={variant}
+				apps={apps}
+			/>
 		);
 	}
 
@@ -142,8 +209,13 @@ function SwimlaneSlot({
 	return (
 		<div className={scrollClass}>
 			{items.map((item) => (
-				<div key={item.id} className={isHorizontal ? "flex-grow w-full" : ""}>
-					<SwimlaneItemOrSearch item={item} size={size} variant={variant} />
+				<div key={item.id} className={isHorizontal ? "grow w-full" : ""}>
+					<SwimlaneItemOrSearch
+						item={item}
+						size={size}
+						variant={variant}
+						apps={apps}
+					/>
 				</div>
 			))}
 		</div>
@@ -154,26 +226,37 @@ function SwimlaneItemOrSearch({
 	item,
 	size,
 	variant,
+	apps,
 }: Readonly<{
 	item: ISwimlaneItem | ISearchQuery;
 	size: "large" | "medium" | "small";
 	variant: "extended" | "small";
+	apps: IApp[];
 }>) {
 	if (item.type === "search") {
-		return <SearchResults searchQuery={item} size={size} variant={variant} />;
+		return (
+			<SearchResults
+				searchQuery={item}
+				size={size}
+				variant={variant}
+				apps={apps}
+			/>
+		);
 	}
 
-	return <SwimlaneItem item={item} size={size} variant={variant} />;
+	return <SwimlaneItem item={item} size={size} variant={variant} apps={apps} />;
 }
 
 function SearchResults({
 	searchQuery,
 	size,
 	variant,
+	apps,
 }: Readonly<{
 	searchQuery: ISearchQuery;
 	size: "large" | "medium" | "small";
 	variant: "extended" | "small";
+	apps: IApp[];
 }>) {
 	const backend = useBackend();
 	const searchResults = useInvoke(
@@ -227,15 +310,18 @@ function SearchResults({
 	return (
 		<div className={scrollClass}>
 			{searchItems.map((item) => (
-				<div key={item.id} className={isHorizontal ? "flex-grow w-full" : ""}>
-					<SwimlaneItem item={item} size={size} variant={variant} />
+				<div key={item.id} className={isHorizontal ? "grow w-full" : ""}>
+					<SwimlaneItem item={item} size={size} variant={variant} apps={apps} />
 				</div>
 			))}
 		</div>
 	);
 }
 
-function SwimlaneHeader({ swimlane }: Readonly<{ swimlane: ISwimlane }>) {
+function SwimlaneHeader({
+	swimlane,
+	apps,
+}: Readonly<{ swimlane: ISwimlane; apps: IApp[] }>) {
 	return (
 		<div className="flex items-center justify-between">
 			<div className="space-y-1">
@@ -263,10 +349,12 @@ function SwimlaneItem({
 	item,
 	size,
 	variant,
+	apps,
 }: Readonly<{
 	item: ISwimlaneItem;
 	size: "large" | "medium" | "small";
 	variant: "extended" | "small";
+	apps: IApp[];
 }>) {
 	const backend = useBackend();
 
@@ -276,7 +364,7 @@ function SwimlaneItem({
 				appId={item.appId}
 				variant={variant}
 				backend={backend}
-				fill={size === "large"}
+				apps={apps}
 			/>
 		);
 	}
@@ -320,18 +408,18 @@ function StaticCard({
 					/>
 				) : (
 					<div
-						className={`w-full h-full bg-gradient-to-br ${
+						className={`w-full h-full bg-linear-to-br ${
 							item.gradient || "from-primary/20 to-primary/40"
 						}`}
 					/>
 				)}
-				<div className="absolute inset-0 bg-gradient-to-t from-black/20 via-black/5 dark:from-black/60 dark:via-black/20 to-transparent" />
+				<div className="absolute inset-0 bg-linear-to-t from-black/20 via-black/5 dark:from-black/60 dark:via-black/20 to-transparent" />
 			</div>
 
 			<div className="relative z-10 flex flex-col justify-between h-full p-6">
 				{item.badge && (
 					<div className="self-start">
-						<div className="bg-white/90 backdrop-blur-sm text-gray-900 rounded-full px-3 py-1 text-xs font-bold shadow-lg">
+						<div className="bg-white/90 backdrop-blur-xs text-gray-900 rounded-full px-3 py-1 text-xs font-bold shadow-lg">
 							{item.badge}
 						</div>
 					</div>
@@ -340,7 +428,7 @@ function StaticCard({
 				<div className="space-y-3">
 					<div className="flex items-center gap-2">
 						{item.icon && (
-							<div className="p-2 bg-white/20 backdrop-blur-sm rounded-full text-white">
+							<div className="p-2 bg-white/20 backdrop-blur-xs rounded-full text-white">
 								<DynamicImage url={item.icon} className="w-5 h-5 bg-white" />
 							</div>
 						)}
@@ -387,12 +475,12 @@ function AppCardLoading({
 	appId,
 	variant,
 	backend,
-	fill,
+	apps,
 }: Readonly<{
 	appId: string;
 	backend: IBackendState;
 	variant: "small" | "extended";
-	fill?: boolean;
+	apps: IApp[];
 }>) {
 	const app = useInvoke(backend.appState.searchApps, backend.appState, [appId]);
 
@@ -409,12 +497,11 @@ function AppCardLoading({
 
 	return (
 		<AppCard
+			apps={apps}
 			app={data}
 			metadata={meta}
 			variant={variant}
-			className={
-				(fill ?? false) ? "w-full max-w-full h-full flex flex-grow" : ""
-			}
+			className={"w-full max-w-full h-full flex grow"}
 		/>
 	);
 }

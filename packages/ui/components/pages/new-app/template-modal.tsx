@@ -1,7 +1,14 @@
 "use client";
-import { Filter, Search, Workflow, X } from "lucide-react";
+import { Filter, Search, Workflow } from "lucide-react";
 import { useState } from "react";
-import { Badge, Button, Input } from "../../..";
+import {
+	Badge,
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	Input,
+} from "../../..";
 import type { IMetadata } from "../../../lib";
 import { AppTemplateFolder } from "./template-app-folder";
 import { useTemplateFolders } from "./use-template-folder";
@@ -22,8 +29,6 @@ export function TemplateModal({
 	const [searchQuery, setSearchQuery] = useState("");
 	const [selectedTags, setSelectedTags] = useState<string[]>([]);
 	const templatesByApp = useTemplateFolders(templates);
-
-	if (!open) return null;
 
 	const filteredTemplates = templates.filter(
 		([appId, templateId, metadata]) => {
@@ -46,26 +51,25 @@ export function TemplateModal({
 	];
 
 	return (
-		<div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
-			<div className="fixed inset-4 bg-background border rounded-lg shadow-2xl flex flex-col">
-				<div className="flex items-center justify-between p-6 border-b">
+		<Dialog open={open} onOpenChange={(open) => !open && onClose()}>
+			<DialogContent className="h-[90dvh] min-w-[90dvw] flex flex-col p-2">
+				<DialogHeader>
 					<div className="flex items-center gap-3">
 						<div className="p-2 bg-primary/10 rounded-lg">
 							<Workflow className="h-5 w-5 text-primary" />
 						</div>
 						<div>
-							<h2 className="text-2xl font-bold">Choose Template</h2>
+							<DialogTitle className="text-2xl font-bold">
+								Choose Template
+							</DialogTitle>
 							<p className="text-muted-foreground">
 								Select a template to start building your app
 							</p>
 						</div>
 					</div>
-					<Button variant="ghost" size="sm" onClick={onClose}>
-						<X className="h-4 w-4" />
-					</Button>
-				</div>
+				</DialogHeader>
 
-				<div className="p-6 border-b space-y-4">
+				<div className="space-y-4 border-b pb-4">
 					<div className="relative">
 						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 						<Input
@@ -98,8 +102,8 @@ export function TemplateModal({
 					)}
 				</div>
 
-				<div className="flex-1 overflow-auto p-6">
-					<div className="space-y-4">
+				<div className="flex-1 overflow-auto">
+					<div className="space-y-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-2">
 						{templatesByApp.map(([appId, templates]) => (
 							<AppTemplateFolder
 								key={appId}
@@ -122,7 +126,7 @@ export function TemplateModal({
 						</div>
 					)}
 				</div>
-			</div>
-		</div>
+			</DialogContent>
+		</Dialog>
 	);
 }

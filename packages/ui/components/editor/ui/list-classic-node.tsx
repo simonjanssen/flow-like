@@ -82,9 +82,9 @@ export function TaskListItemElement(props: PlateElementProps) {
 		<BaseListItemElement {...props}>
 			<div
 				className={cn(
-					"flex items-stretch *:nth-[2]:flex-1 *:nth-[2]:focus:outline-none",
+					"flex items-stretch nth-[2]:*:flex-1 focus:nth-[2]:*:outline-hidden",
 					{
-						"*:nth-[2]:text-muted-foreground *:nth-[2]:line-through":
+						"nth-[2]:*:text-muted-foreground nth-[2]:*:line-through":
 							state.checked,
 					},
 				)}

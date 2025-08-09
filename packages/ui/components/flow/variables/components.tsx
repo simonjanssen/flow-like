@@ -18,7 +18,7 @@ export function VariableConfigCard({
 		<div className="border rounded-lg p-5 bg-card hover:bg-accent/5 transition-all duration-200 group">
 			<div className="flex flex-col items-start justify-between gap-4 w-full">
 				<div className="flex items-center gap-4 flex-1">
-					<div className="flex-shrink-0 mt-1">
+					<div className="shrink-0 mt-1">
 						<VariableTypeIndicator
 							type={variable.value_type}
 							valueType={variable.data_type}
@@ -39,7 +39,7 @@ export function VariableConfigCard({
 						)}
 					</div>
 				</div>
-				<div className="flex-shrink-0 z-0 opacity-60 group-hover:opacity-100 transition-opacity w-full">
+				<div className="shrink-0 z-0 opacity-60 group-hover:opacity-100 transition-opacity w-full">
 					<VariablesMenuEdit
 						disabled={disabled}
 						variable={variable}

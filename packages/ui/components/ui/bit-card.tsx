@@ -130,13 +130,13 @@ export function BitCard({
                 relative h-full w-full cursor-pointer transition-all duration-300 ease-out
                 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2
                 ${isInstalled.data ? "ring-1 ring-emerald-500/20 shadow-emerald-500/10" : ""}
-                ${isInProfile ? "bg-gradient-to-br from-primary/5 to-emerald-500/5" : ""}
-                overflow-hidden border-1 hover:border-primary/30
-                backdrop-blur-sm bg-card/80
+                ${isInProfile ? "bg-linear-to-br from-primary/5 to-emerald-500/5" : ""}
+                overflow-hidden border hover:border-primary/30
+                backdrop-blur-xs bg-card/80
             `}
 			>
 				{progress !== undefined && (
-					<div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-30 flex items-center justify-center">
+					<div className="absolute inset-0 bg-background/80 backdrop-blur-xs z-30 flex items-center justify-center">
 						<div className="text-center space-y-4">
 							<Progress value={progress} className="w-48" />
 							<div className="flex items-center gap-2">
@@ -234,7 +234,7 @@ export function BitCard({
 									src={bit.meta?.en?.icon ?? "/app-logo.webp"}
 									className="transition-transform duration-300 group-hover/card:scale-110"
 								/>
-								<AvatarFallback className="bg-gradient-to-br from-primary/20 to-secondary/20">
+								<AvatarFallback className="bg-linear-to-br from-primary/20 to-secondary/20">
 									<BitTypeIcon type={bit.type} className="h-6 w-6" />
 								</AvatarFallback>
 							</Avatar>
@@ -319,7 +319,7 @@ export function BitCard({
 					</div>
 				</CardContent>
 
-				<div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-primary/5 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 pointer-events-none" />
+				<div className="absolute inset-0 bg-linear-to-br from-transparent via-transparent to-primary/5 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 pointer-events-none" />
 			</Card>
 		</div>
 	);

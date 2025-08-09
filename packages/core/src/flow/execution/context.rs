@@ -3,6 +3,7 @@ use super::{
     log::LogMessage, trace::Trace,
 };
 use crate::{
+    credentials::SharedCredentials,
     flow::{
         board::ExecutionStage,
         node::{Node, NodeState},
@@ -132,6 +133,7 @@ struct RunUpdateEvent {
 pub struct ExecutionContext {
     pub id: String,
     pub run: Weak<Mutex<Run>>,
+    pub nodes: Arc<HashMap<String, Arc<InternalNode>>>,
     pub profile: Arc<Profile>,
     pub node: Arc<InternalNode>,
     pub sub_traces: Vec<Trace>,
@@ -144,6 +146,8 @@ pub struct ExecutionContext {
     pub execution_cache: Option<ExecutionContextCache>,
     pub completion_callbacks: Arc<RwLock<Vec<EventTrigger>>>,
     pub stream_state: bool,
+    pub credentials: Option<Arc<SharedCredentials>>,
+    pub delegated: bool,
     run_id: String,
     state: NodeState,
     callback: InterComCallback,
@@ -151,6 +155,7 @@ pub struct ExecutionContext {
 
 impl ExecutionContext {
     pub async fn new(
+        nodes: Arc<HashMap<String, Arc<InternalNode>>>,
         run: &Weak<Mutex<Run>>,
         state: &Arc<Mutex<FlowLikeState>>,
         node: &Arc<InternalNode>,
@@ -161,6 +166,7 @@ impl ExecutionContext {
         profile: Arc<Profile>,
         callback: InterComCallback,
         completion_callbacks: Arc<RwLock<Vec<EventTrigger>>>,
+        credentials: Option<Arc<SharedCredentials>>,
     ) -> Self {
         let (id, execution_cache) = {
             let node_id = node.node.lock().await.id.clone();
@@ -198,12 +204,16 @@ impl ExecutionContext {
             execution_cache,
             stream_state,
             state: NodeState::Idle,
+            nodes,
             completion_callbacks,
+            credentials,
+            delegated: false,
         }
     }
 
     pub async fn create_sub_context(&self, node: &Arc<InternalNode>) -> ExecutionContext {
         ExecutionContext::new(
+            self.nodes.clone(),
             &self.run,
             &self.app_state,
             node,
@@ -214,6 +224,7 @@ impl ExecutionContext {
             self.profile.clone(),
             self.callback.clone(),
             self.completion_callbacks.clone(),
+            self.credentials.clone(),
         )
         .await
     }
@@ -277,6 +288,11 @@ impl ExecutionContext {
         }
 
         None
+    }
+
+    pub async fn has_cache(&self, key: &str) -> bool {
+        let cache = self.cache.read().await;
+        cache.contains_key(key)
     }
 
     pub async fn set_cache(&self, key: &str, value: Arc<dyn Cacheable>) {

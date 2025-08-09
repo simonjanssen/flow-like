@@ -57,7 +57,7 @@ import { ILayerType } from "../../lib/schema/flow/board/commands/upsert-layer";
 import type { INode } from "../../lib/schema/flow/node";
 import { type IPin, IVariableType } from "../../lib/schema/flow/pin";
 import { convertJsonToUint8Array } from "../../lib/uint8";
-import { useBackend } from "../../state/backend-state";
+import { useBackendStore } from "../../state/backend-state";
 import { useRunExecutionStore } from "../../state/run-execution-state";
 import {
 	Button,
@@ -103,11 +103,10 @@ const FlowNodeInner = memo(
 		onHover,
 	}: {
 		props: NodeProps<FlowNode>;
-		onHover: (hover: boolean) => void;
+		onHover: (hovered: boolean) => void;
 	}) => {
 		const { pushCommand } = useUndoRedo(props.data.appId, props.data.boardId);
 		const { resolvedTheme } = useTheme();
-		const backend = useBackend();
 		const invalidate = useInvalidateInvoke();
 		const { currentMetadata } = useLogAggregation();
 
@@ -222,6 +221,8 @@ const FlowNodeInner = memo(
 
 		const addPin = useCallback(
 			async (node: INode, pin: IPin, index: number) => {
+				const backend = useBackendStore.getState().backend;
+				if (!backend) return;
 				const nodeGuard = reactFlow
 					.getNodes()
 					.find((node) => node.id === props.id);
@@ -229,6 +230,7 @@ const FlowNodeInner = memo(
 
 				node = nodeGuard.data.node as INode;
 				if (!node.pins) return;
+
 				const newPin: IPin = {
 					...pin,
 					depends_on: [],
@@ -237,12 +239,37 @@ const FlowNodeInner = memo(
 					index: index,
 				};
 
-				const pins = Object.values(node.pins).sort(sortPins);
-				pins.splice(index, 0, newPin);
+				const allPins = Object.values(node.pins);
+				const inputPins = allPins
+					.filter((p) => p.pin_type === "Input")
+					.sort(sortPins);
+				const outputPins = allPins
+					.filter((p) => p.pin_type === "Output")
+					.sort(sortPins);
+
+				if (newPin.pin_type === "Input") {
+					// Insert the new input pin at the specified index
+					inputPins.splice(index - 1, 0, newPin); // Convert to 0-based index for splice
+
+					// Update indices for input pins only, starting from the insertion point
+					for (let i = index - 1; i < inputPins.length; i++) {
+						inputPins[i].index = i + 1; // Convert back to 1-based index
+					}
+				} else {
+					// Insert the new output pin at the specified index
+					outputPins.splice(index - 1, 0, newPin); // Convert to 0-based index for splice
+
+					// Update indices for output pins only, starting from the insertion point
+					for (let i = index - 1; i < outputPins.length; i++) {
+						outputPins[i].index = i + 1; // Convert back to 1-based index
+					}
+				}
+
+				// Rebuild the pins object with updated pins
 				node.pins = {};
-				pins.forEach(
-					(pin, index) => (node.pins[pin.id] = { ...pin, index: index }),
-				);
+				[...inputPins, ...outputPins].forEach((pin) => {
+					node.pins[pin.id] = pin;
+				});
 
 				const command = updateNodeCommand({
 					node: {
@@ -264,11 +291,13 @@ const FlowNodeInner = memo(
 					props.data.boardId,
 				]);
 			},
-			[reactFlow],
+			[reactFlow, sortPins, pushCommand, invalidate],
 		);
-
 		const pinRemoveCallback = useCallback(
 			async (pin: IPin) => {
+				const backend = useBackendStore.getState().backend;
+				if (!backend) return;
+
 				const nodeGuard = getNode(props.id);
 				if (!nodeGuard) return;
 
@@ -387,13 +416,80 @@ const FlowNodeInner = memo(
 			return typeof (pin as IPinAction).onAction === "function";
 		}
 
+		const renderInputPins = useMemo(
+			() =>
+				!(props.data.node.start ?? false) &&
+				inputPins
+					.filter((pin) => isPinAction(pin) || pin.pin_type === "Input")
+					.map((pin, arrayIndex) => {
+						return isPinAction(pin) ? (
+							<FlowPinAction
+								key={`${pin.pin.id}__action`}
+								action={pin}
+								index={arrayIndex}
+								input
+							/>
+						) : (
+							<FlowPin
+								appId={props.data.appId}
+								key={pin.id}
+								node={props.data.node}
+								boardId={props.data.boardId}
+								pin={pin}
+								onPinRemove={pinRemoveCallback}
+								skipOffset={isReroute}
+							/>
+						);
+					}),
+			[
+				inputPins,
+				props.data.node,
+				props.data.boardId,
+				pinRemoveCallback,
+				isReroute,
+			],
+		);
+
+		const renderOutputPins = useMemo(
+			() =>
+				outputPins.map((pin, arrayIndex) => {
+					return isPinAction(pin) ? (
+						<FlowPinAction
+							action={pin}
+							index={arrayIndex}
+							input={false}
+							key={`${pin.pin.id}__action`}
+						/>
+					) : (
+						<FlowPin
+							appId={props.data.appId}
+							node={props.data.node}
+							boardId={props.data.boardId}
+							pin={pin}
+							key={pin.id}
+							onPinRemove={pinRemoveCallback}
+							skipOffset={isReroute}
+						/>
+					);
+				}),
+			[
+				outputPins,
+				props.data.node,
+				props.data.boardId,
+				pinRemoveCallback,
+				isReroute,
+			],
+		);
+
 		const playNode = useMemo(() => {
 			if (!props.data.node.start) return null;
 			if (executionState === "done" || executing)
 				return (
 					<button
-						className="bg-background hover:bg-card group/play transition-all rounded-md hover:rounded-lg border p-1 absolute left-0 bottom-50 top-50 translate-x-[calc(-120%)] !opacity-[200%]"
+						className="bg-background hover:bg-card group/play transition-all rounded-md hover:rounded-lg border p-1 absolute left-0 top-0 translate-x-[calc(-120%)] opacity-200!"
 						onClick={async (e) => {
+							const backend = useBackendStore.getState().backend;
+							if (!backend) return;
 							if (runId) await backend.eventState.cancelExecution(runId);
 						}}
 					>
@@ -403,7 +499,7 @@ const FlowNodeInner = memo(
 			if (Object.keys(props.data.node.pins).length <= 1)
 				return (
 					<button
-						className="bg-background hover:bg-card group/play transition-all rounded-md hover:rounded-lg border p-1 absolute left-0 bottom-50 top-50 translate-x-[calc(-120%)]"
+						className="bg-background hover:bg-card group/play transition-all rounded-md hover:rounded-lg border p-1 absolute left-0 top-0 translate-x-[calc(-120%)]"
 						onClick={async (e) => {
 							if (executing) return;
 							setExecuting(true);
@@ -421,7 +517,7 @@ const FlowNodeInner = memo(
 					onOpenChange={(open) => setPayload((old) => ({ ...old, open }))}
 				>
 					<DialogTrigger>
-						<button className="bg-background hover:bg-card group/play transition-all rounded-md hover:rounded-lg border p-1 absolute left-0 bottom-50 top-50 translate-y-[150%] translate-x-[calc(-120%)]">
+						<button className="bg-background hover:bg-card group/play transition-all rounded-md hover:rounded-lg border p-1 absolute left-0 top-0 translate-x-[calc(-120%)]">
 							<PlayCircleIcon className="w-3 h-3 group-hover/play:scale-110" />
 						</button>
 					</DialogTrigger>
@@ -475,7 +571,7 @@ const FlowNodeInner = memo(
 			<div
 				key={`${props.id}__node`}
 				ref={div}
-				className={`bg-card p-2 react-flow__node-default selectable focus:ring-2 relative rounded-md group ${props.selected && "!border-primary border-2"} ${executionState === "done" ? "opacity-60" : "opacity-100"} ${isReroute && "w-4 max-w-4 !max-h-3 overflow-y !rounded-lg !p-[0.4rem]"}`}
+				className={`bg-card! p-2 react-flow__node-default rounded-md! selectable focus:ring-2 relative group ${props.selected && "border-primary! border-2"} ${executionState === "done" ? "opacity-60" : "opacity-100"} ${isReroute && "w-4 max-w-4 max-h-3! overflow-y rounded-lg! p-[0.4rem]!"} ${!isReroute && "border-border!"}`}
 				style={isReroute ? nodeStyle : {}}
 				onMouseEnter={() => onHover(true)}
 				onMouseLeave={() => onHover(false)}
@@ -530,36 +626,10 @@ const FlowNodeInner = memo(
 						</small>
 					</div>
 				)}
-				{useMemo(
-					() =>
-						!(props.data.node.start ?? false) &&
-						inputPins
-							.filter((pin) => isPinAction(pin) || pin.name !== "var_ref")
-							.map((pin, index) =>
-								isPinAction(pin) ? (
-									<FlowPinAction
-										key={`${pin.pin.id}__action`}
-										action={pin}
-										index={index}
-										input
-									/>
-								) : (
-									<FlowPin
-										appId={props.data.appId}
-										key={pin.id}
-										node={props.data.node}
-										boardId={props.data.boardId}
-										index={index}
-										pin={pin}
-										onPinRemove={pinRemoveCallback}
-									/>
-								),
-							),
-					[inputPins, props.data.node, props.data.boardId, pinRemoveCallback],
-				)}
+				{renderInputPins}
 				{!isReroute && (
 					<div
-						className={`header absolute top-0 left-0 right-0 h-4 gap-1 flex flex-row items-center border-b-1 border-b-foreground p-1 justify-between rounded-md rounded-b-none bg-card ${props.data.node.event_callback && "bg-gradient-to-l  from-card via-primary/50 to-primary"} ${!isExec && "bg-gradient-to-r  from-card via-tertiary/50 to-tertiary"} ${props.data.node.start && "bg-gradient-to-r  from-card via-primary/50 to-primary"} ${isReroute && "w-6"}`}
+						className={`header absolute top-0 left-0 right-0 h-4 gap-1 flex flex-row items-center border-b p-1 justify-between rounded-md rounded-b-none bg-card ${props.data.node.event_callback && "bg-linear-to-l  from-card via-primary/50 to-primary"} ${!isExec && "bg-linear-to-r  from-card via-tertiary/50 to-tertiary"} ${props.data.node.start && "bg-linear-to-r  from-card via-primary/50 to-primary"} ${isReroute && "w-6"}`}
 					>
 						<div className={"flex flex-row items-center gap-1"}>
 							{useMemo(
@@ -612,37 +682,13 @@ const FlowNodeInner = memo(
 						</div>
 					</div>
 				)}
-				{useMemo(
-					() =>
-						outputPins.map((pin, index) =>
-							isPinAction(pin) ? (
-								<FlowPinAction
-									action={pin}
-									index={index}
-									input={false}
-									key={`${pin.pin.id}__action`}
-								/>
-							) : (
-								<FlowPin
-									appId={props.data.appId}
-									node={props.data.node}
-									boardId={props.data.boardId}
-									index={index}
-									pin={pin}
-									key={pin.id}
-									onPinRemove={pinRemoveCallback}
-								/>
-							),
-						),
-					[outputPins, props.data.node, props.data.boardId, pinRemoveCallback],
-				)}
+				{renderOutputPins}
 			</div>
 		);
 	},
 );
 
 function FlowNode(props: NodeProps<FlowNode>) {
-	const backend = useBackend();
 	const [isHovered, setIsHovered] = useState(false);
 	const [isOpen, setIsOpen] = useState(false);
 	const [commentMenu, setCommentMenu] = useState(false);
@@ -682,6 +728,8 @@ function FlowNode(props: NodeProps<FlowNode>) {
 		);
 
 		if (handleErrorPin) {
+			const backend = useBackendStore.getState().backend;
+			if (!backend) return;
 			const filteredPins = Object.values(innerNode.pins).filter(
 				(pin) =>
 					pin.name !== "auto_handle_error" &&
@@ -750,6 +798,9 @@ function FlowNode(props: NodeProps<FlowNode>) {
 			pin: stringPin,
 		});
 
+		const backend = useBackendStore.getState().backend;
+		if (!backend) return;
+
 		const commands = await backend.boardState.executeCommands(
 			props.data.appId,
 			props.data.boardId,
@@ -762,7 +813,7 @@ function FlowNode(props: NodeProps<FlowNode>) {
 			props.data.appId,
 			props.data.boardId,
 		]);
-	}, [backend, props.data.node, props.data.appId, props.data.boardId, flow]);
+	}, [props.data.node, props.data.appId, props.data.boardId, flow]);
 
 	const handleCollapse = useCallback(
 		async (x: number, y: number) => {
@@ -798,6 +849,9 @@ function FlowNode(props: NodeProps<FlowNode>) {
 				current_layer: (selectedNodes[0].data.node as INode).layer,
 			});
 
+			const backend = useBackendStore.getState().backend;
+			if (!backend) return;
+
 			const result = await backend.boardState.executeCommand(
 				props.data.appId,
 				props.data.boardId,
@@ -809,7 +863,7 @@ function FlowNode(props: NodeProps<FlowNode>) {
 				props.data.boardId,
 			]);
 		},
-		[props.data.node, invalidate, pushCommands, flow, backend],
+		[props.data.node, invalidate, pushCommands, flow],
 	);
 
 	const deleteNodes = useCallback(async () => {
@@ -822,7 +876,8 @@ function FlowNode(props: NodeProps<FlowNode>) {
 				connected_nodes: [],
 			});
 		});
-
+		const backend = useBackendStore.getState().backend;
+		if (!backend) return;
 		const result = await backend.boardState.executeCommands(
 			props.data.appId,
 			props.data.boardId,
@@ -834,7 +889,7 @@ function FlowNode(props: NodeProps<FlowNode>) {
 			props.data.appId,
 			props.data.boardId,
 		]);
-	}, [props.data.node, invalidate, pushCommands, flow, backend]);
+	}, [props.data.node, invalidate, pushCommands, flow]);
 
 	const orderNodes = useCallback(
 		async (type: "align" | "justify", dir: "start" | "end" | "center") => {
@@ -893,6 +948,9 @@ function FlowNode(props: NodeProps<FlowNode>) {
 				});
 			});
 
+			const backend = useBackendStore.getState().backend;
+			if (!backend) return;
+
 			const result = await backend.boardState.executeCommands(
 				props.data.appId,
 				props.data.boardId,
@@ -905,7 +963,7 @@ function FlowNode(props: NodeProps<FlowNode>) {
 				props.data.boardId,
 			]);
 		},
-		[props.data.node, invalidate, pushCommands, flow, backend],
+		[props.data.node, invalidate, pushCommands, flow],
 	);
 
 	if (isOpen || isHovered) {
@@ -1074,7 +1132,7 @@ function FlowNode(props: NodeProps<FlowNode>) {
 					onOpenChange={(open) => setRenameMenu(open)}
 				/>
 			)}
-			<FlowNodeInner props={props} onHover={(hover) => setIsHovered(hover)} />
+			<FlowNodeInner props={props} onHover={setIsHovered} />
 		</>
 	);
 }

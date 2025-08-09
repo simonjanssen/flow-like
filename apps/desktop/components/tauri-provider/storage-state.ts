@@ -1,80 +1,64 @@
 import { invoke } from "@tauri-apps/api/core";
-import { mkdir, open as openFile } from "@tauri-apps/plugin-fs";
-import {
-	type IStorageItem,
-	type IStorageState,
-	injectDataFunction,
-} from "@tm9657/flow-like-ui";
+import { save } from "@tauri-apps/plugin-dialog";
+import { mkdir, open, create } from "@tauri-apps/plugin-fs";
+import type { IStorageItem, IStorageState } from "@tm9657/flow-like-ui";
 import type { IStorageItemActionResult } from "@tm9657/flow-like-ui/state/backend-state/types";
 import { fetcher, put } from "../../lib/api";
 import type { TauriBackend } from "../tauri-provider";
+import { join, delimiter, resolve, dirname } from "@tauri-apps/api/path";
 
 export class StorageState implements IStorageState {
-	constructor(private readonly backend: TauriBackend) {}
+	constructor(private readonly backend: TauriBackend) { }
 	async listStorageItems(
 		appId: string,
 		prefix: string,
 	): Promise<IStorageItem[]> {
 		const isOffline = await this.backend.isOffline(appId);
 
-		const items = await invoke<IStorageItem[]>("storage_list", {
-			appId: appId,
-			prefix: prefix,
-		});
+		if (isOffline) {
+			const items = await invoke<IStorageItem[]>("storage_list", {
+				appId: appId,
+				prefix: prefix,
+			});
+			return items;
+		}
 
 		if (
-			isOffline ||
 			!this.backend.profile ||
 			!this.backend.auth ||
 			!this.backend.queryClient
 		) {
-			return items;
+			throw new Error(
+				"Backend is not properly initialized for listing storage items.",
+			);
 		}
 
-		const promise = injectDataFunction(
-			async () => {
-				const remoteData = await fetcher<IStorageItem[]>(
-					this.backend.profile!,
-					`apps/${appId}/data/list`,
-					{
-						method: "POST",
-						body: JSON.stringify({
-							prefix: prefix,
-						}),
-					},
-					this.backend.auth,
-				);
-
-				const merged = new Map<string, IStorageItem>();
-				for (const item of items) {
-					merged.set(item.location, item);
-				}
-
-				for (const item of remoteData) {
-					merged.set(item.location, item);
-				}
-
-				return Array.from(merged.values());
+		const items = await fetcher<IStorageItem[]>(
+			this.backend.profile,
+			`apps/${appId}/data/list`,
+			{
+				method: "POST",
+				body: JSON.stringify({
+					prefix: prefix,
+				}),
 			},
-			this,
-			this.backend.queryClient,
-			this.listStorageItems,
-			[appId, prefix],
-			[],
+			this.backend.auth,
 		);
 
-		this.backend.backgroundTaskHandler(promise);
 		return items;
 	}
 	async deleteStorageItems(appId: string, prefixes: string[]): Promise<void> {
 		const isOffline = await this.backend.isOffline(appId);
 
-		if (
-			!isOffline &&
-			this.backend.profile &&
-			this.backend.auth &&
-			this.backend.queryClient
-		) {
+		if (!isOffline) {
+			if (
+				!this.backend.profile ||
+				!this.backend.auth ||
+				!this.backend.queryClient
+			) {
+				throw new Error("Backend is not properly initialized for deletion.");
+			}
+
 			await fetcher<void>(
 				this.backend.profile,
 				`apps/${appId}/data`,
@@ -99,12 +83,15 @@ export class StorageState implements IStorageState {
 	): Promise<IStorageItemActionResult[]> {
 		const isOffline = await this.backend.isOffline(appId);
 
-		if (
-			!isOffline &&
-			this.backend.profile &&
-			this.backend.auth &&
-			this.backend.queryClient
-		) {
+		if (!isOffline) {
+			if (
+				!this.backend.profile ||
+				!this.backend.auth ||
+				!this.backend.queryClient
+			) {
+				throw new Error("Backend is not properly initialized for deletion.");
+			}
+
 			const files = await fetcher<IStorageItemActionResult[]>(
 				this.backend.profile,
 				`apps/${appId}/data/download`,
@@ -116,8 +103,6 @@ export class StorageState implements IStorageState {
 				},
 				this.backend.auth,
 			);
-
-			console.dir(files);
 
 			return files;
 		}
@@ -145,6 +130,8 @@ export class StorageState implements IStorageState {
 	): Promise<void> {
 		let totalFiles = files.length;
 		let completedFiles = 0;
+		console.dir(files);
+		console.log(prefix);
 
 		const yieldControl = () => new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -157,11 +144,23 @@ export class StorageState implements IStorageState {
 		const isOffline = await this.backend.isOffline(appId);
 		const promises = [] as Promise<void>[];
 
-		if (!isOffline && this.backend.profile && this.backend.auth) {
+		if (!isOffline) {
+			if (
+				!this.backend.profile ||
+				!this.backend.auth ||
+				!this.backend.queryClient
+			) {
+				throw new Error("Backend is not properly initialized for deletion.");
+			}
+
 			totalFiles = files.length * 2;
 			const fileLookup = new Map(
 				files.map((file) => {
-					const filePath = `${prefix}/${file.webkitRelativePath ?? file.name}`;
+					const path =
+						(file.webkitRelativePath ?? "") === ""
+							? file.name
+							: file.webkitRelativePath;
+					const filePath = `${prefix}/${path}`;
 					return [filePath, file];
 				}),
 			);
@@ -169,9 +168,13 @@ export class StorageState implements IStorageState {
 				this.backend.profile,
 				`apps/${appId}/data`,
 				{
-					prefixes: files.map(
-						(file) => `${prefix}/${file.webkitRelativePath ?? file.name}`,
-					),
+					prefixes: files.map((file) => {
+						const path =
+							(file.webkitRelativePath ?? "") === ""
+								? file.name
+								: file.webkitRelativePath;
+						return `${prefix}/${path}`;
+					}),
 				},
 				this.backend.auth,
 			);
@@ -193,7 +196,7 @@ export class StorageState implements IStorageState {
 
 				if (url.url)
 					promises.push(
-						this.uploadSignedUrl(
+						this.backend.uploadSignedUrl(
 							url.url,
 							file,
 							completedFiles,
@@ -204,6 +207,7 @@ export class StorageState implements IStorageState {
 			}
 
 			await Promise.all(promises);
+			return;
 		}
 
 		for (const batch of batches) {
@@ -211,11 +215,11 @@ export class StorageState implements IStorageState {
 				batch.map(async (file) => {
 					let filePath = file.name;
 
-					if (file.webkitRelativePath) {
+					if (file.webkitRelativePath && file.webkitRelativePath !== "") {
 						filePath = file.webkitRelativePath;
 					}
 
-					filePath = `${prefix}/${filePath}`;
+					filePath = await join(prefix, filePath);
 
 					console.group("Uploading file to storage");
 					console.dir({
@@ -230,17 +234,27 @@ export class StorageState implements IStorageState {
 						prefix: filePath,
 					});
 
-					if (url.startsWith("asset://")) {
-						const path = decodeURIComponent(url.replace("asset://", ""));
+					if (
+						url.startsWith("asset://") ||
+						url.startsWith("http://asset.localhost/")
+					) {
+						const rawPath = decodeURIComponent(
+							url
+								.replace("http://asset.localhost/", "")
+								.replaceAll("asset://localhost/", ""),
+						);
 
-						const parentDir = path.substring(0, path.lastIndexOf("/"));
+						const parentDir = await dirname(rawPath);
 						await mkdir(parentDir, { recursive: true });
-						const fileHandle = await openFile(path, {
+						let fileHandle
+
+						fileHandle = await open(await resolve(rawPath), {
 							append: false,
 							create: true,
 							write: true,
 							truncate: true,
 						});
+
 
 						if (!fileHandle) {
 							completedFiles++;
@@ -295,7 +309,7 @@ export class StorageState implements IStorageState {
 						}
 					} else {
 						try {
-							await this.uploadSignedUrl(
+							await this.backend.uploadSignedUrl(
 								url,
 								file,
 								completedFiles,
@@ -318,48 +332,41 @@ export class StorageState implements IStorageState {
 		}
 	}
 
-	private async uploadSignedUrl(
-		signedUrl: string,
-		file: File,
-		completedFiles: number,
-		totalFiles: number,
-		onProgress?: (progress: number) => void,
-	): Promise<void> {
-		const formData = new FormData();
-		formData.append("file", file);
+	async writeStorageItems(items: IStorageItemActionResult[]) {
+		for (const file of items) {
+			const path = await save({
+				canCreateDirectories: true,
+				title: file.prefix.split("/").pop() || "Download File",
+				defaultPath: file.prefix.split("/").pop(),
+			});
 
-		await new Promise<void>((resolve, reject) => {
-			const xhr = new XMLHttpRequest();
+			if (path && file.url) {
+				const fileHandle = await open(path, {
+					create: true,
+					write: true,
+					truncate: true,
+				});
 
-			xhr.upload.addEventListener("progress", (event) => {
-				if (event.lengthComputable) {
-					const fileProgress = event.loaded / event.total;
-					const totalProgress =
-						((completedFiles + fileProgress) / totalFiles) * 100;
-					onProgress?.(totalProgress);
+				const fileStream = await fetch(file.url);
+				const reader = fileStream.body?.getReader();
+				if (!reader) {
+					console.error(`Failed to read file stream for ${file.prefix}`);
+					await fileHandle.close();
+					continue;
 				}
-			});
 
-			xhr.addEventListener("load", () => {
-				if (xhr.status >= 200 && xhr.status < 300) {
-					resolve();
-				} else {
-					reject(new Error(`Upload failed with status: ${xhr.status}`));
+				try {
+					while (true) {
+						const { done, value } = await reader.read();
+						if (done) break;
+
+						await fileHandle.write(value);
+					}
+				} finally {
+					reader.releaseLock();
+					await fileHandle.close();
 				}
-			});
-
-			xhr.addEventListener("error", () => {
-				reject(new Error("Upload failed"));
-			});
-
-			xhr.open("PUT", signedUrl);
-			xhr.setRequestHeader(
-				"Content-Type",
-				file.type || "application/octet-stream",
-			);
-			xhr.send(file);
-		});
-
-		onProgress?.((completedFiles / totalFiles) * 100);
+			}
+		}
 	}
 }

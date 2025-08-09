@@ -14,15 +14,15 @@ jobs:
       matrix:
         include:
           - platform: "macos-latest" # for Arm based macs (M1 and above).
-            args: "--target aarch64-apple-darwin --config src-tauri/configs/tauri.macos.arm.conf.json"
+            args: "--config src-tauri/configs/tauri.macos.arm.conf.json --verbose"
           - platform: "macos-13" # for Intel based macs.
-            args: "--target x86_64-apple-darwin --config src-tauri/configs/tauri.macos.intel.conf.json"
+            args: "--config src-tauri/configs/tauri.macos.intel.conf.json --verbose"
           - platform: "ubuntu-latest" # for Tauri v1 you could replace this with ubuntu-20.04.
-            args: "--config src-tauri/configs/tauri.linux.x64.conf.json"
+            args: "--config src-tauri/configs/tauri.linux.x64.conf.json --verbose"
           - platform: "ubuntu-24.04-arm" # for Tauri v1 you could replace this with ubuntu-20.04.
-            args: ""
+            args: "--verbose"
           - platform: "windows-latest"
-            args: "--config src-tauri/configs/tauri.win.x64.conf.json"
+            args: "--config src-tauri/configs/tauri.win.x64.conf.json --verbose"
     runs-on: ${{ matrix.platform }}
     env:
       APPLE_ID: ${{ secrets.APPLE_ID }}

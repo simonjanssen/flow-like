@@ -1,6 +1,6 @@
 "use client";
-import { withSentryConfig } from "@sentry/nextjs";
 /** @type {import('next').NextConfig} */
+import { withSentryConfig } from "@sentry/nextjs";
 const nextConfig = {
 	output: "export",
 	pageExtensions: ["js", "jsx", "md", "mdx", "ts", "tsx"],
@@ -15,6 +15,7 @@ const nextConfig = {
 		webpackMemoryOptimizations: true,
 		webpackBuildWorkers: true,
 		preloadEntriesOnStart: false,
+		reactCompiler: true,
 	},
 	devIndicators: {
 		appIsrStatus: false,

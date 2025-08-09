@@ -57,6 +57,29 @@ impl NodeLogic for HashFileNode {
         context.deactivate_exec_pin("exec_out").await?;
         let path: FlowPath = context.evaluate_pin("path").await?;
 
+        let cache_layer = path.to_cache_layer(context).await?;
+        if let Some(cache_layer) = cache_layer {
+            let is_dirty = path.is_cache_dirty(context).await;
+
+            if let Err(e) = &is_dirty {
+                context.log_message(
+                    &format!("Failed to check cache dirty state: {}", e),
+                    flow_like::flow::execution::LogLevel::Warn,
+                );
+            }
+
+            let is_dirty = is_dirty.unwrap_or(true);
+            if !is_dirty {
+                let path = path.to_runtime(context).await?;
+                let hash = cache_layer.hash(&path.path).await?;
+
+                context.set_pin_value("hash", json!(hash)).await?;
+                context.activate_exec_pin("exec_out").await?;
+
+                return Ok(());
+            }
+        }
+
         let path = path.to_runtime(context).await?;
         let store = path.store;
         let hash = store.hash(&path.path).await?;

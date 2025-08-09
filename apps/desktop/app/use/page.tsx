@@ -31,8 +31,8 @@ export default function Page() {
 	const backend = useBackend();
 	const searchParams = useSearchParams();
 	const appId = searchParams.get("id");
-	const headerRef = useRef<IToolBarActions>(null);
-	const sidebarRef = useRef<ISidebarActions>(null);
+	const headerRef = useRef<IToolBarActions>(null!);
+	const sidebarRef = useRef<ISidebarActions>(null!);
 	const setQueryParams = useSetQueryParams();
 	const router = useRouter();
 

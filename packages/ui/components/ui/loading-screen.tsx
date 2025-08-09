@@ -113,16 +113,16 @@ export function LoadingScreen({
 			)}
 		>
 			{/* Dynamic background gradient */}
-			<div className="absolute inset-0 bg-gradient-to-br from-background via-muted/30 to-background animate-gradient-shift" />
+			<div className="absolute inset-0 bg-linear-to-br from-background via-muted/30 to-background animate-gradient-shift" />
 
 			{/* Animated mesh overlay */}
 			<div className="absolute inset-0 opacity-40">
-				<div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,hsl(var(--muted))_1px,transparent_1px)] bg-[size:50px_50px] animate-mesh-drift" />
-				<div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_75%,hsl(var(--border))_1px,transparent_1px)] bg-[size:80px_80px] animate-mesh-drift-reverse" />
+				<div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,var(--muted)_1px,transparent_1px)] bg-size-[50px_50px] animate-mesh-drift" />
+				<div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_75%,var(--border)_1px,transparent_1px)] bg-size-[80px_80px] animate-mesh-drift-reverse" />
 			</div>
 
 			{/* Floating grid overlay */}
-			<div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:120px_120px] opacity-20 animate-grid-float" />
+			<div className="absolute inset-0 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] bg-size-[120px_120px] opacity-20 animate-grid-float" />
 
 			{/* Large background geometric shapes */}
 			<div className="absolute inset-0 overflow-hidden">
@@ -200,7 +200,7 @@ export function LoadingScreen({
 						<div className="absolute inset-0 rounded-full border border-border/50 w-32 h-32 left-1/2 top-1/2 -ml-16 -mt-16 animate-spin-elegant" />
 
 						{/* Inner container */}
-						<div className="relative bg-card/95 backdrop-blur-sm rounded-full p-8 border border-border shadow-lg w-24 h-24">
+						<div className="relative bg-card/95 backdrop-blur-xs rounded-full p-8 border border-border shadow-lg w-24 h-24">
 							<Loader2 className="w-8 h-8 animate-spin text-foreground mx-auto" />
 						</div>
 

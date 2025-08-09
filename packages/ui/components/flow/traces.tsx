@@ -11,12 +11,12 @@ import {
 	ScrollIcon,
 	TriangleAlertIcon,
 } from "lucide-react";
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AutoSizer } from "react-virtualized";
 import "react-virtualized/styles.css";
 import { VariableSizeList as List, type VariableSizeList } from "react-window";
 import { toast } from "sonner";
-import { type ILog, useBackend, useInvoke } from "../..";
+import { type ILog, useBackend, useInfiniteInvoke } from "../..";
 import { parseTimespan } from "../../lib/date";
 import { logLevelToNumber } from "../../lib/log-level";
 import { ILogLevel, type ILogMessage } from "../../lib/schema/flow/run";
@@ -40,8 +40,6 @@ export function Traces({
 
 	const [queryParts, setQueryParts] = useState<string[]>([]);
 	const [query, setQuery] = useState("");
-	const [limit, setLimit] = useState(1000);
-	const [offset, setOffset] = useState(0);
 
 	const [logFilter, setLogFilter] = useState<Set<ILogLevel>>(
 		new Set([
@@ -53,17 +51,61 @@ export function Traces({
 		]),
 	);
 
-	const messages = useInvoke(
-		backend.boardState.queryRun,
-		backend.boardState,
-		[currentMetadata!, query, offset, limit],
-		typeof currentMetadata !== "undefined",
-	);
+	const { data, hasNextPage, fetchNextPage, isFetchingNextPage } =
+		useInfiniteInvoke(
+			backend.boardState.queryRun,
+			backend.boardState,
+			[currentMetadata!, query],
+			1000,
+			typeof currentMetadata !== "undefined",
+		);
 
+	const messages = useMemo(() => {
+		return data?.pages.flat() ?? [];
+	}, [data]);
 	const [search, setSearch] = useState<string>("");
 	const debouncedSearch = useDebounce(search, 300);
 	const rowHeights = useRef(new Map());
 	const listRef = useRef<VariableSizeList>(null);
+
+	const toggleLogFilter = useCallback((level: ILogLevel) => {
+		setLogFilter((prev) => {
+			const newFilter = new Set(prev);
+			if (newFilter.has(level)) {
+				newFilter.delete(level);
+			} else {
+				newFilter.add(level);
+			}
+			return newFilter;
+		});
+	}, []);
+
+	const buildQuery = useCallback((parts: string[]) => {
+		if (parts.length === 0) return "";
+		if (parts.length === 1) return parts[0];
+		return parts.map((part) => `(${part})`).join(" AND ");
+	}, []);
+
+	const handleNodeSelect = useCallback(
+		(nodeId: string) => {
+			console.log("select node", nodeId);
+			const nodes = getNodes();
+
+			nodes
+				.filter((node) => node.selected && node.id !== nodeId)
+				.forEach((node) => {
+					updateNode(node.id, { selected: false });
+				});
+
+			updateNode(nodeId, { selected: true });
+
+			fitView({
+				nodes: [{ id: nodeId }],
+				duration: 500,
+			});
+		},
+		[getNodes, updateNode, fitView],
+	);
 
 	useEffect(() => {
 		const parts = [];
@@ -106,48 +148,58 @@ export function Traces({
 	}, [queryParts]);
 
 	function getRowHeight(index: number) {
+		if (hasNextPage && index === (messages?.length ?? 0)) {
+			return 50;
+		}
 		return (rowHeights.current.get(index) ?? 88) + 6;
 	}
 
-	function render(props: any) {
-		if (!messages.data) return null;
-		const { index, style } = props;
-		const log = messages.data[index];
-		return (
-			<LogMessage
-				key={index}
-				log={log}
-				index={index}
-				style={style}
-				onSetHeight={(index, height) => setRowHeight(index, height)}
-				onSelectNode={(nodeId) => {
-					console.log("select node", nodeId);
-					const nodes = getNodes();
+	const renderItem = useCallback(
+		(props: any) => {
+			if (!messages) return null;
+			const { index, style } = props;
 
-					nodes
-						.filter((node) => node.selected && node.id !== nodeId)
-						.forEach((node) => {
-							updateNode(node.id, {
-								selected: false,
-							});
-						});
+			if (hasNextPage && index === messages.length) {
+				return (
+					<div style={style} className="p-2">
+						<Button
+							className="w-full"
+							onClick={async () => {
+								if (isFetchingNextPage) return;
+								await fetchNextPage();
+							}}
+							disabled={isFetchingNextPage}
+						>
+							Load more logs
+						</Button>
+					</div>
+				);
+			}
 
-					updateNode(nodeId, {
-						selected: true,
-					});
+			const log = messages[index];
+			return (
+				<LogMessage
+					key={index}
+					log={log}
+					index={index}
+					style={style}
+					onSetHeight={setRowHeight}
+					onSelectNode={handleNodeSelect}
+				/>
+			);
+		},
+		[
+			messages,
+			hasNextPage,
+			isFetchingNextPage,
+			fetchNextPage,
+			handleNodeSelect,
+		],
+	);
 
-					fitView({
-						nodes: [
-							{
-								id: nodeId,
-							},
-						],
-						duration: 500,
-					});
-				}}
-			/>
-		);
-	}
+	useEffect(() => {
+		setQuery(buildQuery(queryParts));
+	}, [queryParts, buildQuery]);
 
 	function setRowHeight(index: number, height: number) {
 		listRef.current?.resetAfterIndex(0);
@@ -160,76 +212,42 @@ export function Traces({
 				"transition-all top-0 bottom-0 right-0 h-[calc(100%)] z-10 bg-background border rounded-lg flex flex-col p-2 w-full"
 			}
 		>
-			<div className="flex flex-row items-stretch overflow-hidden flex-grow h-full">
-				<div className="ml-2 flex flex-col w-full gap-1 overflow-x-hidden max-h-full flex-grow h-full">
+			<div className="flex flex-row items-stretch overflow-hidden grow h-full">
+				<div className="ml-2 flex flex-col w-full gap-1 overflow-x-hidden max-h-full grow h-full">
 					<div className="w-full flex flex-row items-center justify-between my-1">
 						<div className="flex flex-row items-center gap-1">
-							<Badge
-								className="cursor-pointer"
-								variant={logFilter.has(ILogLevel.Debug) ? "default" : "outline"}
-								onClick={() =>
-									setLogFilter((old) => {
-										if (old.has(ILogLevel.Debug)) old.delete(ILogLevel.Debug);
-										else old.add(ILogLevel.Debug);
-										return new Set(old);
-									})
-								}
-							>
-								Debug
-							</Badge>
-							<Badge
-								className="cursor-pointer"
-								variant={logFilter.has(ILogLevel.Info) ? "default" : "outline"}
-								onClick={() =>
-									setLogFilter((old) => {
-										if (old.has(ILogLevel.Info)) old.delete(ILogLevel.Info);
-										else old.add(ILogLevel.Info);
-										return new Set(old);
-									})
-								}
-							>
-								Info
-							</Badge>
-							<Badge
-								className="cursor-pointer"
-								variant={logFilter.has(ILogLevel.Warn) ? "default" : "outline"}
-								onClick={() =>
-									setLogFilter((old) => {
-										if (old.has(ILogLevel.Warn)) old.delete(ILogLevel.Warn);
-										else old.add(ILogLevel.Warn);
-										return new Set(old);
-									})
-								}
-							>
-								Warning
-							</Badge>
-							<Badge
-								className="cursor-pointer"
-								variant={logFilter.has(ILogLevel.Error) ? "default" : "outline"}
-								onClick={() =>
-									setLogFilter((old) => {
-										if (old.has(ILogLevel.Error)) old.delete(ILogLevel.Error);
-										else old.add(ILogLevel.Error);
-										return new Set(old);
-									})
-								}
-							>
-								Error
-							</Badge>
-							<Badge
-								className="cursor-pointer"
-								variant={logFilter.has(ILogLevel.Fatal) ? "default" : "outline"}
-								onClick={() =>
-									setLogFilter((old) => {
-										if (old.has(ILogLevel.Fatal)) old.delete(ILogLevel.Fatal);
-										else old.add(ILogLevel.Fatal);
-										return new Set(old);
-									})
-								}
-							>
-								Debug
-							</Badge>
+							<LogFilterBadge
+								level={ILogLevel.Debug}
+								label="Debug"
+								logFilter={logFilter}
+								toggleLogFilter={toggleLogFilter}
+							/>
+							<LogFilterBadge
+								level={ILogLevel.Info}
+								label="Info"
+								logFilter={logFilter}
+								toggleLogFilter={toggleLogFilter}
+							/>
+							<LogFilterBadge
+								level={ILogLevel.Warn}
+								label="Warning"
+								logFilter={logFilter}
+								toggleLogFilter={toggleLogFilter}
+							/>
+							<LogFilterBadge
+								level={ILogLevel.Error}
+								label="Error"
+								logFilter={logFilter}
+								toggleLogFilter={toggleLogFilter}
+							/>
+							<LogFilterBadge
+								level={ILogLevel.Fatal}
+								label="Fatal"
+								logFilter={logFilter}
+								toggleLogFilter={toggleLogFilter}
+							/>
 						</div>
+
 						<div className="flex flex-row items-stretch">
 							<Input
 								value={search}
@@ -238,8 +256,8 @@ export function Traces({
 							/>
 						</div>
 					</div>
-					<div className="flex flex-col w-full gap-1 overflow-x-auto max-h-full flex-grow h-full">
-						{(messages.data?.length ?? 0) === 0 && (
+					<div className="flex flex-col w-full gap-1 overflow-x-auto max-h-full grow h-full">
+						{(messages?.length ?? 0) === 0 && (
 							<EmptyState
 								className="h-full w-full max-w-full"
 								icons={[LogsIcon, ScrollIcon, CheckCircle2Icon]}
@@ -247,21 +265,21 @@ export function Traces({
 								title="No Logs"
 							/>
 						)}
-						{(messages.data?.length ?? 0) > 0 && (
+						{(messages?.length ?? 0) > 0 && (
 							<AutoSizer
-								className="h-full flex-grow flex flex-col min-h-full"
+								className="h-full grow flex flex-col min-h-full"
 								disableWidth
 							>
 								{({ height, width }) => (
 									<List
-										className="log-container h-full flex-grow flex flex-col"
+										className="log-container h-full grow flex flex-col"
 										height={height}
-										itemCount={messages.data?.length ?? 0}
+										itemCount={(messages?.length ?? 0) + (hasNextPage ? 1 : 0)}
 										itemSize={getRowHeight}
 										ref={listRef}
 										width={width}
 									>
-										{render}
+										{renderItem}
 									</List>
 								)}
 							</AutoSizer>
@@ -332,7 +350,7 @@ const LogMessage = memo(function LogMessage({
 						<Button
 							variant={"outline"}
 							size={"icon"}
-							className="!p-1 h-6 w-6"
+							className="p-1! h-6 w-6"
 							onClick={() => {
 								navigator.clipboard.writeText(log.message);
 								toast.success("Log message copied to clipboard");
@@ -344,7 +362,7 @@ const LogMessage = memo(function LogMessage({
 							<Button
 								variant={"outline"}
 								size={"icon"}
-								className="!p-1 h-6 w-6"
+								className="p-1! h-6 w-6"
 								onClick={() => onSelectNode(log.node_id!)}
 							>
 								<CornerRightUpIcon className="w-4 h-4" />
@@ -385,4 +403,26 @@ function LogIndicator({ logLevel }: Readonly<{ logLevel: ILogLevel }>) {
 		case ILogLevel.Fatal:
 			return <BombIcon className="w-4 h-4 min-w-4" />;
 	}
+}
+
+function LogFilterBadge({
+	level,
+	label,
+	logFilter,
+	toggleLogFilter,
+}: Readonly<{
+	level: ILogLevel;
+	label: string;
+	logFilter: Set<ILogLevel>;
+	toggleLogFilter: (level: ILogLevel) => void;
+}>) {
+	return (
+		<Badge
+			className="cursor-pointer"
+			variant={logFilter.has(level) ? "default" : "outline"}
+			onClick={() => toggleLogFilter(level)}
+		>
+			{label}
+		</Badge>
+	);
 }

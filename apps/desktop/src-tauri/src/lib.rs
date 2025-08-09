@@ -19,7 +19,8 @@ use state::TauriFlowLikeState;
 use std::{sync::Arc, time::Duration};
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_deep_link::{DeepLinkExt, OpenUrlEvent};
-use tracing_subscriber::prelude::*;
+#[cfg(not(debug_assertions))]
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -273,6 +274,9 @@ pub fn run() {
             functions::app::delete_app_board,
             functions::app::get_app,
             functions::app::push_app_meta,
+            functions::app::push_app_media,
+            functions::app::remove_app_media,
+            functions::app::transform_media,
             functions::app::get_app_meta,
             functions::app::get_app_board,
             functions::app::get_app_boards,
@@ -280,6 +284,7 @@ pub fn run() {
             functions::app::get_apps,
             functions::app::get_app_size,
             functions::app::create_app,
+            functions::app::import_app,
             functions::app::update_app,
             functions::app::delete_app,
             functions::bit::get_bit,

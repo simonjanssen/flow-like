@@ -13,18 +13,17 @@ import {
 	humanFileSize,
 	useDownloadManager,
 } from "@tm9657/flow-like-ui";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { CartesianGrid, Line, LineChart, XAxis } from "recharts";
 
 const chartConfig = {
 	downloaded: {
 		label: "Speed (Mbit/s)",
-		color: "hsl(var(--chart-3))",
+		color: "var(--chart-3)",
 	},
 	total: {
 		label: "Total",
-		color: "hsl(var(--chart-4))",
+		color: "var(--chart-4)",
 	},
 } satisfies ChartConfig;
 
@@ -75,7 +74,7 @@ export default function Page() {
 	}, [manager]);
 
 	return (
-		<main className="flex flex-col items-center justify-center w-full h-full flex-grow">
+		<main className="flex flex-col items-center justify-center w-full h-full flex-grow min-h-screen">
 			<div className="p-4 max-w-screen-lg w-full bg-background border-card border-2 rounded-md">
 				<div className="flex flex-row items-center">
 					<div className="w-full">
@@ -121,7 +120,6 @@ export default function Page() {
 								animateNewValues={false}
 								animationEasing="ease-in-out"
 								animationDuration={100}
-								animationId={1}
 								stroke="var(--color-downloaded)"
 								strokeWidth={2}
 								dot={false}

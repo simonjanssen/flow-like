@@ -1,3 +1,4 @@
+import { ChevronDown } from "lucide-react";
 import {
 	Select,
 	SelectContent,
@@ -28,10 +29,15 @@ export function EnumVariable({
 				value={parseUint8ArrayToJson(value)}
 				onValueChange={(value) => setValue(convertJsonToUint8Array(value))}
 			>
-				<SelectTrigger className="w-full p-0 border-0 text-xs text-nowrap text-start max-h-fit h-4">
-					<small className="text-nowrap text-start m-0">
+				<SelectTrigger
+					noChevron
+					size="sm"
+					className="!w-fit !max-w-fit p-0 border-0 text-xs !bg-card text-nowrap text-start max-h-fit h-4 gap-0.5 flex-row items-center"
+				>
+					<small className="text-nowrap text-start text-[10px] !m-0 w-fit">
 						{parseUint8ArrayToJson(value)}
 					</small>
+					<ChevronDown className="size-2 min-w-2 min-h-2 text-card-foreground" />
 				</SelectTrigger>
 				<SelectContent>
 					<SelectGroup>

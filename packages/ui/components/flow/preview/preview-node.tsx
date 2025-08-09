@@ -141,7 +141,7 @@ export function PreviewFlowNode(props: NodeProps<FlowNode>) {
 		<div
 			key={`${props.id}__node`}
 			ref={div}
-			className={`bg-card p-2 react-flow__node-default selectable focus:ring-2 relative rounded-md group ${props.selected && "!border-primary border-2"} ${isExec ? "" : "bg-emerald-900"} ${executionState === "done" ? "opacity-60" : "opacity-100"}`}
+			className={`bg-card p-2 react-flow__node-default selectable focus:ring-2 relative rounded-md group ${props.selected && "border-primary! border-2"} ${isExec ? "" : "bg-emerald-900"} ${executionState === "done" ? "opacity-60" : "opacity-100"}`}
 		>
 			{props.data.node.long_running && (
 				<div className="absolute top-0 z-10 translate-y-[calc(-50%)] translate-x-[calc(-50%)] left-0 text-center bg-background rounded-full">
@@ -184,9 +184,9 @@ export function PreviewFlowNode(props: NodeProps<FlowNode>) {
 					),
 				)}
 			<div
-				className={`absolute top-0 left-0 right-0 h-4 gap-1 !mt-0 flex flex-row items-center border-b-1 border-b-foreground p-1 justify-between rounded-md rounded-b-none bg-card ${!isExec && "bg-gradient-to-r  from-card via-emerald-300/50 to-emerald-300 dark:via-tertiary/50 dark:to-tertiary"} ${props.data.node.start && "bg-gradient-to-r  from-card via-rose-300/50 to-rose-300 dark:via-primary/50 dark:to-primary"}`}
+				className={`absolute top-0 left-0 right-0 h-4 gap-1 mt-0! flex flex-row items-center border-b border-b-foreground p-1 justify-between rounded-md rounded-b-none bg-card ${!isExec && "bg-linear-to-r  from-card via-emerald-300/50 to-emerald-300 dark:via-tertiary/50 dark:to-tertiary"} ${props.data.node.start && "bg-linear-to-r  from-card via-rose-300/50 to-rose-300 dark:via-primary/50 dark:to-primary"}`}
 			>
-				<div className={"flex flex-row items-center !mt-0 gap-1"}>
+				<div className={"flex flex-row items-center mt-0! gap-1"}>
 					{props.data.node?.icon && (
 						<DynamicImage
 							className="w-2 h-2 bg-foreground"
@@ -194,7 +194,7 @@ export function PreviewFlowNode(props: NodeProps<FlowNode>) {
 						/>
 					)}
 					{!props.data.node?.icon && <WorkflowIcon className="w-2 h-2" />}
-					<small className="font-medium leading-none !mt-0">
+					<small className="font-medium leading-none mt-0!">
 						{props.data.node?.friendly_name}
 					</small>
 				</div>

@@ -9,7 +9,6 @@ use axum::{
     extract::{Path, State},
 };
 use flow_like_types::{Value, create_id, json};
-use sea_orm::EntityTrait;
 
 const MAX_PREFIXES: usize = 100;
 
@@ -29,7 +28,13 @@ pub async fn upload_files(
 
     let sub = user.sub()?;
 
-    let project_dir = state.scoped_credentials(&sub, &app_id).await?;
+    let project_dir = state
+        .scoped_credentials(
+            &sub,
+            &app_id,
+            crate::credentials::CredentialsAccess::EditApp,
+        )
+        .await?;
     let project_dir = project_dir.to_store(false).await?;
 
     let mut urls = Vec::with_capacity(payload.prefixes.len());

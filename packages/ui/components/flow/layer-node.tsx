@@ -6,6 +6,7 @@ import {
 	MessageSquareIcon,
 	SquarePenIcon,
 	Trash2Icon,
+	ZapIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -105,7 +106,7 @@ export function LayerNode(props: NodeProps<LayerNode>) {
 					<div
 						ref={divRef}
 						key={`${props.id}__node`}
-						className={`p-1 flex flex-col justify-center items-center react-flow__node-default selectable focus:ring-2 relative !bg-card rounded-md group ${props.selected && "!border-primary border-2"}`}
+						className={`p-1 flex flex-col justify-center items-center react-flow__node-default selectable focus:ring-2 relative bg-card! border-border! rounded-md! group ${props.selected && "border-primary! border-2"}`}
 					>
 						{props.data.layer.comment && props.data.layer.comment !== "" && (
 							<div className="absolute top-0 translate-y-[calc(-100%-0.5rem)] left-3 right-3 mb-2 text-center bg-foreground/70 text-background p-1 rounded-md">
@@ -126,8 +127,8 @@ export function LayerNode(props: NodeProps<LayerNode>) {
 								/>
 							</div>
 						)}
-						<div className="header absolute top-0 left-0 right-0 h-4 gap-1 flex flex-row items-center border-b-1 border-b-foreground bg-muted p-1 justify-start rounded-t-md">
-							<FoldHorizontalIcon className="w-2 h-2" />
+						<div className="header absolute top-0 left-0 right-0 h-4 gap-1 flex flex-row items-center border-b bg-muted p-1 justify-start rounded-t-md">
+							<ZapIcon className="w-2 h-2" />
 							<small className="font-medium leading-none">
 								{props.data.layer.name}
 							</small>
@@ -140,7 +141,6 @@ export function LayerNode(props: NodeProps<LayerNode>) {
 									appId={props.data.appId}
 									node={props.data.pinLookup[pin.id]}
 									boardId={props.data.boardId}
-									index={index}
 									pin={pin}
 									key={pin.id}
 									skipOffset={true}
@@ -155,7 +155,6 @@ export function LayerNode(props: NodeProps<LayerNode>) {
 									appId={props.data.appId}
 									node={props.data.pinLookup[pin.id]}
 									boardId={props.data.boardId}
-									index={index}
 									pin={pin}
 									key={pin.id}
 									skipOffset={true}

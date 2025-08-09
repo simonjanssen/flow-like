@@ -31,7 +31,9 @@ use std::any::Any;
 
 pub use anyhow::{Error, Ok, Result, anyhow, bail};
 pub use async_trait::async_trait;
+pub use base64;
 pub use cuid2::create_id;
+pub use mime_guess;
 pub use prost::Message;
 pub use reqwest;
 pub use reqwest_eventsource;
@@ -39,6 +41,7 @@ pub use schemars::JsonSchema;
 pub use serde;
 pub use serde_json::Value;
 pub use tokio_util;
+pub mod images;
 pub mod json {
     pub use serde::{Deserialize, Serialize, de::DeserializeOwned};
     pub use serde_json::{
@@ -62,5 +65,7 @@ pub mod utils;
 pub use ab_glyph;
 pub use image;
 pub use imageproc;
+pub use jsonschema;
 pub use minijinja;
+pub use regex;
 pub use rxing;

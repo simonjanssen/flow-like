@@ -59,6 +59,7 @@ import {
 	Bell,
 	BellIcon,
 	BookOpenIcon,
+	BotMessageSquareIcon,
 	BugIcon,
 	ChevronRight,
 	ChevronsUpDown,
@@ -90,7 +91,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "react-oidc-context";
 import { toast } from "sonner";
 import { fetcher } from "../lib/api";
-import { useApi } from "../lib/useApi";
 import { useTauriInvoke } from "./useInvoke";
 
 const data = {
@@ -111,8 +111,8 @@ const data = {
 					url: "/store/explore/apps",
 				},
 				{
-					title: "Explore Templates",
-					url: "/store/explore/templates",
+					title: "Explore Models",
+					url: "/settings/ai",
 				},
 			],
 		},
@@ -127,66 +127,22 @@ const data = {
 					title: "Overview",
 					url: "/library",
 				},
-				{
-					title: "Your Apps",
-					url: "/library/apps",
-				},
-				{
-					title: "Your Templates",
-					url: "/library/templates",
-				},
-				{
-					title: "Favorites",
-					url: "/library/favorites",
-				},
+				// {
+				// 	title: "Favorites",
+				// 	url: "/library/favorites",
+				// },
 				{
 					title: "Create App",
 					url: "/library/new",
 				},
 			],
 		},
-		{
-			title: "Documentation",
-			url: "https://docs.flow-like.com/",
-			permission: false,
-			icon: BookOpenIcon,
-		},
-		{
-			title: "Settings",
-			url: "/settings",
-			icon: Settings2Icon,
-			permission: false,
-			items: [
-				{
-					title: "General",
-					url: "/settings",
-				},
-				{
-					title: "Storage",
-					url: "/settings/storage",
-				},
-				{
-					title: "Profile",
-					url: "/settings/profile",
-				},
-				{
-					title: "AI",
-					url: "/settings/ai",
-				},
-				{
-					title: "Theming",
-					url: "/settings/theming",
-				},
-				{
-					title: "Credentials",
-					url: "/settings/powered-by",
-				},
-				{
-					title: "System Info",
-					url: "/settings/system",
-				},
-			],
-		},
+		// {
+		// 	title: "Documentation",
+		// 	url: "https://docs.flow-like.com/",
+		// 	permission: false,
+		// 	icon: BookOpenIcon,
+		// },
 		{
 			title: "User Actions",
 			url: "/admin/user",
@@ -258,8 +214,10 @@ interface IUser {
 export function AppSidebar({
 	children,
 }: Readonly<{ children: React.ReactNode }>) {
+	const defaultOpen = localStorage.getItem("sidebar_state") === "true";
+
 	return (
-		<SidebarProvider defaultOpen={false}>
+		<SidebarProvider defaultOpen={defaultOpen}>
 			<InnerSidebar />
 			<main className="w-full h-full">
 				<SidebarInset className="bg-gradient-to-br from-background via-background to-muted/20">
@@ -434,6 +392,15 @@ function InnerSidebar() {
 							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>
+
+					<a href="https://docs.flow-like.com" target="_blank" rel="noopener noreferrer">
+						<SidebarMenuButton>
+							<BookOpenIcon className="size-4" />
+							<span className="w-full flex flex-row items-center justify-between">
+								Documentation{" "}
+							</span>
+						</SidebarMenuButton>
+					</a>
 					<SidebarMenuButton onClick={toggleSidebar}>
 						{open ? <SidebarCloseIcon /> : <SidebarOpenIcon />}
 						<span className="w-full flex flex-row items-center justify-between">
@@ -444,7 +411,6 @@ function InnerSidebar() {
 						</span>
 					</SidebarMenuButton>
 				</div>
-
 				<NavUser user={user} />
 			</SidebarFooter>
 			<SidebarRail />
@@ -463,12 +429,7 @@ function Profiles() {
 		[],
 	);
 
-	const notifications = useInvoke(
-		backend.userState.getNotifications,
-		backend.userState,
-		[],
-	);
-	const notificationCount = notifications.data?.invites_count ?? 0;
+
 
 	return (
 		<SidebarMenu>
@@ -494,11 +455,6 @@ function Profiles() {
 									/>
 									<AvatarFallback>NA</AvatarFallback>
 								</Avatar>
-								{notificationCount > 0 && (
-									<div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
-										{notificationCount > 5 ? "5+" : notificationCount}
-									</div>
-								)}
 							</div>
 							<div className="grid flex-1 text-left text-sm leading-tight pl-1">
 								<span className="truncate font-semibold">
@@ -576,24 +532,6 @@ function Profiles() {
 								</DropdownMenuItem>
 							))}
 						<DropdownMenuSeparator />
-						<a href="/notifications">
-							<DropdownMenuItem className="gap-2 p-2">
-								<div className="flex size-6 items-center justify-center rounded-md border bg-background px-1 relative">
-									<BellIcon className="size-4" />
-									{/* Add notification indicator */}
-									{notificationCount > 0 && (
-										<div className="absolute -top-2 -left-2 bg-red-500 text-white text-xs rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
-											{notificationCount > 5 ? "5+" : notificationCount}
-										</div>
-									)}
-								</div>
-								<div className="font-medium text-muted-foreground flex flex-row items-center justify-between w-full">
-									Notifications
-									<DropdownMenuShortcut>⌘N</DropdownMenuShortcut>
-								</div>
-							</DropdownMenuItem>
-						</a>
-						<DropdownMenuSeparator />
 						<DropdownMenuItem className="gap-2 p-2">
 							<div className="flex size-6 items-center justify-center rounded-md border bg-background">
 								<Plus className="size-4" />
@@ -635,16 +573,11 @@ function NavMain({
 		}[];
 	}[];
 }>) {
+	const backend = useBackend();
 	const router = useRouter();
 	const pathname = usePathname();
 	const { open } = useSidebar();
-	const auth = useAuth();
-	const info = useApi<{ permission: number }>(
-		"GET",
-		"user/info",
-		undefined,
-		auth?.isAuthenticated ?? false,
-	);
+	const info = useInvoke(backend.userState.getInfo, backend.userState, []);
 
 	return (
 		<>
@@ -675,9 +608,9 @@ function NavMain({
 											<SidebarMenuButton
 												variant={
 													pathname === item.url ||
-													typeof item.items?.find(
-														(item) => item.url === pathname,
-													) !== "undefined"
+														typeof item.items?.find(
+															(item) => item.url === pathname,
+														) !== "undefined"
 														? "outline"
 														: "default"
 												}
@@ -794,9 +727,9 @@ function NavMain({
 												<SidebarMenuButton
 													variant={
 														pathname === item.url ||
-														typeof item.items?.find(
-															(item) => item.url === pathname,
-														) !== "undefined"
+															typeof item.items?.find(
+																(item) => item.url === pathname,
+															) !== "undefined"
 															? "outline"
 															: "default"
 													}
@@ -876,22 +809,24 @@ export function NavUser({
 		backend.userState,
 		[],
 	);
+	const info = useInvoke(backend.userState.getInfo, backend.userState, []);
 
 	const displayName: string = useMemo(() => {
-		const profile = auth?.user?.profile;
-		if (!profile) return "Offline";
+		if (!info.data) return "Offline";
 
-		return (
-			profile?.name ??
-			profile?.preferred_username ??
-			(profile as Record<string, any>)["cognito:username"] ??
-			"Offline"
-		);
-	}, [auth?.user?.profile]);
+		return info.data?.name ?? info.data?.preferred_username ?? "Offline";
+	}, [info.data]);
 
 	const email: string = useMemo(() => {
-		return auth?.user?.profile?.email ?? "Anonymous";
-	}, [auth?.user?.profile]);
+		return info.data?.email ?? "Anonymous";
+	}, [info.data]);
+
+	const notifications = useInvoke(
+		backend.userState.getNotifications,
+		backend.userState,
+		[],
+	);
+	const notificationCount = notifications.data?.invites_count ?? 0;
 
 	return (
 		<SidebarMenu>
@@ -903,11 +838,19 @@ export function NavUser({
 							className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
 						>
 							<Avatar className="h-8 w-8 rounded-lg">
-								<AvatarImage src={user?.avatar} alt={user?.name ?? "Offline"} />
+								<AvatarImage
+									src={info.data?.avatar}
+									alt={user?.name ?? "Offline"}
+								/>
 								<AvatarFallback className="rounded-lg">
 									{displayName.slice(0, 2).toUpperCase()}
 								</AvatarFallback>
 							</Avatar>
+							{notificationCount > 0 && (
+								<div className="absolute -top-0 -left-0 bg-red-500 text-white text-xs rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+									{notificationCount > 5 ? "5+" : notificationCount}
+								</div>
+							)}
 							<div className="grid flex-1 text-left text-sm leading-tight">
 								<span className="truncate font-semibold">{displayName}</span>
 								<span className="truncate text-xs">{email}</span>
@@ -924,7 +867,7 @@ export function NavUser({
 						<DropdownMenuLabel className="p-0 font-normal">
 							<div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
 								<Avatar className="h-8 w-8 rounded-lg">
-									<AvatarImage src={user?.avatar} alt={email} />
+									<AvatarImage src={info.data?.avatar} alt={"User Avatar"} />
 									<AvatarFallback className="rounded-lg">
 										{displayName.slice(0, 2).toUpperCase()}
 									</AvatarFallback>
@@ -946,10 +889,12 @@ export function NavUser({
 								</DropdownMenuGroup>
 								<DropdownMenuSeparator />
 								<DropdownMenuGroup>
-									<DropdownMenuItem className="gap-2">
-										<BadgeCheck className="size-4" />
-										Account
-									</DropdownMenuItem>
+									<a href="/account">
+										<DropdownMenuItem className="gap-2">
+											<BadgeCheck className="size-4" />
+											Account
+										</DropdownMenuItem>
+									</a>
 									{profile.data && (
 										<DropdownMenuItem
 											className="gap-2"
@@ -975,10 +920,20 @@ export function NavUser({
 											Billing
 										</DropdownMenuItem>
 									)}
-									<DropdownMenuItem className="gap-2">
-										<Bell className="size-4" />
-										Notifications
-									</DropdownMenuItem>
+									<a href="/notifications">
+										<DropdownMenuItem className="gap-2 p-2">
+											<div className="flex size-4relative">
+												<BellIcon className="size-4" />
+												{/* Add notification indicator */}
+												{notificationCount > 0 && (
+													<div className="absolute -top-0 -left-0 bg-red-500 text-white text-xs rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+														{notificationCount > 5 ? "5+" : notificationCount}
+													</div>
+												)}
+											</div>
+											Notifications
+										</DropdownMenuItem>
+									</a>
 								</DropdownMenuGroup>
 								<DropdownMenuSeparator />
 								<DropdownMenuItem

@@ -135,7 +135,7 @@ const FlowRunsComponent = ({
 	);
 
 	return (
-		<div className="flex flex-col gap-2 p-4 bg-background flex-grow h-full max-h-full overflow-hidden">
+		<div className="flex flex-col gap-2 p-4 bg-background grow h-full max-h-full overflow-hidden">
 			<div className="flex flex-row items-center justify-between">
 				<h3>Runs</h3>
 				<Button
