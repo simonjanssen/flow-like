@@ -10,7 +10,12 @@ use flow_like::{
 };
 use flow_like_types::{async_trait, json::json};
 
-/// Node to fetch the message envelope
+pub mod copy;
+pub mod delete;
+pub mod draft;
+pub mod mark_seen;
+pub mod mv;
+
 #[derive(Default)]
 pub struct FetchMailNode;
 
@@ -69,9 +74,6 @@ impl NodeLogic for FetchMailNode {
     }
 }
 
-// =========================
-// Email → Headers (pure)
-// =========================
 #[derive(Default)]
 pub struct EmailHeadersNode;
 
@@ -141,9 +143,6 @@ impl NodeLogic for EmailHeadersNode {
     }
 }
 
-// =========================
-// Email → Content (pure)
-// =========================
 #[derive(Default)]
 pub struct EmailContentNode;
 
@@ -190,9 +189,6 @@ impl NodeLogic for EmailContentNode {
     }
 }
 
-// =========================
-// Email → Attachments (pure)
-// =========================
 #[derive(Default)]
 pub struct EmailAttachmentsNode;
 
@@ -211,7 +207,7 @@ impl NodeLogic for EmailAttachmentsNode {
             "Access attachments array",
             "Email/Access",
         );
-        node.add_icon("/flow/icons/attachment.svg");
+        node.add_icon("/flow/icons/mail.svg");
 
         node.add_input_pin("email", "Email", "Email struct", VariableType::Struct)
             .set_schema::<Email>()
@@ -237,9 +233,6 @@ impl NodeLogic for EmailAttachmentsNode {
     }
 }
 
-// =========================
-// MailAddress → Fields (pure)
-// =========================
 #[derive(Default)]
 pub struct MailAddressFieldsNode;
 
@@ -258,7 +251,7 @@ impl NodeLogic for MailAddressFieldsNode {
             "Access name and email on a MailAddress",
             "Email/Access",
         );
-        node.add_icon("/flow/icons/user.svg");
+        node.add_icon("/flow/icons/mail.svg");
 
         node.add_input_pin(
             "address",
@@ -288,9 +281,6 @@ impl NodeLogic for MailAddressFieldsNode {
     }
 }
 
-// =========================
-// Attachment → Fields (pure)
-// =========================
 #[derive(Default)]
 pub struct AttachmentFieldsNode;
 
@@ -309,7 +299,7 @@ impl NodeLogic for AttachmentFieldsNode {
             "Access filename, content_type and data",
             "Email/Access",
         );
-        node.add_icon("/flow/icons/attachment.svg");
+        node.add_icon("/flow/icons/mail.svg");
 
         node.add_input_pin(
             "attachment",
@@ -350,6 +340,49 @@ impl NodeLogic for AttachmentFieldsNode {
     }
 }
 
+#[derive(Default)]
+pub struct ToMailReferenceNode;
+
+impl ToMailReferenceNode {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+#[async_trait]
+impl NodeLogic for ToMailReferenceNode {
+    async fn get_node(&self, _app_state: &FlowLikeState) -> Node {
+        let mut node = Node::new(
+            "mail_imap_inbox_mail_to_reference",
+            "Mail → Reference",
+            "Transforms a Mail struct into a reference",
+            "Email/Access",
+        );
+        node.add_icon("/flow/icons/mail.svg");
+
+        node.add_input_pin("mail", "Mail", "Mail struct", VariableType::Struct)
+            .set_schema::<Email>()
+            .set_options(PinOptions::new().set_enforce_schema(true).build());
+
+        node.add_output_pin(
+            "reference",
+            "Reference",
+            "Mail reference",
+            VariableType::Struct,
+        )
+        .set_schema::<EmailRef>();
+
+        node
+    }
+
+    async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
+        let mail: Email = context.evaluate_pin("mail").await?;
+        let email_ref = EmailRef::new(mail.connection.clone(), mail.inbox.clone(), mail.uid);
+        context.set_pin_value("reference", json!(email_ref)).await?;
+        Ok(())
+    }
+}
+
 use std::sync::Arc;
 
 pub async fn register_functions() -> Vec<Arc<dyn NodeLogic>> {
@@ -360,6 +393,12 @@ pub async fn register_functions() -> Vec<Arc<dyn NodeLogic>> {
         Arc::new(EmailAttachmentsNode::new()) as Arc<dyn NodeLogic>,
         Arc::new(MailAddressFieldsNode::new()) as Arc<dyn NodeLogic>,
         Arc::new(AttachmentFieldsNode::new()) as Arc<dyn NodeLogic>,
+        Arc::new(ToMailReferenceNode::new()) as Arc<dyn NodeLogic>,
+        Arc::new(draft::ImapCreateDraftNode::new()) as Arc<dyn NodeLogic>,
+        Arc::new(mv::ImapMoveMailNode::new()) as Arc<dyn NodeLogic>,
+        Arc::new(delete::ImapDeleteMailNode::new()) as Arc<dyn NodeLogic>,
+        Arc::new(mark_seen::ImapMarkSeenNode::new()) as Arc<dyn NodeLogic>,
+        Arc::new(copy::ImapCopyMailNode::new()) as Arc<dyn NodeLogic>,
     ];
     output
 }

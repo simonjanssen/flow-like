@@ -70,6 +70,13 @@
 			"exceptionDomain": "localhost",
 			"entitlements": "./Entitlements.plist"
 		},
+		"linux": {
+			"rpm": {
+				"compression": {
+					"type": "none"
+				}
+			}
+		},
 		"homepage": "https://flow-like.com",
 		"publisher": "TM9657 GmbH",
 		"licenseFile": "../../../LICENSE",
@@ -103,6 +110,9 @@
 			}
 		},
 		"updater": {
+			"endpoints": [
+				"https://cdn.flow-like.com/latest.json"
+			],
 			"pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDVDRjMwNDM0QTFFRDU2RTEKUldUaFZ1MmhOQVR6WE1wWktQeHE3SkFVc1VnMFk2aTBxUG85L0JyQ0ZrL2RvNnNKbElZQnJNbUwK"
 		}
 	}

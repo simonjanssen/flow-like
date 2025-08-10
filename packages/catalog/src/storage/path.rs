@@ -41,10 +41,14 @@ impl FlowPath {
     pub async fn get(
         &self,
         context: &mut ExecutionContext,
-        bypass_cache: bool,
+        mut bypass_cache: bool,
     ) -> flow_like_types::Result<Vec<u8>> {
+        let store: FlowLikeStore = self.to_store(context).await?;
+        if let FlowLikeStore::Memory(_) = store {
+            bypass_cache = true;
+        }
+
         if bypass_cache {
-            let store = self.to_store(context).await?;
             let file = self.get_file(&store).await?;
             let file = file.ok_or_else(|| {
                 flow_like_types::anyhow!("File not found in store: {}", self.path)
@@ -83,11 +87,16 @@ impl FlowPath {
         &self,
         context: &mut ExecutionContext,
         bytes: Vec<u8>,
-        bypass_cache: bool,
+        mut bypass_cache: bool,
     ) -> flow_like_types::Result<()> {
         let bytes = Bytes::from(bytes);
         let payload = PutPayload::from_bytes(bytes);
         let store = self.to_store(context).await?;
+
+        if let FlowLikeStore::Memory(_) = store {
+            bypass_cache = true;
+        }
+
         let result = store
             .as_generic()
             .put(&Path::from(self.path.clone()), payload.clone())
