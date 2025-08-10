@@ -396,6 +396,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "argon2"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3c3610892ee6e0cbce8ae2700349fcf8f98adb0dbfbee85aec3c9179d29cc072"
+dependencies = [
+ "base64ct",
+ "blake2",
+ "cpufeatures",
+ "password-hash",
+]
+
+[[package]]
 name = "array-init-cursor"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4610,6 +4622,7 @@ name = "flow-like"
 version = "0.1.0"
 dependencies = [
  "ahash 0.8.11",
+ "argon2",
  "canonical_json",
  "chacha20poly1305",
  "chrono",
@@ -4631,13 +4644,11 @@ dependencies = [
  "mp4ameta",
  "num_cpus",
  "once_cell",
- "pbkdf2",
  "pdf",
  "portpicker",
  "rayon",
  "schemars",
  "serde",
- "sha2",
  "strsim",
  "sysinfo 0.33.1",
  "tempfile",
@@ -9414,6 +9425,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f2a05b18d44e2957b88f96ba460715e295bc1d7510468a2f3d3b44535d26c24"
 dependencies = [
  "regex",
+]
+
+[[package]]
+name = "password-hash"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "346f04948ba92c43e8469c1ee6736c7563d71012b17d40745260fe106aac2166"
+dependencies = [
+ "base64ct",
+ "rand_core 0.6.4",
+ "subtle",
 ]
 
 [[package]]
