@@ -5,7 +5,7 @@ use flow_like::{
     bit::Bit,
     flow::{
         board::Board,
-        execution::{LogLevel, context::ExecutionContext},
+        execution::{context::ExecutionContext, internal_node::InternalNode, LogLevel},
         node::{Node, NodeLogic},
         pin::{PinOptions, PinType},
         variable::VariableType,
@@ -14,7 +14,7 @@ use flow_like::{
 };
 use flow_like_model_provider::{history::History, response::Response};
 
-use flow_like_types::{Error, Value, anyhow, async_trait, json, regex::Regex};
+use flow_like_types::{Error, Value, async_trait, json, regex::Regex};
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
@@ -25,14 +25,22 @@ const SYSTEM_PROMPT_TEMPLATE: &str = r#"
 You are a helpful assistant with access to the tools below.
 
 # Tools
-Here are the tools you *can* use:
+Here are the schemas for the tools you *can* use:
 
+## Schemas
 TOOLS_STR
 
-# Output Format
-You have *two* options to answer:
-- Use a tool wrapping it in <tooluse></tooluse> tags like this: <tooluse>{"name": "name of the tool", "args": ...}</tooluse>
-- Reply back to user wrapping it in <replytouser></replytouser> tags like this: <replytouser>...</replytouser>
+## Tool Use Format
+<tooluse>
+    {
+        "name": "<name of the tool you want to use>", 
+        "args": "<key: value dict for args as defined by schema of the tool you want to use>"
+    }
+</tooluse>
+
+# Important Instructions
+- Your json data for the tools used will be validated by the tool json schemas. It *MUST* pass this validation.
+- If you want to use a tool you *MUST* wrap your tool use json data in xml tags <tooluse></tooluse>
 "#;
 
 /// Extract tagged substrings, e.g. Hello, <tool>extract this</tool> and <tool>this</tool>, good bye.
@@ -115,7 +123,7 @@ impl NodeLogic for LLMWithTools {
         let mut node = Node::new(
             "with_tools",
             "With Tool Calls",
-            "LLM with Tool Calls",
+            "Invoke LLM with Tool Calls",
             "AI/Generative",
         );
         node.add_icon("/flow/icons/bot-invoke.svg");
@@ -138,6 +146,16 @@ impl NodeLogic for LLMWithTools {
         )
         .set_default_value(Some(json::json!("[]")));
 
+        // future: at some point we could allow for parallel tool execution
+        // for now, we only implement sequential processing in a loop to avoid writing to global variables at the same time
+        node.add_input_pin("thread_model", "Threads", "Threads", VariableType::String)
+            .set_default_value(Some(json::json!("tasks")))
+            .set_options(
+                PinOptions::new()
+                    .set_valid_values(vec!["sequential".to_string()])
+                    .build(),
+            );
+        
         node.add_output_pin("exec_done", "Done", "Done Pin", VariableType::Execution);
 
         node.add_output_pin(
@@ -162,6 +180,14 @@ impl NodeLogic for LLMWithTools {
     }
 
     async fn run(&self, context: &mut ExecutionContext) -> flow_like_types::Result<()> {
+
+        /// Re-Evaluate History - move while loop into this run 
+        /// compare with last history
+        ///     - if changed: invoke llm again
+        ///     - if not changed (but tool calls) - early done with warning
+        ///
+        /// 
+        /// 
         context.deactivate_exec_pin("exec_done").await?;
 
         // fetch inputs
@@ -182,10 +208,16 @@ impl NodeLogic for LLMWithTools {
 
         // ingest system prompt with tool definitions
         let system_prompt = SYSTEM_PROMPT_TEMPLATE.replace("TOOLS_STR", &tools_str); // todo: serlialize tools instead?
+        let system_prompt = match history.get_system_prompt() {
+            Some(previous_prompt) => {
+                format!("{}\n\n{}", previous_prompt, system_prompt) // handle previously set system prompts
+            },
+            None => system_prompt
+        };
         context.log_message(&system_prompt, LogLevel::Debug);
-        history.set_system_prompt(system_prompt.to_string()); // todo: handle previously set system prompts
+        history.set_system_prompt(system_prompt.to_string());
 
-        // generate response, todo: wrap this
+        // generate response
         let response = {
             // load model
             let model_factory = context.app_state.lock().await.model_factory.clone();
@@ -203,44 +235,59 @@ impl NodeLogic for LLMWithTools {
             response_string = response.content.clone().unwrap_or("".to_string());
         }
         context.log_message(&response_string, LogLevel::Debug);
+
+        // LLM wants to make tool calls -> execute tool flows
         if response_string.contains("<tooluse>") {
             let tool_calls_str = extract_tagged(&response_string, "tooluse")?;
             let tool_calls: Result<Vec<OpenAIToolCall>, Error> = tool_calls_str
                 .iter()
                 .map(|tool_call_str| validate_openai_tool_call_str(&functions, tool_call_str))
                 .collect();
-            let mut tool_calls = tool_calls?;
-            let tool_call = if tool_calls.len() == 1 {
-                // todo: remove to support parallel tool calls
-                tool_calls.pop().unwrap()
-            } else {
-                return Err(anyhow!(format!(
-                    "Invalid number of tool calls: Expected 1, got {}.",
-                    tool_calls.len()
-                )));
-            };
-            context
-                .set_pin_value("tool_args", json::json!(tool_call.args))
-                .await?;
-            context.activate_exec_pin(&tool_call.name).await?; // activate this tool call exec pin
-        } else if response_string.contains("<replytouser>") {
-            let mut response_tagged = extract_tagged(&response_string, "replytouser")?;
-            let response_tagged = if response_tagged.len() == 1 {
-                response_tagged.pop().unwrap()
-            } else {
-                return Err(anyhow!(format!(
-                    "Invalid number of responses: Expected 1, got {}.",
-                    response_tagged.len()
-                )));
-            };
+            let tool_calls = tool_calls?;
+            let tool_args_pin = context.get_pin_by_name("tool_args").await?;
+            
+            for tool_call in tool_calls {
+                context.log_message(&format!("Executing tool {}..", &tool_call.name), LogLevel::Debug);
+
+                // deactivate all tool exec pins
+                for function in &functions {
+                    context.deactivate_exec_pin(&function.name).await?
+                }
+
+                // set tool args + activate tool exec pin
+                tool_args_pin.lock().await.set_value(json::json!(tool_call.args)).await;
+                context.activate_exec_pin(&tool_call.name).await?;
+
+                // execute tool flow
+                let tool_exec_pin = context.get_pin_by_name(&tool_call.name).await?;
+                let tool_flow = tool_exec_pin.lock().await.get_connected_nodes().await;
+                for node in &tool_flow {
+                    let mut sub_context = context.create_sub_context(node).await;
+                    let run = InternalNode::trigger(&mut sub_context, &mut None, true).await;
+                    
+                    sub_context.end_trace();
+                    context.push_sub_context(sub_context);
+                    if run.is_err() {
+                        let error = run.err().unwrap();
+                        context.log_message(
+                            &format!("Error executing tool {}: {:?}", &tool_call.name, error),
+                            LogLevel::Error,
+                        );
+                    }
+                }
+            }
+            // deactivate all tool exec pins
+            for function in &functions {
+                context.deactivate_exec_pin(&function.name).await?
+            }
+        
+        // LLM doesn't want to make any tool calls -> return final response
+        } else {
             context
                 .set_pin_value("response", json::json!(response))
                 .await?; // todo: remove prefix from response struct
             context.activate_exec_pin("exec_done").await?;
-        } else {
-            return Err(anyhow!("Invalid response."));
         }
-
         Ok(())
     }
 
