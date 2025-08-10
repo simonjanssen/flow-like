@@ -5,8 +5,6 @@
   <!-- App Sandbox -->
   <key>com.apple.security.app-sandbox</key><true/>
 
-
-
   <!-- Network: client + server (open/listen on ports) -->
   <key>com.apple.security.network.client</key><true/>
   <key>com.apple.security.network.server</key><true/>
