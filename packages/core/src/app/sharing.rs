@@ -7,7 +7,7 @@ use flow_like_storage::{
     Path, blake3,
     object_store::{ObjectStore, PutPayload},
 };
-use flow_like_types::{Bytes, bail, tokio::task};
+use flow_like_types::{Bytes, bail, rand::TryRngCore, tokio::task};
 use flow_like_types::{anyhow, sync::Mutex};
 use futures::{StreamExt, TryStreamExt};
 use schemars::JsonSchema;
@@ -117,6 +117,43 @@ const ARGON2_M_COST_KIB: u32 = 64 * 1024;
 const ARGON2_T_COST: u32 = 3;
 const ARGON2_P_COST: u32 = 1;
 
+// ===== Binding (archive-level) MAC =====
+const BINDING_SALT_LEN: usize = 16;
+const BINDING_TAG_LEN: usize = 32;
+const BINDING_CONTEXT: &[u8] = b"flow-archive|v1";
+
+fn derive_binding_key(
+    password: &str,
+    salt: &[u8; BINDING_SALT_LEN],
+) -> flow_like_types::Result<[u8; 32]> {
+    let params = Params::new(ARGON2_M_COST_KIB, ARGON2_T_COST, ARGON2_P_COST, None)
+        .map_err(|e| anyhow!(e.to_string()))?;
+    let kdf = Argon2::new(Algorithm::Argon2id, Version::V0x13, params);
+    let mut key = [0u8; 32];
+    kdf.hash_password_into(password.as_bytes(), salt, &mut key)
+        .map_err(|e| anyhow!(e.to_string()))?;
+    Ok(key)
+}
+
+fn compute_binding_tag(
+    key: &[u8; 32],
+    trailer_bytes: &[u8; 24],
+    manifest_ct: &[u8],
+    prio_ct: &[u8],
+    secondary_ct: &[u8],
+) -> [u8; BINDING_TAG_LEN] {
+    let mut hasher = blake3::Hasher::new_keyed(key);
+    hasher.update(BINDING_CONTEXT);
+    hasher.update(trailer_bytes);
+    hasher.update(manifest_ct);
+    hasher.update(prio_ct);
+    hasher.update(secondary_ct);
+    let h = hasher.finalize();
+    let mut out = [0u8; BINDING_TAG_LEN];
+    out.copy_from_slice(h.as_bytes());
+    out
+}
+
 #[derive(Default)]
 struct Plan {
     prio: HashMap<String, Vec<String>>,
@@ -210,15 +247,14 @@ async fn read_store_file_bytes(
 }
 
 fn encrypt_bytes(password: &str, plain: &[u8]) -> flow_like_types::Result<Vec<u8>> {
-    use argon2::{Algorithm, Argon2, Params, Version};
     use chacha20poly1305::{KeyInit, XChaCha20Poly1305, XNonce, aead::Aead};
-
-    use flow_like_types::rand::{Rng, rng};
+    use flow_like_types::rand::rngs::OsRng;
 
     let mut salt = [0u8; SALT_LEN];
     let mut nonce = [0u8; XNONCE_LEN];
-    rng().fill(&mut salt);
-    rng().fill(&mut nonce);
+    let mut rng = OsRng::default();
+    rng.try_fill_bytes(&mut salt)?;
+    rng.try_fill_bytes(&mut nonce)?;
 
     let params = Params::new(ARGON2_M_COST_KIB, ARGON2_T_COST, ARGON2_P_COST, None)
         .map_err(|e| anyhow!(e.to_string()))?;
@@ -489,30 +525,45 @@ impl App {
 
         let mut file = File::create(&target_file)?;
         if let Some(pw) = password {
-            {
-                let mut manifest_bytes = Vec::new();
-                manifest_file_clone.read_to_end(&mut manifest_bytes)?;
-                let encrypted_manifest = encrypt_bytes(&pw, &manifest_bytes)?;
+            // Encrypt all three segments first so we can compute a binding tag.
+            let mut manifest_plain = Vec::new();
+            manifest_file_clone.read_to_end(&mut manifest_plain)?;
+            let enc_manifest = encrypt_bytes(&pw, &manifest_plain)?;
+            trailer.manifest_size = enc_manifest.len() as u64;
 
-                trailer.manifest_size = encrypted_manifest.len() as u64;
-                file.write_all(&encrypted_manifest)?;
-            }
+            let mut prio_plain = Vec::new();
+            prio_zip_clone.read_to_end(&mut prio_plain)?;
+            let enc_prio = encrypt_bytes(&pw, &prio_plain)?;
+            trailer.prio_size = enc_prio.len() as u64;
 
-            {
-                let mut prio_bytes = Vec::new();
-                prio_zip_clone.read_to_end(&mut prio_bytes)?;
-                let encrypted_prio = encrypt_bytes(&pw, &prio_bytes)?;
-                trailer.prio_size = encrypted_prio.len() as u64;
-                file.write_all(&encrypted_prio)?;
-            }
+            let mut secondary_plain = Vec::new();
+            secondary_zip_clone.read_to_end(&mut secondary_plain)?;
+            let enc_secondary = encrypt_bytes(&pw, &secondary_plain)?;
+            trailer.secondary_size = enc_secondary.len() as u64;
 
-            {
-                let mut secondary_bytes = Vec::new();
-                secondary_zip_clone.read_to_end(&mut secondary_bytes)?;
-                let encrypted_secondary = encrypt_bytes(&pw, &secondary_bytes)?;
-                trailer.secondary_size = encrypted_secondary.len() as u64;
-                file.write_all(&encrypted_secondary)?;
-            }
+            let trailer_bytes = trailer.to_bytes();
+
+            // --- Compute archive-level binding tag ---
+            use flow_like_types::rand::rngs::OsRng;
+            let mut binding_salt = [0u8; BINDING_SALT_LEN];
+            OsRng.try_fill_bytes(&mut binding_salt)?;
+            let binding_key = derive_binding_key(&pw, &binding_salt)?;
+            let binding_tag = compute_binding_tag(
+                &binding_key,
+                &trailer_bytes,
+                &enc_manifest,
+                &enc_prio,
+                &enc_secondary,
+            );
+
+            // Layout: [enc_manifest][enc_prio][enc_secondary][trailer][binding_salt][binding_tag]
+            file.write_all(&enc_manifest)?;
+            file.write_all(&enc_prio)?;
+            file.write_all(&enc_secondary)?;
+            file.write_all(&trailer_bytes)?;
+            file.write_all(&binding_salt)?;
+            file.write_all(&binding_tag)?;
+            file.flush()?;
         } else {
             {
                 let mut manifest_bytes = Vec::new();
@@ -534,12 +585,10 @@ impl App {
                 file.write_all(&secondary_bytes)?;
                 trailer.secondary_size = secondary_bytes.len() as u64;
             }
+            let trailer_bytes = trailer.to_bytes();
+            file.write_all(&trailer_bytes)?;
+            file.flush()?;
         }
-
-        // Write the trailer
-        let trailer_bytes = trailer.to_bytes();
-        file.write_all(&trailer_bytes)?;
-        file.flush()?;
 
         Ok(target_file)
     }
@@ -558,15 +607,6 @@ impl App {
             let mut buf = vec![0u8; len as usize];
             f.read_exact(&mut buf)?;
             Ok(buf)
-        }
-
-        fn maybe_decrypt(pw: Option<&str>, blob: Vec<u8>) -> flow_like_types::Result<Vec<u8>> {
-            if blob.len() >= ENC_MAGIC.len() && &blob[..ENC_MAGIC.len()] == ENC_MAGIC {
-                let pw = pw.ok_or_else(|| anyhow!("Archive is encrypted; password required"))?;
-                decrypt_bytes(pw, &blob)
-            } else {
-                Ok(blob)
-            }
         }
 
         fn read_manifest_from_zip(bytes: &[u8]) -> flow_like_types::Result<ExportManifest> {
@@ -603,236 +643,350 @@ impl App {
             if size != existing_size {
                 return Ok(None);
             }
-
             let hash = stream_blake3_of_object(store, path).await?;
             Ok(Some((hash, size)))
         }
 
-        let new_layout = task::spawn_blocking({
-            let source_file = source_file.clone();
-            move || -> flow_like_types::Result<(Vec<u8>, Vec<u8>, Vec<u8>)> {
-                let mut f = File::open(&source_file)?;
-                let trailer = TrailerV1::from_file(&mut f)?;
-                let total = f.metadata()?.len();
-                let m = trailer.manifest_size;
-                let p = trailer.prio_size;
-                let s = trailer.secondary_size;
+        enum Layout {
+            Plain {
+                trailer: TrailerV1,
+                manifest: Vec<u8>,
+                prio: Vec<u8>,
+                secondary: Vec<u8>,
+            },
+            Encrypted {
+                trailer: TrailerV1,
+                binding_salt: [u8; BINDING_SALT_LEN],
+                binding_tag: [u8; BINDING_TAG_LEN],
+                manifest_ct: Vec<u8>,
+                prio_ct: Vec<u8>,
+                secondary_ct: Vec<u8>,
+            },
+        }
 
+        // ---------- detect & read layout (plaintext OR encrypted+bound) ----------
+        let layout = task::spawn_blocking({
+            let source_file = source_file.clone();
+            move || -> flow_like_types::Result<Layout> {
+                let mut f = File::open(&source_file)?;
+                let total = f.metadata()?.len();
+                if total < 24 {
+                    return Err(anyhow!("file too small"));
+                }
+
+                // Try encrypted+bound first: trailer before [salt(16)+tag(32)]
+                const TAIL_LEN: i64 = (BINDING_SALT_LEN + BINDING_TAG_LEN) as i64; // 48
+                if total >= 24 + (TAIL_LEN as u64) {
+                    let mut t_enc = [0u8; 24];
+                    f.seek(SeekFrom::End(-(24 + TAIL_LEN)))?;
+                    f.read_exact(&mut t_enc)?;
+                    let trailer_enc = TrailerV1::from_bytes(&t_enc);
+                    let m = trailer_enc.manifest_size;
+                    let p = trailer_enc.prio_size;
+                    let s = trailer_enc.secondary_size;
+                    let header_len = m
+                        .checked_add(p)
+                        .ok_or_else(|| anyhow!("overflow"))?
+                        .checked_add(s)
+                        .ok_or_else(|| anyhow!("overflow"))?;
+                    let expected_total_enc = header_len
+                        .checked_add(24 + (TAIL_LEN as u64))
+                        .ok_or_else(|| anyhow!("overflow"))?;
+                    if expected_total_enc == total {
+                        // Read segments and tail
+                        let manifest_ct = read_slice(&mut f, 0, m)?;
+                        let prio_ct = read_slice(&mut f, m, p)?;
+                        let secondary_ct = read_slice(&mut f, m + p, s)?;
+                        f.seek(SeekFrom::End(-TAIL_LEN))?;
+                        let mut salt = [0u8; BINDING_SALT_LEN];
+                        let mut tag = [0u8; BINDING_TAG_LEN];
+                        f.read_exact(&mut salt)?;
+                        f.read_exact(&mut tag)?;
+                        return Ok(Layout::Encrypted {
+                            trailer: trailer_enc,
+                            binding_salt: salt,
+                            binding_tag: tag,
+                            manifest_ct,
+                            prio_ct,
+                            secondary_ct,
+                        });
+                    }
+                }
+
+                // Fallback to plaintext: trailer at EOF-24 (must not be encrypted!)
+                let mut t_plain = [0u8; 24];
+                f.seek(SeekFrom::End(-24))?;
+                f.read_exact(&mut t_plain)?;
+                let trailer_plain = TrailerV1::from_bytes(&t_plain);
+                let m = trailer_plain.manifest_size;
+                let p = trailer_plain.prio_size;
+                let s = trailer_plain.secondary_size;
                 let header_len = m
                     .checked_add(p)
                     .ok_or_else(|| anyhow!("overflow"))?
                     .checked_add(s)
                     .ok_or_else(|| anyhow!("overflow"))?;
-                let expected_total = header_len
+                let expected_total_plain = header_len
                     .checked_add(24)
                     .ok_or_else(|| anyhow!("overflow"))?;
-                if expected_total != total {
+                if expected_total_plain != total {
                     return Err(anyhow!("trailer sizes don't match file length"));
                 }
 
-                // Layout: [manifest][prio][secondary][trailer]
                 let manifest = read_slice(&mut f, 0, m)?;
                 let prio = read_slice(&mut f, m, p)?;
                 let secondary = read_slice(&mut f, m + p, s)?;
-                Ok((manifest, prio, secondary))
+
+                // If any segment looks encrypted, reject (we don't accept old encrypted w/o tag)
+                let looks_enc = |seg: &Vec<u8>| {
+                    seg.len() >= ENC_MAGIC.len() && &seg[..ENC_MAGIC.len()] == ENC_MAGIC
+                };
+                if looks_enc(&manifest) || looks_enc(&prio) || looks_enc(&secondary) {
+                    return Err(anyhow!(
+                        "Encrypted archive missing binding tag (unsupported legacy format)"
+                    ));
+                }
+
+                Ok(Layout::Plain {
+                    trailer: trailer_plain,
+                    manifest,
+                    prio,
+                    secondary,
+                })
             }
         })
         .await
-        .map_err(|e| anyhow!("I/O task failed: {}", e));
+        .map_err(|e| anyhow!("I/O task failed: {}", e))??;
 
-        match new_layout {
-            Ok(Ok((manifest_seg, prio_seg, secondary_seg))) => {
-                // Segment-wise (maybe) decryption of manifest only (cheap) to build the plan
-                let manifest_plain = task::spawn_blocking({
+        // ---------- verify binding (if encrypted), then parse manifest ----------
+        let (manifest_zip_bytes, prio_seg, secondary_seg, decrypt_on_demand) = match layout {
+            Layout::Plain {
+                manifest,
+                prio,
+                secondary,
+                ..
+            } => (manifest, prio, secondary, false),
+            Layout::Encrypted {
+                trailer,
+                binding_salt,
+                binding_tag,
+                manifest_ct,
+                prio_ct,
+                secondary_ct,
+            } => {
+                let pw = password
+                    .as_ref()
+                    .ok_or_else(|| anyhow!("Password required for encrypted archive"))?;
+                let binding_key = derive_binding_key(pw, &binding_salt)?;
+                let trailer_bytes = trailer.to_bytes();
+                let expected = compute_binding_tag(
+                    &binding_key,
+                    &trailer_bytes,
+                    &manifest_ct,
+                    &prio_ct,
+                    &secondary_ct,
+                );
+                if expected != binding_tag {
+                    bail!("Archive authentication failed (binding tag mismatch)");
+                }
+                // Decrypt manifest only (cheap)
+                let manifest_zip_bytes = task::spawn_blocking({
                     let pw = password.clone();
-                    move || -> flow_like_types::Result<Vec<u8>> {
-                        maybe_decrypt(pw.as_deref(), manifest_seg)
-                    }
+                    move || decrypt_bytes(pw.as_ref().unwrap(), &manifest_ct)
                 })
                 .await
                 .map_err(|e| anyhow!("Decrypt task failed: {}", e))??;
 
-                let manifest: ExportManifest = task::spawn_blocking({
-                    let m = manifest_plain.clone();
-                    move || read_manifest_from_zip(&m)
-                })
-                .await
-                .map_err(|e| anyhow!("Manifest read task failed: {}", e))??;
-
-                let meta = FlowLikeState::project_meta_store(&app_state)
-                    .await?
-                    .as_generic();
-                let storage = FlowLikeState::project_storage_store(&app_state)
-                    .await?
-                    .as_generic();
-                let base = Path::from("apps").child(manifest.app_id.clone());
-
-                #[derive(Default)]
-                struct Plan {
-                    // blob hash -> list of rel paths to restore
-                    prio: HashMap<String, Vec<String>>,
-                    secondary: HashMap<String, Vec<String>>,
-                }
-
-                let mut plan = Plan::default();
-
-                let plan_map = |entries: &HashMap<String, ManifestEntry>,
-                                out: &mut HashMap<String, Vec<String>>|
-                 -> flow_like_types::Result<()> {
-                    // We do the reads sequentially; you could batch/hash concurrently if your store benefits.
-                    futures::executor::block_on(async {
-                        for (rel, e) in entries {
-                            let store = match e.store {
-                                StoreKind::Meta => &meta,
-                                StoreKind::Storage => &storage,
-                            };
-                            let target = join_rel_path(&base, rel);
-                            match load_existing_hash_and_size(store, &target, e.size).await? {
-                                None => {
-                                    out.entry(e.blake3.clone()).or_default().push(rel.clone());
-                                }
-                                Some((existing_hash, existing_size)) => {
-                                    if existing_hash != e.blake3 {
-                                        out.entry(e.blake3.clone()).or_default().push(rel.clone());
-                                    }
-                                }
-                            }
-                        }
-                        Ok::<_, flow_like_types::Error>(())
-                    })?;
-                    Ok(())
-                };
-
-                plan_map(&manifest.prio, &mut plan.prio)?;
-                plan_map(&manifest.secondary, &mut plan.secondary)?;
-
-                if plan.prio.is_empty() && plan.secondary.is_empty() {
-                    let mut app = App::load(manifest.app_id.clone(), app_state.clone()).await?;
-                    app.updated_at = SystemTime::now();
-                    app.save().await?;
-                    return Ok(app);
-                }
-
-                let (prio_plain_opt, secondary_plain_opt) = task::spawn_blocking({
-                    let pw = password.clone();
-                    let prio_seg = prio_seg.clone();
-                    let secondary_seg = secondary_seg.clone();
-                    let need_prio = !plan.prio.is_empty();
-                    let need_secondary = !plan.secondary.is_empty();
-                    move || -> flow_like_types::Result<(Option<Vec<u8>>, Option<Vec<u8>>)> {
-                        let pw_ref = pw.as_deref();
-                        let p = if need_prio {
-                            Some(maybe_decrypt(pw_ref, prio_seg)?)
-                        } else {
-                            None
-                        };
-                        let s = if need_secondary {
-                            Some(maybe_decrypt(pw_ref, secondary_seg)?)
-                        } else {
-                            None
-                        };
-                        Ok((p, s))
-                    }
-                })
-                .await
-                .map_err(|e| anyhow!("Decrypt task failed: {}", e))??;
-
-                let mut prio_zip = if let Some(p) = prio_plain_opt {
-                    Some(ZipArchive::new(Cursor::new(p))?)
-                } else {
-                    None
-                };
-                let mut secondary_zip = if let Some(s) = secondary_plain_opt {
-                    Some(ZipArchive::new(Cursor::new(s))?)
-                } else {
-                    None
-                };
-
-                let mut blob_cache: HashMap<String, Bytes> = HashMap::new();
-
-                fn extract_blob(
-                    arc: &mut ZipArchive<Cursor<Vec<u8>>>,
-                    hash: &str,
-                ) -> flow_like_types::Result<Vec<u8>> {
-                    let mut f = arc
-                        .by_name(hash)
-                        .map_err(|_| anyhow!("Missing blob {}", hash))?;
-                    let mut buf = Vec::with_capacity(f.size() as usize);
-                    std::io::copy(&mut f, &mut buf)?;
-                    Ok(buf)
-                }
-
-                async fn restore_set(
-                    arc: &mut ZipArchive<Cursor<Vec<u8>>>,
-                    items: &HashMap<String, Vec<String>>, // blob -> rels
-                    entries: &HashMap<String, ManifestEntry>,
-                    base: &Path,
-                    meta: &Arc<dyn ObjectStore>,
-                    storage: &Arc<dyn ObjectStore>,
-                    blob_cache: &mut HashMap<String, Bytes>,
-                ) -> flow_like_types::Result<()> {
-                    for (blob, rels) in items {
-                        let data_bytes: Bytes = if let Some(b) = blob_cache.get(blob) {
-                            b.clone()
-                        } else {
-                            let raw = extract_blob(arc, blob)?;
-                            let b = Bytes::from(raw);
-                            blob_cache.insert(blob.clone(), b.clone());
-                            b
-                        };
-                        for rel in rels {
-                            let e = entries
-                                .get(rel)
-                                .ok_or_else(|| anyhow!("Missing manifest entry for {}", rel))?;
-                            if (data_bytes.len() as u64) != e.size
-                                || blake3_hash(&data_bytes) != e.blake3
-                            {
-                                return Err(anyhow!("Integrity failure for {}", rel));
-                            }
-                            let s = match e.store {
-                                StoreKind::Meta => meta,
-                                StoreKind::Storage => storage,
-                            };
-                            let target = join_rel_path(base, rel);
-                            s.put(&target, PutPayload::from_bytes(data_bytes.clone()))
-                                .await?;
-                        }
-                    }
-                    Ok(())
-                }
-
-                if let Some(ref mut arc) = prio_zip {
-                    restore_set(
-                        arc,
-                        &plan.prio,
-                        &manifest.prio,
-                        &base,
-                        &meta,
-                        &storage,
-                        &mut blob_cache,
-                    )
-                    .await?;
-                }
-                if let Some(ref mut arc) = secondary_zip {
-                    restore_set(
-                        arc,
-                        &plan.secondary,
-                        &manifest.secondary,
-                        &base,
-                        &meta,
-                        &storage,
-                        &mut blob_cache,
-                    )
-                    .await?;
-                }
-
-                let mut app = App::load(manifest.app_id.clone(), app_state.clone()).await?;
-                app.updated_at = SystemTime::now();
-                app.save().await?;
-                Ok(app)
+                (manifest_zip_bytes, prio_ct, secondary_ct, true)
             }
-            _ => bail!("Unsupported archive format"),
+        };
+
+        // Parse manifest
+        let manifest: ExportManifest = task::spawn_blocking({
+            let m = manifest_zip_bytes.clone();
+            move || read_manifest_from_zip(&m)
+        })
+        .await
+        .map_err(|e| anyhow!("Manifest read task failed: {}", e))??;
+
+        let meta = FlowLikeState::project_meta_store(&app_state)
+            .await?
+            .as_generic();
+        let storage = FlowLikeState::project_storage_store(&app_state)
+            .await?
+            .as_generic();
+        let base = Path::from("apps").child(manifest.app_id.clone());
+
+        #[derive(Default)]
+        struct Plan {
+            prio: HashMap<String, Vec<String>>,      // blob hash -> rel paths
+            secondary: HashMap<String, Vec<String>>, // blob hash -> rel paths
         }
+        let mut plan = Plan::default();
+
+        let plan_map = |entries: &HashMap<String, ManifestEntry>,
+                        out: &mut HashMap<String, Vec<String>>|
+         -> flow_like_types::Result<()> {
+            futures::executor::block_on(async {
+                for (rel, e) in entries {
+                    let store = match e.store {
+                        StoreKind::Meta => &meta,
+                        StoreKind::Storage => &storage,
+                    };
+                    let target = join_rel_path(&base, rel);
+                    match load_existing_hash_and_size(store, &target, e.size).await? {
+                        None => out.entry(e.blake3.clone()).or_default().push(rel.clone()),
+                        Some((existing_hash, _)) => {
+                            if existing_hash != e.blake3 {
+                                out.entry(e.blake3.clone()).or_default().push(rel.clone());
+                            }
+                        }
+                    }
+                }
+                Ok::<_, flow_like_types::Error>(())
+            })?;
+            Ok(())
+        };
+
+        plan_map(&manifest.prio, &mut plan.prio)?;
+        plan_map(&manifest.secondary, &mut plan.secondary)?;
+
+        if plan.prio.is_empty() && plan.secondary.is_empty() {
+            let mut app = App::load(manifest.app_id.clone(), app_state.clone()).await?;
+            app.updated_at = SystemTime::now();
+            app.save().await?;
+            return Ok(app);
+        }
+
+        // Prepare ZIP archives for restore; decrypt prio/secondary only if needed and encrypted.
+        let (mut prio_zip_opt, mut secondary_zip_opt) = if decrypt_on_demand {
+            let (prio_plain_opt, secondary_plain_opt) = task::spawn_blocking({
+                let pw = password.clone();
+                let prio_seg = prio_seg.clone();
+                let secondary_seg = secondary_seg.clone();
+                let need_prio = !plan.prio.is_empty();
+                let need_secondary = !plan.secondary.is_empty();
+                move || -> flow_like_types::Result<(Option<Vec<u8>>, Option<Vec<u8>>)> {
+                    let p = if need_prio {
+                        Some(decrypt_bytes(pw.as_ref().unwrap(), &prio_seg)?)
+                    } else {
+                        None
+                    };
+                    let s = if need_secondary {
+                        Some(decrypt_bytes(pw.as_ref().unwrap(), &secondary_seg)?)
+                    } else {
+                        None
+                    };
+                    Ok((p, s))
+                }
+            })
+            .await
+            .map_err(|e| anyhow!("Decrypt task failed: {}", e))??;
+
+            let prio_zip = match prio_plain_opt {
+                Some(p) => Some(ZipArchive::new(Cursor::new(p))?),
+                None => None,
+            };
+            let secondary_zip = match secondary_plain_opt {
+                Some(s) => Some(ZipArchive::new(Cursor::new(s))?),
+                None => None,
+            };
+            (prio_zip, secondary_zip)
+        } else {
+            // Plaintext case
+            let prio_zip = if !plan.prio.is_empty() {
+                Some(ZipArchive::new(Cursor::new(prio_seg))?)
+            } else {
+                None
+            };
+            let secondary_zip = if !plan.secondary.is_empty() {
+                Some(ZipArchive::new(Cursor::new(secondary_seg))?)
+            } else {
+                None
+            };
+            (prio_zip, secondary_zip)
+        };
+
+        let mut blob_cache: HashMap<String, Bytes> = HashMap::new();
+
+        fn extract_blob(
+            arc: &mut ZipArchive<Cursor<Vec<u8>>>,
+            hash: &str,
+        ) -> flow_like_types::Result<Vec<u8>> {
+            let mut f = arc
+                .by_name(hash)
+                .map_err(|_| anyhow!("Missing blob {}", hash))?;
+            let mut buf = Vec::with_capacity(f.size() as usize);
+            std::io::copy(&mut f, &mut buf)?;
+            Ok(buf)
+        }
+
+        async fn restore_set(
+            arc: &mut ZipArchive<Cursor<Vec<u8>>>,
+            items: &HashMap<String, Vec<String>>, // blob -> rels
+            entries: &HashMap<String, ManifestEntry>,
+            base: &Path,
+            meta: &Arc<dyn ObjectStore>,
+            storage: &Arc<dyn ObjectStore>,
+            blob_cache: &mut HashMap<String, Bytes>,
+        ) -> flow_like_types::Result<()> {
+            for (blob, rels) in items {
+                let data_bytes: Bytes = if let Some(b) = blob_cache.get(blob) {
+                    b.clone()
+                } else {
+                    let raw = extract_blob(arc, blob)?;
+                    let b = Bytes::from(raw);
+                    blob_cache.insert(blob.clone(), b.clone());
+                    b
+                };
+                for rel in rels {
+                    let e = entries
+                        .get(rel)
+                        .ok_or_else(|| anyhow!("Missing manifest entry for {}", rel))?;
+                    if (data_bytes.len() as u64) != e.size || blake3_hash(&data_bytes) != e.blake3 {
+                        return Err(anyhow!("Integrity failure for {}", rel));
+                    }
+                    let s = match e.store {
+                        StoreKind::Meta => meta,
+                        StoreKind::Storage => storage,
+                    };
+                    let target = join_rel_path(base, rel);
+                    s.put(&target, PutPayload::from_bytes(data_bytes.clone()))
+                        .await?;
+                }
+            }
+            Ok(())
+        }
+
+        if let Some(ref mut arc) = prio_zip_opt {
+            restore_set(
+                arc,
+                &plan.prio,
+                &manifest.prio,
+                &base,
+                &meta,
+                &storage,
+                &mut blob_cache,
+            )
+            .await?;
+        }
+        if let Some(ref mut arc) = secondary_zip_opt {
+            restore_set(
+                arc,
+                &plan.secondary,
+                &manifest.secondary,
+                &base,
+                &meta,
+                &storage,
+                &mut blob_cache,
+            )
+            .await?;
+        }
+
+        let mut app = App::load(manifest.app_id.clone(), app_state.clone()).await?;
+        app.updated_at = SystemTime::now();
+        app.save().await?;
+        Ok(app)
     }
 }
 
