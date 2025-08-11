@@ -21,6 +21,7 @@ use std::{
     time::SystemTime,
 };
 use tempfile::tempfile;
+use zeroize::Zeroize;
 use zip::{ZipArchive, ZipWriter};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -96,17 +97,6 @@ impl TrailerV1 {
             secondary_size: u64::from_le_bytes(bytes[16..24].try_into().unwrap()),
         }
     }
-
-    fn from_file(file: &mut File) -> flow_like_types::Result<Self> {
-        let len = file.metadata()?.len();
-        if len < 24 {
-            return Err(anyhow!("Invalid trailer length"));
-        }
-        file.seek(SeekFrom::End(-24))?;
-        let mut t = [0u8; 24];
-        file.read_exact(&mut t)?;
-        Ok(Self::from_bytes(&t))
-    }
 }
 
 const ENC_MAGIC: &[u8] = b"FLOWAPP_CHACHA2";
@@ -152,12 +142,6 @@ fn compute_binding_tag(
     let mut out = [0u8; BINDING_TAG_LEN];
     out.copy_from_slice(h.as_bytes());
     out
-}
-
-#[derive(Default)]
-struct Plan {
-    prio: HashMap<String, Vec<String>>,
-    secondary: HashMap<String, Vec<String>>,
 }
 
 async fn obj_exists_with_size(
@@ -269,6 +253,7 @@ fn encrypt_bytes(password: &str, plain: &[u8]) -> flow_like_types::Result<Vec<u8
         .encrypt(XNonce::from_slice(&nonce), plain)
         .map_err(|e| anyhow!(e))?;
 
+    key.zeroize();
     let mut out = Vec::with_capacity(ENC_MAGIC.len() + SALT_LEN + XNONCE_LEN + ciphertext.len());
     out.extend_from_slice(ENC_MAGIC);
     out.extend_from_slice(&salt);
@@ -299,17 +284,11 @@ fn decrypt_bytes(password: &str, data: &[u8]) -> flow_like_types::Result<Vec<u8>
         .map_err(|e| anyhow!(e.to_string()))?;
 
     let cipher = XChaCha20Poly1305::new_from_slice(&key).map_err(|e| anyhow!(e))?;
+    key.zeroize();
     let plain = cipher
         .decrypt(XNonce::from_slice(nonce), ciphertext)
         .map_err(|_| anyhow!("Decryption failed"))?;
     Ok(plain)
-}
-
-fn is_zip(data: &[u8]) -> bool {
-    data.len() >= 4
-        && (&data[..4] == b"PK\x03\x04"
-            || &data[..4] == b"PK\x05\x06"
-            || &data[..4] == b"PK\x06\x06")
 }
 
 fn now_unix() -> u64 {
@@ -649,7 +628,6 @@ impl App {
 
         enum Layout {
             Plain {
-                trailer: TrailerV1,
                 manifest: Vec<u8>,
                 prio: Vec<u8>,
                 secondary: Vec<u8>,
@@ -748,7 +726,6 @@ impl App {
                 }
 
                 Ok(Layout::Plain {
-                    trailer: trailer_plain,
                     manifest,
                     prio,
                     secondary,
@@ -997,6 +974,13 @@ mod tests {
     use tempfile::NamedTempFile;
 
     // ---------- Encryption tests ----------
+
+    fn is_zip(data: &[u8]) -> bool {
+        data.len() >= 4
+            && (&data[..4] == b"PK\x03\x04"
+                || &data[..4] == b"PK\x05\x06"
+                || &data[..4] == b"PK\x06\x06")
+    }
 
     #[test]
     fn encrypt_then_decrypt_roundtrip() {
