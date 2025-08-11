@@ -56,7 +56,8 @@ fn zip_write_streaming(
     let mut file = std::fs::File::create(&target)?;
     let mut zw = ZipWriter::new(&mut file);
     let opts = zip::write::FileOptions::<zip::write::ExtendedFileOptions>::default()
-        .compression_method(zip::CompressionMethod::Deflated);
+        .compression_method(zip::CompressionMethod::Deflated)
+        .large_file(true);
 
     while let Ok(cmd) = rx.recv() {
         match cmd {
@@ -424,5 +425,252 @@ impl App {
         app.save().await?;
 
         Ok(app)
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{fs::File, io::Read};
+    use tempfile::NamedTempFile;
+
+    // ---------- Encryption tests ----------
+
+    #[test]
+    fn encrypt_then_decrypt_roundtrip() {
+        let pw = "s3cret!";
+        let plain = b"hello flow-like";
+
+        let enc = encrypt_bytes(pw, plain).expect("encrypt");
+        assert_ne!(enc, plain, "ciphertext must differ from plaintext");
+        assert!(
+            enc.starts_with(ENC_MAGIC),
+            "ciphertext must start with ENC_MAGIC"
+        );
+
+        // Structure: MAGIC + salt + nonce + ciphertext
+        assert!(
+            enc.len() > ENC_MAGIC.len() + SALT_LEN + XNONCE_LEN,
+            "has room for ciphertext"
+        );
+
+        // Different encryptions should be different (random salt/nonce)
+        let enc2 = encrypt_bytes(pw, plain).expect("encrypt");
+        assert_ne!(enc, enc2, "randomized encryption should differ per call");
+
+        let dec = decrypt_bytes(pw, &enc).expect("decrypt");
+        assert_eq!(dec, plain);
+    }
+
+    #[test]
+    fn decrypt_with_wrong_password_fails() {
+        let enc = encrypt_bytes("pw1", b"top secret").expect("encrypt");
+        let err = decrypt_bytes("pw2", &enc).unwrap_err();
+        let msg = format!("{err:#}");
+        assert!(
+            msg.to_lowercase().contains("decrypt") || msg.to_lowercase().contains("failed"),
+            "expected decrypt error, got: {msg}"
+        );
+    }
+
+    #[test]
+    fn decrypt_with_wrong_magic_fails() {
+        let pw = "pw";
+        let mut bad = encrypt_bytes(pw, b"abc").expect("encrypt");
+        // Corrupt the magic
+        bad[0] ^= 0xFF;
+        let err = decrypt_bytes(pw, &bad).unwrap_err();
+        let msg = format!("{err:#}");
+        assert!(
+            msg.to_lowercase().contains("invalid encrypted archive header"),
+            "expected header error, got: {msg}"
+        );
+    }
+
+    #[test]
+    fn encryption_output_is_not_zip() {
+        let pw = "pw";
+        let enc = encrypt_bytes(pw, b"some payload").expect("encrypt");
+        assert!(!is_zip(&enc), "encrypted blob must not be detected as zip");
+    }
+
+    // ---------- ZIP writer tests ----------
+
+    #[test]
+    fn zip_write_streaming_writes_files_and_content() {
+        // Prepare a temp target
+        let tmp = NamedTempFile::new().expect("tmp");
+        let target_path = tmp.path().to_path_buf();
+
+        let (tx, rx) = std::sync::mpsc::channel::<ZipWriteCmd>();
+
+        // Write in a blocking helper thread (as production code does)
+        let handle = std::thread::spawn(move || zip_write_streaming(target_path, rx));
+
+        // Send two small files and finish
+        tx.send(ZipWriteCmd::File {
+            name: "dir/one.txt".to_string(),
+            data: b"first".to_vec(),
+        })
+        .unwrap();
+        tx.send(ZipWriteCmd::File {
+            name: "two.bin".to_string(),
+            data: vec![1, 2, 3, 4, 5],
+        })
+        .unwrap();
+        tx.send(ZipWriteCmd::Done).unwrap();
+
+        handle.join().expect("join").expect("zip write ok");
+
+        // Re-open the written zip and verify contents
+        let mut f = File::open(tmp.path()).expect("open zip");
+        let mut zip = ZipArchive::new(&mut f).expect("read zip");
+
+        // dir/one.txt
+        {
+            let mut file = zip.by_name("dir/one.txt").expect("missing one.txt");
+            assert_eq!(file.name(), "dir/one.txt");
+            let mut buf = String::new();
+            file.read_to_string(&mut buf).expect("read one.txt");
+            assert_eq!(buf, "first");
+        }
+
+        // two.bin
+        {
+            let mut file = zip.by_name("two.bin").expect("missing two.bin");
+            assert_eq!(file.name(), "two.bin");
+            let mut buf = Vec::new();
+            file.read_to_end(&mut buf).expect("read two.bin");
+            assert_eq!(buf, vec![1, 2, 3, 4, 5]);
+        }
+    }
+
+    #[test]
+    fn is_zip_detects_zip_headers() {
+        // Minimal PK header detection test using a real tiny zip written by the same helper
+        let tmp = NamedTempFile::new().expect("tmp");
+        let (tx, rx) = std::sync::mpsc::channel::<ZipWriteCmd>();
+        let path = tmp.path().to_path_buf();
+        let h = std::thread::spawn(move || zip_write_streaming(path, rx));
+        tx.send(ZipWriteCmd::File {
+            name: "x".into(),
+            data: b"y".to_vec(),
+        })
+        .unwrap();
+        tx.send(ZipWriteCmd::Done).unwrap();
+        h.join().unwrap().unwrap();
+
+        // Read first 8 bytes and call is_zip
+        let header = {
+            let mut f = File::open(tmp.path()).unwrap();
+            let mut buf = [0u8; 8];
+            let n = f.read(&mut buf).unwrap();
+            buf[..n].to_vec()
+        };
+        assert!(is_zip(&header), "should detect PK header");
+    }
+
+        #[test]
+    fn zip_encrypt_decrypt_roundtrip_integrated() {
+        use std::{fs::File, io::{Read, Cursor}};
+        use tempfile::NamedTempFile;
+
+        // 1) Build a tiny ZIP via the streaming writer
+        let tmp = NamedTempFile::new().expect("tmp");
+        let target_path = tmp.path().to_path_buf();
+        let (tx, rx) = std::sync::mpsc::channel::<ZipWriteCmd>();
+        let writer = std::thread::spawn(move || zip_write_streaming(target_path, rx));
+
+        tx.send(ZipWriteCmd::File {
+            name: "dir/one.txt".into(),
+            data: b"first".to_vec(),
+        }).unwrap();
+        tx.send(ZipWriteCmd::File {
+            name: "two.bin".into(),
+            data: vec![1,2,3,4,5],
+        }).unwrap();
+        tx.send(ZipWriteCmd::Done).unwrap();
+
+        writer.join().unwrap().expect("zip write ok");
+
+        // Read the produced ZIP bytes
+        let mut f = File::open(tmp.path()).expect("open zip");
+        let mut zip_bytes = Vec::new();
+        f.read_to_end(&mut zip_bytes).expect("read zip");
+        assert!(is_zip(&zip_bytes), "freshly-written bytes should be a ZIP");
+
+        // 2) Encrypt the ZIP and ensure it is not mistaken as ZIP
+        let pw = "sup3r-secret";
+        let enc = encrypt_bytes(pw, &zip_bytes).expect("encrypt");
+        assert!(!is_zip(&enc), "encrypted blob must not be detected as ZIP");
+        assert!(enc.starts_with(ENC_MAGIC), "encrypted blob must start with magic");
+
+        // 3) Decrypt and check exact byte-for-byte equality
+        let dec = decrypt_bytes(pw, &enc).expect("decrypt");
+        assert_eq!(dec, zip_bytes, "decrypt must restore original ZIP bytes");
+        assert!(is_zip(&dec), "decrypted bytes must be a ZIP again");
+
+        // 4) Open decrypted ZIP and verify contents
+        let cursor = Cursor::new(dec);
+        let mut zip = ZipArchive::new(cursor).expect("valid zip after decrypt");
+
+        // dir/one.txt
+        {
+            let mut file = zip.by_name("dir/one.txt").expect("one.txt present");
+            let mut buf = String::new();
+            use std::io::Read as _;
+            file.read_to_string(&mut buf).expect("read one.txt");
+            assert_eq!(buf, "first");
+        }
+
+        // two.bin
+        {
+            let mut file = zip.by_name("two.bin").expect("two.bin present");
+            let mut buf = Vec::new();
+            use std::io::Read as _;
+            file.read_to_end(&mut buf).expect("read two.bin");
+            assert_eq!(buf, vec![1,2,3,4,5]);
+        }
+    }
+
+     #[test]
+    fn zip_encrypt_decrypt_big_file() {
+        use std::{fs::File, io::{Read, Cursor}};
+        use tempfile::NamedTempFile;
+        use flow_like_types::rand::{RngCore, rngs::StdRng, SeedableRng};
+
+        // 1) Create a 100MB pseudo-random file in memory
+        let mut big_data = vec![0u8; 100 * 1024 * 1024];
+        let mut rng = StdRng::seed_from_u64(42); // deterministic
+        rng.fill_bytes(&mut big_data);
+
+        // 2) Stream ZIP write
+        let tmp = NamedTempFile::new().expect("tmp");
+        let target_path = tmp.path().to_path_buf();
+        let (tx, rx) = std::sync::mpsc::channel::<ZipWriteCmd>();
+        let writer = std::thread::spawn(move || zip_write_streaming(target_path, rx));
+
+        tx.send(ZipWriteCmd::File {
+            name: "big.bin".into(),
+            data: big_data.clone(),
+        }).unwrap();
+        tx.send(ZipWriteCmd::Done).unwrap();
+        writer.join().unwrap().expect("zip write ok");
+
+        // 3) Encrypt & decrypt
+        let mut zip_bytes = Vec::new();
+        File::open(tmp.path()).unwrap().read_to_end(&mut zip_bytes).unwrap();
+        let pw = "bigpass";
+        let enc = encrypt_bytes(pw, &zip_bytes).expect("encrypt");
+        let dec = decrypt_bytes(pw, &enc).expect("decrypt");
+        assert_eq!(zip_bytes, dec);
+
+        // 4) Verify ZIP content
+        let mut zip = ZipArchive::new(Cursor::new(dec)).expect("valid zip");
+        let mut file = zip.by_name("big.bin").expect("missing big.bin");
+        let mut extracted = Vec::new();
+        file.read_to_end(&mut extracted).unwrap();
+        assert_eq!(extracted, big_data);
     }
 }
