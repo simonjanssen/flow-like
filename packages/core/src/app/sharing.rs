@@ -1,6 +1,5 @@
 /// TODO: optimize this. Implement stream encryption / decryption and Slice Readers for more memory efficiency.
 /// Also make sure that we use `async` I/O everywhere.
-
 use super::App;
 use crate::state::FlowLikeState;
 use argon2::{Algorithm, Argon2, Params, Version};
@@ -8,9 +7,7 @@ use flow_like_storage::{
     Path, blake3,
     object_store::{ObjectStore, PutPayload},
 };
-use flow_like_types::{
-    bail, tokio::{self, task}, Bytes
-};
+use flow_like_types::{Bytes, bail, tokio::task};
 use flow_like_types::{anyhow, sync::Mutex};
 use futures::{StreamExt, TryStreamExt};
 use schemars::JsonSchema;
@@ -131,7 +128,6 @@ async fn obj_exists_with_size(
     path: &Path,
     expect_size: u64,
 ) -> flow_like_types::Result<Option<bool>> {
-
     match store.head(path).await {
         Ok(obj) => {
             let size = obj.size as u64;
@@ -586,7 +582,9 @@ impl App {
         fn join_rel_path(base: &Path, rel: &str) -> Path {
             let mut p = base.clone();
             for seg in rel.split('/') {
-                if seg.is_empty() { continue; }
+                if seg.is_empty() {
+                    continue;
+                }
                 p = p.child(seg);
             }
             p
@@ -621,9 +619,13 @@ impl App {
                 let s = trailer.secondary_size;
 
                 let header_len = m
-                    .checked_add(p).ok_or_else(|| anyhow!("overflow"))?
-                    .checked_add(s).ok_or_else(|| anyhow!("overflow"))?;
-                let expected_total = header_len.checked_add(24).ok_or_else(|| anyhow!("overflow"))?;
+                    .checked_add(p)
+                    .ok_or_else(|| anyhow!("overflow"))?
+                    .checked_add(s)
+                    .ok_or_else(|| anyhow!("overflow"))?;
+                let expected_total = header_len
+                    .checked_add(24)
+                    .ok_or_else(|| anyhow!("overflow"))?;
                 if expected_total != total {
                     return Err(anyhow!("trailer sizes don't match file length"));
                 }
@@ -657,8 +659,12 @@ impl App {
                 .await
                 .map_err(|e| anyhow!("Manifest read task failed: {}", e))??;
 
-                let meta = FlowLikeState::project_meta_store(&app_state).await?.as_generic();
-                let storage = FlowLikeState::project_storage_store(&app_state).await?.as_generic();
+                let meta = FlowLikeState::project_meta_store(&app_state)
+                    .await?
+                    .as_generic();
+                let storage = FlowLikeState::project_storage_store(&app_state)
+                    .await?
+                    .as_generic();
                 let base = Path::from("apps").child(manifest.app_id.clone());
 
                 #[derive(Default)]
@@ -670,8 +676,8 @@ impl App {
 
                 let mut plan = Plan::default();
 
-                let mut plan_map = |entries: &HashMap<String, ManifestEntry>,
-                                    out: &mut HashMap<String, Vec<String>>|
+                let plan_map = |entries: &HashMap<String, ManifestEntry>,
+                                out: &mut HashMap<String, Vec<String>>|
                  -> flow_like_types::Result<()> {
                     // We do the reads sequentially; you could batch/hash concurrently if your store benefits.
                     futures::executor::block_on(async {
@@ -778,7 +784,8 @@ impl App {
                             let e = entries
                                 .get(rel)
                                 .ok_or_else(|| anyhow!("Missing manifest entry for {}", rel))?;
-                            if (data_bytes.len() as u64) != e.size || blake3_hash(&data_bytes) != e.blake3
+                            if (data_bytes.len() as u64) != e.size
+                                || blake3_hash(&data_bytes) != e.blake3
                             {
                                 return Err(anyhow!("Integrity failure for {}", rel));
                             }

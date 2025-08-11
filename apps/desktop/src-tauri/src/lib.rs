@@ -12,18 +12,13 @@ use flow_like::{
     state::{FlowLikeConfig, FlowLikeState},
     utils::http::HTTPClient,
 };
-use flow_like_types::{
-    sync::Mutex,
-    tokio::{self, time::interval},
-};
+use flow_like_types::{sync::Mutex, tokio::time::interval};
 use serde_json::json;
 use settings::Settings;
 use state::TauriFlowLikeState;
 use std::{sync::Arc, time::Duration};
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_deep_link::{DeepLinkExt, OpenUrlEvent};
-use tauri_plugin_dialog::DialogExt;
-use tauri_plugin_dialog::MessageDialogButtons;
 use tauri_plugin_updater::UpdaterExt;
 
 #[cfg(not(debug_assertions))]
