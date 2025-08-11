@@ -296,6 +296,8 @@ pub fn run() {
             functions::app::import_app,
             functions::app::update_app,
             functions::app::delete_app,
+            functions::app::sharing::export_app_to_file,
+            functions::app::sharing::import_app_from_file,
             functions::bit::get_bit,
             functions::bit::is_bit_installed,
             functions::bit::get_bit_size,

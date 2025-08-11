@@ -1,14 +1,49 @@
+/// TODO: optimize this. Implement stream encryption / decryption and Slice Readers for more memory efficiency.
+/// Also make sure that we use `async` I/O everywhere.
+
 use super::App;
 use crate::state::FlowLikeState;
-use flow_like_types::{tokio::{self, task}, Bytes};
-use flow_like_storage::{blake3, object_store::{ObjectStore, PutPayload}, Path};
+use argon2::{Algorithm, Argon2, Params, Version};
+use flow_like_storage::{
+    Path, blake3,
+    object_store::{ObjectStore, PutPayload},
+};
+use flow_like_types::{
+    bail, tokio::{self, task}, Bytes
+};
 use flow_like_types::{anyhow, sync::Mutex};
 use futures::{StreamExt, TryStreamExt};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, io::Write, path::PathBuf, sync::Arc, time::SystemTime};
+use std::{
+    collections::{HashMap, HashSet},
+    fs::File,
+    io::{Read, Seek, SeekFrom, Write},
+    path::PathBuf,
+    sync::Arc,
+    time::SystemTime,
+};
+use tempfile::tempfile;
 use zip::{ZipArchive, ZipWriter};
-use argon2::{Argon2, Algorithm, Params, Version};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum PathKind {
+    Prio,
+    Secondary,
+}
+
+// Sorts the files into separate containers based on their path.
+fn classify_path(path: &str) -> PathKind {
+    if path.ends_with("/app.manifest")
+        || path.ends_with(".meta")
+        || path.ends_with(".template")
+        || path.ends_with(".board")
+    {
+        return PathKind::Prio;
+    }
+
+    PathKind::Secondary
+}
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
 pub enum StoreKind {
@@ -29,7 +64,52 @@ pub struct ExportManifest {
     pub version: u32,
     pub app_id: String,
     pub created_at: u64,
-    pub files: HashMap<String, ManifestEntry>,
+    pub prio: HashMap<String, ManifestEntry>,
+    pub secondary: HashMap<String, ManifestEntry>,
+}
+
+#[derive(Clone, Copy)]
+struct TrailerV1 {
+    manifest_size: u64,
+    prio_size: u64,
+    secondary_size: u64,
+}
+
+impl TrailerV1 {
+    fn new() -> Self {
+        Self {
+            manifest_size: 0,
+            prio_size: 0,
+            secondary_size: 0,
+        }
+    }
+
+    fn to_bytes(&self) -> [u8; 24] {
+        let mut buf = [0u8; 24];
+        buf[0..8].copy_from_slice(&self.manifest_size.to_le_bytes());
+        buf[8..16].copy_from_slice(&self.prio_size.to_le_bytes());
+        buf[16..24].copy_from_slice(&self.secondary_size.to_le_bytes());
+        buf
+    }
+
+    fn from_bytes(bytes: &[u8; 24]) -> Self {
+        Self {
+            manifest_size: u64::from_le_bytes(bytes[0..8].try_into().unwrap()),
+            prio_size: u64::from_le_bytes(bytes[8..16].try_into().unwrap()),
+            secondary_size: u64::from_le_bytes(bytes[16..24].try_into().unwrap()),
+        }
+    }
+
+    fn from_file(file: &mut File) -> flow_like_types::Result<Self> {
+        let len = file.metadata()?.len();
+        if len < 24 {
+            return Err(anyhow!("Invalid trailer length"));
+        }
+        file.seek(SeekFrom::End(-24))?;
+        let mut t = [0u8; 24];
+        file.read_exact(&mut t)?;
+        Ok(Self::from_bytes(&t))
+    }
 }
 
 const ENC_MAGIC: &[u8] = b"FLOWAPP_CHACHA2";
@@ -40,8 +120,45 @@ const ARGON2_M_COST_KIB: u32 = 64 * 1024;
 const ARGON2_T_COST: u32 = 3;
 const ARGON2_P_COST: u32 = 1;
 
+#[derive(Default)]
+struct Plan {
+    prio: HashMap<String, Vec<String>>,
+    secondary: HashMap<String, Vec<String>>,
+}
+
+async fn obj_exists_with_size(
+    store: &Arc<dyn ObjectStore>,
+    path: &Path,
+    expect_size: u64,
+) -> flow_like_types::Result<Option<bool>> {
+
+    match store.head(path).await {
+        Ok(obj) => {
+            let size = obj.size as u64;
+            Ok(Some(size == expect_size))
+        }
+        Err(_) => Ok(None),
+    }
+}
+
 fn blake3_hash(data: &[u8]) -> String {
-    blake3::hash(data).to_hex().to_string()
+    blake3::hash(data).to_hex().to_string().to_lowercase()
+}
+
+async fn stream_blake3_of_object(
+    store: &Arc<dyn ObjectStore>,
+    path: &Path,
+) -> flow_like_types::Result<String> {
+    let obj = store.get(path).await?;
+    let mut hasher = blake3::Hasher::new();
+
+    let stream = obj.into_stream();
+    let mut stream = stream.map_err(|e| anyhow!("Failed to read object stream: {}", e));
+
+    while let Some(Ok(chunk)) = stream.next().await {
+        hasher.update(&chunk);
+    }
+    Ok(hasher.finalize().to_hex().to_string().to_lowercase())
 }
 
 enum ZipWriteCmd {
@@ -50,10 +167,9 @@ enum ZipWriteCmd {
 }
 
 fn zip_write_streaming(
-    target: PathBuf,
+    mut file: File,
     rx: std::sync::mpsc::Receiver<ZipWriteCmd>,
 ) -> flow_like_types::Result<()> {
-    let mut file = std::fs::File::create(&target)?;
     let mut zw = ZipWriter::new(&mut file);
     let opts = zip::write::FileOptions::<zip::write::ExtendedFileOptions>::default()
         .compression_method(zip::CompressionMethod::Deflated)
@@ -98,10 +214,10 @@ async fn read_store_file_bytes(
 }
 
 fn encrypt_bytes(password: &str, plain: &[u8]) -> flow_like_types::Result<Vec<u8>> {
-    use chacha20poly1305::{aead::Aead, KeyInit, XChaCha20Poly1305, XNonce};
-    use argon2::{Argon2, Algorithm, Params, Version};
+    use argon2::{Algorithm, Argon2, Params, Version};
+    use chacha20poly1305::{KeyInit, XChaCha20Poly1305, XNonce, aead::Aead};
 
-    use flow_like_types::rand::{rng, Rng};
+    use flow_like_types::rand::{Rng, rng};
 
     let mut salt = [0u8; SALT_LEN];
     let mut nonce = [0u8; XNONCE_LEN];
@@ -130,7 +246,7 @@ fn encrypt_bytes(password: &str, plain: &[u8]) -> flow_like_types::Result<Vec<u8
 }
 
 fn decrypt_bytes(password: &str, data: &[u8]) -> flow_like_types::Result<Vec<u8>> {
-    use chacha20poly1305::{aead::Aead, KeyInit, XChaCha20Poly1305, XNonce};
+    use chacha20poly1305::{KeyInit, XChaCha20Poly1305, XNonce, aead::Aead};
 
     if data.len() < ENC_MAGIC.len() + SALT_LEN + XNONCE_LEN {
         return Err(anyhow!("Invalid encrypted archive"));
@@ -158,7 +274,10 @@ fn decrypt_bytes(password: &str, data: &[u8]) -> flow_like_types::Result<Vec<u8>
 }
 
 fn is_zip(data: &[u8]) -> bool {
-    data.len() >= 4 && (&data[..4] == b"PK\x03\x04" || &data[..4] == b"PK\x05\x06" || &data[..4] == b"PK\x06\x06")
+    data.len() >= 4
+        && (&data[..4] == b"PK\x03\x04"
+            || &data[..4] == b"PK\x05\x06"
+            || &data[..4] == b"PK\x06\x06")
 }
 
 fn now_unix() -> u64 {
@@ -170,19 +289,16 @@ fn now_unix() -> u64 {
 }
 
 impl App {
-    // Exports all files under apps/{app_id} from meta and storage stores, with manifest and optional encryption.
-    // Returns (archive_bytes, extension: ".flow-app" or ".sec.flow-app").
     pub async fn export_archive(
         &self,
-        password: Option<&str>,
-        mut target_file: PathBuf
-    ) -> flow_like_types::Result<(Vec<u8>, &'static str)> {
-
-        if password.is_some() && !target_file.to_string_lossy().ends_with(".sec.flow-app") {
-            target_file.set_extension("sec.flow-app");
-        } else if target_file.to_string_lossy().ends_with(".sec.flow-app") {
-            target_file.set_extension("flow-app");
-        }
+        password: Option<String>,
+        mut target_file: PathBuf,
+    ) -> flow_like_types::Result<PathBuf> {
+        target_file.set_extension(if password.is_some() {
+            "enc.flow-app"
+        } else {
+            "flow-app"
+        });
 
         let app_state = self
             .app_state
@@ -208,7 +324,8 @@ impl App {
             version: 1,
             app_id: self.id.clone(),
             created_at: now_unix(),
-            files: HashMap::new(),
+            prio: HashMap::new(),
+            secondary: HashMap::new(),
         };
 
         let base_str = base.to_string();
@@ -218,216 +335,499 @@ impl App {
             format!("{}/", base_str)
         };
 
-        let (tx, rx) = std::sync::mpsc::channel::<ZipWriteCmd>();
-        let zip_path = target_file.with_extension("flow-app"); // produce unencrypted ZIP first
-        let writer_handle = task::spawn_blocking({
-            let zip_path = zip_path.clone();
-            move || zip_write_streaming(zip_path, rx)
+        let (prio_tx, prio_rx) = std::sync::mpsc::channel::<ZipWriteCmd>();
+        let (secondary_tx, secondary_rx) = std::sync::mpsc::channel::<ZipWriteCmd>();
+        let (manifest_tx, manifest_rx) = std::sync::mpsc::channel::<ZipWriteCmd>();
+        let prio_zip = tempfile()?;
+        let mut prio_zip_clone = prio_zip.try_clone()?;
+        let secondary_zip = tempfile()?;
+        let mut secondary_zip_clone = secondary_zip.try_clone()?;
+        let manifest_file = tempfile()?;
+        let mut manifest_file_clone = manifest_file.try_clone()?;
+
+        let prio_handle = task::spawn_blocking({
+            let prio_zip = prio_zip;
+            move || zip_write_streaming(prio_zip, prio_rx)
         });
+
+        let secondary_handle = task::spawn_blocking({
+            let secondary_zip = secondary_zip;
+            move || zip_write_streaming(secondary_zip, secondary_rx)
+        });
+
+        let manifest_handle = task::spawn_blocking({
+            let manifest_file = manifest_file;
+            move || zip_write_streaming(manifest_file, manifest_rx)
+        });
+
+        let mut prio_deduplicator = HashSet::new();
+        let mut secondary_deduplicator = HashSet::new();
 
         for (path, size) in meta_files {
             let full = path.to_string();
             let rel = full.strip_prefix(&base_prefix).unwrap_or(&full).to_string();
             let bytes = read_store_file_bytes(meta.clone(), &path).await?;
-            let sha = blake3_hash(&bytes);
+            let hash = blake3_hash(&bytes);
+            let classification = classify_path(&rel);
+            let tx = if classification == PathKind::Prio {
+                prio_tx.clone()
+            } else {
+                secondary_tx.clone()
+            };
 
-            tx.send(ZipWriteCmd::File {
-                name: format!("meta/{}", rel),
-                data: bytes,
-            }).map_err(|e| anyhow!("ZIP writer channel closed: {}", e))?;
+            let deduplicator = if classification == PathKind::Prio {
+                &mut prio_deduplicator
+            } else {
+                &mut secondary_deduplicator
+            };
 
-            manifest.files.insert(rel.clone(), ManifestEntry {
-                store: StoreKind::Meta,
-                rel_path: rel,
-                size,
-                blake3: sha,
-            });
+            if deduplicator.insert(hash.clone()) {
+                tx.send(ZipWriteCmd::File {
+                    name: hash.clone(),
+                    data: bytes,
+                })
+                .map_err(|e| anyhow!("ZIP writer channel closed: {}", e))?;
+            }
+
+            if classification == PathKind::Prio {
+                manifest.prio.insert(
+                    rel.clone(),
+                    ManifestEntry {
+                        store: StoreKind::Meta,
+                        rel_path: rel,
+                        size,
+                        blake3: hash,
+                    },
+                );
+            } else {
+                manifest.secondary.insert(
+                    rel.clone(),
+                    ManifestEntry {
+                        store: StoreKind::Meta,
+                        rel_path: rel,
+                        size,
+                        blake3: hash,
+                    },
+                );
+            }
         }
 
         for (path, size) in storage_files {
             let full = path.to_string();
             let rel = full.strip_prefix(&base_prefix).unwrap_or(&full).to_string();
             let bytes = read_store_file_bytes(storage.clone(), &path).await?;
-            let sha = blake3_hash(&bytes);
+            let hash = blake3_hash(&bytes);
 
-            tx.send(ZipWriteCmd::File {
-                name: format!("storage/{}", rel),
-                data: bytes,
-            }).map_err(|e| anyhow!("ZIP writer channel closed: {}", e))?;
+            let classification = classify_path(&rel);
+            let tx = if classification == PathKind::Prio {
+                prio_tx.clone()
+            } else {
+                secondary_tx.clone()
+            };
 
-            manifest.files.insert(rel.clone(), ManifestEntry {
-                store: StoreKind::Storage,
-                rel_path: rel,
-                size,
-                blake3: sha,
-            });
+            let deduplicator = if classification == PathKind::Prio {
+                &mut prio_deduplicator
+            } else {
+                &mut secondary_deduplicator
+            };
+
+            if deduplicator.insert(hash.clone()) {
+                tx.send(ZipWriteCmd::File {
+                    name: hash.clone(),
+                    data: bytes,
+                })
+                .map_err(|e| anyhow!("ZIP writer channel closed: {}", e))?;
+            }
+
+            if classification == PathKind::Prio {
+                manifest.prio.insert(
+                    rel.clone(),
+                    ManifestEntry {
+                        store: StoreKind::Storage,
+                        rel_path: rel,
+                        size,
+                        blake3: hash,
+                    },
+                );
+            } else {
+                manifest.secondary.insert(
+                    rel.clone(),
+                    ManifestEntry {
+                        store: StoreKind::Storage,
+                        rel_path: rel,
+                        size,
+                        blake3: hash,
+                    },
+                );
+            }
         }
+
+        // Finalize ZIP files
+        prio_tx.send(ZipWriteCmd::Done).ok();
+        secondary_tx.send(ZipWriteCmd::Done).ok();
+        prio_handle
+            .await
+            .map_err(|e| anyhow!("ZIP writer task failed: {}", e))??;
+        secondary_handle
+            .await
+            .map_err(|e| anyhow!("ZIP writer task failed: {}", e))??;
 
         let manifest_bytes = flow_like_types::json::to_vec(&manifest)?;
-        tx.send(ZipWriteCmd::File {
-            name: "manifest.json".to_string(),
-            data: manifest_bytes,
-        }).map_err(|e| anyhow!("ZIP writer channel closed: {}", e))?;
+        manifest_tx
+            .send(ZipWriteCmd::File {
+                name: "manifest.json".to_string(),
+                data: manifest_bytes,
+            })
+            .map_err(|e| anyhow!("ZIP writer channel closed: {}", e))?;
 
-        tx.send(ZipWriteCmd::Done).ok();
-        writer_handle.await.map_err(|e| anyhow!("ZIP writer task failed: {}", e))??;
+        manifest_tx.send(ZipWriteCmd::Done).ok();
+        manifest_handle
+            .await
+            .map_err(|e| anyhow!("ZIP writer task failed: {}", e))??;
 
+        let mut trailer = TrailerV1::new();
+
+        prio_zip_clone.seek(SeekFrom::Start(0))?;
+        secondary_zip_clone.seek(SeekFrom::Start(0))?;
+        manifest_file_clone.seek(SeekFrom::Start(0))?;
+
+        let mut file = File::create(&target_file)?;
         if let Some(pw) = password {
-            let plain_zip = tokio::fs::read(&zip_path).await?;
-            let enc = encrypt_bytes(pw, &plain_zip)?;
-            let mut enc_path = zip_path.clone();
-            enc_path.set_extension("sec.flow-app");
-            tokio::fs::write(&enc_path, &enc).await?;
-            // Optionally remove the unencrypted archive
-            let _ = tokio::fs::remove_file(&zip_path).await;
-            Ok((enc, ".sec.flow-app"))
+            {
+                let mut manifest_bytes = Vec::new();
+                manifest_file_clone.read_to_end(&mut manifest_bytes)?;
+                let encrypted_manifest = encrypt_bytes(&pw, &manifest_bytes)?;
+
+                trailer.manifest_size = encrypted_manifest.len() as u64;
+                file.write_all(&encrypted_manifest)?;
+            }
+
+            {
+                let mut prio_bytes = Vec::new();
+                prio_zip_clone.read_to_end(&mut prio_bytes)?;
+                let encrypted_prio = encrypt_bytes(&pw, &prio_bytes)?;
+                trailer.prio_size = encrypted_prio.len() as u64;
+                file.write_all(&encrypted_prio)?;
+            }
+
+            {
+                let mut secondary_bytes = Vec::new();
+                secondary_zip_clone.read_to_end(&mut secondary_bytes)?;
+                let encrypted_secondary = encrypt_bytes(&pw, &secondary_bytes)?;
+                trailer.secondary_size = encrypted_secondary.len() as u64;
+                file.write_all(&encrypted_secondary)?;
+            }
         } else {
-            let zip_bytes = tokio::fs::read(&zip_path).await?;
-            Ok((zip_bytes, ".flow-app"))
+            {
+                let mut manifest_bytes = Vec::new();
+                manifest_file_clone.read_to_end(&mut manifest_bytes)?;
+                file.write_all(&manifest_bytes)?;
+                trailer.manifest_size = manifest_bytes.len() as u64;
+            }
+
+            {
+                let mut prio_bytes = Vec::new();
+                prio_zip_clone.read_to_end(&mut prio_bytes)?;
+                file.write_all(&prio_bytes)?;
+                trailer.prio_size = prio_bytes.len() as u64;
+            }
+
+            {
+                let mut secondary_bytes = Vec::new();
+                secondary_zip_clone.read_to_end(&mut secondary_bytes)?;
+                file.write_all(&secondary_bytes)?;
+                trailer.secondary_size = secondary_bytes.len() as u64;
+            }
         }
+
+        // Write the trailer
+        let trailer_bytes = trailer.to_bytes();
+        file.write_all(&trailer_bytes)?;
+        file.flush()?;
+
+        Ok(target_file)
     }
 
     pub async fn import_archive(
         app_state: Arc<Mutex<FlowLikeState>>,
         source_file: PathBuf,
-        password: Option<&str>,
+        password: Option<String>,
     ) -> flow_like_types::Result<Self> {
-        let header = task::spawn_blocking({
+        use std::io::{Read as _, Seek as _};
+        use std::{fs::File, io::Cursor};
+
+        // ---------- helpers ----------
+        fn read_slice(f: &mut File, start: u64, len: u64) -> flow_like_types::Result<Vec<u8>> {
+            f.seek(SeekFrom::Start(start))?;
+            let mut buf = vec![0u8; len as usize];
+            f.read_exact(&mut buf)?;
+            Ok(buf)
+        }
+
+        fn maybe_decrypt(pw: Option<&str>, blob: Vec<u8>) -> flow_like_types::Result<Vec<u8>> {
+            if blob.len() >= ENC_MAGIC.len() && &blob[..ENC_MAGIC.len()] == ENC_MAGIC {
+                let pw = pw.ok_or_else(|| anyhow!("Archive is encrypted; password required"))?;
+                decrypt_bytes(pw, &blob)
+            } else {
+                Ok(blob)
+            }
+        }
+
+        fn read_manifest_from_zip(bytes: &[u8]) -> flow_like_types::Result<ExportManifest> {
+            let mut zip = ZipArchive::new(Cursor::new(bytes))?;
+            let mut f = zip
+                .by_name("manifest.json")
+                .map_err(|_| anyhow!("Missing manifest.json"))?;
+            let mut buf = Vec::with_capacity(f.size() as usize);
+            std::io::copy(&mut f, &mut buf)?;
+            Ok(flow_like_types::json::from_slice(&buf)?)
+        }
+
+        fn join_rel_path(base: &Path, rel: &str) -> Path {
+            let mut p = base.clone();
+            for seg in rel.split('/') {
+                if seg.is_empty() { continue; }
+                p = p.child(seg);
+            }
+            p
+        }
+
+        async fn load_existing_hash_and_size(
+            store: &Arc<dyn ObjectStore>,
+            path: &Path,
+            existing_size: u64,
+        ) -> flow_like_types::Result<Option<(String, u64)>> {
+            let size = match obj_exists_with_size(store, path, 0).await? {
+                Some(true) => store.head(path).await?.size as u64,
+                Some(false) => return Ok(None),
+                None => return Ok(None),
+            };
+            if size != existing_size {
+                return Ok(None);
+            }
+
+            let hash = stream_blake3_of_object(store, path).await?;
+            Ok(Some((hash, size)))
+        }
+
+        let new_layout = task::spawn_blocking({
             let source_file = source_file.clone();
-            move || -> flow_like_types::Result<Vec<u8>> {
-                let mut f = std::fs::File::open(&source_file)?;
-                let mut buf = [0u8; 8];
-                let n = std::io::Read::read(&mut f, &mut buf)?;
-                Ok(buf[..n].to_vec())
+            move || -> flow_like_types::Result<(Vec<u8>, Vec<u8>, Vec<u8>)> {
+                let mut f = File::open(&source_file)?;
+                let trailer = TrailerV1::from_file(&mut f)?;
+                let total = f.metadata()?.len();
+                let m = trailer.manifest_size;
+                let p = trailer.prio_size;
+                let s = trailer.secondary_size;
+
+                let header_len = m
+                    .checked_add(p).ok_or_else(|| anyhow!("overflow"))?
+                    .checked_add(s).ok_or_else(|| anyhow!("overflow"))?;
+                let expected_total = header_len.checked_add(24).ok_or_else(|| anyhow!("overflow"))?;
+                if expected_total != total {
+                    return Err(anyhow!("trailer sizes don't match file length"));
+                }
+
+                // Layout: [manifest][prio][secondary][trailer]
+                let manifest = read_slice(&mut f, 0, m)?;
+                let prio = read_slice(&mut f, m, p)?;
+                let secondary = read_slice(&mut f, m + p, s)?;
+                Ok((manifest, prio, secondary))
             }
-        }).await.map_err(|e| anyhow!("Header read task failed: {}", e))??;
+        })
+        .await
+        .map_err(|e| anyhow!("I/O task failed: {}", e));
 
-        let plain_source: Option<Vec<u8>> = if is_zip(&header) {
-            None
-        } else if let Some(pw) = password {
-            let data = tokio::fs::read(&source_file).await?;
-            Some(decrypt_bytes(pw, &data)?)
-        } else {
-            return Err(anyhow!("Archive is encrypted; password required"));
-        };
-
-        let manifest: ExportManifest = if let Some(plain) = &plain_source {
-            let manifest_bytes = task::spawn_blocking({
-                let plain = plain.clone();
-                move || -> flow_like_types::Result<Vec<u8>> {
-                    let cursor = std::io::Cursor::new(plain);
-                    let mut zip = ZipArchive::new(cursor)?;
-                    let mut f = zip.by_name("manifest.json")
-                        .map_err(|_| anyhow!("Missing manifest.json"))?;
-                    let mut buf = Vec::with_capacity(f.size() as usize);
-                    std::io::copy(&mut f, &mut buf)?;
-                    Ok(buf)
-                }
-            }).await.map_err(|e| anyhow!("Manifest read task failed: {}", e))??;
-            flow_like_types::json::from_slice(&manifest_bytes)?
-        } else {
-            let manifest_bytes = task::spawn_blocking({
-                let source_file = source_file.clone();
-                move || -> flow_like_types::Result<Vec<u8>> {
-                    let mut f = std::fs::File::open(&source_file)?;
-                    let mut zip = ZipArchive::new(&mut f)?;
-                    let mut mf = zip.by_name("manifest.json")
-                        .map_err(|_| anyhow!("Missing manifest.json"))?;
-                    let mut buf = Vec::with_capacity(mf.size() as usize);
-                    std::io::copy(&mut mf, &mut buf)?;
-                    Ok(buf)
-                }
-            }).await.map_err(|e| anyhow!("Manifest read task failed: {}", e))??;
-            flow_like_types::json::from_slice(&manifest_bytes)?
-        };
-
-        let meta = FlowLikeState::project_meta_store(&app_state)
-            .await?
-            .as_generic();
-        let storage = FlowLikeState::project_storage_store(&app_state)
-            .await?
-            .as_generic();
-
-        let base = Path::from("apps").child(manifest.app_id.clone());
-
-        enum ImportItem {
-            File { store: StoreKind, rel: String, data: Vec<u8> },
-            End,
-        }
-        let (tx, rx) = std::sync::mpsc::channel::<ImportItem>();
-
-        if let Some(plain) = plain_source {
-            let manifest_files = manifest.files.clone();
-            task::spawn_blocking(move || -> flow_like_types::Result<()> {
-                let cursor = std::io::Cursor::new(plain);
-                let mut zip = ZipArchive::new(cursor)?;
-                for entry in manifest_files.values() {
-                    let prefix = match entry.store {
-                        StoreKind::Meta => "meta/",
-                        StoreKind::Storage => "storage/",
-                    };
-                    let name = format!("{}{}", prefix, entry.rel_path);
-                    let mut f = zip.by_name(&name)
-                        .map_err(|_| anyhow!("Missing file in archive: {}", name))?;
-                    let mut buf = Vec::with_capacity(f.size() as usize);
-                    std::io::copy(&mut f, &mut buf)?;
-                    tx.send(ImportItem::File { store: entry.store, rel: entry.rel_path.clone(), data: buf }).map_err(|e| anyhow!(e.to_string()))?;
-                }
-                tx.send(ImportItem::End).ok();
-                Ok(())
-            }).await.map_err(|e| anyhow!("ZIP reader task failed: {}", e))??;
-        } else {
-            let source_file_cloned = source_file.clone();
-            let manifest_files = manifest.files.clone();
-            task::spawn_blocking(move || -> flow_like_types::Result<()> {
-                let mut file = std::fs::File::open(&source_file_cloned)?;
-                let mut zip = ZipArchive::new(&mut file)?;
-                for entry in manifest_files.values() {
-                    let prefix = match entry.store {
-                        StoreKind::Meta => "meta/",
-                        StoreKind::Storage => "storage/",
-                    };
-                    let name = format!("{}{}", prefix, entry.rel_path);
-                    let mut f = zip.by_name(&name)
-                        .map_err(|_| anyhow!("Missing file in archive: {}", name))?;
-                    let mut buf = Vec::with_capacity(f.size() as usize);
-                    std::io::copy(&mut f, &mut buf)?;
-                    tx.send(ImportItem::File { store: entry.store, rel: entry.rel_path.clone(), data: buf }).map_err(|e| anyhow!(e.to_string()))?;
-                }
-                tx.send(ImportItem::End).ok();
-                Ok(())
-            }).await.map_err(|e| anyhow!("ZIP reader task failed: {}", e))??;
-        }
-
-        for item in rx {
-            match item {
-                ImportItem::File { store, rel, data } => {
-                    let target_path = base.child(rel.clone());
-                    // Verify hash against manifest entry
-                    let expected = manifest.files.get(&rel)
-                        .ok_or_else(|| anyhow!("Manifest entry missing for {}", rel))?;
-                    if blake3_hash(&data) != expected.blake3 {
-                        return Err(anyhow!("Hash mismatch for {}", rel));
+        match new_layout {
+            Ok(Ok((manifest_seg, prio_seg, secondary_seg))) => {
+                // Segment-wise (maybe) decryption of manifest only (cheap) to build the plan
+                let manifest_plain = task::spawn_blocking({
+                    let pw = password.clone();
+                    move || -> flow_like_types::Result<Vec<u8>> {
+                        maybe_decrypt(pw.as_deref(), manifest_seg)
                     }
-                    let s = match store {
-                        StoreKind::Meta => &meta,
-                        StoreKind::Storage => &storage,
-                    };
-                    let payload = PutPayload::from_bytes(Bytes::from(data));
-                    s.put(&target_path, payload).await?;
+                })
+                .await
+                .map_err(|e| anyhow!("Decrypt task failed: {}", e))??;
+
+                let manifest: ExportManifest = task::spawn_blocking({
+                    let m = manifest_plain.clone();
+                    move || read_manifest_from_zip(&m)
+                })
+                .await
+                .map_err(|e| anyhow!("Manifest read task failed: {}", e))??;
+
+                let meta = FlowLikeState::project_meta_store(&app_state).await?.as_generic();
+                let storage = FlowLikeState::project_storage_store(&app_state).await?.as_generic();
+                let base = Path::from("apps").child(manifest.app_id.clone());
+
+                #[derive(Default)]
+                struct Plan {
+                    // blob hash -> list of rel paths to restore
+                    prio: HashMap<String, Vec<String>>,
+                    secondary: HashMap<String, Vec<String>>,
                 }
-                ImportItem::End => break,
+
+                let mut plan = Plan::default();
+
+                let mut plan_map = |entries: &HashMap<String, ManifestEntry>,
+                                    out: &mut HashMap<String, Vec<String>>|
+                 -> flow_like_types::Result<()> {
+                    // We do the reads sequentially; you could batch/hash concurrently if your store benefits.
+                    futures::executor::block_on(async {
+                        for (rel, e) in entries {
+                            let store = match e.store {
+                                StoreKind::Meta => &meta,
+                                StoreKind::Storage => &storage,
+                            };
+                            let target = join_rel_path(&base, rel);
+                            match load_existing_hash_and_size(store, &target, e.size).await? {
+                                None => {
+                                    out.entry(e.blake3.clone()).or_default().push(rel.clone());
+                                }
+                                Some((existing_hash, existing_size)) => {
+                                    if existing_hash != e.blake3 {
+                                        out.entry(e.blake3.clone()).or_default().push(rel.clone());
+                                    }
+                                }
+                            }
+                        }
+                        Ok::<_, flow_like_types::Error>(())
+                    })?;
+                    Ok(())
+                };
+
+                plan_map(&manifest.prio, &mut plan.prio)?;
+                plan_map(&manifest.secondary, &mut plan.secondary)?;
+
+                if plan.prio.is_empty() && plan.secondary.is_empty() {
+                    let mut app = App::load(manifest.app_id.clone(), app_state.clone()).await?;
+                    app.updated_at = SystemTime::now();
+                    app.save().await?;
+                    return Ok(app);
+                }
+
+                let (prio_plain_opt, secondary_plain_opt) = task::spawn_blocking({
+                    let pw = password.clone();
+                    let prio_seg = prio_seg.clone();
+                    let secondary_seg = secondary_seg.clone();
+                    let need_prio = !plan.prio.is_empty();
+                    let need_secondary = !plan.secondary.is_empty();
+                    move || -> flow_like_types::Result<(Option<Vec<u8>>, Option<Vec<u8>>)> {
+                        let pw_ref = pw.as_deref();
+                        let p = if need_prio {
+                            Some(maybe_decrypt(pw_ref, prio_seg)?)
+                        } else {
+                            None
+                        };
+                        let s = if need_secondary {
+                            Some(maybe_decrypt(pw_ref, secondary_seg)?)
+                        } else {
+                            None
+                        };
+                        Ok((p, s))
+                    }
+                })
+                .await
+                .map_err(|e| anyhow!("Decrypt task failed: {}", e))??;
+
+                let mut prio_zip = if let Some(p) = prio_plain_opt {
+                    Some(ZipArchive::new(Cursor::new(p))?)
+                } else {
+                    None
+                };
+                let mut secondary_zip = if let Some(s) = secondary_plain_opt {
+                    Some(ZipArchive::new(Cursor::new(s))?)
+                } else {
+                    None
+                };
+
+                let mut blob_cache: HashMap<String, Bytes> = HashMap::new();
+
+                fn extract_blob(
+                    arc: &mut ZipArchive<Cursor<Vec<u8>>>,
+                    hash: &str,
+                ) -> flow_like_types::Result<Vec<u8>> {
+                    let mut f = arc
+                        .by_name(hash)
+                        .map_err(|_| anyhow!("Missing blob {}", hash))?;
+                    let mut buf = Vec::with_capacity(f.size() as usize);
+                    std::io::copy(&mut f, &mut buf)?;
+                    Ok(buf)
+                }
+
+                async fn restore_set(
+                    arc: &mut ZipArchive<Cursor<Vec<u8>>>,
+                    items: &HashMap<String, Vec<String>>, // blob -> rels
+                    entries: &HashMap<String, ManifestEntry>,
+                    base: &Path,
+                    meta: &Arc<dyn ObjectStore>,
+                    storage: &Arc<dyn ObjectStore>,
+                    blob_cache: &mut HashMap<String, Bytes>,
+                ) -> flow_like_types::Result<()> {
+                    for (blob, rels) in items {
+                        let data_bytes: Bytes = if let Some(b) = blob_cache.get(blob) {
+                            b.clone()
+                        } else {
+                            let raw = extract_blob(arc, blob)?;
+                            let b = Bytes::from(raw);
+                            blob_cache.insert(blob.clone(), b.clone());
+                            b
+                        };
+                        for rel in rels {
+                            let e = entries
+                                .get(rel)
+                                .ok_or_else(|| anyhow!("Missing manifest entry for {}", rel))?;
+                            if (data_bytes.len() as u64) != e.size || blake3_hash(&data_bytes) != e.blake3
+                            {
+                                return Err(anyhow!("Integrity failure for {}", rel));
+                            }
+                            let s = match e.store {
+                                StoreKind::Meta => meta,
+                                StoreKind::Storage => storage,
+                            };
+                            let target = join_rel_path(base, rel);
+                            s.put(&target, PutPayload::from_bytes(data_bytes.clone()))
+                                .await?;
+                        }
+                    }
+                    Ok(())
+                }
+
+                if let Some(ref mut arc) = prio_zip {
+                    restore_set(
+                        arc,
+                        &plan.prio,
+                        &manifest.prio,
+                        &base,
+                        &meta,
+                        &storage,
+                        &mut blob_cache,
+                    )
+                    .await?;
+                }
+                if let Some(ref mut arc) = secondary_zip {
+                    restore_set(
+                        arc,
+                        &plan.secondary,
+                        &manifest.secondary,
+                        &base,
+                        &meta,
+                        &storage,
+                        &mut blob_cache,
+                    )
+                    .await?;
+                }
+
+                let mut app = App::load(manifest.app_id.clone(), app_state.clone()).await?;
+                app.updated_at = SystemTime::now();
+                app.save().await?;
+                Ok(app)
             }
+            _ => bail!("Unsupported archive format"),
         }
-
-        let mut app = App::load(manifest.app_id.clone(), app_state.clone()).await?;
-        app.updated_at = SystemTime::now();
-        app.save().await?;
-
-        Ok(app)
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -483,7 +883,8 @@ mod tests {
         let err = decrypt_bytes(pw, &bad).unwrap_err();
         let msg = format!("{err:#}");
         assert!(
-            msg.to_lowercase().contains("invalid encrypted archive header"),
+            msg.to_lowercase()
+                .contains("invalid encrypted archive header"),
             "expected header error, got: {msg}"
         );
     }
@@ -506,7 +907,8 @@ mod tests {
         let (tx, rx) = std::sync::mpsc::channel::<ZipWriteCmd>();
 
         // Write in a blocking helper thread (as production code does)
-        let handle = std::thread::spawn(move || zip_write_streaming(target_path, rx));
+        let target_file = File::create(&target_path).expect("create target file");
+        let handle = std::thread::spawn(move || zip_write_streaming(target_file, rx));
 
         // Send two small files and finish
         tx.send(ZipWriteCmd::File {
@@ -552,7 +954,8 @@ mod tests {
         let tmp = NamedTempFile::new().expect("tmp");
         let (tx, rx) = std::sync::mpsc::channel::<ZipWriteCmd>();
         let path = tmp.path().to_path_buf();
-        let h = std::thread::spawn(move || zip_write_streaming(path, rx));
+        let target_file = File::create(&path).expect("create target file");
+        let h = std::thread::spawn(move || zip_write_streaming(target_file, rx));
         tx.send(ZipWriteCmd::File {
             name: "x".into(),
             data: b"y".to_vec(),
@@ -571,25 +974,31 @@ mod tests {
         assert!(is_zip(&header), "should detect PK header");
     }
 
-        #[test]
+    #[test]
     fn zip_encrypt_decrypt_roundtrip_integrated() {
-        use std::{fs::File, io::{Read, Cursor}};
+        use std::{
+            fs::File,
+            io::{Cursor, Read},
+        };
         use tempfile::NamedTempFile;
 
         // 1) Build a tiny ZIP via the streaming writer
         let tmp = NamedTempFile::new().expect("tmp");
         let target_path = tmp.path().to_path_buf();
         let (tx, rx) = std::sync::mpsc::channel::<ZipWriteCmd>();
-        let writer = std::thread::spawn(move || zip_write_streaming(target_path, rx));
+        let target_file = File::create(&target_path).expect("create target file");
+        let writer = std::thread::spawn(move || zip_write_streaming(target_file, rx));
 
         tx.send(ZipWriteCmd::File {
             name: "dir/one.txt".into(),
             data: b"first".to_vec(),
-        }).unwrap();
+        })
+        .unwrap();
         tx.send(ZipWriteCmd::File {
             name: "two.bin".into(),
-            data: vec![1,2,3,4,5],
-        }).unwrap();
+            data: vec![1, 2, 3, 4, 5],
+        })
+        .unwrap();
         tx.send(ZipWriteCmd::Done).unwrap();
 
         writer.join().unwrap().expect("zip write ok");
@@ -604,7 +1013,10 @@ mod tests {
         let pw = "sup3r-secret";
         let enc = encrypt_bytes(pw, &zip_bytes).expect("encrypt");
         assert!(!is_zip(&enc), "encrypted blob must not be detected as ZIP");
-        assert!(enc.starts_with(ENC_MAGIC), "encrypted blob must start with magic");
+        assert!(
+            enc.starts_with(ENC_MAGIC),
+            "encrypted blob must start with magic"
+        );
 
         // 3) Decrypt and check exact byte-for-byte equality
         let dec = decrypt_bytes(pw, &enc).expect("decrypt");
@@ -630,15 +1042,18 @@ mod tests {
             let mut buf = Vec::new();
             use std::io::Read as _;
             file.read_to_end(&mut buf).expect("read two.bin");
-            assert_eq!(buf, vec![1,2,3,4,5]);
+            assert_eq!(buf, vec![1, 2, 3, 4, 5]);
         }
     }
 
-     #[test]
+    #[test]
     fn zip_encrypt_decrypt_big_file() {
-        use std::{fs::File, io::{Read, Cursor}};
+        use flow_like_types::rand::{RngCore, SeedableRng, rngs::StdRng};
+        use std::{
+            fs::File,
+            io::{Cursor, Read},
+        };
         use tempfile::NamedTempFile;
-        use flow_like_types::rand::{RngCore, rngs::StdRng, SeedableRng};
 
         // 1) Create a 100MB pseudo-random file in memory
         let mut big_data = vec![0u8; 100 * 1024 * 1024];
@@ -649,18 +1064,23 @@ mod tests {
         let tmp = NamedTempFile::new().expect("tmp");
         let target_path = tmp.path().to_path_buf();
         let (tx, rx) = std::sync::mpsc::channel::<ZipWriteCmd>();
-        let writer = std::thread::spawn(move || zip_write_streaming(target_path, rx));
+        let target_file = File::create(&target_path).expect("create target file");
+        let writer = std::thread::spawn(move || zip_write_streaming(target_file, rx));
 
         tx.send(ZipWriteCmd::File {
             name: "big.bin".into(),
             data: big_data.clone(),
-        }).unwrap();
+        })
+        .unwrap();
         tx.send(ZipWriteCmd::Done).unwrap();
         writer.join().unwrap().expect("zip write ok");
 
         // 3) Encrypt & decrypt
         let mut zip_bytes = Vec::new();
-        File::open(tmp.path()).unwrap().read_to_end(&mut zip_bytes).unwrap();
+        File::open(tmp.path())
+            .unwrap()
+            .read_to_end(&mut zip_bytes)
+            .unwrap();
         let pw = "bigpass";
         let enc = encrypt_bytes(pw, &zip_bytes).expect("encrypt");
         let dec = decrypt_bytes(pw, &enc).expect("decrypt");
