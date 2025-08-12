@@ -759,16 +759,12 @@ export default function Page() {
 							);
 							dependencies.push(configRegistration);
 
-							const textEmbeddingModelRegistration: IBit = await uploadBit(
-								{
-									...textEmbeddingModel,
-									license: bit.license,
-									authors: bit.authors,
-									dependencies: dependencies.map(
-										(dep) => `${dep.hub}:${dep.id}`,
-									),
-								},
-							);
+							const textEmbeddingModelRegistration: IBit = await uploadBit({
+								...textEmbeddingModel,
+								license: bit.license,
+								authors: bit.authors,
+								dependencies: dependencies.map((dep) => `${dep.hub}:${dep.id}`),
+							});
 
 							dependencies = [textEmbeddingModelRegistration];
 
@@ -782,14 +778,10 @@ export default function Page() {
 							);
 							dependencies.push(imageEmbeddingConfigRegistration);
 
-							const response: IBit = await uploadBit(
-								{
-									...bit,
-									dependencies: dependencies.map(
-										(dep) => `${dep.hub}:${dep.id}`,
-									),
-								},
-							);
+							const response: IBit = await uploadBit({
+								...bit,
+								dependencies: dependencies.map((dep) => `${dep.hub}:${dep.id}`),
+							});
 
 							const metaUpload = await put(
 								profile.data,
