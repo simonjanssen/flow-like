@@ -1,0 +1,22 @@
+---
+import { getCollection } from 'astro:content';
+import "@tm9657/flow-like-ui/global.css";
+import "../../styles/Blog.css";
+import BlogLayout from '../../layouts/BlogLayout.astro';
+
+export async function getStaticPaths() {
+  const all = await getCollection('blog', ({ data }) => import.meta.env.PROD ? !data.draft : true);
+  console.dir(all, 'all blog posts');
+  // slug from file name: "2025-08-01-hello" -> "/hello" or keep date in slug if you prefer
+  return all.map((entry) => ({
+    params: { slug: entry.slug.split('-').slice(3).join('-') },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await entry.render();
+---
+<BlogLayout data={entry.data} content={Content}>
+  <Content />
+</BlogLayout>

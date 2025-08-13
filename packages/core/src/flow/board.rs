@@ -356,11 +356,11 @@ impl Board {
             }
         }
 
-        let mut old_pins = HashMap::with_capacity(pins.len());
-
+        // For newly created layers, we want to create the Pins necessary to get started
+        let mut empty_layers = HashSet::with_capacity(self.layers.len());
         for (layer_id, layer) in self.layers.iter_mut() {
-            for (pin_id, pin) in layer.pins.drain() {
-                old_pins.insert(format!("{}-{}", layer_id, pin_id), pin);
+            if layer.pins.is_empty() {
+                empty_layers.insert(layer_id.clone());
             }
         }
 
@@ -389,12 +389,7 @@ impl Board {
                             if layer != &node.layer.as_ref().unwrap_or(&default_layer) {
                                 if let Some(layer) = &node.layer {
                                     if let Some(layer) = self.layers.get_mut(layer) {
-                                        if !layer.pins.contains_key(&pin.id) {
-                                            if let Some(old_pin) =
-                                                old_pins.remove(&format!("{}-{}", layer.id, pin.id))
-                                            {
-                                                layer.pins.insert(pin.id.clone(), old_pin);
-                                            } else {
+                                        if !layer.pins.contains_key(&pin.id) && empty_layers.contains(&layer.id) {
                                                 let mut new_pin = pin.clone();
                                                 new_pin.index = layer
                                                     .pins
@@ -404,7 +399,6 @@ impl Board {
                                                     as u16
                                                     + 1;
                                                 layer.pins.insert(pin.id.clone(), new_pin);
-                                            }
                                         }
                                     }
                                 }
@@ -435,12 +429,7 @@ impl Board {
                             if layer != &node.layer.as_ref().unwrap_or(&default_layer) {
                                 if let Some(layer) = &node.layer {
                                     if let Some(layer) = self.layers.get_mut(layer) {
-                                        if !layer.pins.contains_key(&pin.id) {
-                                            if let Some(old_pin) =
-                                                old_pins.remove(&format!("{}-{}", layer.id, pin.id))
-                                            {
-                                                layer.pins.insert(pin.id.clone(), old_pin);
-                                            } else {
+                                        if !layer.pins.contains_key(&pin.id) && empty_layers.contains(&layer.id) {
                                                 let mut new_pin = pin.clone();
                                                 new_pin.index = layer
                                                     .pins
@@ -450,7 +439,6 @@ impl Board {
                                                     as u16
                                                     + 1;
                                                 layer.pins.insert(pin.id.clone(), new_pin);
-                                            }
                                         }
                                     }
                                 }

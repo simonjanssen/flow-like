@@ -1,10 +1,10 @@
 import { Button } from "@tm9657/flow-like-ui";
-import { BsDiscord, BsGithub, BsTwitterX } from "react-icons/bs";
+import { BsBookHalf, BsBookmarkDashFill, BsDiscord, BsGithub, BsJournalBookmark, BsTwitterX } from "react-icons/bs";
 import { LuBookHeart, LuBookMarked } from "react-icons/lu";
 
-export function Header() {
+export function BlogHeader() {
 	return (
-		<header className="w-full flex flex-row items-center absolute top-0 left-0 right-0 h-16 z-20 backdrop-blur-sm shadow-md bg-background/40 justify-between">
+		<header className="w-full flex flex-row items-center sticky top-0 left-0 right-0 h-16 z-20 backdrop-blur-sm shadow-md bg-background/40 justify-between">
 			<a href="/" className="flex flex-row items-center px-2 gap-2">
 				<img alt="logo" src="/icon.webp" className="h-12 w-12" />
 				<h3 className="hidden sm:block">Flow Like</h3>

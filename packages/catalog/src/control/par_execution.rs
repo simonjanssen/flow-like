@@ -42,8 +42,8 @@ impl NodeLogic for ParallelExecutionNode {
                     .build(),
             );
 
-        node.add_output_pin("exec_out", "Output", "Output Pin", VariableType::Execution);
-        node.add_output_pin("exec_out", "Output", "Output Pin", VariableType::Execution);
+        node.add_output_pin("exec_out", "Parallel Task", "Parallel Task Pin", VariableType::Execution);
+        node.add_output_pin("exec_out", "Parallel Task", "Parallel Task Pin", VariableType::Execution);
 
         node.add_output_pin("exec_done", "Done", "Done Pin", VariableType::Execution);
 
@@ -92,51 +92,43 @@ impl NodeLogic for ParallelExecutionNode {
                 context.push_sub_context(completed_context);
             }
         } else {
-            let results = Arc::new(Mutex::new(Vec::new()));
+            let rt_handle = tokio::runtime::Handle::current();
 
-            parallel_items.into_par_iter().for_each(|mut par_context| {
-                let results_clone = Arc::clone(&results);
+            let handles = parallel_items
+                .into_iter()
+                .map(|mut par_context| {
+                    let h = rt_handle.clone();
+                    tokio::task::spawn_blocking(move || {
+                        h.block_on(async move {
+                            let run =
+                                InternalNode::trigger(&mut par_context, &mut None, true).await;
+                            if let Err(err) = run {
+                                par_context.log_message(
+                                    &format!("Error running node: {:?}", err),
+                                    LogLevel::Error,
+                                );
+                            }
+                            par_context.end_trace();
+                            par_context
+                        })
+                    })
+                })
+                .collect::<Vec<_>>();
 
-                let runtime = match tokio::runtime::Builder::new_current_thread()
-                    .enable_all()
-                    .build()
-                {
-                    Ok(runtime) => runtime,
-                    Err(err) => {
-                        par_context.log_message(
-                            &format!("Error creating runtime: {:?}", err),
-                            LogLevel::Error,
-                        );
-                        par_context.end_trace();
-                        return;
-                    }
-                };
+            let results = join_all(handles).await;
 
-                runtime.block_on(async {
-                    let run = InternalNode::trigger(&mut par_context, &mut None, true).await;
-                    if let Err(err) = run {
-                        par_context.log_message(
-                            &format!("Error running node: {:?}", err),
-                            LogLevel::Error,
-                        );
-                    }
-                    par_context.end_trace();
-
-                    // Store the completed context
-                    results_clone.lock().await.push(par_context);
-                });
-            });
-
-            for completed_context in Arc::try_unwrap(results)
-                .map_err(|_| anyhow!("Failed to unwrap Arc"))?
-                .into_inner()
-            {
-                context.push_sub_context(completed_context);
+            for res in results {
+                match res {
+                    Ok(completed_context) => context.push_sub_context(completed_context),
+                    Err(err) => context.log_message(
+                        &format!("Thread join error: {:?}", err),
+                        LogLevel::Error,
+                    ),
+                }
             }
         }
 
         context.activate_exec_pin("exec_done").await?;
-
-        return Ok(());
+        Ok(())
     }
 }

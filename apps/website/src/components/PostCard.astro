@@ -1,0 +1,12 @@
+---
+const { entry } = Astro.props;
+const { title, description, date, tags, cover } = entry.data;
+const href = '/blog/'+entry.slug.split('-').slice(3).join('-')+'/';
+---
+<article class="post-card border p-4 rounded-lg shadow hover:shadow-lg transition-shadow bg-card text-card-foreground">
+  <!-- {cover && <a href={href}><img src={cover} alt="" loading="lazy" /></a>} -->
+  <h2><a href={href}>{title}</a></h2>
+  <p>{description}</p>
+  <p><time datetime={date.toISOString()}>{date.toDateString()}</time></p>
+  <p class="flex flex-row items-center gap-2">{tags.map((t: string) => <a href={`/tags/${encodeURIComponent(t)}/`}>#{t}</a>)}</p>
+</article>

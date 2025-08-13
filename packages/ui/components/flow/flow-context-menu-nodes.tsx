@@ -10,6 +10,7 @@ import {
 import type { INode } from "../../lib/schema/flow/node";
 import type { IPin } from "../../lib/schema/flow/pin";
 import { DynamicImage } from "../ui/dynamic-image";
+import { ScrollArea } from "../ui";
 
 export function FlowContextMenuNodes({
 	items,
@@ -82,12 +83,14 @@ export function FlowContextMenuNodes({
 							{category}
 						</ContextMenuSubTrigger>
 						<ContextMenuSubContent className="w-48" key={category}>
-							<FlowContextMenuNodes
-								items={node}
-								filter={filter}
-								pin={pin}
-								onNodePlace={onNodePlace}
-							/>
+							<div className="max-h-96 overflow-y-auto">
+								<FlowContextMenuNodes
+									items={node}
+									filter={filter}
+									pin={pin}
+									onNodePlace={onNodePlace}
+								/>
+							</div>
 						</ContextMenuSubContent>
 					</ContextMenuSub>
 				))}
