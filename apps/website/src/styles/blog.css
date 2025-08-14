@@ -1,6 +1,5 @@
 /* Layout and base typesetting */
 article, .prose {
-  max-width: 72ch;
   margin-inline: auto;
   padding-inline: clamp(1rem, 4vw, 2rem);
   line-height: 1.7;
@@ -51,6 +50,7 @@ article > :last-child,
   margin-block: 1em;
   padding-left: 1.25em;
   list-style-position: outside;
+  list-style-type: disc;
 }
 :where(article, .prose) li { margin-block: 0.35em; }
 :where(article, .prose) li > :where(ul, ol) { margin-block: 0.5em; }

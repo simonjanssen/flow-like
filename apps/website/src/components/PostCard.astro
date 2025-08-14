@@ -3,10 +3,95 @@ const { entry } = Astro.props;
 const { title, description, date, tags, cover } = entry.data;
 const href = '/blog/'+entry.slug.split('-').slice(3).join('-')+'/';
 ---
-<article class="post-card border p-4 rounded-lg shadow hover:shadow-lg transition-shadow bg-card text-card-foreground">
-  <!-- {cover && <a href={href}><img src={cover} alt="" loading="lazy" /></a>} -->
-  <h2><a href={href}>{title}</a></h2>
-  <p>{description}</p>
-  <p><time datetime={date.toISOString()}>{date.toDateString()}</time></p>
-  <p class="flex flex-row items-center gap-2">{tags.map((t: string) => <a href={`/tags/${encodeURIComponent(t)}/`}>#{t}</a>)}</p>
+<article
+  class="post-card group relative h-fit overflow-hidden rounded-lg border bg-card shadow transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:rounded-xl"
+>
+  {cover && (
+    <img
+      width={1280}
+      height={896}
+      src={cover}
+      alt=""
+      aria-hidden="true"
+      loading="lazy"
+      class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+    />
+  )}
+  <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/10"></div>
+
+  <div class="relative z-10 h-full p-3.5 sm:p-4 md:p-5 flex flex-col text-white">
+    <h2 class="text-base sm:text-lg font-semibold leading-snug text-elevated mt-4! pt-0!">
+      <a
+        href={href}
+        class="inline-flex items-baseline gap-2 transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded"
+      >
+        <span>{title}</span>
+        <span class="translate-y-[1px] opacity-0 transition-all duration-300 group-hover:translate-x-1 group-hover:opacity-100">→</span>
+      </a>
+    </h2>
+
+    <p class="mt-1.5 text-sm text-white/90 clamp-2 text-elevated">
+      {description}
+    </p>
+
+    <div class="mt-auto pt-2 flex items-center justify-between text-[11px] sm:text-xs text-white/80 text-elevated">
+      <time datetime={date.toISOString()}>{date.toDateString()}</time>
+    </div>
+
+    {tags?.length > 0 && (
+      <p class="mt-2 flex flex-wrap items-center gap-1.5">
+        {tags.map((t: string) => (
+          <a
+            href={`/tags/${encodeURIComponent(t)}/`}
+            class="rounded-full border border-white/25 bg-white/10 px-2 py-0.5 text-[11px] sm:text-xs text-white/90 backdrop-blur-[2px] transition-all hover:-translate-y-0.5 hover:border-white/40 hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 text-elevated"
+          >
+            #{t}
+          </a>
+        ))}
+      </p>
+    )}
+  </div>
 </article>
+
+<style>
+  .post-card { will-change: transform, box-shadow; }
+  .post-card::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: conic-gradient(from 180deg at 50% 50%, rgba(147, 51, 234,.45), rgba(59,130,246,.45), rgba(16,185,129,.45), rgba(244,114,182,.45), rgba(147, 51, 234,.45));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
+    animation: spin 10s linear infinite;
+    opacity: .2;
+    transition: opacity .3s ease;
+  }
+  .post-card:hover::before { opacity: .4; }
+
+  .post-card {
+    opacity: 0;
+    transform: translateY(8px) scale(.995);
+    animation: fade-up .5s ease-out .03s forwards;
+  }
+
+  .clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .text-elevated { text-shadow: 0 1px 2px rgba(0,0,0,.55), 0 2px 8px rgba(0,0,0,.35); }
+
+  @keyframes spin { to { transform: rotate(1turn); } }
+  @keyframes fade-up { to { opacity: 1; transform: none; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .post-card, .post-card::before { animation: none; }
+    .post-card { opacity: 1; transform: none; }
+  }
+</style>
