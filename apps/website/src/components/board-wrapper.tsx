@@ -26,12 +26,6 @@ export default function BoardWrapper({
 }: Readonly<{ nodes: any[]; edges: any[] }>) {
 	return (
 		<Suspense fallback={<LoadingScreen />}>
-			<ThemeProvider
-				attribute="class"
-				defaultTheme="dark"
-				enableSystem
-				disableTransitionOnChange
-			>
 				<PersistQueryClientProvider
 					client={queryClient}
 					persistOptions={{
@@ -40,7 +34,6 @@ export default function BoardWrapper({
 				>
 					<Board nodes={nodes} edges={edges} />
 				</PersistQueryClientProvider>
-			</ThemeProvider>
 		</Suspense>
 	);
 }
