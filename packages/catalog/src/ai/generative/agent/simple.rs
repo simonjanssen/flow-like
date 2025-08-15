@@ -43,9 +43,18 @@ TOOLS_STR
     }
 </tooluse>
 
-# Important Instructions
-- Your json data for the tools used will be validated by the tool json schemas. It *MUST* pass this validation.
-- If you want to use a tool you *MUST* wrap your tool use json data in xml tags <tooluse></tooluse>
+# Response Format
+Your tool use json data within the <tooluse></tooluse> will be validated by the tool json schemas above.
+
+The tool use data string inside the <tooluse></tooluse> tags *MUST* be compliant with the tool json schemas above.
+
+If you want to use a tool you *MUST* wrap your tool use json data in these xml tags: <tooluse></tooluse>.
+
+Do *NOT* use code blocks.
+
+Wrap every tool use in a pair of xml tags <tooluse></tooluse>.
+
+Once all tool outputs have been gathered, reply back to the original user input.
 "#;
 
 #[derive(Default)]
