@@ -10,7 +10,6 @@ import {
 import type { INode } from "../../lib/schema/flow/node";
 import type { IPin } from "../../lib/schema/flow/pin";
 import { DynamicImage } from "../ui/dynamic-image";
-import { ScrollArea } from "../ui";
 
 export function FlowContextMenuNodes({
 	items,

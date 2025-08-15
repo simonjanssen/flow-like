@@ -23,6 +23,7 @@ import {
 	type ITemplateState,
 	type IUserState,
 	LoadingScreen,
+	ThemeProvider,
 	useBackendStore,
 } from "@tm9657/flow-like-ui";
 import { Suspense, lazy, useEffect, useState } from "react";
@@ -43,14 +44,20 @@ export class EmptyBackend implements IBackendState {
 }
 
 export function EmptyBackendProvider({
-	nodes,
-	edges,
-}: Readonly<{ nodes: any[]; edges: any[] }>) {
+	data
+}: Readonly<{ data: string }>) {
+	const [nodes, setNodes] = useState<any[]>([]);
+	const [edges, setEdges] = useState<any[]>([]);
 	const [loaded, setLoaded] = useState(false);
 	const { setBackend } = useBackendStore();
 
 	useEffect(() => {
 		(async () => {
+			const response = await fetch(data);
+			const json = await response.json();
+			const { nodes, edges } = json;
+			setNodes(nodes);
+			setEdges(edges);
 			const backend = new EmptyBackend();
 			setBackend(backend);
 			setLoaded(true);
@@ -58,12 +65,26 @@ export function EmptyBackendProvider({
 	}, []);
 
 	if (!loaded) {
-		return <LoadingScreen />;
+		return <ThemeProvider
+			attribute="class"
+			defaultTheme="dark"
+			enableSystem
+			disableTransitionOnChange
+		>
+			<LoadingScreen />;
+		</ThemeProvider>
 	}
 
 	return (
-		<Suspense fallback={<LoadingScreen />}>
-			<BoardWrapper nodes={nodes} edges={edges} />
-		</Suspense>
+		<ThemeProvider
+			attribute="class"
+			defaultTheme="dark"
+			enableSystem
+			disableTransitionOnChange
+		>
+			<Suspense fallback={<LoadingScreen />}>
+				<BoardWrapper nodes={nodes} edges={edges} />
+			</Suspense>
+		</ThemeProvider>
 	);
 }

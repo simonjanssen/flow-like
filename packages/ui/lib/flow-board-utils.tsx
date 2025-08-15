@@ -490,7 +490,7 @@ export function parseBoard(
 				label: comment.id,
 				boardId: board.id,
 				hash: hash,
-				comment: {...comment, is_locked: comment.is_locked ?? false},
+				comment: { ...comment, is_locked: comment.is_locked ?? false },
 				onUpsert: (comment: IComment) => {
 					const command = upsertCommentCommand({
 						comment: comment,

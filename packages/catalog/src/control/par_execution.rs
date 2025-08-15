@@ -11,7 +11,6 @@ use flow_like::{
 };
 use flow_like_types::{anyhow, async_trait, json::json, sync::Mutex, tokio};
 use futures::future::join_all;
-use rayon::prelude::*;
 
 #[derive(Default)]
 pub struct ParallelExecutionNode {}

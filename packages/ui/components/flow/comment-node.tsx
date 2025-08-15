@@ -15,7 +15,7 @@ import {
 	SquarePenIcon,
 	UnlockIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import {
 	ContextMenu,
@@ -271,10 +271,10 @@ export function CommentNode(props: NodeProps<CommentNode>) {
 						}}
 					>
 						{isLocked ? (
-									<UnlockIcon className="size-4" />
-								) : (
-									<LockIcon className="size-4" />
-								)}
+							<UnlockIcon className="size-4" />
+						) : (
+							<LockIcon className="size-4" />
+						)}
 						{isLocked ? "Unlock comment" : "Lock comment"}
 					</ContextMenuItem>
 				</ContextMenuContent>
