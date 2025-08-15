@@ -90,18 +90,22 @@ impl HistoryMessage {
 
 impl fmt::Display for History {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut history_str = String::from("| ");
-        for message in self.messages.iter() {
-            let m = match message.role {
-                Role::Assistant => " A |",
-                Role::System => " S |",
-                Role::Tool => " T |",
-                Role::User => " H |",
-                Role::Function => " F |"
-            };
-            history_str.push_str(m);
+        if self.messages.len() > 0 {
+            let mut history_str = String::from("| ");
+            for message in self.messages.iter() {
+                let m = match message.role {
+                    Role::Assistant => " A |",
+                    Role::System => " S |",
+                    Role::Tool => " T |",
+                    Role::User => " H |",
+                    Role::Function => " F |"
+                };
+                history_str.push_str(m);
+            }
+            return write!(f, "{}", history_str)
+        } else {
+            return write!(f, "[]")
         }
-        write!(f, "{}", history_str)
     }
 }
 

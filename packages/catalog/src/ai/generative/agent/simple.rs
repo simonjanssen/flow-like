@@ -174,13 +174,14 @@ impl NodeLogic for SimpleAgentNode {
 
             // append new messages to internal history
             // todo: validate tool call followed by tool output
+            context.log_message(&format!("[agent iter {}] previous external history: {}", agent_iteration, &previous_external_history), LogLevel::Debug);
+            context.log_message(&format!("[agent iter {}] previous internal history: {}", agent_iteration, &internal_history), LogLevel::Debug);
             let n1 = previous_external_history.messages.len();
             let n2 = external_history.messages.len();
             for i in n1..n2 {
                 let new_message = external_history.messages[i].clone();
                 internal_history.messages.push(new_message);
             }
-            context.log_message(&format!("[agent iter {}] previous external history: {}", agent_iteration, &previous_external_history), LogLevel::Debug);
             context.log_message(&format!("[agent iter {}] updated  external history: {}", agent_iteration, &external_history), LogLevel::Debug);
             context.log_message(&format!("[agent iter {}] updated  internal history: {}", agent_iteration, &internal_history), LogLevel::Debug);
             previous_external_history = external_history;
